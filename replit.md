@@ -58,12 +58,14 @@ When the user's message matches a BMAD trigger phrase, agent name, or workflow c
   - Product Brief (`_bmad-output/planning-artifacts/product-brief-workspace-2026-02-08.md`)
   - PRD — 58 FRs, 28 NFRs (`_bmad-output/planning-artifacts/prd.md`)
   - PRD Validation Report (`_bmad-output/planning-artifacts/prd-validation-report.md`)
-  - Architecture Document — Steps 1-4 complete (`_bmad-output/planning-artifacts/architecture.md`)
+  - Architecture Document — Steps 1-6 complete (`_bmad-output/planning-artifacts/architecture.md`)
     - Step 1: Initialization
     - Step 2: Project Context Analysis
     - Step 3: Starter Template Evaluation (Replit full-stack JS template confirmed)
     - Step 4: Core Architectural Decisions (15 decisions documented)
-- **Next:** Architecture Steps 5-8 (Implementation Patterns, Project Structure, Validation, Completion)
+    - Step 5: Implementation Patterns (25 conflict points, Party Mode review)
+    - Step 6: Project Structure & Boundaries (complete file tree, Party Mode review)
+- **Next:** Architecture Steps 7-8 (Validation, Completion)
 
 ## BMad File Structure
 
@@ -107,4 +109,6 @@ _bmad-output/             # Generated artifacts go here
 - 2026-02-08: PRD completed (49 FRs, 25 NFRs) and validated (4/5 quality)
 - 2026-02-08: AI Integration Amendment — Story Mode reimagined as AI Planning Advisor, Expert Mode added to MVP, Advisory Board deferred to Phase 2. PRD now 58 FRs, 28 NFRs.
 - 2026-02-08: Architecture Steps 1-4 complete — project context analysis, starter template evaluation, and 15 core architectural decisions documented (data model, RBAC, financial engine, AI integration, component architecture, API design)
+- 2026-02-08: Architecture Step 5 complete — 25 implementation pattern conflict points resolved via Party Mode (naming, numbers, structure, format, communication patterns)
+- 2026-02-08: Architecture Step 6 complete — complete project file tree with [T]/[C] legend, route modules pattern, 3 layout components, error boundary, brand seed data, page access matrix, dynamic brand theming
 <!-- BMAD-METHOD-END -->
