@@ -1,0 +1,129 @@
+Persona A — First-Time Franchisee (“Sam, The New Owner”)
+
+Snapshot (composite): Age 30–45. Former corporate manager (hospitality/retail) or owner of a single independent business who has purchased their first franchise unit. Often financed via SBA/owner equity. May be technically competent but new to franchising mechanics.
+
+Background before franchising
+
+Corporate or small-business background (store manager, restaurant manager, district manager, or independent small business owner). Little prior multi-site experience.
+
+Decision driven by desire for a known model and lower risk vs. an independent startup.
+
+Emotional state at first engagement
+
+Excited but anxious. Hopes the franchisor/system is “solved,” worried about hidden costs, timeline slippage, and getting the first store open without wrecking the family finances. They often feel overwhelmed by the checklist (site, LOI, construction, equipment, operations). Katalyst’s roadmap structure is exactly the kind of thing they need to feel less adrift. 
+
+PayMore Franchisee Roadmap 0524
+
+Goals / success criteria
+
+Open on time and on or under budget.
+
+Validate the business economics (recoup investment).
+
+Get a replicable ops system that yields predictable staffing and revenue.
+
+Typical knowledge / sophistication
+
+Understands P&L basics but not highly sophisticated in pro-formas or capital structures. They rely on franchisor Item 19, simple spreadsheets, and outside advisors for financing. Franchisors typically provide pro-forma templates post-signing; first-timers need hand-holding to translate those numbers to their cashflow reality. 
+
+JBR - Katalyst Catch Up-summary…
+
+Pain points
+
+Fear of unknown construction costs and schedule (cost/time overruns).
+
+Lack of confidence reading Item 19 or converting it to a lender-friendly pro-forma.
+
+Overwhelm managing contractors, suppliers, and the franchisor’s requirements simultaneously.
+
+How Katalyst should show up
+
+Offer a “confidence pack”: clear milestone roadmap, cost-certainty commitments, and an easy, lender-grade pro-forma walkthrough. Use the Franchisee Roadmap as a template for an onboarding playbook. 
+
+01
+
+Productize: turnkey pre-opening checklist, an “open on-time” guarantee band (where feasible), and a simple pro-forma template with 3 scenarios (low/likely/high) that maps to Item 19. 
+
+JBR - Katalyst Catch Up-summary…
+
+Persona B — Experienced Operator / Portfolio Owner (“Maria, The Multi-Unit Operator”)
+
+Snapshot (composite): Age 40–60. Owns or manages 5+ locations (often under a Multi-Unit Operator Agreement). Financially sophisticated, uses pro-formas, portfolio level KPIs, and debt to scale. Often runs a single brand (deep) or several related brands (adjacent diversification).
+
+Background before franchising
+
+Either built from a single store and scaled up or came in as a serial operator/entrepreneur with experience managing multi-site logistics and teams. They may have prior experience with rollouts and have relationships with lenders and general contractors.
+
+Emotional state when engaging
+
+Pragmatic and transactional. Focused on throughput (how fast and cheaply can I open units that meet target returns). Less emotionally fragile than first-timers but intolerant of wasted time and ambiguity. They value predictability, repeatability, and measurable returns.
+
+Goals / success criteria
+
+Optimized unit economics at scale (margins, labor efficiency).
+
+Shortened time-to-open and consistent quality across sites.
+
+Reliable capital plans and predictable supplier chains.
+
+Knowledge / sophistication
+
+High: comfortable with multi-period pro-formas, debt/leverage scenarios, unit-level P&L, and portfolio forecasting. They expect franchisors or advisors to provide Item 19 data, pro-forma templates, and verified asset data; they will layer financing assumptions (e.g., 60–80% leverage) to model returns. Multi-unit status is often contractually defined (5+ units). 
+
+Paymore FDD 2025 +1
+
+Pain points
+
+Operational scaling friction: inconsistent contractors, variable lead times, ad hoc cost creep across sites.
+
+Need for integrated systems (construction timelines, supplier commitments, payroll, ops) that scale predictably.
+
+Franchisor process limitations and slow decision loops that block development cadence.
+
+How Katalyst should show up
+
+Treat as a strategic delivery partner: master scheduling, supplier alignment, repeatable millwork/equipment packages, and a portfolio dashboard that reports unit cost variance, time-to-open, and unit economics. Offer a development playbook and option to operate as owner’s rep for batches of locations.
+
+Financial product: advanced pro-forma models, “what-if” scenarios for leverage, and a unit-level cost control template that feeds a portfolio forecast. Expect them to want integration-ready data (for lenders or investors). 
+
+JBR - Katalyst Catch Up-summary…
+
+Persona C — Scaling Operator (The “Middle” User: “Chris, The Second-Store Operator”)
+
+Snapshot (composite): Age ~30–50. Has opened 1–3 locations and is learning the repeatable parts of rollout. Not a rookie but not a portfolio operator. Typically still materially involved in day-to-day ops; capacity and systems are the primary constraints.
+
+Why this persona matters
+
+This user is qualitatively different from both extremes: they understand field operations and the basic pro-forma but lack portfolio systems, developer relationships, and capital sophistication. Their needs are about establishing repeatability and avoiding the hard learning curve that kills scale. Katalyst’s own materials (segmented “Designed to Scale” messaging) treat single, scaling, and high-growth operators as distinct buckets. 
+
+KATALYST Sales Assists 12_23
+
+Emotional state
+
+Ambitious and stretched. Confident that the model works, nervous about replicating success, and frustrated by inefficiencies that make the second/third site costlier or slower than the first.
+
+Goals / success criteria
+
+Build a repeatable opening playbook and control initial cost drift. Move from owner-operator to operator-manager by creating reliable subcontractor and supplier relationships and a replicable construction template.
+
+Knowledge / sophistication
+
+Medium: can read basic pro-formas and unit economics, but needs help with financing tactics for multiple builds and with systems to manage concurrent projects. They’ll appreciate templated financial tools and vendor bundles.
+
+How Katalyst should show up
+
+Offer a “Scale Starter” package: a 2–3 unit playbook that includes standard millwork packages, vetted contractor lists, templated pro-forma with financing scenarios, and a short training on portfolio KPIs. Provide a bridge product between the First-Time Franchisee onboarding and the full portfolio services used by experienced operators.
+
+Recommendation on whether to treat the “middle” as a separate persona
+
+Yes — define a distinct Scaling Operator persona (2–4 stores). They have a different product/engagement lifecycle and a distinct willingness-to-pay profile:
+
+Why: Their needs are not adequately covered by either “first-time” hand‐holding or the high-velocity, contractual demands of a 5+ unit portfolio operator. The middle user needs help turning one success into repeatable, contractable processes. Katalyst’s tiered offerings should explicitly map to:
+
+Starter / First-Time (education, certainty, pro-forma hand-holding),
+
+Scale Starter (2–4 units) (repeatable kits, vendor bundling, playbooks), and
+
+Portfolio Operator (5+) (master scheduling, portfolio dashboards, owner’s-rep, capital modeling).
+
+How to operationalize: Use contract thresholds for service tiers (e.g., “Scale Starter” offered to operators with 2–4 signed LOIs/units in development) and instrument pricing so the middle tier is profitable but clearly differentiated from the full portfolio product.
