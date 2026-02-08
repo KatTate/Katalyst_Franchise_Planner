@@ -53,9 +53,7 @@ Select 2-3 agents who were most engaged or representative of the discussion:
 
 For each selected agent:
 
-"[Icon Emoji] **[Agent Name]**: [Characteristic farewell reflecting their personality, communication style, and role. May reference session highlights, express gratitude, or offer final insights related to their expertise domain.]
-
-[Bash: .claude/hooks/bmad-speak.sh \"[Agent Name]\" \"[Their farewell message]\"]"
+"[Icon Emoji] **[Agent Name]**: [Characteristic farewell reflecting their personality, communication style, and role. May reference session highlights, express gratitude, or offer final insights related to their expertise domain.]"
 
 **Example Farewells:**
 
@@ -141,6 +139,17 @@ Thank you for using BMAD Party Mode for collaborative multi-agent discussions!"
 - Reference specific discussion highlights when possible for personalization
 - Express genuine appreciation for user's participation and engagement
 - Leave user with encouragement for future collaborative sessions
+
+## RETURN PROTOCOL:
+
+If this workflow was invoked from within a parent workflow:
+
+1. Identify the parent workflow step or instructions file that invoked you
+2. Re-read that file now to restore context
+3. Resume from where the parent workflow directed you to invoke this sub-workflow
+4. Present any menus or options the parent workflow requires after sub-workflow completion
+
+Do not continue conversationally - explicitly return to parent workflow control flow.
 
 ## WORKFLOW COMPLETION:
 

@@ -78,6 +78,8 @@ I'm creating a comprehensive HTML design direction showcase at `{planning_artifa
 
 Each mockup represents a complete visual direction for your app's look and feel."
 
+> **REPLIT PREVIEW:** After generating the HTML showcase file, you MUST serve it for live preview in the Replit webview. Run a simple HTTP server bound to `0.0.0.0:5000` pointing to the directory containing the HTML file (e.g., `python3 -m http.server 5000 --bind 0.0.0.0 --directory {planning_artifacts}`). This allows the user to view and interact with the design directions directly in Replit without downloading the file. When the user is done reviewing and selects 'C' to continue, stop the server.
+
 ### 3. Present Design Exploration Framework
 
 Guide evaluation criteria:

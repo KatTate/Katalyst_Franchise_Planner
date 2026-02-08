@@ -65,6 +65,8 @@ Create visual exploration opportunities:
 
 This will help you make an informed decision about the visual direction for {{project_name}}."
 
+> **REPLIT PREVIEW:** After generating any HTML visualizer file, you MUST serve it for live preview in the Replit webview. Run a simple HTTP server bound to `0.0.0.0:5000` pointing to the directory containing the HTML file (e.g., `python3 -m http.server 5000 --bind 0.0.0.0 --directory {planning_artifacts}`). This allows the user to view and interact with the visualizer directly in Replit without downloading the file. When the user is done reviewing, stop the server.
+
 ### 3. Define Typography System
 
 Establish the typographic foundation:
