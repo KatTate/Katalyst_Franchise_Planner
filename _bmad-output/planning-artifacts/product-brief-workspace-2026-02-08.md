@@ -1,5 +1,5 @@
 ---
-stepsCompleted: [1, 2, 3]
+stepsCompleted: [1, 2, 3, 4]
 inputDocuments: ['_bmad-output/brainstorming/brainstorming-session-2026-02-08.md', 'attached_assets/katalyst-replit-agent-context-final_1770513125481.md', 'attached_assets/PostNet_-_Business_Plan_1770511701987.xlsx']
 date: 2026-02-08
 author: User
@@ -198,3 +198,113 @@ Differs by persona:
 
 #### Long-term Engagement
 Estimated vs. actual tracking keeps the tool relevant after opening day. The plan becomes a living operational document. Multi-unit operators return for each new location, importing proven assumptions from previous ones.
+
+---
+
+## Success Metrics
+
+### Critical Context: High-Touch Delivery Model
+
+These metrics must be understood in the context of Katalyst's delivery model: every franchisee has a dedicated Katalyst account manager/consultant who walks them through the tool personally. This is not a self-serve SaaS product with anonymous users — it's a guided, relationship-driven platform. This fundamentally changes adoption expectations (high — approaching 100%) and baseline data quality (account managers correct and fine-tune estimates with franchisees using Katalyst's years of brand-specific experience).
+
+### User Success Metrics (Franchisee Value)
+
+**Plan Completion Rate**
+- Target: 80%+ of franchisees who start Quick ROI entry proceed to build a full business plan (high target justified by 1:1 account manager guidance)
+- Measurement: Funnel tracking from Quick ROI to completed plan with at least one scenario modeled
+- Why it matters: If franchisees start but don't continue despite having a personal guide, the tool itself has a UX problem
+
+**Time to Lender-Ready Package**
+- Baseline: Establish current average (likely weeks to months of ad hoc spreadsheet work for first-timers; unknown because it's untracked today)
+- Target: First-time franchisee produces a lender-grade financial package within 2-3 guided sessions with their account manager
+- Measurement: Time from first login to first document export/download
+- Why it matters: This is Sam's "aha!" moment — the tool proves its value when the bank says "who helped you put this together?"
+
+**Return Engagement (Living Plan Indicator)**
+- Target: 60%+ of active franchisees update their plan at least once after initial completion (updating estimates with actuals, refining scenarios as site selection narrows)
+- Measurement: Sessions per franchisee over time; data updates post-initial plan
+- Why it matters: If franchisees don't come back, this is a one-time calculator, not a living planning system. Return engagement proves the "estimated vs. actual" tracking creates ongoing value
+
+**Experience Tier Accuracy**
+- Target: Less than 20% of users override the system-recommended experience tier
+- Measurement: Tier recommendation vs. tier actually used
+- Why it matters: If users constantly switch away from the recommended tier, the onboarding questions aren't calibrated correctly
+
+**Baseline Estimate Quality**
+- Target: Franchisee initial estimates are within 25% of brand benchmarks (seeded by Katalyst from years of brand-specific data) after account manager guidance session
+- Measurement: Variance between franchisee estimates and brand benchmark defaults at plan completion
+- Why it matters: Baseline data only works as a proof point for Katalyst's service impact if the starting estimates are credible. Wildly optimistic or pessimistic baselines undermine the entire estimated vs. actual comparison. Account managers ensure quality, but the tool should track divergence to flag potential issues
+
+### Business Objectives (Katalyst Value)
+
+**Early Engagement Window**
+- Target: Katalyst gains 60-90 days of advance visibility into franchisee site selection and finance development activity, compared to today's pattern of post-lease-signing engagement
+- Measurement: Time between first franchisee activity in the tool and first Katalyst service engagement, compared to pre-tool baseline
+- Why it matters: This is the single most valuable operational intelligence metric. Earlier engagement means better design decisions, more accurate construction planning, and fewer "I signed a lease and need to open in 3 weeks" emergencies
+
+**First Actionable Insight (Time to Katalyst Value)**
+- Target: Within 6 months of deployment for a brand, Katalyst uses tool data to make at least one service decision that would not have been possible without the tool
+- Measurement: Qualitative — documented instance of tool data informing a Katalyst service engagement, resource allocation, or construction planning decision
+- Why it matters: The tool must prove value to Katalyst's own operations, not just franchisees. This metric answers "is the operational intelligence real?" Requires 2-3 brands live within the 6-month window to have an honest evaluation
+
+**Baseline Data Collection for Service Impact Proof**
+- Target: 80%+ of franchisees using the tool have complete estimated timelines, costs, and milestones entered before Katalyst's construction services begin
+- Measurement: Data completeness at the point of Katalyst service engagement
+- Why it matters: Katalyst's 30-50% construction timeline reduction is real but hard to prove once Katalyst takes over a brand's openings (no control group — "we deleted the control sample"). The tool creates the baseline data — franchisee's original estimates, refined with account manager guidance — against which Katalyst's actual delivery can be measured
+
+**Multi-Year Portfolio Forecast Visibility**
+- Target: Multi-unit operators (Persona B and C) maintain forward-looking location plans that give Katalyst a 12-24 month development forecast
+- Measurement: Number of "planned" locations in the system with projected timelines beyond the current active project
+- Why it matters: Allows Katalyst to plan resource allocation, supplier commitments, and staffing for future projects instead of reacting to inbound requests
+
+### Business Objectives (Franchisor Value)
+
+**Development Pipeline Visibility**
+- Target: Franchisor can see real-time status of all franchisee location plans — who is planning, who is in site evaluation, who is under construction, who is stalled
+- Measurement: Franchisor admin dashboard usage and pipeline data completeness
+- Why it matters: Franchisors currently have no systematic visibility into their development pipeline. This is the first time they can forecast royalty revenue timing from actual franchisee planning data
+
+**Opening Pace Acceleration**
+- Target: Measurable increase in locations opened per year after tool adoption (attributable jointly to the planning tool and Katalyst's services)
+- Measurement: Year-over-year location openings per brand, pre and post tool adoption
+- Why it matters: The franchisor's ROI case — compounding royalty revenue from faster openings — depends on this metric trending upward
+
+### Key Performance Indicators (MVP / First Year)
+
+| KPI | Target | Measurement Method |
+|-----|--------|-------------------|
+| Franchisee adoption rate | 80%+ of new franchisees actively use the tool | Active users / total new franchisees per brand |
+| Trial rate (Quick ROI) | 95%+ try the Quick ROI entry | Quick ROI started / total registered users |
+| Plan completion rate | 80%+ start-to-finish | Funnel: Quick ROI to completed plan |
+| Return engagement | 60%+ update plan post-initial completion | Repeat sessions with data changes |
+| Time to lender-ready package | Establish baseline, then reduce by 50% | First login to first document export |
+| Baseline estimate quality | Within 25% of brand benchmarks | Estimate vs. benchmark variance |
+| Early engagement window | 60-90 days advance visibility | First tool activity to first Katalyst engagement |
+| First actionable insight | Within 6 months of brand deployment | Documented decision informed by tool data |
+| Baseline data completeness | 80%+ have estimates before construction starts | Data completeness audit at service engagement |
+| Brands onboarded (Year 1) | 2-3 brands configured and live | Brand count with active franchisees |
+
+### MVP Validation Framework
+
+**PostNet = Proof of Concept:** At 5-10 franchisees per year, PostNet validates "does this tool work at all?" — does the financial engine handle PostNet's data model, do franchisees find it valuable with account manager guidance, does the workflow feel right? Statistical significance on metrics is not achievable at this volume. PostNet proves the concept.
+
+**Second Brand = Proof of Scale:** At 20-25 franchisees per year, the second brand validates "does this generalize?" — does the configurable financial engine handle a different brand's cost structures, does adoption hold without PostNet-specific assumptions baked in, do the metrics start to show meaningful patterns? This is where the numbers start to mean something.
+
+**6-Month Evaluation Gate:** At 6 months post-launch with 2-3 brands live, Katalyst conducts an honest evaluation: Is the operational intelligence real? Has at least one service decision been informed by tool data? Are franchisees completing plans? Is the data quality sufficient for baseline comparisons? This is the go/no-go for continued investment.
+
+### Metrics Instrumentation Requirement (MVP Scope)
+
+The MVP must include backend event logging on key state transitions and user actions, even where no user-facing reporting exists yet. This is not a feature franchisees see — it's the infrastructure that powers every metric above and prevents the "we forgot to measure" problem.
+
+**Required event logging:**
+- Account created, onboarding tier selected/overridden
+- Quick ROI started, Quick ROI completed
+- Business plan wizard started, each section completed, plan finalized
+- Scenario created, scenario compared
+- Document exported/downloaded (by type)
+- Estimated vs. actual data entered or updated
+- Location lifecycle state transitions (planning, site evaluation, under construction, open, operating)
+- Document vault uploads
+- Session timestamps and duration
+
+This event data also feeds the **Data Flywheel**: as franchisees complete plans, update estimated vs. actual, and progress through location lifecycles, the system accumulates brand-specific benchmark data. Over time, this enables more accurate default assumptions for new franchisees, better Katalyst service scoping, and stronger franchisor reporting. The MVP must capture the data fields that power future benchmarks, even if benchmark reports are not surfaced in the MVP.
