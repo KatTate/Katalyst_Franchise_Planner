@@ -1,5 +1,5 @@
 ---
-stepsCompleted: [1, 2]
+stepsCompleted: [1, 2, 3]
 inputDocuments:
   - _bmad-output/planning-artifacts/prd.md
   - _bmad-output/planning-artifacts/prd-validation-report.md
@@ -21,7 +21,7 @@ _This document builds collaboratively through step-by-step discovery. Sections a
 
 ### Requirements Overview
 
-**Functional Requirements (49 FRs across 9 categories):**
+**Functional Requirements (58 FRs across 11 categories):**
 
 | Category | FR Count | Architectural Implication |
 |----------|----------|--------------------------|
@@ -34,22 +34,25 @@ _This document builds collaboratively through step-by-step discovery. Sections a
 | Brand Configuration & Administration (FR39-FR44) | 6 | Katalyst admin brand setup, startup cost templates, account manager assignment. |
 | Pipeline Visibility & Operational Intelligence (FR45-FR48) | 4 | Franchisor read-only pipeline dashboard, Katalyst cross-brand admin view. |
 | Brand Identity & Experience (FR49) | 1 | Brand-specific theming and identity display throughout the experience. |
+| AI Planning Advisor (FR50-FR54) | 5 | LLM-powered conversational interface for Story Mode. Split-screen UX (chat + live dashboard). NL-to-structured-input extraction. Per-field attribution tracking. |
+| Advisory Board Meeting (FR55-FR58) | 4 | Multi-persona AI stress-testing of plan assumptions. Persona manifest system, topic-based selection, cross-talk orchestration. Phase 2. |
 
-**Non-Functional Requirements (25 NFRs across 5 categories):**
+**Non-Functional Requirements (28 NFRs across 6 categories):**
 
 | Category | Key Constraints |
 |----------|----------------|
-| Performance | Financial recalc < 2s, wizard page transition < 1s, PDF generation < 30s, dashboard load < 3s for 200 franchisees |
+| Performance | Financial recalc < 2s, page transition < 1s, PDF generation < 30s, dashboard load < 3s for 200 franchisees |
 | Security | HTTPS, bcrypt passwords, session expiry, API-level RBAC, single-use invitation tokens, no financial data in logs |
 | Reliability & Data Integrity | Auto-save every 2 min, deterministic calculations, concurrent edit handling, immutable generated documents |
 | Scalability | 10 brands, 500 franchisees, brand_id partitioning from day one |
+| AI Integration | LLM API timeouts < 30s, graceful degradation to form-based mode, AI-populated values validated against field schemas, conversation context < 32K tokens |
 | Usability | Desktop-first (1024px min), plain-language errors, consistent financial formatting, 200ms visual feedback |
 
 ### Scale & Complexity
 
 - **Primary domain:** Full-stack web application (B2B2C vertical SaaS)
 - **Complexity level:** High
-- **Estimated architectural components:** ~15+ (financial engine, AI conversation agent, advisory board orchestrator, advisor persona system, wizard/form state management, startup cost builder subsystem, document generator, advisory rules engine, admin configuration system, franchisor dashboard, Katalyst dashboard, data sharing/privacy layer, brand theming, auto-save system, invitation/auth system)
+- **Estimated architectural components:** ~15+ (financial engine, AI conversation agent, advisory board orchestrator, advisor persona system, planning state management, startup cost builder subsystem, document generator, advisory rules engine, admin configuration system, franchisor dashboard, Katalyst dashboard, data sharing/privacy layer, brand theming, auto-save system, invitation/auth system)
 - **User scale:** Modest (500 max active franchisees across 10 brands) — internal tool with known users, not public-facing
 - **Data lifecycle:** Long-lived — plans evolve over months; locations have lifecycle states spanning their operational lifetime
 - **AI integration:** LLM-powered conversation layer for Story Mode + multi-persona advisory board feature
@@ -134,7 +137,7 @@ If this subsystem works cleanly (flexible templates, per-item overrides, classif
 
 A single "plan" record must support three simultaneous read patterns with three different authorization boundaries:
 
-1. **Franchisee's interactive editing session** — mutable, auto-saved, wizard/conversation-state-tracked, full detail access
+1. **Franchisee's interactive editing session** — mutable, auto-saved, conversation/form/spreadsheet-state-tracked, full detail access
 2. **Franchisor's pipeline view** — read-only snapshot of status, stage, timeline, market. Financial details only if franchisee opted in.
 3. **Katalyst's operational intelligence** — full visibility, cross-brand aggregation, individual plan drill-down for support
 
@@ -146,3 +149,122 @@ With 500 max users across 10 brands:
 - **Do:** Clean, well-indexed PostgreSQL schema with smart query scoping
 - **Don't:** Event sourcing, CQRS, Redis caching layers, distributed systems patterns
 - **Principle:** Don't over-engineer for speculative scale. The temptation to build for 10,000 users will slow down the MVP without delivering value. Build for 500, architect so that scaling to 5,000 is a database optimization task, not a rewrite.
+
+## Starter Template Evaluation
+
+### Primary Technology Domain
+
+Full-stack web application (B2B2C vertical SaaS) based on project requirements analysis. The project requires:
+- Complex, multi-paradigm frontend (AI conversation + forms + spreadsheet)
+- Server-side computation (deterministic financial engine)
+- PostgreSQL for relational data with brand_id partitioning
+- LLM API integration (server-side proxy to OpenAI/Anthropic)
+- PDF generation (server-side)
+- Session-based auth with invitation-only model
+
+### Starter: Replit Full-Stack JS Template (Already Active)
+
+**This project is already initialized on the Replit full-stack JS template.** No starter selection decision is needed — the template is in place and the tech stack decision was made in Step 2 based on requirements analysis.
+
+**Rationale for Confirmation:**
+1. TypeScript end-to-end provides type safety for financial engine (critical for deterministic calculations)
+2. React 18 ecosystem depth supports the three radically different interaction paradigms (conversation, forms, spreadsheet)
+3. PostgreSQL with Drizzle ORM supports brand_id partitioning and complex relational queries for RBAC
+4. Express 5 provides straightforward API layer for financial engine endpoints and LLM proxy
+5. Vite provides fast development iteration on complex UI
+6. shadcn/ui component library provides the full suite needed (forms, dialogs, sidebars, tabs, cards, charts via Recharts)
+
+### Architectural Decisions Provided by Starter
+
+**Language & Runtime:**
+- TypeScript 5.6 (strict mode available)
+- Node.js runtime (server) + browser (client)
+- ESM modules throughout (`"type": "module"`)
+- tsx for development server execution
+
+**Frontend Framework & Libraries:**
+- React 18.3 with Vite 7.3 (HMR, fast builds)
+- Tailwind CSS 3.4 for styling
+- shadcn/ui component library (full Radix UI primitive set: accordion, dialog, dropdown, form, tabs, toast, tooltip, sidebar, etc.)
+- Wouter 3.3 for client-side routing
+- TanStack React Query 5.60 for server state management
+- React Hook Form 7.55 + @hookform/resolvers for form handling
+- Recharts 2.15 for charting/visualization
+- Framer Motion 11.13 for animations
+- React Resizable Panels 2.1 (critical for split-screen Story Mode layout)
+- Lucide React for icons, React Icons for brand logos
+- class-variance-authority + clsx + tailwind-merge for style composition
+
+**Backend Framework & Libraries:**
+- Express 5.0 (latest major version)
+- express-session + connect-pg-simple for session management
+- Passport + passport-local for authentication
+- ws 8.18 for WebSocket support (useful for real-time auto-save or AI streaming)
+
+**Database & ORM:**
+- PostgreSQL (Replit built-in, Neon-backed)
+- Drizzle ORM 0.39 for type-safe database operations
+- Drizzle Kit 0.31 for migrations (`db:push` command)
+- drizzle-zod 0.7 for schema-to-validation integration
+
+**Validation:**
+- Zod 3.24 for runtime validation (shared between client/server)
+- drizzle-zod for automatic Zod schemas from Drizzle table definitions
+
+**Build & Dev Tooling:**
+- Vite dev server with React plugin and HMR
+- esbuild for production builds
+- TypeScript compiler for type checking (`tsc`)
+- Replit Vite plugins (cartographer, dev banner, runtime error modal)
+
+**Code Organization (Existing Structure):**
+```
+├── client/
+│   └── src/
+│       ├── components/ui/    # shadcn/ui components (40+ primitives)
+│       ├── hooks/            # Custom hooks (use-toast, use-mobile)
+│       ├── lib/              # Utilities (queryClient, utils)
+│       ├── pages/            # Route components
+│       └── App.tsx           # Root with routing
+├── server/
+│   ├── index.ts              # Server entry point
+│   ├── routes.ts             # API routes
+│   ├── storage.ts            # Storage interface (IStorage)
+│   ├── static.ts             # Static file serving
+│   └── vite.ts               # Vite dev server integration
+├── shared/
+│   └── schema.ts             # Drizzle schema + Zod types
+└── package.json
+```
+
+### Gaps to Fill (Not Provided by Starter)
+
+These capabilities are required by the PRD but not included in the starter template. They will be addressed in architectural decisions (Step 4) and implementation stories:
+
+| Gap | Need | Candidate Solutions |
+|-----|------|-------------------|
+| **PDF Generation** | Lender-grade financial documents (FR24-FR27) | pdfkit, @react-pdf/renderer (server-side), or puppeteer (heavier) |
+| **Immutable Document Storage** | Generated documents must be stored immutably with version history (FR24-FR27) | PostgreSQL bytea/JSONB, Replit Object Storage, or filesystem with hash-based naming |
+| **LLM SDK** | AI Planning Advisor conversation (FR50-FR54) | OpenAI SDK, Anthropic SDK, or Vercel AI SDK (provider-agnostic) |
+| **Email/Invitations** | Invitation-only auth flow (FR28) | Resend, SendGrid, or Nodemailer |
+| **Financial Number Formatting** | Consistent currency/percentage display (NFR usability) | Intl.NumberFormat (built-in), or dinero.js for money math |
+| **Decimal Precision** | Deterministic financial calculations without floating-point drift | decimal.js or big.js for arbitrary-precision arithmetic |
+| **Streaming Response Handling** | AI conversation streaming UX (FR51) | Server-Sent Events (built-in) or WebSocket (ws already included) |
+
+### What the Starter Does NOT Decide (Left for Step 4)
+
+The starter provides infrastructure but leaves these architectural decisions open:
+
+1. **State management pattern** — How the unified financial input state is structured and shared across three experience tiers
+2. **Financial engine architecture** — Pure function module design, calculation graph, accounting identity checks
+3. **AI integration pattern** — How conversation maps to structured financial inputs, streaming approach, error handling
+4. **RBAC enforcement pattern** — Middleware vs. query-level vs. both for three-tier authorization
+5. **Auto-save strategy** — Debounce timing, conflict detection, state diff approach
+6. **Data model design** — Tables, relationships, brand_id partitioning, per-field metadata storage
+7. **Component architecture** — How Story/Normal/Expert modes share components vs. diverge
+8. **API design** — RESTful resource design, endpoint structure, request/response schemas
+9. **Document generation pipeline** — Template system, data flow from engine to PDF
+10. **Immutable document storage & retention** — Where generated documents live, versioning strategy, audit trail, file retention policy
+11. **Brand parameter configuration** — Storage format, admin UI, validation rules
+
+**Note:** The Replit template's existing `server/vite.ts` and `vite.config.ts` are pre-configured and MUST NOT be modified. The template handles frontend/backend co-serving on a single port automatically.
