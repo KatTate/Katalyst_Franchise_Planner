@@ -1,5 +1,5 @@
 ---
-stepsCompleted: [1, 2, 3, 4, 5]
+stepsCompleted: [1, 2, 3, 4, 5, 6]
 inputDocuments:
   - _bmad-output/planning-artifacts/prd.md
   - _bmad-output/planning-artifacts/prd-validation-report.md
@@ -1249,3 +1249,387 @@ const updateMutation = useMutation({
 const [plan, setPlan] = useState(null);
 useEffect(() => { fetch(`/api/plans/${planId}`).then(r => r.json()).then(setPlan) }, []);
 ```
+
+---
+
+## Project Structure & Boundaries
+
+_Reviewed via Party Mode with Dev (Amelia), QA (Quinn), UX (Sally), SM (Bob), and PM (John). All team recommendations incorporated._
+
+### Complete Project Directory Structure
+
+Legend: **[T]** = exists in template (do not recreate), **[C]** = create during implementation
+
+```
+katalyst-growth-planner/
+│
+├── [T] package.json                      # Dependencies (DO NOT manually edit scripts)
+├── [T] tsconfig.json                     # TypeScript config
+├── [T] tailwind.config.ts                # Tailwind + Shadcn theme config
+├── [T] vite.config.ts                    # Vite config (DO NOT modify)
+├── [T] drizzle.config.ts                 # Drizzle ORM config (DO NOT modify)
+├── [T] replit.md                         # Project documentation + agent memory
+├── [T] .env                              # Environment variables (gitignored)
+│
+├── shared/                               # Shared between server and client
+│   ├── [C] schema.ts                     # ALL Drizzle tables, Zod schemas, types
+│   ├── [C] financial-engine.ts           # Pure computation module + interfaces
+│   │                                     #   (@engine-pure — zero I/O, zero side effects)
+│   └── [C] brand-seed-data/
+│       └── postnet.ts                    # PostNet brand defaults, startup cost template,
+│                                         #   Item 7 ranges, and reference calculations
+│                                         #   (bridge between Excel file and running system)
+│
+├── server/                               # Express backend
+│   ├── [T] index.ts                      # Server entry point (DO NOT modify)
+│   ├── [T] vite.ts                       # Vite dev middleware (DO NOT modify)
+│   ├── [T] static.ts                     # Static file serving (DO NOT modify)
+│   ├── [C] routes.ts                     # Route composition — imports and registers all route modules
+│   ├── [C] storage.ts                    # IStorage interface + DatabaseStorage
+│   │
+│   ├── [C] routes/                       # Route modules (Party Mode: Amelia — keep each under 100 lines)
+│   │   ├── auth.ts                       # POST login, POST register, GET me, POST logout
+│   │   ├── plans.ts                      # Plan CRUD + PATCH auto-save
+│   │   ├── startup-costs.ts              # Startup cost line items CRUD
+│   │   ├── documents.ts                  # POST generate + GET retrieve (immutable)
+│   │   ├── consent.ts                    # GET status + POST grant + POST revoke
+│   │   ├── ai.ts                         # POST conversation message (Story Mode)
+│   │   ├── quick-roi.ts                  # POST calculate (no auth — public)
+│   │   ├── admin.ts                      # Brand CRUD (katalyst_admin only)
+│   │   └── pipeline.ts                   # Pipeline queries (franchisor + katalyst_admin)
+│   │
+│   ├── [C] middleware/
+│   │   ├── auth.ts                       # Session auth, requireAuth(), requireRole()
+│   │   └── rbac.ts                       # scopeToUser(), projectForRole() — query + response filtering
+│   │
+│   └── [C] services/
+│       ├── ai-service.ts                 # LLM proxy, conversation mgmt, NL→structured extraction
+│       ├── document-service.ts           # PDF generation, immutable doc storage
+│       └── financial-service.ts          # Orchestrates engine + persists results
+│
+├── client/
+│   └── src/
+│       ├── [T] main.tsx                  # Client entry point
+│       ├── [C] App.tsx                   # Root component, SidebarProvider, Router
+│       ├── [T] index.css                 # Theme variables, Tailwind base (replace red placeholders)
+│       │
+│       ├── components/
+│       │   ├── [T] ui/                   # Shadcn primitives (NEVER modify)
+│       │   │   ├── button.tsx
+│       │   │   ├── card.tsx
+│       │   │   ├── form.tsx
+│       │   │   ├── sidebar.tsx
+│       │   │   ├── toast.tsx
+│       │   │   ├── tooltip.tsx
+│       │   │   └── ...                   # Other Shadcn components as needed
+│       │   │
+│       │   ├── [C] common/               # Cross-tier components (Party Mode: Bob — renamed from shared/)
+│       │   │   ├── detail-panel.tsx       # Per-field metadata display (value, source, range, reset)
+│       │   │   ├── financial-dashboard.tsx # Summary projections, ROI metrics, charts
+│       │   │   ├── roi-summary-card.tsx   # Break-even, IRR, annual ROI display
+│       │   │   ├── startup-cost-table.tsx  # Startup cost line items (view/edit)
+│       │   │   ├── save-indicator.tsx      # "Saved" / "Saving..." / "Unsaved changes"
+│       │   │   ├── consent-dialog.tsx      # Data sharing consent grant/revoke UI
+│       │   │   ├── error-boundary.tsx      # Fault isolation per panel (Party Mode: Amelia)
+│       │   │   └── plan-header.tsx         # Plan name, tier selector, save indicator, booking link
+│       │   │
+│       │   ├── [C] planning/             # Experience tier-specific components
+│       │   │   ├── story-layout.tsx       # Split-screen: chat left, dashboard right (Party Mode: Amelia)
+│       │   │   ├── normal-layout.tsx      # Section nav left, form center, detail panel right
+│       │   │   ├── expert-layout.tsx      # Full-width spreadsheet grid, collapsible dashboard
+│       │   │   │
+│       │   │   ├── story-mode/
+│       │   │   │   ├── chat-panel.tsx     # AI conversation interface
+│       │   │   │   ├── message-bubble.tsx  # Individual message display
+│       │   │   │   └── chat-input.tsx      # Message input with send
+│       │   │   │
+│       │   │   ├── normal-mode/
+│       │   │   │   ├── section-nav.tsx     # Section navigation (sidebar or tabs)
+│       │   │   │   ├── input-section.tsx   # Grouped form fields per planning section
+│       │   │   │   └── field-input.tsx     # Single financial input with metadata
+│       │   │   │
+│       │   │   └── expert-mode/
+│       │   │       ├── spreadsheet-grid.tsx # Direct-access spreadsheet-style grid
+│       │   │       └── grid-cell.tsx        # Individual editable cell
+│       │   │
+│       │   ├── [C] admin/                # Brand administration components
+│       │   │   ├── brand-form.tsx         # Brand setup/edit form
+│       │   │   ├── brand-defaults-editor.tsx # Financial defaults + Item 7 ranges
+│       │   │   ├── startup-cost-template.tsx # Startup cost template editor
+│       │   │   └── user-management.tsx    # Invitation, role assignment
+│       │   │
+│       │   ├── [C] pipeline/             # Franchisor/Katalyst dashboard components
+│       │   │   ├── pipeline-board.tsx     # Kanban-style pipeline stages
+│       │   │   ├── plan-summary-card.tsx  # Pipeline card with stage + market
+│       │   │   └── pipeline-filters.tsx   # Filter by stage, market, quarter
+│       │   │
+│       │   └── [C] app-sidebar.tsx       # Application sidebar navigation
+│       │
+│       ├── [C] pages/                    # One file per route
+│       │   ├── login.tsx                  # Login page [PUBLIC]
+│       │   ├── register.tsx               # Invitation-based registration [PUBLIC — token required]
+│       │   ├── plans.tsx                  # Plans list / franchisee home [PROTECTED — franchisee]
+│       │   ├── plan.tsx                   # Plan workspace — renders story/normal/expert layout [PROTECTED — franchisee]
+│       │   ├── quick-roi.tsx             # Lightweight ROI calculator [PUBLIC — lead capture]
+│       │   ├── pipeline.tsx              # Franchisor pipeline dashboard [PROTECTED — franchisor, katalyst_admin]
+│       │   ├── admin-brands.tsx          # Katalyst brand management [PROTECTED — katalyst_admin]
+│       │   ├── admin-brand.tsx           # Single brand configuration [PROTECTED — katalyst_admin]
+│       │   └── [T] not-found.tsx         # 404 page (exists in template)
+│       │
+│       ├── hooks/
+│       │   ├── [C] use-auth.ts           # Current user, login/logout, role checks
+│       │   ├── [C] use-financial-engine.ts # Client-side engine invocation for live preview
+│       │   ├── [C] use-plan-auto-save.ts  # Debounced auto-save with conflict detection
+│       │   └── [T] use-toast.ts          # Toast notifications (exists in template)
+│       │
+│       └── lib/
+│           ├── [T] queryClient.ts        # TanStack Query config (exists in template)
+│           ├── [C] format.ts             # Currency, percentage, date display formatting
+│           ├── [C] brand-theme.ts        # Maps brand config → CSS custom properties at runtime
+│           │                             #   (Party Mode: Sally — dynamic, not per-brand CSS files)
+│           ├── [C] protected-route.tsx    # Route guard (redirects if not authed/wrong role)
+│           └── [T] utils.ts              # General utilities (exists in template)
+│
+└── attached_assets/                      # Reference data (not deployed)
+    ├── PostNet_-_Business_Plan_1770511701987.xlsx
+    └── katalyst-replit-agent-context-final_1770513125481.md
+```
+
+---
+
+### Architectural Boundaries
+
+**API Boundaries:**
+
+| Boundary | Route Module | Inbound | Auth Required |
+|----------|-------------|---------|---------------|
+| `/api/auth/*` | `routes/auth.ts` | Client login/register | No (public) |
+| `/api/plans/*` | `routes/plans.ts` | Plan CRUD + auto-save | Yes — franchisee owns, franchisor reads (projected) |
+| `/api/plans/:id/startup-costs/*` | `routes/startup-costs.ts` | Startup cost CRUD | Yes — franchisee only |
+| `/api/plans/:id/documents/*` | `routes/documents.ts` | Create + retrieve (immutable) | Yes — franchisee creates, franchisor reads (with consent) |
+| `/api/plans/:id/consent/*` | `routes/consent.ts` | Grant/revoke/status | Yes — franchisee only |
+| `/api/plans/:id/conversation` | `routes/ai.ts` | Chat message | Yes — franchisee only (Story Mode) |
+| `/api/quick-roi` | `routes/quick-roi.ts` | Stateless calculation | No (public — lead capture) |
+| `/api/admin/brands/*` | `routes/admin.ts` | Brand CRUD | Yes — katalyst_admin only |
+| `/api/pipeline/*` | `routes/pipeline.ts` | Pipeline queries | Yes — franchisor or katalyst_admin |
+
+**Route Module Pattern (Party Mode: Amelia):**
+
+```typescript
+// server/routes/plans.ts
+import { Express } from "express";
+import { IStorage } from "../storage";
+import { requireAuth, requireRole } from "../middleware/auth";
+import { updatePlanSchema } from "@shared/schema";
+
+export function registerPlanRoutes(app: Express, storage: IStorage) {
+  app.get("/api/plans", requireAuth(), requireRole("franchisee"), async (req, res) => { ... });
+  app.post("/api/plans", requireAuth(), requireRole("franchisee"), async (req, res) => { ... });
+  app.get("/api/plans/:planId", requireAuth(), async (req, res) => { ... });
+  app.patch("/api/plans/:planId", requireAuth(), requireRole("franchisee"), async (req, res) => { ... });
+}
+
+// server/routes.ts — composition root
+import { registerAuthRoutes } from "./routes/auth";
+import { registerPlanRoutes } from "./routes/plans";
+// ... all other route modules
+
+export function registerRoutes(app: Express, storage: IStorage) {
+  registerAuthRoutes(app, storage);
+  registerPlanRoutes(app, storage);
+  // ... all other route modules
+}
+```
+
+**Component Boundaries (client-side):**
+
+```
+Pages (route-level containers)
+  └── compose components from common/ + planning/ + admin/ + pipeline/
+  └── own their TanStack Query hooks
+  └── never contain business logic — delegate to hooks and components
+  └── plan.tsx: fetches plan → determines tier → renders {story|normal|expert}-layout
+
+Layout Components (components/planning/{story|normal|expert}-layout.tsx)
+  └── define arrangement of common/ components for each experience tier
+  └── story-layout: split-screen (chat left, dashboard right)
+  └── normal-layout: section nav left, form center, detail panel right
+  └── expert-layout: full-width grid, collapsible dashboard
+  └── each wrapped in error-boundary for fault isolation
+
+Common Components (components/common/)
+  └── receive data via props — never fetch their own data
+  └── emit changes via callbacks — never mutate server state directly
+  └── used identically across Story/Normal/Expert modes
+  └── error-boundary wraps each independently — dashboard crash doesn't kill chat
+
+Tier Components (components/planning/{story|normal|expert}-mode/)
+  └── tier-specific input paradigm only
+  └── write to same financial input state via same mutation hooks
+  └── compose with common/ components (detail panel, dashboard)
+```
+
+**Service Boundaries (server-side):**
+
+```
+Routes (server/routes/ modules)
+  └── Thin: validate request → call storage/service → format response
+  └── Each module: registerXxxRoutes(app, storage) — under 100 lines
+  └── routes.ts composes all modules
+
+Storage (server/storage.ts)
+  └── All database operations — sole owner of Drizzle queries
+  └── Receives user context for RBAC scoping
+  └── Exposes typed methods matching IStorage interface
+  └── Documents: createDocument() + getDocument() + listDocuments() ONLY (no update/delete)
+
+Services (server/services/)
+  └── Business logic orchestration
+  └── ai-service: LLM API calls, conversation context management, value extraction
+  └── document-service: PDF rendering, inputs snapshot, immutable storage
+  └── financial-service: invokes engine, persists outputs, triggers recalculation
+  └── Services call storage — never raw Drizzle queries
+
+Financial Engine (shared/financial-engine.ts)
+  └── PURE — no imports from server/ or client/
+  └── Called by: financial-service (server), useFinancialEngine (client preview)
+  └── Zero side effects — deterministic computation only
+```
+
+**Data Boundaries:**
+
+```
+PostgreSQL (single database)
+  └── All tables defined in shared/schema.ts via Drizzle
+  └── Accessed exclusively through IStorage methods
+  └── RBAC scoping applied at query level in storage methods
+  └── JSONB columns use camelCase internally
+
+Sessions
+  └── express-session + connect-pg-simple → stored in PostgreSQL
+  └── Session cookie is httpOnly, secure, sameSite
+
+Brand Seed Data (shared/brand-seed-data/)
+  └── PostNet defaults, startup cost templates, Item 7 ranges
+  └── Reference calculations for engine validation
+  └── Ships with product — not test fixtures
+  └── Seeded to DB on first run or brand creation
+
+LLM API (external)
+  └── Accessed only through server/services/ai-service.ts
+  └── Never called from client — server is the proxy
+  └── API key stored in environment secret, never exposed to client
+
+Brand Theming (client/src/lib/brand-theme.ts)
+  └── Reads brand config from API (primary color, accent, logo URL)
+  └── Sets CSS custom properties on document root at runtime
+  └── No per-brand CSS files — single utility, dynamic application
+```
+
+---
+
+### Requirements to Structure Mapping
+
+**FR Categories → Files:**
+
+| FR Category | Primary Files | Supporting Files |
+|-------------|--------------|-----------------|
+| **Financial Planning (FR1-10)** | `shared/financial-engine.ts` | `server/services/financial-service.ts`, `client/components/common/financial-dashboard.tsx`, `client/components/common/roi-summary-card.tsx` |
+| **Guided Experience (FR11-19)** | `client/pages/plan.tsx`, `client/components/planning/{story\|normal\|expert}-layout.tsx`, `client/components/planning/{story\|normal\|expert}-mode/*` | `client/components/common/plan-header.tsx` (includes booking link — Party Mode: John), `client/hooks/use-plan-auto-save.ts` |
+| **Advisory & Guardrails (FR20-23)** | `shared/financial-engine.ts` (identity checks), `client/components/common/detail-panel.tsx` (range warnings) | `server/services/financial-service.ts` |
+| **Documents (FR24-27)** | `server/services/document-service.ts`, `server/routes/documents.ts` | `server/storage.ts` (createDocument, getDocument, listDocuments — immutable only) |
+| **Auth & Access (FR28-32)** | `server/middleware/auth.ts`, `server/routes/auth.ts`, `client/pages/login.tsx`, `client/pages/register.tsx` | `client/hooks/use-auth.ts`, `client/lib/protected-route.tsx` |
+| **Data Sharing (FR33-38)** | `server/middleware/rbac.ts`, `server/routes/consent.ts`, `client/components/common/consent-dialog.tsx` | `server/storage.ts` (consent CRUD) |
+| **Brand Admin (FR39-44)** | `client/pages/admin-brands.tsx`, `client/pages/admin-brand.tsx`, `client/components/admin/*`, `server/routes/admin.ts` | `server/storage.ts` (brand CRUD), `shared/brand-seed-data/postnet.ts` |
+| **Pipeline (FR45-48)** | `client/pages/pipeline.tsx`, `client/components/pipeline/*`, `server/routes/pipeline.ts` | `server/middleware/rbac.ts` (projectForRole) |
+| **Brand Identity (FR49)** | `client/lib/brand-theme.ts`, `shared/schema.ts` (brand theme columns + `booking_url`) | `client/components/common/plan-header.tsx` |
+| **AI Planning Advisor (FR50-54)** | `server/services/ai-service.ts`, `server/routes/ai.ts`, `client/components/planning/story-mode/*`, `client/components/planning/story-layout.tsx` | `client/pages/plan.tsx` (tier selection) |
+| **Advisory Board (FR55-58)** | Phase 2 — not in MVP file structure | — |
+
+**Cross-Cutting Concerns:**
+
+| Concern | Files |
+|---------|-------|
+| RBAC enforcement | `server/middleware/auth.ts` + `server/middleware/rbac.ts` + `server/storage.ts` (every method) |
+| Auto-save | `client/hooks/use-plan-auto-save.ts` + `server/routes/plans.ts` (PATCH) + `client/components/common/save-indicator.tsx` |
+| Financial formatting | `client/lib/format.ts` (cents→dollars, decimals→percentages) |
+| FTC compliance | `server/services/document-service.ts` (disclaimer injection) + `client/components/common/consent-dialog.tsx` |
+| Per-field metadata | `shared/schema.ts` (FieldMetadata type) + `client/components/common/detail-panel.tsx` |
+| Fault isolation | `client/components/common/error-boundary.tsx` — wraps each panel in layout components independently |
+| Brand theming | `client/lib/brand-theme.ts` + `shared/schema.ts` (brand theme config + `booking_url`) |
+| Engine validation | `shared/brand-seed-data/postnet.ts` — reference calculations from PostNet spreadsheet |
+
+---
+
+### Page Access Matrix (Party Mode: Sally)
+
+| Page | Path | Access Level | Role(s) |
+|------|------|-------------|---------|
+| Login | `/login` | PUBLIC | — |
+| Register | `/register` | PUBLIC (token required) | — |
+| Quick ROI | `/quick-roi` | PUBLIC | — (lead capture entry) |
+| Plans List | `/plans` | PROTECTED | franchisee |
+| Plan Workspace | `/plans/:planId` | PROTECTED | franchisee (owner), franchisor (read, with consent) |
+| Pipeline | `/pipeline` | PROTECTED | franchisor, katalyst_admin |
+| Brand Management | `/admin/brands` | PROTECTED | katalyst_admin |
+| Brand Config | `/admin/brands/:brandId` | PROTECTED | katalyst_admin |
+
+---
+
+### Integration Points
+
+**Internal Communication:**
+- Client → Server: HTTP REST via TanStack Query default fetcher
+- Client → Engine: Direct import of `shared/financial-engine.ts` for live preview
+- Server → Engine: Direct import for document generation and recalculation
+- Server → LLM: HTTP via `ai-service.ts` → external LLM API
+- Server → PDF: `document-service.ts` generates PDF server-side
+
+**External Integrations:**
+- **LLM API** (OpenAI or equivalent) — server-side only, via `ai-service.ts`
+- **Replit Object Storage** — for generated PDF documents, via `document-service.ts`
+- **PostgreSQL** (Neon-backed via Replit) — via Drizzle ORM through `storage.ts`
+
+**Data Flow — Plan Creation to Document Generation:**
+
+```
+User Input (any tier)
+  → client mutation (PATCH /api/plans/:id)
+  → server/routes/plans.ts validates with updatePlanSchema
+  → storage.updatePlan() persists to DB
+  → financial-service.recalculate() invokes engine
+  → engine returns EngineOutput (pure computation)
+  → storage.updatePlanOutputs() persists cached results
+  → client receives updated outputs via query invalidation
+  → user clicks "Generate PDF"
+  → POST /api/plans/:id/documents
+  → document-service.generate() snapshots inputs + renders PDF
+  → storage.createDocument() saves immutable record
+  → PDF stored in Object Storage
+```
+
+---
+
+### Development Workflow Integration
+
+**Development Server:**
+- `npm run dev` starts Express (port 5000) + Vite dev middleware
+- Vite handles HMR for client code
+- Express serves API routes at `/api/*`
+- Single port — no proxy configuration needed
+
+**Database Migrations:**
+- Drizzle Kit manages migrations via `npx drizzle-kit push`
+- Schema changes always start in `shared/schema.ts`
+- Never use raw SQL for schema changes
+
+**Build Process:**
+- `npm run build` → Vite builds client → `script/build.ts` compiles server
+- Output: `dist/` directory with compiled server + bundled client assets
+- `shared/` code is bundled into both server and client builds
+
+**Testing:**
+- End-to-end tests via Replit's Playwright runner (run_test tool)
+- No separate test directory — tests authored through testing tool
+- `data-testid` coverage mandatory for all interactive and financial display elements
+- Financial engine validated against `shared/brand-seed-data/postnet.ts` reference calculations
