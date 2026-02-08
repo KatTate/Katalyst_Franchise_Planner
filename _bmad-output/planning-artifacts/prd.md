@@ -1,5 +1,5 @@
 ---
-stepsCompleted: ['step-01-init', 'step-02-discovery', 'step-03-success', 'step-04-journeys', 'step-05-domain', 'step-06-innovation']
+stepsCompleted: ['step-01-init', 'step-02-discovery', 'step-03-success', 'step-04-journeys', 'step-05-domain', 'step-06-innovation', 'step-07-project-type']
 inputDocuments: ['_bmad-output/planning-artifacts/product-brief-workspace-2026-02-08.md', '_bmad-output/brainstorming/brainstorming-session-2026-02-08.md', 'attached_assets/katalyst-replit-agent-context-final_1770513125481.md', 'attached_assets/PostNet_-_Business_Plan_1770511701987.xlsx', 'attached_assets/Pasted-Persona-A-First-Time-Franchisee-Sam-The-New-Owner-Snaps_1770523428988.txt']
 workflowType: 'prd'
 briefCount: 1
@@ -474,3 +474,121 @@ This product has several genuinely innovative aspects — not technological brea
 - If adaptive tiers prove unnecessary (all users prefer one mode), the engine still works — tiers are a presentation layer, not a structural dependency
 - If throuple model doesn't deliver franchisor value, the tool still serves franchisees and Katalyst — franchisor dashboard is the lightest-weight component
 - If return engagement is low, the tool still produces value as a one-time planning tool — the "living plan" is additive, not foundational
+
+## B2B2C SaaS Platform Specific Requirements
+
+### Project-Type Overview
+
+This is a B2B2C Vertical SaaS platform with three distinct user tiers (franchisee, franchisor admin, Katalyst admin) serving the franchise location planning domain. It operates as a push-distribution model — franchisees don't discover the tool; it's provided to them by their franchisor through Katalyst.
+
+### Tenant Model
+
+**Single deployment with application-layer data partitioning by brand_id from day one.**
+
+Rationale: The Katalyst admin (Denise) manages multiple brands. Isolated instances per brand would require separate logins, separate dashboards, and make cross-brand views impossible without a fragile meta-dashboard or complex cross-instance API integration. With only 2-3 brands in year one, a single deployment with `brand_id` partitioning on every table is fewer moving parts — not more. The financial engine is stateless (pure calculation), document templates are parameterized, and the only thing that differs per brand is the parameter set and startup cost template — that's a row in a configuration table, not a separate deployment.
+
+**Within a brand, the data isolation model:**
+- Franchisees see only their own locations and financial data
+- Franchisor admin sees pipeline status for all franchisees; financial details only for franchisees who have opted in
+- Katalyst admin sees all data across all franchisees and all brands
+- Data boundaries enforced at API level, not just UI level
+
+### Permission Model (RBAC)
+
+Three roles with distinct access patterns:
+
+| Role | Data Access | Actions | UX |
+|------|------------|---------|-----|
+| **Franchisee** | Own locations and plans only. Can opt in to share financial details with franchisor | Create/edit plans, run scenarios, generate documents, manage document vault, update estimated vs. actual | Wizard-driven with adaptive tiers (Story/Normal/Expert) |
+| **Franchisor Admin** | Pipeline status for all brand franchisees (read-only). Financial details only for opted-in franchisees (read-only). Optional: acknowledge/review franchisee plans (status signal, not data edit) | View pipeline, view opted-in financials, acknowledge plans (if brand-configured) | Dashboard-only, primarily read-only |
+| **Katalyst Admin** | All data across all franchisees and all brands | Brand parameter setup, startup cost template creation, franchisee invitation/provisioning, model validation, cross-brand views | Admin dashboard with configuration tools |
+
+**Key RBAC principles:**
+- Franchisor admin CANNOT edit franchisee data — ever
+- Katalyst admin CAN view all data but should not edit franchisee plans (they guide through the account manager relationship)
+- Franchisees cannot see each other's data — no peer visibility
+- Opt-in sharing is controlled entirely by the franchisee and is reversible
+
+**Optional franchisor acknowledgment (brand-configurable):**
+- Franchisor admin can acknowledge/review a franchisee's development plan — this is a status signal, not data editing
+- Katalyst enables this per brand during setup if the franchisor wants it
+- Franchisee sees whether their plan has been reviewed
+- Serves the throuple model: franchisee feels seen, franchisor has lightweight engagement, Katalyst tracks plan engagement
+
+### Authentication & Invitation Model
+
+**Invitation-only — no self-registration.**
+
+Franchisee onboarding flow:
+1. Katalyst account manager creates a franchisee record in the admin dashboard
+2. System sends invitation email with a secure link
+3. Franchisee clicks link, sets password, completes onboarding questions (experience tier detection)
+4. Franchisee is now active with their recommended experience tier
+
+Franchisor admins are also invited by Katalyst. Only Katalyst super-admins provision other Katalyst admins.
+
+This simplifies authentication significantly — no spam accounts, no "which email did I use" problem, no email verification flows needed. The invitation IS the verification. It also reinforces FTC compliance: the tool is only available to post-agreement franchisees, and access is explicitly granted.
+
+### Experience Tier Persistence
+
+Experience tier (Story/Normal/Expert) is a **persistent user preference stored on the user profile**, not a one-time onboarding classification:
+- Onboarding questions set the initial recommendation
+- User can change their tier anytime from profile/settings
+- Tier persists across sessions — no re-answering onboarding questions on every login
+- Allows natural progression: Sam starts Story Mode, switches to Normal after his second location
+
+### Access / Subscription Model
+
+This is NOT a traditional SaaS subscription:
+- Katalyst charges the franchisor a platform fee for setup and access — B2B service engagement, not self-serve subscription
+- Franchisees receive access as part of their franchisor relationship — no individual billing
+- Experience tiers (Story/Normal/Expert) are UX preferences, not feature gates — all franchisees get the same capabilities
+- No subscription tiers, no premium features, no upsells
+
+### Consultant Booking Link
+
+The ever-present booking link is configurable at the **franchisee-to-account-manager level**, not just per brand:
+- Katalyst account managers each have their own Calendly (or similar) URL
+- When a Katalyst admin creates a franchisee invitation, they associate the franchisee with an account manager
+- The booking URL is stored on the franchisee record and displayed throughout the wizard
+- Katalyst admin can reassign account managers (and booking URLs) as needed
+- Fallback: brand-level default booking URL if no account manager is assigned
+
+### Integration List
+
+**MVP integrations (minimal):**
+- Consultant booking: Configurable external URL per account manager
+- PDF generation: Server-side document rendering for lender-grade output
+- Authentication: Invitation-based with secure link + password setup
+
+**Post-MVP integrations:**
+- Accounting software (QuickBooks, Xero) for actuals import
+- Franchise management systems (FranConnect) for pipeline sync
+- Construction project management tools
+
+### Implementation Considerations
+
+**Session Management:**
+- Multi-session wizard with persistent state — franchisees work on plans over weeks/months
+- Auto-save every few minutes for crash recovery
+- Explicit save points at wizard section boundaries
+- Session state must survive browser crashes, device changes, and network interruptions
+
+**Document Generation:**
+- Server-side PDF rendering for lender-grade documents
+- Documents must be visually professional — these go to banks
+- Multiple document types: pro forma P&L, cash flow projection, balance sheet, break-even analysis, lender summary package
+- Documents include FTC-compliant disclaimers
+
+**Financial Engine:**
+- Pure calculation engine — no external API dependencies for core math
+- 5-year monthly projection model (60 months)
+- Must be deterministic — same inputs always produce identical outputs
+- < 2 second recalculation for live-updating summary metrics
+- Accounting identity checks run on every calculation
+
+**Brand Onboarding:**
+- Katalyst admin configures brand in < 30 minutes
+- Parameter set: ~15-20 financial values + startup cost template + Item 7 ranges + brand identity
+- Validation step: run model against known-good spreadsheet outputs
+- Account manager assignment and booking URL configuration
