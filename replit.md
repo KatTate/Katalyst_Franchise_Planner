@@ -64,7 +64,10 @@ When the user's message matches a BMAD trigger phrase, agent name, or workflow c
     - Direction F (Hybrid Adaptive) selected as layout direction
     - Visual foundation: color system, typography, spacing density, chart specs
     - HTML mockups at `_bmad-output/planning-artifacts/ux-design-directions.html`
-- **Next:** Create Epics & Stories (CE) — in progress
+- **Next:** Sprint Planning (SP) — ready to plan implementation sprints
+  - Epics & Stories Document (`_bmad-output/planning-artifacts/epics.md`)
+    - 36 stories across 8 MVP epics, 58/58 FRs covered
+    - Party Mode reviewed: 10 improvements applied (seed admin, Quick ROI, dashboard reorder, 409 conflict handling, RBAC negative tests, Quick Entry split, metadata blur, PDF quality, accounting logging, mode persistence)
 
 ## Key Design Decisions
 
