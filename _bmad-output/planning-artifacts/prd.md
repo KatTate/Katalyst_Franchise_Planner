@@ -1,5 +1,5 @@
 ---
-stepsCompleted: ['step-01-init', 'step-02-discovery', 'step-03-success', 'step-04-journeys', 'step-05-domain', 'step-06-innovation', 'step-07-project-type', 'step-08-scoping']
+stepsCompleted: ['step-01-init', 'step-02-discovery', 'step-03-success', 'step-04-journeys', 'step-05-domain', 'step-06-innovation', 'step-07-project-type', 'step-08-scoping', 'step-09-functional']
 inputDocuments: ['_bmad-output/planning-artifacts/product-brief-workspace-2026-02-08.md', '_bmad-output/brainstorming/brainstorming-session-2026-02-08.md', 'attached_assets/katalyst-replit-agent-context-final_1770513125481.md', 'attached_assets/PostNet_-_Business_Plan_1770511701987.xlsx', 'attached_assets/Pasted-Persona-A-First-Time-Franchisee-Sam-The-New-Owner-Snaps_1770523428988.txt']
 workflowType: 'prd'
 briefCount: 1
@@ -696,3 +696,83 @@ If resources are critically constrained, cut in this order (each cut is independ
 
 **Throuple Risk: Platform value not demonstrated**
 - Mitigation: Franchisor dashboard included in MVP (even if minimal) specifically to prove the throuple model. If we ship only a franchisee tool, we've built a spreadsheet replacement, not a platform.
+
+## Functional Requirements
+
+This section defines THE CAPABILITY CONTRACT for the entire product. UX designers will only design what's listed here. Architects will only support what's listed here. Epic breakdown will only implement what's listed here. If a capability is missing from FRs, it will not exist in the final product.
+
+### 1. Financial Planning & Calculation
+
+- **FR1:** Franchisee can build a 5-year monthly financial projection based on their inputs and brand default parameters
+- **FR2:** Franchisee can view and edit every financial input value used in their projection
+- **FR3:** Franchisee can reset any individual edited value back to the brand default with a single action
+- **FR4:** Franchisee can see the FDD Item 7 range alongside the brand default and their own estimate for each startup cost line item
+- **FR5:** Franchisee can add, remove, and reorder custom startup cost line items beyond the brand template defaults
+- **FR6:** Franchisee can classify each custom startup cost line item as CapEx (depreciable) or non-CapEx (expensed)
+- **FR7:** Franchisee can view live-updating summary financial metrics (total investment, projected revenue, ROI, break-even) as they edit inputs
+- **FR8:** System validates accounting identities on every calculation (balance sheet balances, P&L-to-cash-flow consistency, depreciation-to-CapEx consistency, ROIC derivation)
+- **FR9:** System produces deterministic outputs — identical inputs always produce identical financial projections
+- **FR10:** System computes financial projections using a single parameterized model that accepts brand-specific seed values without requiring structural changes per brand
+
+### 2. Guided Planning Experience (Wizard)
+
+- **FR11:** Franchisee can complete a multi-section planning wizard that collects all inputs needed for a complete financial projection
+- **FR12:** Franchisee can experience the wizard in Story Mode (guided, educational, contextual explanations) or Normal Mode (standard form-based, less guidance)
+- **FR13:** Franchisee can switch between experience tiers (Story/Normal) at any time from their profile settings
+- **FR14:** System recommends an initial experience tier based on onboarding questions (franchise experience, financial literacy, planning experience)
+- **FR15:** Franchisee can navigate freely between completed wizard sections without losing progress
+- **FR16:** Franchisee can save their progress and resume from where they left off across sessions
+- **FR17:** System auto-saves franchisee progress periodically to prevent data loss from crashes or interruptions
+- **FR18:** System recovers franchisee progress to the last auto-save point when a session is interrupted unexpectedly (browser crash, network loss, device change)
+- **FR19:** Franchisee can see a consultant booking link throughout the planning experience to schedule guidance from their assigned account manager
+
+### 3. Advisory & Guardrails
+
+- **FR20:** System flags franchisee inputs that fall significantly outside the FDD Item 7 range or brand averages with advisory nudges (non-blocking)
+- **FR21:** System identifies when a franchisee's overall business case is weak (e.g., negative ROI, break-even beyond 5 years) and provides specific guidance on which inputs to reconsider
+- **FR22:** System suggests consultant booking when flagging weak business cases or outlier inputs
+- **FR23:** All advisory nudges are informational — the system never blocks a franchisee from proceeding with their chosen values
+
+### 4. Document Generation & Management
+
+- **FR24:** Franchisee can generate a lender-grade PDF business plan package including pro forma P&L, cash flow projection, balance sheet, break-even analysis, and summary
+- **FR25:** Generated documents include FTC-compliant disclaimers stating that projections are franchisee-created, not franchisor representations
+- **FR26:** Franchisee can view a list of all previously generated documents with timestamps and plan version metadata
+- **FR27:** Franchisee can download any previously generated document from their document list
+
+### 5. User Access & Authentication
+
+- **FR28:** Katalyst admin can create franchisee invitations that send a secure link for account setup
+- **FR29:** Invited franchisee can complete a guided onboarding experience that includes account setup (password creation) and experience assessment questions that inform their initial tier recommendation
+- **FR30:** Katalyst admin can create franchisor admin invitations for a specific brand
+- **FR31:** Users can authenticate with email and password to access the system
+- **FR32:** System enforces role-based data isolation — franchisees see only their own data, franchisor admins see only their brand's data, Katalyst admins see all data
+
+### 6. Data Sharing & Privacy
+
+- **FR33:** Franchisee can view a clear description of exactly what data will be shared with the franchisor before making an opt-in decision
+- **FR34:** Franchisee can opt in to share their financial projection details with their franchisor admin
+- **FR35:** Franchisee can revoke data sharing opt-in at any time
+- **FR36:** Franchisor admin sees franchisee pipeline status (planning stage, target market, timeline) by default without opt-in
+- **FR37:** Franchisor admin sees franchisee financial details only when the franchisee has explicitly opted in
+- **FR38:** Data sharing boundaries are enforced at the API level, not just the UI level
+
+### 7. Brand Configuration & Administration
+
+- **FR39:** Katalyst admin can create and configure a new franchise brand with its financial parameter set (~15-20 seed values)
+- **FR40:** Katalyst admin can define the startup cost template for a brand, including default line items with CapEx/non-CapEx classification and Item 7 ranges
+- **FR41:** Katalyst admin can validate a brand configuration by running the financial model against known-good spreadsheet outputs
+- **FR42:** Katalyst admin can assign an account manager (with their booking URL) to each franchisee
+- **FR43:** Katalyst admin can reassign account managers for existing franchisees
+- **FR44:** Katalyst admin can configure brand-level settings (brand identity/logo, colors, default booking URL, franchisor acknowledgment feature on/off)
+
+### 8. Pipeline Visibility & Operational Intelligence
+
+- **FR45:** Franchisor admin can view a dashboard showing all their brand's franchisees with planning status, stage, target market, and timeline
+- **FR46:** Katalyst admin can view a cross-brand dashboard showing franchisee progress across all brands
+- **FR47:** Katalyst admin can view individual franchisee plan details for operational support
+- **FR48:** Franchisor admin can acknowledge/review a franchisee's development plan as a status signal (if the brand has this feature enabled)
+
+### 9. Brand Identity & Experience
+
+- **FR49:** Franchisee sees their franchise brand's identity (name, logo, colors) throughout the planning experience
