@@ -52,22 +52,29 @@ When the user's message matches a BMAD trigger phrase, agent name, or workflow c
 
 ## Project State
 
-- **Current Phase:** Architecture (BMAD Solutioning Phase)
+- **Current Phase:** Solutioning → Epics & Stories (BMAD Solutioning Phase)
 - **Project Type:** greenfield (B2B2C Vertical SaaS — Franchise Location Planning)
 - **Completed Artifacts:**
   - Product Brief (`_bmad-output/planning-artifacts/product-brief-workspace-2026-02-08.md`)
   - PRD — 58 FRs, 28 NFRs (`_bmad-output/planning-artifacts/prd.md`)
   - PRD Validation Report (`_bmad-output/planning-artifacts/prd-validation-report.md`)
-  - Architecture Document — Steps 1-6 complete (`_bmad-output/planning-artifacts/architecture.md`)
-    - Step 1: Initialization
-    - Step 2: Project Context Analysis
-    - Step 3: Starter Template Evaluation (Replit full-stack JS template confirmed)
-    - Step 4: Core Architectural Decisions (15 decisions documented)
-    - Step 5: Implementation Patterns (25 conflict points, Party Mode review)
-    - Step 6: Project Structure & Boundaries (complete file tree, Party Mode review)
-    - Step 7: Architecture Validation (coherence, coverage, readiness — all PASS, Party Mode review)
-    - Step 8: Completion (workflow complete)
-- **Next:** Create Epics & Stories (CE) — break architecture into implementable work units
+  - Architecture Document — complete (`_bmad-output/planning-artifacts/architecture.md`)
+    - Steps 1-8 all complete (initialization, context analysis, template evaluation, 15 core decisions, 25 implementation patterns, project structure, validation PASS, completion)
+  - UX Design Specification — Steps 1-9 complete (`_bmad-output/planning-artifacts/ux-design-specification.md`)
+    - Direction F (Hybrid Adaptive) selected as layout direction
+    - Visual foundation: color system, typography, spacing density, chart specs
+    - HTML mockups at `_bmad-output/planning-artifacts/ux-design-directions.html`
+- **Next:** Create Epics & Stories (CE) — in progress
+
+## Key Design Decisions
+
+- **User-facing mode labels:** Planning Assistant / Forms / Quick Entry (NOT Story/Normal/Expert)
+  - Labels describe INPUT METHOD, not skill level — prevents gatekeeping
+  - Internal dev references may still use Story/Normal/Expert for clarity
+  - All three options ALWAYS visible to ALL users — onboarding suggests but never restricts
+- **Layout:** Direction F (Hybrid Adaptive) — sidebar collapses in Planning Assistant for immersion, restores in Forms/Quick Entry for power navigation
+- **"Gurple" (Mystical #A9A2AA):** Signature advisory color for ROI Guardian, AI confidence, info panels (never errors)
+- **White-label approach:** Branded shell with prominent Katalyst identity — brands apply accent colors/logos, Katalyst owns design system
 
 ## BMad File Structure
 
@@ -114,4 +121,8 @@ _bmad-output/             # Generated artifacts go here
 - 2026-02-08: Architecture Step 5 complete — 25 implementation pattern conflict points resolved via Party Mode (naming, numbers, structure, format, communication patterns)
 - 2026-02-08: Architecture Step 6 complete — complete project file tree with [T]/[C] legend, route modules pattern, 3 layout components, error boundary, brand seed data, page access matrix, dynamic brand theming
 - 2026-02-08: Architecture Step 7 complete — validation PASS on coherence, requirements coverage (58 FRs, 28 NFRs), and implementation readiness. Party Mode additions: 409 conflict handling for auto-save, split-screen responsive stacking, shippable unit boundaries, cut order elevated to handoff
+- 2026-02-08: Architecture Step 8 complete — workflow finished
+- 2026-02-08: UX Design Specification Steps 1-9 complete — Direction F (Hybrid Adaptive) selected, visual foundation documented (color system, typography, spacing, charts), HTML mockups created
+- 2026-02-08: Party Mode naming decision — user-facing labels changed from Story/Normal/Expert to Planning Assistant/Forms/Quick Entry. Labels describe input method, not skill level. All three always visible to all users.
+- 2026-02-08: UX spec and HTML mockups updated with new naming throughout
 <!-- BMAD-METHOD-END -->
