@@ -52,9 +52,18 @@ When the user's message matches a BMAD trigger phrase, agent name, or workflow c
 
 ## Project State
 
-- **Current Phase:** not started
-- **Project Type:** greenfield
-- **Completed Artifacts:** none yet
+- **Current Phase:** Architecture (BMAD Solutioning Phase)
+- **Project Type:** greenfield (B2B2C Vertical SaaS — Franchise Location Planning)
+- **Completed Artifacts:**
+  - Product Brief (`_bmad-output/planning-artifacts/product-brief-workspace-2026-02-08.md`)
+  - PRD — 58 FRs, 28 NFRs (`_bmad-output/planning-artifacts/prd.md`)
+  - PRD Validation Report (`_bmad-output/planning-artifacts/prd-validation-report.md`)
+  - Architecture Document — Steps 1-4 complete (`_bmad-output/planning-artifacts/architecture.md`)
+    - Step 1: Initialization
+    - Step 2: Project Context Analysis
+    - Step 3: Starter Template Evaluation (Replit full-stack JS template confirmed)
+    - Step 4: Core Architectural Decisions (15 decisions documented)
+- **Next:** Architecture Steps 5-8 (Implementation Patterns, Project Structure, Validation, Completion)
 
 ## BMad File Structure
 
@@ -94,4 +103,8 @@ _bmad-output/             # Generated artifacts go here
 
 - 2026-02-08: Installed BMad Method v6.0.0-Beta.7 (brownfield into existing Replit template)
 - 2026-02-08: Attached PostNet Business Plan Excel file for reference data
+- 2026-02-08: Product Brief completed
+- 2026-02-08: PRD completed (49 FRs, 25 NFRs) and validated (4/5 quality)
+- 2026-02-08: AI Integration Amendment — Story Mode reimagined as AI Planning Advisor, Expert Mode added to MVP, Advisory Board deferred to Phase 2. PRD now 58 FRs, 28 NFRs.
+- 2026-02-08: Architecture Steps 1-4 complete — project context analysis, starter template evaluation, and 15 core architectural decisions documented (data model, RBAC, financial engine, AI integration, component architecture, API design)
 <!-- BMAD-METHOD-END -->
