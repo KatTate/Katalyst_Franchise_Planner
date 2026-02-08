@@ -471,3 +471,135 @@ The following improvements were incorporated via Party Mode review (Architect Wi
 | 3 | Wizard anti-pattern refined: forced-linear locking is the problem, not sequential guidance | Allows helpful sequencing in Normal Mode while preventing Maria's frustration |
 | 4 | Tooltip-overload anti-pattern added; metadata-on-demand (focus/hover, not at-rest) prescribed | Solves per-field metadata density without visual clutter — critical for 50+ financial input fields |
 | 5 | Linear's Cmd+K adaptation replaced with filtering/portfolio management and quick plan-switch shortcut | More accurate pattern mapping for Maria's multi-plan workflow |
+
+## Design System Foundation
+
+### Design System Choice
+
+**Approach: Themeable Component System — Tailwind CSS + shadcn/ui with Katalyst Design Token Layer**
+
+The Katalyst Growth Planner uses a **three-layer design system architecture:**
+
+1. **Foundation layer: Tailwind CSS** — Utility-first CSS framework providing the spacing scale, responsive breakpoints, and layout primitives. Tailwind's design token system (via CSS custom properties in `index.css`) is the mechanism for white-label brand theming.
+
+2. **Component layer: shadcn/ui** — Headless, composable React components built on Radix UI primitives. These provide accessible, unstyled component logic (dialogs, dropdowns, tabs, forms, tooltips) that the Katalyst design system styles. Components are copied into the project (not imported from a package), giving full control over styling and behavior.
+
+3. **Brand layer: Katalyst Design Tokens** — A custom CSS custom property system that defines the Katalyst visual identity (colors, typography, spacing, border radii, shadows) and supports per-brand accent color overrides. This layer sits on top of Tailwind and shadcn/ui, providing the "branded shell" theming capability.
+
+### Rationale for Selection
+
+| Factor | Decision Driver |
+|--------|----------------|
+| **White-label requirement** | Tailwind's CSS custom property system enables dynamic brand theming without build-time configuration. A brand's accent color swaps via overriding `--primary` at runtime without rebuilding the application. |
+| **Architecture alignment** | The architecture document (Step 3 of architecture workflow) already specifies React + Tailwind + shadcn/ui. The design system choice must align with the technical foundation. |
+| **Component accessibility** | shadcn/ui components are built on Radix UI, which provides WCAG 2.1 AA accessibility out of the box — keyboard navigation, focus management, screen reader support. This is non-negotiable for a financial planning tool. |
+| **Three-mode interaction density** | Story Mode needs conversational UI components (chat bubbles, streaming text). Normal Mode needs form-heavy layouts (input groups, sections, validation). Expert Mode needs data-dense grids (tabular input, inline editing). shadcn/ui provides the form and dialog primitives; custom components extend for chat and grid. |
+| **Design control** | shadcn/ui copies components into the project rather than importing them from a package. This means Katalyst can modify any component's internals — critical for implementing the metadata-on-demand pattern, the field source attribution badges, and the auto-save status indicator. |
+| **Team velocity** | Tailwind + shadcn/ui is the most productive React component approach for a solo developer or small team. No design file handoff required; components are styled inline with utility classes. |
+| **Existing template** | The Replit full-stack JS template already includes Tailwind CSS and shadcn/ui, eliminating setup time. |
+
+### Implementation Approach
+
+**Brand Theming Mechanism: Option A (Override `--primary`) with Katalyst Escape Hatch**
+
+Brand theming works by overriding `--primary` (and its foreground counterpart) at runtime when a brand context loads. All existing shadcn/ui components reference `--primary` and automatically adopt the brand's accent color with zero component modifications. This is the simplest, most maintainable approach.
+
+**Single escape hatch:** A `--katalyst-brand` token is defined that always resolves to Katalyst Green regardless of brand context. This is used exclusively for the "Powered by Katalyst" badge in the sidebar footer and any Katalyst-identity elements that must NOT shift with brand theming. Everything else flows through `--primary`.
+
+**Design Token Architecture:**
+
+```
+CSS Custom Properties (index.css)
+├── Katalyst Foundation Tokens
+│   ├── --background, --foreground (warm neutrals)
+│   ├── --card, --card-foreground
+│   ├── --primary, --primary-foreground (Katalyst Green default; overridden per brand)
+│   ├── --katalyst-brand (always Katalyst Green — escape hatch for Powered-by badge)
+│   ├── --secondary, --accent, --muted
+│   ├── --destructive (reserved for actual errors only)
+│   ├── --info (the "Gurple" — advisory/educational content)
+│   └── --radius (border radius scale)
+├── Typography Tokens
+│   ├── --font-heading: 'Montserrat' (Katalyst constant)
+│   ├── --font-body: 'Roboto' (Katalyst constant)
+│   └── --font-mono: 'Roboto Mono' (financial figures)
+├── Financial Formatting Tokens (design system constants)
+│   ├── Currency: leading $, no space, 2 decimal places
+│   ├── Percentages: 1 decimal place, trailing %
+│   ├── Months/integers: 0 decimal places
+│   ├── Thousands: comma separators (always)
+│   └── Negative numbers: accounting-style parentheses, NOT minus signs
+│       e.g., ($4,200) not -$4,200
+└── Dark Mode Tokens (.dark class)
+    └── All foundation tokens with dark-mode values
+    └── NOTE: Dark mode DEFERRED to post-MVP (see Customization Strategy)
+```
+
+**Brand theming is applied at runtime** by setting `--primary` and `--primary-foreground` on the root element when a brand context is loaded. The component library remains unchanged — only the token values shift. This means:
+- A PostNet deployment overrides `--primary` to PostNet blue
+- A Tint World deployment overrides `--primary` to Tint World red
+- The Katalyst design system (component shapes, typography, spacing, interaction patterns, the "Gurple" info pattern) remains constant
+- The "Powered by Katalyst" badge always uses `--katalyst-brand` (Katalyst Green)
+
+**Component Strategy:**
+
+| Component Category | Source | Customization Level | Notes |
+|-------------------|--------|-------------------|-------|
+| **Layout primitives** (sidebar, header, panels) | shadcn/ui sidebar + custom | Heavy | Brand logo placement, collapsible behavior, mode switcher |
+| **Form components** (inputs, selects, checkboxes) | shadcn/ui form | Moderate | Metadata-on-demand overlay on focus, source attribution badges |
+| **`<FinancialValue>` primitive** | Custom component | Full custom | **Design system primitive** — handles all number formatting (currency decimals, thousands separators, accounting-style negatives, percentage formatting). All financial displays use this component; individual components never format numbers directly. |
+| **Financial display** (summary cards, charts, sparklines) | Custom components using `<FinancialValue>` | Full custom | Mercury-inspired card layout, drill-down behavior, scenario comparison |
+| **Chat/conversation** (Story Mode) | Custom components | Full custom | AI message bubbles, streaming text, field-population animations |
+| **Data grid** (Expert Mode) | **Purpose-built component on TanStack Table** | Full custom | This is the highest-risk, highest-complexity custom component. TanStack Table (headless, React-native) provides virtualization, sorting, and column management. Katalyst owns cell rendering, keyboard navigation (Linear-speed tab-through), inline editing with type-aware inputs, optimistic recalculation, row-level source attribution, and conditional "Gurple" formatting for out-of-range values. NOT an "adapted table" — a purpose-built financial grid. |
+| **Dialogs, tooltips, dropdowns** | shadcn/ui (Radix primitives) | Light | Styled to Katalyst tokens, no structural changes |
+| **Navigation** (mode switcher, breadcrumbs) | shadcn/ui tabs/segmented | Moderate | Notion-inspired view-switching feel |
+
+### Customization Strategy
+
+**What Katalyst owns (constant across all brands):**
+
+- **Typography:** Montserrat for headings, Roboto for body, Roboto Mono for financial figures. These never change per brand — they ARE the Katalyst identity.
+- **Component geometry:** Rounded corners (`rounded-md` on controls, consistent border width), consistent padding scale. The physical "shape" of every component is Katalyst.
+- **Interaction patterns:** hover-elevate / active-elevate-2 behavior, metadata-on-demand on focus, optimistic updates, auto-save status transitions. How the product *behaves* is Katalyst.
+- **Color system structure:** Warm neutrals for backgrounds, the "Gurple" (info-purple) for advisory content, reserved red for actual errors, green for success states. The *roles* of colors are Katalyst.
+- **Financial formatting:** The `<FinancialValue>` primitive enforces consistent number presentation — accounting-style negatives, comma separators, appropriate decimal places — across all modes and components.
+- **Spacing scale:** Consistent small/medium/large spacing values across all components and layouts.
+- **Data visualization style:** Chart types, annotation patterns, sparkline rendering, scenario comparison card layout.
+
+**What brands own (swapped per deployment):**
+
+- **Primary accent color:** The `--primary` token is overridden per brand, affecting buttons, links, active states, progress indicators, and the accent dot in stacked-mode tab indicators.
+- **Logo:** Brand logo appears in the sidebar header and document outputs. Katalyst logo appears in the sidebar footer ("Powered by Katalyst") and the login/about areas.
+- **Contextual copy:** "PostNet benchmarks," "PostNet average AUV range," brand-specific startup cost categories from the brand seed data.
+- **Startup cost template:** The categories and default values in the financial model come from the brand's seed data, not from Katalyst.
+
+**Dark Mode: Deferred to Post-MVP**
+
+The token architecture fully supports dark mode via the `.dark` class structure — dark-mode values can be added to every foundation token without refactoring. However, dark mode implementation is **deferred to post-MVP** for the following reasons:
+
+- Financial planning tools are primarily used in well-lit environments (offices, bank meetings, kitchen tables). Dark mode is a preference, not a requirement.
+- Implementing dark mode doubles the visual testing matrix (every screen, every mode, light AND dark).
+- The token architecture means adding dark mode later requires only filling in `.dark` token values and testing — zero component changes, zero layout changes.
+- Maria (the most likely dark-mode requester for long sessions) is a post-MVP optimization target.
+
+**The Recognition Test (Testable Checklist):**
+
+The recognition test passes when the **only** visual differences between two brand deployments are:
+
+1. The accent color of interactive elements (buttons, links, active states, progress indicators)
+2. The logo in the sidebar header
+3. Brand-specific copy (brand name, benchmark references, startup cost categories)
+
+Everything else — typography, component shapes, spacing, interaction behavior, layout structure, the "Gurple" info pattern, the "Powered by Katalyst" badge, data visualization style — must be **pixel-identical** across brand deployments. This is a verifiable checklist, not an aspiration.
+
+### Party Mode Review Notes
+
+The following improvements were incorporated via Party Mode review (Architect Winston, UX Sally, PM John, BA Mary, SM Bob):
+
+| # | Improvement | Rationale |
+|---|------------|-----------|
+| 1 | Brand theming uses Option A (override `--primary` per brand) with single `--katalyst-brand` escape hatch for Powered-by badge | Simplifies implementation; every shadcn/ui component works without modification |
+| 2 | `<FinancialValue>` design system primitive added with number formatting tokens (decimals, separators, accounting-style negatives, currency) | Ensures consistent financial display; no component ever formats numbers independently |
+| 3 | Expert Mode grid explicitly specified as purpose-built on TanStack Table; highest-risk component flagged | De-risks the most complex custom component with a proven headless foundation |
+| 4 | Dark mode deferred to post-MVP; token architecture supports it with zero refactoring cost later | Eliminates testing matrix doubling; ships faster without architectural compromise |
+| 5 | Recognition test made concrete: only accent color, logo, and brand copy differ; everything else pixel-identical | Converts aspirational principle into verifiable checklist |
