@@ -1,5 +1,5 @@
 ---
-stepsCompleted: [1, 2, 3, 4]
+stepsCompleted: [1, 2, 3, 4, 5]
 inputDocuments:
   - _bmad-output/planning-artifacts/prd.md
   - _bmad-output/planning-artifacts/prd-validation-report.md
@@ -871,4 +871,381 @@ Brand Parameters ←── (seeds) ──→ New plan defaults
                  ←── (seeds) ──→ Startup cost templates
                  ←── (context for) ──→ AI system prompt
                  ←── (context for) ──→ Item 7 range display
+```
+
+---
+
+## Implementation Patterns & Consistency Rules
+
+_Reviewed via Party Mode with Dev (Amelia), QA (Quinn), UX (Sally), and PM (John). All team recommendations incorporated._
+
+### Pattern Categories Defined
+
+**25 critical conflict points** identified across 5 categories where AI agents could make different choices. Patterns below ensure consistent, compatible code.
+
+---
+
+### Naming Patterns
+
+**Database Naming (Drizzle schema in `shared/schema.ts`):**
+- Tables: lowercase plural — `users`, `plans`, `brands`, `data_sharing_consents`
+- Columns: snake_case — `user_id`, `brand_id`, `pipeline_stage`
+- Foreign keys: `{referenced_table_singular}_id` — `user_id`, `brand_id`, `plan_id`
+- JSONB columns: snake_case at column level (`financial_inputs`), **camelCase inside JSON content** (consumed by TypeScript)
+- Indexes: `idx_{table}_{column}` — `idx_plans_user_id`, `idx_plans_brand_id`
+
+**JSONB Query Example (critical — agents must follow this):**
+```typescript
+// CORRECT: camelCase keys inside JSONB path expressions
+db.query.plans.findMany({
+  where: sql`financial_inputs->'monthlyRent'->>'currentValue' > '5000'`
+})
+
+// WRONG: snake_case inside JSONB
+db.query.plans.findMany({
+  where: sql`financial_inputs->'monthly_rent'->>'current_value' > '5000'`
+})
+```
+
+**API Naming:**
+- Endpoints: lowercase plural nouns, kebab-case — `/api/plans`, `/api/startup-costs`, `/api/quick-roi`
+- Route params: `:paramName` format (Express convention) — `/api/plans/:planId/startup-costs`
+- Nested resources: parent ID named explicitly — `:planId`, `:docId`, `:brandId`
+- Query params: camelCase — `?brandId=`, `?pipelineStage=`
+- Headers: standard HTTP headers only — no custom `X-` headers in MVP
+
+**Code Naming:**
+- Components: PascalCase — `PlanDashboard`, `StartupCostEditor`, `DetailPanel`
+- Files: kebab-case — `plan-dashboard.tsx`, `startup-cost-editor.tsx`, `not-found.tsx` (matches template convention)
+- Functions/variables: camelCase — `calculateProjections`, `financialInputs`, `handleSave`
+- Types/interfaces: PascalCase — `EngineInput`, `FinancialInputs`, `InsertPlan`
+- Constants: SCREAMING_SNAKE_CASE only for true constants — `MAX_PROJECTION_MONTHS = 60`, `AUTO_SAVE_DEBOUNCE_MS = 2000`
+- Hooks: `use` prefix + camelCase — `useFinancialEngine`, `usePlanAutoSave`, `useCurrentUser`
+
+---
+
+### Number Format Rules
+
+**Critical distinction — currency vs. rates (Party Mode: Amelia's recommendation):**
+
+| Type | Storage Format | Example | Display Format |
+|------|---------------|---------|----------------|
+| Currency amounts | Cents as integers | `15000` = $150.00 | `$150.00` |
+| Percentages/rates | Decimal form | `0.065` = 6.5% | `6.5%` |
+| Counts/quantities | Plain integers | `60` = 60 months | `60` |
+| Ratios/multipliers | Decimal form | `1.03` = 3% growth | `3%` or `1.03x` |
+
+**Rule:** Currency formatting happens exclusively in the UI layer. The financial engine, API, and storage all use raw numeric values (cents for currency, decimals for rates). Never format numbers for display in server code or the engine.
+
+---
+
+### Structure Patterns
+
+**Project Organization:**
+
+```
+shared/
+  schema.ts                ← All Drizzle tables + Zod insert schemas + types
+  financial-engine.ts      ← Pure computation module + its own interfaces (EngineInput, EngineOutput)
+
+server/
+  routes.ts                ← All API route registration (thin handlers)
+  storage.ts               ← IStorage interface + DatabaseStorage implementation
+  middleware/
+    auth.ts                ← Session auth + requireRole() middleware
+    rbac.ts                ← Query scoping (scopeToUser) + response projection (projectForRole)
+  services/
+    ai-service.ts          ← LLM proxy + conversation management + NL extraction
+    document-service.ts    ← PDF generation + immutable storage
+    financial-service.ts   ← Orchestrates engine invocation + saves results to storage
+
+client/src/
+  pages/                   ← One file per route (kebab-case filenames)
+  components/
+    ui/                    ← Shadcn primitives (NEVER modify these)
+    shared/                ← Cross-tier components (detail panel, financial dashboard, ROI card)
+    planning/              ← Plan-specific components (story mode chat, normal mode forms, expert grid)
+    admin/                 ← Brand admin components
+    pipeline/              ← Franchisor/Katalyst dashboard components
+  hooks/                   ← Custom hooks (useFinancialEngine, usePlanAutoSave, useCurrentUser)
+  lib/                     ← Utilities (currency formatting, date formatting, validation helpers)
+```
+
+**Rules:**
+- No `shared/types.ts` — engine interfaces live in `shared/financial-engine.ts` (co-located, Party Mode: Amelia)
+- One Drizzle schema file (`shared/schema.ts`) — never split across files
+- `components/shared/` for components used across multiple experience tiers (Party Mode: Sally)
+- Server services are the only place business logic lives — routes stay thin
+- `components/ui/` is Shadcn-managed — never manually edit files in this directory
+
+---
+
+### Schema Patterns
+
+**Insert and Update schemas (Party Mode: Quinn's recommendation):**
+
+```typescript
+// shared/schema.ts — pattern for every entity
+
+// 1. Table definition
+export const plans = pgTable("plans", { ... });
+
+// 2. Insert schema (for POST — omits auto-generated fields)
+export const insertPlanSchema = createInsertSchema(plans).omit({ id: true, lastAutoSave: true });
+export type InsertPlan = z.infer<typeof insertPlanSchema>;
+
+// 3. Select type (for GET responses)
+export type Plan = typeof plans.$inferSelect;
+
+// 4. Update schema (for PATCH — all fields optional)
+export const updatePlanSchema = insertPlanSchema.partial();
+export type UpdatePlan = z.infer<typeof updatePlanSchema>;
+```
+
+**Rule:** Every entity with a PATCH endpoint must have an explicit `.partial()` update schema. Auto-save uses the update schema, not the insert schema.
+
+---
+
+### Format Patterns
+
+**API Response Format (consistent wrapper for every endpoint):**
+
+```typescript
+// Success — single entity
+{ data: T }
+
+// Success — list
+{ data: T[], total: number }
+
+// Error — general
+{ error: { message: string, code: string } }
+
+// Error — validation
+{ error: { message: string, code: "VALIDATION_ERROR", details: Record<string, string> } }
+```
+
+**HTTP Status Codes:**
+- `200` — success (GET, PATCH, PUT)
+- `201` — created (POST)
+- `400` — validation error (bad request body)
+- `401` — unauthenticated (no session)
+- `403` — forbidden (wrong role for this resource)
+- `404` — not found
+- `500` — internal server error
+
+**Date/Time:** ISO 8601 strings in all JSON responses — `"2026-02-08T14:30:00Z"`. Never Unix timestamps.
+
+**JSONB Per-Field Metadata (the core data pattern):**
+
+```typescript
+interface FieldMetadata {
+  currentValue: number;
+  source: 'brand_default' | 'manual' | 'ai_populated';
+  brandDefault: number | null;
+  item7Range: { min: number; max: number } | null;
+}
+```
+
+Every financial input field in the `financial_inputs` JSONB column follows this structure. The `source` field enables attribution display and reset-to-default functionality.
+
+---
+
+### data-testid Naming Convention
+
+**Interactive elements:** `{action}-{target}` — `button-save-plan`, `input-monthly-rent`, `link-dashboard`
+
+**Display elements:** `{type}-{content}` — `text-plan-name`, `status-auto-save`, `badge-pipeline-stage`
+
+**Dynamic/repeated elements:** `{type}-{description}-{id}` — `card-plan-${planId}`, `row-cost-${index}`
+
+**Financial data values (Party Mode: Quinn's recommendation):**
+`value-{metric}-{period}` — `value-revenue-month-3`, `value-roi-annual-2`, `value-break-even-month`
+
+This convention enables Playwright to verify specific financial projections by metric and period.
+
+---
+
+### Communication Patterns
+
+**State Management:**
+- TanStack Query is the **only** state manager for server data — no Redux, no Zustand, no Context for fetched data
+- Query keys are hierarchical arrays: `['plans', planId]`, `['plans', planId, 'startup-costs']`
+- Mutations always invalidate parent query keys after success
+- Optimistic updates only for auto-save — all other mutations wait for server confirmation
+- Local UI state (modal open/closed, selected tab) uses React `useState` — this is fine, it's not server data
+
+**Auto-Save Pattern (refined with Party Mode feedback from Quinn and Sally):**
+- Debounced at 2-second idle after last keystroke — not interval-based
+- Uses `PATCH /api/plans/:planId` with partial financial inputs (update schema)
+- **Save indicator in plan header** (not app header) — shows "Saved" / "Saving..." / "Unsaved changes" (Party Mode: Sally)
+- Conflict detection: server returns `lastAutoSave` timestamp, client compares before write
+- **In-flight save handling** (Party Mode: Quinn):
+  - Navigation blocked with "Unsaved changes" prompt if save is in-flight
+  - Experience tier switch completes current save before switching
+  - If save fails, show inline retry — never silently drop changes
+
+---
+
+### Process Patterns
+
+**Error Handling:**
+
+Server:
+- Try/catch at route handler level
+- Services throw typed errors: `ValidationError`, `NotFoundError`, `ForbiddenError`
+- Global Express error handler maps error types to HTTP status codes
+- Never expose stack traces or internal details to client
+
+Client:
+- TanStack Query `onError` callbacks + toast notifications via `useToast()`
+- Never silent failures — every failed request produces user-visible feedback
+
+Financial Engine:
+- Returns `identityChecks[]` with pass/fail — **never throws**
+- Caller decides how to handle failed identity checks (display warning, block document generation, etc.)
+
+**Error Message Pattern — 3-part actionable format (Party Mode: John):**
+
+Every user-facing error message for data operations must communicate:
+1. **What failed** — "Your latest changes haven't been saved"
+2. **Whether data was lost** — "Your previous work is safe"
+3. **What to do** — "Please check your connection and try again"
+
+```
+// GOOD: Actionable, reassuring
+"Your latest changes haven't been saved yet. Your previous work is safe. Please check your connection and try again."
+
+// BAD: Generic, anxiety-inducing
+"Unable to save your plan. Please try again."
+
+// BAD: Technical, unhelpful
+"Error: ECONNREFUSED 5432"
+```
+
+**Loading State Pattern (refined with Party Mode feedback from Sally):**
+- TanStack Query's `.isLoading` / `.isPending` for all async states
+- Full-page skeleton for initial page loads (first visit to a plan)
+- **Split-screen panels have independent loading states** (Party Mode: Sally):
+  - Chat panel can stream AI response while dashboard loads engine results
+  - Dashboard can show skeleton while startup costs are still fetching
+  - Never block the entire split-screen for a single panel's load
+- Inline spinners for section updates within a panel
+- Buttons disabled + spinner during mutations
+- Never block the entire UI for a background operation
+
+**Authentication Flow:**
+- Session-based (express-session + connect-pg-simple)
+- Login: `POST /api/auth/login` → sets session cookie → redirect to plans list
+- Protected routes: `requireRole()` middleware checks session, returns 401/403
+- Frontend: `useQuery({ queryKey: ['/api/auth/me'] })` for current user — redirects to login on 401
+- Invitation flow: Token in URL → registration form → `POST /api/auth/register` with token → auto-login
+
+**Validation Pattern:**
+- Single source of truth: Zod schemas in `shared/schema.ts`
+- Client: `zodResolver` in react-hook-form validates before submit
+- Server: Same Zod schema validates request body in route handler
+- Never validate only on one side — both must validate
+
+**Consent Endpoint — human-readable description (Party Mode: John):**
+- `GET /api/plans/:planId/consent` returns:
+```typescript
+{
+  data: {
+    currentStatus: 'granted' | 'revoked' | 'not_set',
+    grantedAt: string | null,
+    description: "Sharing your plan with [Brand Name] allows them to see your financial projections, startup cost breakdown, and planning timeline. They will NOT see your personal notes or AI conversation history.",
+    sharedFields: ['financial_inputs', 'financial_outputs', 'startup_costs', 'documents', 'pipeline_fields'],
+    neverSharedFields: ['ai_conversations', 'personal_notes']
+  }
+}
+```
+This satisfies FR33-FR38 and FTC compliance — the user sees exactly what will be shared before granting.
+
+---
+
+### Financial Engine Purity Enforcement (Party Mode: Quinn + Amelia)
+
+```typescript
+// shared/financial-engine.ts
+//
+// @engine-pure: This module must have zero side effects.
+// No imports from server/, client/, or any I/O module.
+// All functions must be deterministic: same inputs → same outputs.
+// Verification: grep for import statements — only shared/ and standard lib allowed.
+```
+
+**Enforcement rules:**
+- `financial-engine.ts` may only import from: other `shared/` files, standard TypeScript/JavaScript built-ins
+- Forbidden imports: anything from `server/`, `client/`, `node_modules` (except pure math/utility libraries with zero I/O)
+- Every function is a pure function: no `Date.now()`, no `Math.random()`, no `console.log`
+- If a timestamp is needed for calculation context, it must be passed in as an input parameter
+
+---
+
+### Enforcement Guidelines
+
+**All AI agents MUST:**
+1. Import types from `@shared/schema.ts` — never redeclare types locally
+2. Use `IStorage` methods for all database operations — never raw SQL in route handlers
+3. Follow the API response wrapper format `{ data }` / `{ error }` for every endpoint
+4. Use TanStack Query for all server state — no local state for fetched data
+5. Apply `data-testid` attributes to all interactive elements and financial display values
+6. Store currency as cents (integers), rates as decimals — format only at display time
+7. Keep the financial engine pure — no imports from `server/` or `client/`, no side effects
+8. Create both insert and update (`.partial()`) schemas for entities with PATCH endpoints
+9. Use 3-part actionable error messages for all data operation failures
+10. Place cross-tier components in `components/shared/` — not duplicated per tier
+
+**Anti-Patterns (never do these):**
+- Raw `db.query()` or `db.execute()` in route handlers — use `IStorage` methods
+- `useState` for data that comes from the server — use TanStack Query
+- Floating point for currency — `amount: 150.00` is wrong, use `amount: 15000`
+- Splitting Drizzle schema across multiple files
+- Business logic in route handlers — move to `server/services/`
+- Hardcoded brand parameters — always read from database
+- Custom hover/active styles on Shadcn `<Button>` or `<Badge>` — built-in elevation handles this
+- Modifying files in `components/ui/` — these are Shadcn-managed
+- `Date.now()` or `Math.random()` inside the financial engine
+- Silent error swallowing — every catch block must produce user-visible feedback or explicit logging
+
+---
+
+### Pattern Examples
+
+**Good — API route handler:**
+```typescript
+app.patch("/api/plans/:planId", requireRole("franchisee"), async (req, res) => {
+  const parsed = updatePlanSchema.safeParse(req.body);
+  if (!parsed.success) {
+    return res.status(400).json({ error: { message: "Invalid plan data", code: "VALIDATION_ERROR", details: parsed.error.flatten().fieldErrors } });
+  }
+  const plan = await storage.updatePlan(req.params.planId, parsed.data, req.user);
+  return res.json({ data: plan });
+});
+```
+
+**Bad — business logic in route, raw query, no validation:**
+```typescript
+app.patch("/api/plans/:planId", async (req, res) => {
+  const result = await db.update(plans).set(req.body).where(eq(plans.id, req.params.planId));
+  // Missing: auth check, validation, role scoping, response wrapper
+  res.json(result);
+});
+```
+
+**Good — TanStack Query with proper types and cache invalidation:**
+```typescript
+const { data: plan, isLoading } = useQuery<Plan>({ queryKey: ['plans', planId] });
+
+const updateMutation = useMutation({
+  mutationFn: (data: UpdatePlan) => apiRequest('PATCH', `/api/plans/${planId}`, data),
+  onSuccess: () => queryClient.invalidateQueries({ queryKey: ['plans', planId] }),
+  onError: () => toast({ title: "Your latest changes haven't been saved yet.", description: "Your previous work is safe. Please try again." })
+});
+```
+
+**Bad — local state for server data, no error handling:**
+```typescript
+const [plan, setPlan] = useState(null);
+useEffect(() => { fetch(`/api/plans/${planId}`).then(r => r.json()).then(setPlan) }, []);
 ```
