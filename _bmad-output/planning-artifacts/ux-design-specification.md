@@ -792,3 +792,270 @@ The following improvements were incorporated via Party Mode review (Architect Wi
 | 3 | Story Mode coverage criterion added: 70%+ of financial inputs addressable through guided conversation in a single session | Sets design target for AI conversation completeness, not just extraction accuracy |
 | 4 | Normal Mode plan completeness dashboard for session re-entry: top-level section progress visible before opening any section | Solves Chris's "where did I leave off?" problem on return visits |
 | 5 | Mode switcher mechanics defined: segmented control, always visible, instant switch, background AI completion on mode-away | Fills the undefined mode-switching interaction design with concrete behavior |
+
+## Visual Design Foundation
+
+### Color System
+
+**Three-Layer Color Architecture (from Katalyst Brand Guidelines):**
+
+The Katalyst color system uses a three-layer governance model that maps directly to the Growth Planner's white-label theming needs:
+
+**Layer 1: Semantic Core (meaning-reserved)**
+
+| Token | Hex | Role in Growth Planner |
+|-------|-----|----------------------|
+| **Katalyst Green** | `#78BF26` | Primary brand + success states. In branded deployments, this is overridden by the brand's accent color via `--primary`. The `--katalyst-brand` escape hatch preserves this green for "Powered by Katalyst" elements. |
+| **Standard Red** | `#EF4444` | Actual errors only — missing required fields, system failures, validation errors. NEVER used for advisory guardrails or business judgment calls (those use the "Gurple"). |
+| **Warning Yellow** | `#E1D660` | Caution states — approaching Item 7 boundaries, pending save states. Used sparingly. |
+
+**Layer 2: Functional Neutrals (structure and hierarchy)**
+
+| Token | Hex | Role | Text Hierarchy Level |
+|-------|-----|------|---------------------|
+| **Black** | `#3D3936` | Headlines, section headers, KPI values | Primary — most important text |
+| **Charcoal** | `#50534C` | Body text, labels, form content | Secondary — supporting information |
+| **Gauntlet** | `#8C898C` | Muted text, placeholders, disabled states, timestamps | Tertiary — least important text |
+| **Gray** | `#D0D1DB` | Borders, dividers, input borders | Structural — not text |
+| **Gray Light** | `#F5F6F8` | Page backgrounds, card backgrounds | Surface — not text |
+| **White** | `#FFFFFF` | Elevated surfaces (cards in branded sidebars, modals, inputs) | Surface — not text |
+
+The three text hierarchy levels (Black → Charcoal → Gauntlet) implement the "three levels of text color" design principle, mapping to Default → Secondary → Tertiary.
+
+**Layer 3: Categorical Accents (differentiation without inherent meaning)**
+
+| Token | Hex | Growth Planner Usage |
+|-------|-----|---------------------|
+| **Mystical ("Gurple")** | `#A9A2AA` | The signature advisory color — used for ROI Threshold Guardian suggestions, Item 7 range indicators, AI confidence markers, informational panels, "Did you know?" callouts. This is the "advisory, not error" alternative to red. |
+| **Edamame Sage** | `#96A487` | Target/goal states — scenario comparison positive outcomes, break-even achieved indicators |
+| **Basque** | `#676F13` | Historical/comparison data — Location #1 actuals when comparing to Location #2 projections |
+| **Wheat** | `#DDCDAE` | People/personal — account manager references, franchisee attribution |
+| **Zeus** | `#A6A091` | Neutral category — default chart series, uncategorized items |
+
+**Katalyst → shadcn/ui Token Translation Table:**
+
+This table provides the definitive mapping between Katalyst brand tokens and the shadcn/ui CSS custom property system. This eliminates guesswork during implementation:
+
+| shadcn/ui Token | Katalyst Token | Hex Value | Rationale |
+|----------------|---------------|-----------|-----------|
+| `--background` | Gray Light | `#F5F6F8` | Page-level background; the slightly warm gray reduces eye strain |
+| `--foreground` | Black | `#3D3936` | Primary text color for maximum readability |
+| `--card` | White | `#FFFFFF` | Cards elevate from the Gray Light background via color contrast (Method B containment) |
+| `--card-foreground` | Black | `#3D3936` | Card text matches page text hierarchy |
+| `--primary` | Katalyst Green | `#78BF26` | Brand primary; overridden per brand deployment |
+| `--primary-foreground` | White | `#FFFFFF` | Text on primary-colored buttons/elements |
+| `--secondary` | Gray Light | `#F5F6F8` | Secondary button backgrounds |
+| `--secondary-foreground` | Charcoal | `#50534C` | Text on secondary buttons |
+| `--muted` | Gray Light | `#F5F6F8` | Muted backgrounds for de-emphasized content |
+| `--muted-foreground` | Gauntlet | `#8C898C` | Muted/tertiary text |
+| `--accent` | Gray Light | `#F5F6F8` | Accent backgrounds (hover states, selected items) |
+| `--accent-foreground` | Black | `#3D3936` | Text on accent backgrounds |
+| `--destructive` | Standard Red | `#EF4444` | Error/destructive actions only |
+| `--destructive-foreground` | White | `#FFFFFF` | Text on destructive buttons |
+| `--border` | Gray | `#D0D1DB` | All borders and dividers |
+| `--input` | Gray | `#D0D1DB` | Input borders |
+| `--ring` | Katalyst Green | `#78BF26` | Focus ring color; follows brand primary |
+| `--sidebar-background` | White | `#FFFFFF` | Sidebar surface (elevated from page background) |
+| `--sidebar-foreground` | Charcoal | `#50534C` | Sidebar text |
+| `--sidebar-accent` | Gray Light | `#F5F6F8` | Sidebar hover/selected state backgrounds |
+| `--katalyst-brand` | Katalyst Green | `#78BF26` | **Escape hatch** — always Katalyst Green, never overridden by brand. Used exclusively for "Powered by Katalyst" badge. |
+| `--info` | Mystical (Gurple) | `#A9A2AA` | Advisory/informational panels and indicators |
+
+**Color Governance Rules for Growth Planner:**
+
+1. **3-Category Rule:** No more than 3 categorical accent colors in any single view. The financial dashboard should use Green (or brand primary) + Gurple + one categorical. Scenario comparison may use up to 3 scenario-specific colors.
+2. **Green as accent, not surface.** Katalyst Green (or brand primary) appears on buttons, links, focus rings, and progress indicators — never as large surface backgrounds. Reserve the single most prominent CTA per screen for the green/primary button; other buttons use Charcoal (dark) or outline variants.
+3. **Red is sacred.** Red means something is broken or requires immediate attention. Advisory suggestions ("your growth rate is higher than typical") use the Gurple, never red.
+4. **Brand override scope:** Only `--primary`, `--primary-foreground`, and `--ring` are overridden per brand. All other tokens — neutrals, semantic red/yellow, categorical accents, the Gurple — are Katalyst constants across all brand deployments.
+
+### Typography System
+
+**Font Families (Katalyst constants, never overridden per brand):**
+
+| Usage | Font | Weight Range | Purpose |
+|-------|------|-------------|---------|
+| **Headings** | Montserrat | 600-700 (Semibold-Bold) | Page titles, section headers, card titles, metric labels. Montserrat's geometric personality gives Katalyst its modern, confident feel. |
+| **Body** | Roboto | 400-500 (Regular-Medium) | Form labels, body text, conversation messages, descriptions. Roboto's neutral readability handles long-form financial explanations without fatigue. |
+| **Financial figures** | Roboto Mono | 400-500 | All numeric financial values — currency amounts, percentages, month counts. Monospace ensures tabular alignment in Expert Mode and consistent digit width in summary cards. |
+
+**Type Scale:**
+
+| Token | Size | Line Height | Usage |
+|-------|------|-------------|-------|
+| **4xl** | 2.25rem (36px) | 1.1 | KPI hero values (Total Investment, ROI Range) |
+| **3xl** | 1.875rem (30px) | 1.2 | Hero metrics, page-level financial summaries |
+| **2xl** | 1.5rem (24px) | 1.3 | Page titles ("Sam's PostNet Plan") |
+| **xl** | 1.25rem (20px) | 1.4 | Modal headers, section titles |
+| **lg** | 1.125rem (18px) | 1.5 | Section headers within forms, card titles |
+| **base** | 1rem (16px) | 1.5 | Body text, form labels, conversation messages |
+| **sm** | 0.875rem (14px) | 1.5 | Secondary text, field descriptions, metadata |
+| **xs** | 0.75rem (12px) | 1.5 | Captions, source attribution badges, timestamps, "All changes saved" indicator |
+
+**Financial Figure Formatting (via `<FinancialValue>` primitive):**
+
+| Type | Format | Font | Example |
+|------|--------|------|---------|
+| Currency | $X,XXX.XX | Roboto Mono | $4,200.00 |
+| Percentage | X.X% | Roboto Mono | 12.5% |
+| Months/integers | X | Roboto Mono | 14 |
+| Negative currency | ($X,XXX.XX) | Roboto Mono, red text | ($2,100.00) |
+| Large currency | $X.XM or $XXK | Roboto Mono | $1.2M, $450K |
+
+### Spacing & Layout Foundation
+
+**Spacing Scale (based on 4px base unit):**
+
+| Level | Value | Usage |
+|-------|-------|-------|
+| **xs** | 4px (0.25rem) | Icon-to-text gaps, badge padding |
+| **sm** | 8px (0.5rem) | Input internal padding, tight element groups |
+| **md** | 16px (1rem) | Card internal padding, form field spacing, standard gaps |
+| **lg** | 24px (1.5rem) | Section spacing, card padding (primary) |
+| **xl** | 32px (2rem) | Page-level section gaps |
+| **2xl** | 48px (3rem) | Major layout divisions |
+
+**Mode-Specific Density Levels:**
+
+The spacing scale is consistent across all modes, but each mode operates at a different density level within the scale:
+
+| Mode | Primary Spacing Level | Cell/Field Padding | Section Gaps | Rationale |
+|------|----------------------|-------------------|-------------|-----------|
+| **Expert Mode** | sm/md | 8px cell padding | 16px between groups | Maria needs maximum data density; 60+ rows must fit without excessive scrolling |
+| **Normal Mode** | md/lg | 16px field padding | 24px between sections | Chris needs breathing room for form comprehension without feeling sparse |
+| **Story Mode** | lg/xl | 24px message padding | 32px between conversation segments | Sam needs conversational spaciousness; the chat interface should feel unhurried |
+
+The principle: **the spacing SCALE is constant; modes use different levels from the scale.** This ensures visual coherence when switching modes — the rhythm changes but the proportions remain harmonious.
+
+**Layout Principles:**
+
+1. **Information density adapts per mode via scale level selection.** Expert Mode uses sm/md from the scale; Normal uses md/lg; Story uses lg/xl. The proportional relationships between elements remain consistent across modes.
+
+2. **Cards are the primary containment pattern.** Financial summary cards, input group sections, scenario comparison panels — all use the Card component with consistent padding, 2px borders, and the Katalyst border radius scale. Cards sit on `#F5F6F8` backgrounds with `#FFFFFF` card surfaces, providing subtle elevation through background color contrast (Method B containment).
+
+3. **The sidebar is the navigation anchor.** At full width: 16-20rem with brand logo, navigation items, plan list, and "Powered by Katalyst" footer. At collapsed: 44px icon-only. The sidebar background uses White (`#FFFFFF`) to elevate from the Gray Light page background.
+
+4. **The header is minimal.** Sidebar trigger, mode switcher (segmented control), auto-save indicator, and account menu. No large headers or hero sections within the planning workspace — every vertical pixel is valuable for financial data.
+
+5. **Split-screen Story Mode uses `react-resizable-panels`** (or equivalent). Conversation panel minimum 360px, dashboard minimum 480px. The resize handle is subtle (2px, `#D0D1DB` color) and shows a grab cursor on hover.
+
+**Shape System:**
+
+**Note on border radius:** The Katalyst brand uses a larger radius scale than the generic `rounded-md` default. This is an intentional brand decision — the rounded, modern card feel is part of the Katalyst visual identity. The Katalyst brand radius scale takes precedence over generic development defaults for this project.
+
+| Element | Border Radius | Border Width | Notes |
+|---------|--------------|-------------|-------|
+| Cards | 1rem (16px) / `rounded-2xl` | 2px | Consistent across all card types; the Katalyst signature shape |
+| Buttons | 0.75rem (12px) / `rounded-xl` | 1px (outline variant) | Uses shadcn/ui size variants, no custom sizing |
+| Inputs | 0.75rem (12px) / `rounded-xl` | 2px | Focus ring: 2px, primary color at 50% opacity |
+| Badges | 0.5rem (8px) / `rounded-lg` | None | Source attribution, field type indicators |
+| Modals | 1.25rem (20px) / `rounded-2xl` | 2px | Elevated with shadow-xl |
+| Segmented controls | 0.75rem (12px) / `rounded-xl` | None | Container and items use same radius |
+
+**Shadow System (used sparingly):**
+
+| Token | Value | Usage |
+|-------|-------|-------|
+| **sm** | `0 1px 2px rgba(0,0,0,0.05)` | Subtle card elevation |
+| **default** | `0 1px 3px rgba(0,0,0,0.1), 0 1px 2px rgba(0,0,0,0.06)` | Standard card shadow (optional — background color contrast may be sufficient) |
+| **lg** | `0 10px 15px rgba(0,0,0,0.1), 0 4px 6px rgba(0,0,0,0.05)` | Dropdowns, popovers |
+| **xl** | `0 20px 25px rgba(0,0,0,0.1), 0 10px 10px rgba(0,0,0,0.04)` | Modals, floating elements |
+
+Shadows are used for floating/overlay elements (modals, dropdowns, toasts) — not for standard cards. Card distinction comes from background color contrast (`#FFFFFF` card on `#F5F6F8` page), consistent with the Method B containment strategy.
+
+### Data Visualization
+
+**Charting Library:** Recharts (React-native, composable, already used in the Katalyst Performance Platform design theme).
+
+**Chart Inventory for Financial Dashboard:**
+
+| Chart Type | Purpose | Primary Color | Secondary Colors | Location |
+|-----------|---------|---------------|-----------------|----------|
+| **Break-even timeline** | Area/line chart showing cumulative cash flow crossing from negative to positive territory. This is the emotionally most important chart — the moment the line crosses zero is where Sam sees "I'll make money." | Katalyst Green (or brand primary) for positive territory fill; Standard Red at 20% opacity for negative territory | Gray (#D0D1DB) for the zero line, Charcoal for axis labels | Financial dashboard, prominent position |
+| **Revenue vs. expenses** | Monthly grouped bar chart showing revenue and total expenses over 36 months. Reveals the operating picture at a glance. | Katalyst Green (or brand primary) for revenue bars | Charcoal (#50534C) for expense bars, Gray for grid lines | Financial dashboard, below break-even |
+| **Scenario comparison overlay** | Line chart overlaying Good/Better/Best scenarios on the same axes. The visual proof that "even the conservative case works." | Three lines using Edamame (#96A487) for conservative, Katalyst Green for base, Basque (#676F13) for optimistic | Gray for grid, Charcoal for axis labels | Scenario comparison view |
+| **Sparklines** | Tiny inline charts in summary cards showing trend direction (up/down/flat) for key metrics. No axes, no labels — just the shape. | Katalyst Green (or brand primary) for positive trend; Standard Red for negative trend | None — single-color lines | Summary cards (embedded) |
+
+**Chart Styling Constants (Katalyst brand):**
+
+| Element | Value |
+|---------|-------|
+| Grid lines | `#D0D1DB` at 30% opacity |
+| Axis lines | `#D0D1DB` |
+| Axis labels | Roboto, `#50534C` (Charcoal), 12px |
+| Tooltip background | `#3D3936` (Black) |
+| Tooltip text | `#FFFFFF` (White), Roboto, 14px |
+| Tooltip financial values | Roboto Mono, uses `<FinancialValue>` formatting |
+| Chart area padding | 16px (md spacing level) |
+| Animation | Subtle 300ms ease-out on data transitions; no bounce effects |
+
+### Brand Voice in UI Copy
+
+**Voice:** Vibrant, Quick-witted, Authentic (from Katalyst brand guidelines).
+
+The Growth Planner adapts the Katalyst brand voice for financial planning context — maintaining warmth and encouragement while handling sensitive financial information with appropriate seriousness.
+
+**Empty State Patterns:**
+
+| Context | Copy Pattern | Example |
+|---------|-------------|---------|
+| No plans yet | Warm invitation to start | "Ready to plan your next location? Let's build something great." |
+| No scenarios created | Encouraging nudge | "One plan is good. Comparing scenarios is how you build real confidence." |
+| No actuals entered (post-opening) | Motivating return | "Your plan is ready for real numbers. Update your estimates as you go — that's how the plan stays useful." |
+| Empty search results | Helpful redirect | "Nothing matched. Try different filters, or start a new plan." |
+
+**Error Message Patterns:**
+
+| Context | Copy Pattern | Example |
+|---------|-------------|---------|
+| Save failure | Reassuring + actionable | "Your changes didn't save just now. Don't worry — we'll try again in a moment. Your recent work is safe locally." |
+| AI extraction error | Casual correction | "I didn't quite catch that. Could you tell me the specific number for [field name]?" |
+| Network error | Calm + informative | "We lost the connection briefly. Everything saved up to this point is safe. We'll reconnect automatically." |
+| Validation error | Specific + helpful | "Monthly rent needs to be a dollar amount. Something like $4,200." |
+
+**Tone Boundaries for Financial Context:**
+
+| Katalyst IS | Katalyst is SOMETIMES | Katalyst is NEVER |
+|-------------|----------------------|-------------------|
+| Encouraging | Challenging (when numbers don't work) | Judgmental about financial choices |
+| Clear | Serious (when discussing real money) | Dismissive of user's situation |
+| Warm | Direct (when advisory guardrails trigger) | Condescending about financial literacy |
+
+### Accessibility Considerations
+
+**Color Contrast (WCAG 2.1 AA minimum):**
+
+| Text Level | Color | On Background | Contrast Ratio | Status |
+|-----------|-------|---------------|---------------|--------|
+| Primary (Black) | `#3D3936` | `#FFFFFF` | ~12:1 | Pass AAA |
+| Primary (Black) | `#3D3936` | `#F5F6F8` | ~10:1 | Pass AAA |
+| Secondary (Charcoal) | `#50534C` | `#FFFFFF` | ~7.5:1 | Pass AAA |
+| Tertiary (Gauntlet) | `#8C898C` | `#FFFFFF` | ~3.5:1 | Pass AA (large text) |
+| Katalyst Green on White | `#78BF26` | `#FFFFFF` | ~3.7:1 | Pass AA (large text only) |
+
+**Accessibility implications for the Growth Planner:**
+
+- **Gurple info panels:** Use `bg-kat-mystical/20` with `text-kat-charcoal` body text (not `text-kat-mystical`) to maintain readable contrast. The Gurple color is for panel borders and headings, not for body text.
+- **Katalyst Green as text:** Green text on white backgrounds passes only for large text (18px+). For smaller text links or labels, use the green for icons and underline decoration, with Charcoal for the text itself, or use green only on hover.
+- **Expert Mode grid:** The dense data grid must maintain readable contrast in all cells. Row-level Gurple background for out-of-range values uses 10-20% opacity to ensure text remains readable.
+- **Focus indicators:** All interactive elements must show visible focus rings (2px, primary color at 50% opacity) for keyboard navigation, especially critical in Expert Mode's tab-through flow.
+- **Tentative field state:** The dashed border for AI tentative values must be distinguishable from standard solid borders by more than just border-style — also use a subtle background tint to ensure the state is perceivable.
+
+**Keyboard Navigation:**
+
+- All form controls support Tab/Shift+Tab navigation
+- Expert Mode grid supports Arrow key navigation within cells
+- Mode switcher accessible via keyboard
+- Focus trap in modals and dialogs (Radix UI handles this)
+- Skip-to-content link for screen readers
+
+### Party Mode Review Notes
+
+The following improvements were incorporated via Party Mode review (Architect Winston, UX Sally, PM John, BA Mary, SM Bob):
+
+| # | Improvement | Rationale |
+|---|------------|-----------|
+| 1 | Katalyst → shadcn/ui token translation table added with definitive mappings for all semantic tokens | Eliminates developer guesswork; `--background` = Gray Light, `--card` = White, etc. |
+| 2 | Border radius conflict resolved: Katalyst brand radii (rounded-2xl cards, rounded-xl buttons) take precedence over generic rounded-md default | The rounded modern feel IS the Katalyst brand identity |
+| 3 | Chart inventory added: break-even timeline, revenue vs. expenses, scenario comparison overlay, sparklines — with color specs and Recharts library | Fills data visualization gap with specific, implementable chart specifications |
+| 4 | Brand voice guidelines incorporated: empty state copy patterns, error message patterns, tone boundaries for financial context | Ensures verbal UX matches visual emotional design |
+| 5 | Spacing principle refined: same scale, different density levels per mode (Expert=sm/md, Normal=md/lg, Story=lg/xl) | Prevents impractical spacing in 60-row Expert Mode grid |
