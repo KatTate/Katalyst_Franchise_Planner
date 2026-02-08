@@ -27,7 +27,7 @@ project_name: Katalyst Growth Planner
 
 The Katalyst Growth Planner is a franchise location planning platform that transforms the overwhelming process of opening a new franchise location into a guided, empowering journey. It serves three stakeholders from a single data layer (the "throuple problem"): the franchisee as primary user and plan author, the franchisor as pipeline visibility buyer, and Katalyst as operational intelligence beneficiary.
 
-The UX must accomplish something unusual: make a complex financial planning tool feel approachable to a first-time business owner while simultaneously satisfying a 27-location veteran who wants speed and no hand-holding. Three experience tiers (Story Mode, Normal Mode, Expert Mode) solve this by presenting three fundamentally different interaction paradigms that all write to the same underlying financial input state.
+The UX must accomplish something unusual: make a complex financial planning tool feel approachable to a first-time business owner while simultaneously satisfying a 27-location veteran who wants speed and no hand-holding. Three experience tiers — presented to users as **Planning Assistant**, **Forms**, and **Quick Entry** (internally referred to as Story Mode, Normal Mode, and Expert Mode in development context) — solve this by presenting three fundamentally different interaction paradigms that all write to the same underlying financial input state. The user-facing labels describe the *input method*, not the user's skill level, ensuring no mode feels exclusionary or gatekeeping.
 
 ### White-Label Theming Strategy
 
@@ -42,20 +42,20 @@ The platform uses a "branded shell" approach that leans more toward Katalyst vis
 
 ### Target Users
 
-**Persona A: Sam (First-Time Franchisee) — Story Mode**
+**Persona A: Sam (First-Time Franchisee) — Planning Assistant (internally: Story Mode)**
 - Age 30-45, former corporate manager, purchased first franchise unit
 - Excited but anxious, overwhelmed by FDD and financial complexity
 - Needs structure, education at every step, confidence to walk into a bank
 - Tech-competent but new to franchising mechanics
 - Will use the product with their Katalyst account manager in guided sessions
 
-**Persona B: Maria (Portfolio Operator) — Expert Mode**
+**Persona B: Maria (Portfolio Operator) — Quick Entry (internally: Expert Mode)**
 - Age 40-60, owns 7+ locations, financially sophisticated
 - Pragmatic, speed-focused, intolerant of wasted time
 - Expects spreadsheet-level input speed and portfolio-level visibility
 - Will rip through a plan in 15 minutes, doesn't want tooltips or education
 
-**Persona C: Chris (Scaling Operator) — Normal Mode**
+**Persona C: Chris (Scaling Operator) — Forms (internally: Normal Mode)**
 - Age 30-50, has 1-3 locations, learning to systematize
 - Ambitious and stretched, confident but nervous about replication
 - Needs the ability to compare against prior location actuals
@@ -65,7 +65,7 @@ The platform uses a "branded shell" approach that leans more toward Katalyst vis
 
 ### Key Design Challenges
 
-1. **Three interaction paradigms, one engine** — Story Mode (AI conversation + live dashboard), Normal Mode (section-based forms), Expert Mode (spreadsheet grid) must feel like coherent products sharing a design language, not three different apps bolted together. The transition between modes should feel like changing a "view" on the same data, not switching products.
+1. **Three interaction paradigms, one engine** — Planning Assistant (AI conversation + live dashboard), Forms (section-based forms), Quick Entry (spreadsheet grid) — internally Story Mode, Normal Mode, Expert Mode — must feel like coherent products sharing a design language, not three different apps bolted together. The transition between modes should feel like changing a "view" on the same data, not switching products.
 
 2. **Financial complexity without intimidation** — The tool produces lender-grade financial packages (P&L, cash flow, balance sheet, break-even). Sam needs to feel empowered by this, not overwhelmed. Progressive disclosure is essential: summary for confidence, detail for due diligence, education for understanding.
 
@@ -694,7 +694,7 @@ This three-tier approach prevents both trust-erosion failure modes:
 
 **Mode Switcher Interaction Design:**
 
-The mode switcher is a **segmented control** (Story | Normal | Expert) positioned at the top of the workspace, below the header and above the content area. It is always visible regardless of which mode is active.
+The mode switcher is a **segmented control** (Planning Assistant | Forms | Quick Entry) positioned at the top of the workspace, below the header and above the content area. It is always visible regardless of which mode is active — all three options are presented to ALL users at all times. Onboarding may suggest Planning Assistant as a starting point for first-time users, but never restricts access to any mode. The labels describe the input method, not the user's skill level.
 
 - **Switching is instant** — no loading state, no confirmation dialog, no "are you sure?" The content below the segmented control restructures immediately.
 - **The segmented control stays fixed** during transition — the Notion database view-switch feel. Only the content area changes.
@@ -1059,3 +1059,18 @@ The following improvements were incorporated via Party Mode review (Architect Wi
 | 3 | Chart inventory added: break-even timeline, revenue vs. expenses, scenario comparison overlay, sparklines — with color specs and Recharts library | Fills data visualization gap with specific, implementable chart specifications |
 | 4 | Brand voice guidelines incorporated: empty state copy patterns, error message patterns, tone boundaries for financial context | Ensures verbal UX matches visual emotional design |
 | 5 | Spacing principle refined: same scale, different density levels per mode (Expert=sm/md, Normal=md/lg, Story=lg/xl) | Prevents impractical spacing in 60-row Expert Mode grid |
+
+### Party Mode Review Notes — Naming & Direction F Decisions
+
+The following decisions were incorporated via Party Mode review session:
+
+| # | Decision | Details |
+|---|----------|---------|
+| 1 | **User-facing mode labels renamed:** Story Mode → "Planning Assistant", Normal Mode → "Forms", Expert Mode → "Quick Entry" | Labels describe the input method, not the user's skill level. Prevents "Expert" from gatekeeping Sam. Internal/development references may still use Story/Normal/Expert for clarity; user-facing UI text (segmented control, onboarding, tooltips) uses the new names. |
+| 2 | **All three modes always visible to all users** | The mode switcher segmented control reads `Planning Assistant | Forms | Quick Entry` and is never hidden or restricted. Onboarding may suggest Planning Assistant as a starting point but never locks access to Forms or Quick Entry. |
+| 3 | **Direction F (Hybrid Adaptive) selected as the layout direction** | Combines sidebar navigation with adaptive content area. The layout adapts based on the selected mode while maintaining a consistent navigation shell. |
+| 4 | **Smooth 200-300ms sidebar transition animation required** | Sidebar collapse/expand must animate smoothly within 200-300ms. Must respect `prefers-reduced-motion` media query — users who prefer reduced motion get an instant transition with no animation. |
+| 5 | **Mode switcher prominence for first-time users** | Planning Assistant should be the suggested starting point during onboarding. The segmented control should visually indicate the recommended mode for new users without restricting access to other modes. |
+| 6 | **State persistence across mode switches must be tested** | Financial input state must be verified to persist correctly when switching between all mode permutations (Planning Assistant → Forms → Quick Entry and back). This is a required test scenario. |
+| 7 | **Split-panel min-widths must be enforced** | Conversation panel minimum 360px, dashboard panel minimum 480px. The resize handle must not allow panels to shrink below these minimums. |
+| 8 | **Sprint 1 acceptance criterion: sidebar collapse/expand behavior with mode switching** | Sprint 1 must deliver working sidebar collapse/expand with smooth animation that correctly interacts with mode switching. This is a gating acceptance criterion for Sprint 1 completion. |
