@@ -53,7 +53,7 @@ When the user's message matches a BMAD trigger phrase, agent name, or workflow c
 ## Project State
 
 - **Current Phase:** not started
-- **Project Type:** brownfield
+- **Project Type:** greenfield
 - **Completed Artifacts:** none yet
 
 ## BMad File Structure
