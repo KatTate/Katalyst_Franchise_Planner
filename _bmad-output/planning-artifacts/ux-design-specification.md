@@ -166,3 +166,149 @@ The following improvements were incorporated via Party Mode review (PM John, Arc
 | 6 | Quick ROI sentiment indicator with brand range context | Prevents meaningless numbers for first-timers |
 | 7 | Authorship emphasis: franchisee name before brand name in headers/documents | Reinforces empowerment philosophy |
 | 8 | "Same data, different lens" boundary clarified: financial state shared, interaction state mode-specific | Prevents developer misinterpretation |
+
+## Desired Emotional Response
+
+### Primary Emotional Goals
+
+The Katalyst Growth Planner must produce three distinct primary emotions, one per persona:
+
+| Persona | Primary Emotion | The Moment It Peaks | What They'd Say |
+|---------|----------------|---------------------|-----------------|
+| **Sam** (first-timer) | **Confident competence** — "I understand my own business plan" | Downloading the lender-ready PDF and realizing he can explain every number in it | "I actually feel ready for this meeting." |
+| **Maria** (veteran) | **Efficient mastery** — "This tool respects my time and expertise" | Finishing a full plan in 15 minutes with zero friction | "Finally, something that doesn't slow me down." |
+| **Chris** (scaling) | **Informed control** — "I'm smarter this time because I can see what happened last time" | Comparing Location #1 actuals against Location #2 projections and seeing tighter assumptions | "I'm not guessing anymore." |
+
+**Shared emotional goal across all personas:** **Authorship.** The franchisee should feel like the author of their plan, not the consumer of someone else's model. This is the emotional thread that connects all three personas and all three experience tiers.
+
+### Emotional Journey Mapping
+
+**Sam's Emotional Arc (the "Confidence Pack"):**
+
+| Stage | Emotional State | UX Design Response |
+|-------|----------------|-------------------|
+| **Pre-entry** (kitchen table, 9 PM) | Anxious, overwhelmed, imposter syndrome | The invitation email and Quick ROI entry feel warm, simple, low-commitment. No financial jargon in the first interaction. |
+| **Quick ROI** (first 90 seconds) | Cautious hope — "Maybe this is manageable" | A clear, positive-but-honest result with brand context. The sentiment frame ("healthy range") provides relief without overpromising. Warm visual tone. |
+| **Story Mode Session 1** (with account manager) | Growing understanding — "I'm learning my own numbers" | The AI conversation is patient, explains context, never rushes. Every AI-populated field is visible and editable. The dashboard updates feel like magic, not pressure. |
+| **Startup Cost Builder** | Surprised capability — "I didn't even think about insurance deposits" | Progressive revelation of cost categories builds competence. Item 7 ranges provide guardrails without judgment. "Reset to default" removes fear. |
+| **Scenario Comparison** | Conviction — "Even the worst case works" | Three scenarios rendered side-by-side. The conservative case showing positive ROI is the emotional turning point. |
+| **Document Generation** | Professional pride — "This looks like a real business plan" | The PDF is visually polished, clearly formatted, and carries Sam's name as the author. The document quality exceeds Sam's self-image — he feels more professional than he thought he was. A **live document preview** is visible during planning, building pride progressively rather than delivering it as a surprise at the end. Sam can see his plan taking shape as a professional document throughout the process. |
+| **Bank Meeting** | Earned confidence — "I can explain every number" | (Outside the product, but the UX designed this moment.) Sam knows his numbers because he built them, not because they were handed to him. |
+| **Post-opening actuals** | Operational ownership — "My plan is alive" | Updating estimates with actuals feels like maintaining a living document, not revisiting a dead one. The plan grows with the business. |
+
+**Maria's Emotional Arc (Speed & Respect):**
+
+| Stage | Emotional State | UX Design Response |
+|-------|----------------|-------------------|
+| **Login** | Impatient efficiency — "Let me work" | Expert Mode activates immediately. No onboarding, no tooltips, no tutorial overlays. |
+| **Input entry** | Flow state — "This moves at my speed" | Tab-through navigation, instant recalculation, no confirmation dialogs. The interface disappears and the numbers remain. |
+| **Scenario modeling** | Analytical satisfaction — "I see the levers" | Sensitivity analysis reveals which variables matter most. Maria finds insights, not just outputs. |
+| **Multi-plan generation** | Portfolio command — "All my locations, one afternoon" | Generating packages for locations #8, #9, #10 in sequence feels like a production run, not three separate tasks. |
+
+**Chris's Emotional Arc (Smarter This Time):**
+
+| Stage | Emotional State | UX Design Response |
+|-------|----------------|-------------------|
+| **Location #2 start** | Determined improvement — "I know what went wrong last time" | Location #1 actuals are visible and referenceable during Location #2 planning. The system acknowledges her history. |
+| **Startup cost review** | Sharp competence — "I've done this before, I know the real numbers" | Pre-filled defaults that Chris immediately overrides with confidence, informed by experience. |
+| **Side-by-side comparison** | Measurable growth — "12% tighter assumptions" | Quantified improvement over Location #1 validates that Chris is genuinely better at this now. |
+
+### Failure State Emotional Design
+
+The emotional journey maps above describe the happy path. Equally important is the emotional design for when things go wrong. Three failure scenarios require explicit emotional handling:
+
+**Scenario 1: The plan genuinely doesn't work (negative ROI)**
+
+When Sam enters his real numbers and the conservative case shows negative ROI, the tool must not simply display bad numbers and leave Sam to draw conclusions. The emotional design response:
+
+- **Never say "this won't work."** Instead: "At these numbers, the break-even timeline extends beyond 36 months. Here are the inputs with the most impact on that timeline."
+- **Surface actionable levers.** Highlight the 3-4 inputs that most affect ROI (typically rent, initial investment, revenue assumptions) and show what values would bring the plan into positive territory. The message is "here's what would need to change," not "you should give up."
+- **Distinguish location from franchise.** Guide Sam toward "this specific location may not be the best fit" rather than "franchising isn't for you." The tool should make it emotionally safe to abandon a bad location without abandoning the dream.
+- **Support the advisor conversation.** When Sam's account manager Denise is on the call, the data provides an objective foundation for a difficult conversation. The tool is the honest broker.
+
+**Scenario 2: The AI says something wrong**
+
+When Story Mode extracts a wrong number from conversation (Sam said "forty-two hundred" and the AI populated $42,000), the correction flow must feel like editing a typo, not filing a bug report:
+
+- **Inline correction.** The field is immediately editable. One click, fix the number, dashboard updates. No modal, no confirmation, no "are you sure?"
+- **No trust penalty.** One wrong extraction shouldn't undermine confidence in the entire system. The correction should feel routine, not alarming. The AI acknowledges naturally: "Got it, updated to $4,200."
+- **Visible source attribution.** The "AI-populated" label on the field makes it clear this was a suggestion, not a fact. Corrections reinforce that Sam is the author, the AI is the assistant.
+
+**Scenario 3: Sam and his advisor disagree**
+
+When Denise thinks Sam's revenue projection is too optimistic, the tool should support productive disagreement without taking sides:
+
+- **Scenario branching.** Make it trivially easy to create "Sam's projection" and "Denise's suggestion" as two scenarios and compare them side by side. The tool facilitates the conversation rather than arbitrating it.
+- **Brand context as neutral ground.** "PostNet locations in similar markets typically see $300K-$420K AUV in year one" provides objective context that neither party owns.
+- **No winner declared.** Both scenarios are saved. Sam decides which to use in the final plan. Authorship is preserved even when the advisor disagrees.
+
+### Micro-Emotions
+
+**Critical micro-emotions to cultivate:**
+
+- **Trust over skepticism.** Every number has a visible source (brand default, AI-populated, manual). Transparency eliminates the "where did this number come from?" anxiety. Trust is built through attribution, not explanation.
+- **Safety over fear.** "Reset to default" on every field, auto-save that never loses work, and the ever-present "Book time with [Account Manager]" link create a psychological safety net. Experimentation becomes risk-free.
+- **Accomplishment over frustration.** Section completion indicators, plan progress visualization, and the physical act of downloading a finished PDF all create closure moments. The UX should have definitive "you finished this part" signals.
+- **Clarity over confusion.** Financial concepts are explained in plain language (in Story/Normal mode). The AI advisor never assumes financial literacy. Error messages describe the problem in business terms, not technical terms.
+
+**Critical micro-emotions to prevent:**
+
+- **Never judgment.** The ROI Threshold Guardian is advisory, never blocking. When Sam enters an optimistic growth rate, the system says "PostNet locations in similar markets typically see 10-15% first-year growth" — not "your growth rate is too high." The tone is a knowledgeable friend, not a gatekeeper.
+- **Never abandonment.** If a session crashes, auto-save recovers. If the AI fails, Normal Mode is always available. If Sam gets confused, the booking link is always visible. There is always a next step or a helping hand.
+- **Never embarrassment.** The tool never highlights what Sam doesn't know. Story Mode's conversational approach means Sam doesn't have to face a blank form and feel ignorant — the AI asks questions, Sam answers in natural language, and the form fills itself. **Brand averages are always presented as ranges with market context, not as single numbers that invite unfavorable comparison.** Instead of "PostNet average AUV: $380K," the system presents "PostNet locations range from $220K-$550K depending on market size and maturity. Your estimate of $280K is consistent with a first-year location in a mid-size market." The reframe turns a potential shame trigger into a contextualizing data point.
+
+### Behavioral Proxies for Emotional Milestones
+
+Emotional goals must be anchored in observable behavior to be validated. Each major emotional milestone maps to a measurable proxy:
+
+| Emotional Milestone | Behavioral Proxy | What It Indicates |
+|---------------------|-----------------|-------------------|
+| **Cautious hope** (Quick ROI) | Sam proceeds to full planning within 48 hours | Hope was sufficient to overcome inertia |
+| **Growing understanding** (Story Mode) | Sam edits 3+ AI-populated values (not just accepts them) | Engagement, not passive consumption |
+| **Conviction** (Scenario comparison) | Sam creates or reviews 2+ scenarios before document generation | Conviction required comparison, not assumption |
+| **Professional pride** (Document download) | Sam shares/downloads the document within the session | Immediate sharing signals pride in the output |
+| **Efficient mastery** (Maria, Expert Mode) | Plan completed in under 20 minutes with <3 mode switches | Speed maintained, no friction-induced detours |
+| **Operational ownership** (Post-opening) | Franchisee returns to update actuals within 30 days of opening | Return signals living-document ownership |
+
+These proxies inform analytics instrumentation, not UX design directly — but they anchor the emotional design in testable outcomes.
+
+### Design Implications
+
+| Emotional Goal | UX Design Choice |
+|---------------|-----------------|
+| Confident competence (Sam) | Progressive disclosure: summary first, detail on demand. Plain-language impact statements. "Your plan" header language. |
+| Efficient mastery (Maria) | Expert Mode: zero onboarding friction, keyboard navigation, instant recalculation, minimal chrome. |
+| Informed control (Chris) | Location #1 actuals visible during Location #2 planning. Quantified improvement metrics. |
+| Authorship (all) | Franchisee name before brand name in all headers and documents. "Reset to default" preserves agency. Every AI suggestion is a suggestion, never an override. |
+| Trust | Source attribution on every field. "Brand default" / "AI-populated" / "Your entry" labels. Item 7 range reference always available. |
+| Safety | Auto-save status indicator. Persistent consultant booking link. Per-field reset. Graceful AI degradation to form mode. |
+| Non-judgment | Advisory tone in all guardrails. "Typical range" language, not "you're wrong" language. No red/error styling for business judgment calls — reserve red for actual errors. Brand averages shown as ranges with market context, never as single-number comparison points. |
+| Professional pride | Document output quality exceeds user's self-image. Polished PDF formatting. Consistent financial formatting throughout. Brand-appropriate design. **Live document preview** visible during planning — Sam can see the professional artifact taking shape as he works, building pride during the process rather than delivering it only at the end. |
+| Failure state empowerment | Bad ROI surfaces actionable levers. AI errors corrected inline with zero friction. Advisor disagreements resolved through scenario branching, not arbitration. |
+
+### Emotional Design Principles
+
+1. **Confidence is built in layers, not leaps.** Each stage of the planning process should make the user feel slightly more capable than the previous stage. The Quick ROI builds hope; Story Mode builds understanding; scenarios build conviction; documents build professional identity. Never skip a layer.
+
+2. **Respect the expertise they bring.** Maria doesn't need education. Chris needs it available, not forced. Sam needs it woven in naturally. The emotional design adapts to what the user already knows — it never talks down and never assumes too much.
+
+3. **Make the math invisible but the meaning visible.** The financial engine is complex; the user experience of it must not be. Sam should never see a formula. He should see "You'd start making money by February 2027" — the business meaning, not the calculation. Emotional confidence comes from understanding the story of the numbers, not the mechanics.
+
+4. **The safety net is always visible.** Auto-save status, consultant booking, reset-to-default, and graceful AI degradation are all anxiety-prevention mechanisms. They should be ever-present but low-profile — visible enough to provide comfort, quiet enough to not create clutter. The user should never wonder "what if I mess this up?"
+
+5. **Documents are mirrors.** The generated PDF should reflect back a version of Sam that feels more professional than his self-image. When Sam opens his lender package, the quality of the output should make him think "I made this?" with pride, not surprise. A **live document preview** supports this by letting Sam watch the professional artifact take shape during planning — pride builds progressively, not as a reveal.
+
+6. **Speed is respect.** For Maria, the emotional design IS the absence of friction. When she can tab through 20 fields in 30 seconds without a single modal, tooltip, or confirmation dialog interrupting her flow, that silence is the product delivering its emotional promise. Expert Mode's emotional success is measured by how little it gets in the way. Every unnecessary interaction is a small act of disrespect to Maria's time and expertise.
+
+### Party Mode Review Notes
+
+The following improvements were incorporated via Party Mode review (BA Mary, PM John, UX Sally, SM Bob):
+
+| # | Improvement | Rationale |
+|---|------------|-----------|
+| 1 | Failure state emotional design added: bad ROI with actionable levers | Prevents emotional devastation on unhappy paths; empowers pivoting |
+| 2 | Three failure scenarios defined: bad plan, AI error, advisor disagreement | Covers the emotional design for all major unhappy paths |
+| 3 | Brand averages reframed as ranges with market context | Prevents comparison embarrassment; contextualizes rather than judges |
+| 4 | Behavioral proxies added for each emotional milestone | Anchors emotional goals in observable, measurable behavior |
+| 5 | "Speed is respect" added as Emotional Design Principle #6 | Gives Expert Mode its own emotional identity beyond "absence of features" |
+| 6 | Live document preview added to pride-building design | Builds professional pride during the process, not just at generation time |
