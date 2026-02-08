@@ -1,5 +1,5 @@
 ---
-stepsCompleted: [1, 2, 3, 4]
+stepsCompleted: [1, 2, 3, 4, 5]
 inputDocuments: ['_bmad-output/brainstorming/brainstorming-session-2026-02-08.md', 'attached_assets/katalyst-replit-agent-context-final_1770513125481.md', 'attached_assets/PostNet_-_Business_Plan_1770511701987.xlsx']
 date: 2026-02-08
 author: User
@@ -308,3 +308,184 @@ The MVP must include backend event logging on key state transitions and user act
 - Session timestamps and duration
 
 This event data also feeds the **Data Flywheel**: as franchisees complete plans, update estimated vs. actual, and progress through location lifecycles, the system accumulates brand-specific benchmark data. Over time, this enables more accurate default assumptions for new franchisees, better Katalyst service scoping, and stronger franchisor reporting. The MVP must capture the data fields that power future benchmarks, even if benchmark reports are not surfaced in the MVP.
+
+---
+
+## MVP Scope
+
+### Design Philosophy
+
+Great design is as simple as it can possibly be and no simpler. Opening and starting a new business is inherently complex — the MVP must honor that complexity while making it navigable. This is not a product where "ship less" means "ship better." The minimum viable version is the version that handles the real financial planning workflow end-to-end, with adaptive guidance that makes complexity accessible without dumbing it down.
+
+### Technical Architecture Principles (MVP)
+
+These principles emerged from architectural review and must be respected throughout implementation:
+
+1. **Configuration-driven financial engine, not code-driven.** PostNet's business plan has specific line items, categories, and formulas. The second brand will have different ones. The engine must use a schema-driven financial model where Katalyst configures line items, formulas, and relationships per brand. If the engine is built with PostNet's structure hardcoded, the second brand deployment becomes a rewrite, not a configuration. This is non-negotiable even though PostNet is the only brand at launch.
+
+2. **Cascade modeling is a simulation layer on top of the per-location financial engine.** These are separate concerns. The financial engine calculates per-location financials. The cascade model aggregates across locations, projects forward, and identifies trigger points for the next opening. Mixing these will create an unmaintainable system.
+
+3. **Template-driven document production.** Pro forma P&L, cash flow, balance sheet, break-even — these are structured financial documents with formats lenders expect. Different brands may need different layouts. Template-driven generation from day one prevents a rewrite for every new brand.
+
+4. **UX configuration is as deep as financial configuration.** If line items and categories are configured per brand, the wizard steps, educational content, and guidance layers must be configured per brand as well. A PostNet franchisee sees PostNet-specific guidance. The second brand's franchisees see different guidance. The UX layer is not generic — it's brand-aware.
+
+### Implementation Sequence Recommendation
+
+The implementation sequence optimizes for two things: technical dependencies (build foundations before features) and demo readiness (the PostNet deployment is also the sales demo for the second brand).
+
+**Phase 1 — Foundation:** Financial engine (configuration-driven), user management, onboarding flow, brand configuration
+**Phase 2 — Core Experience:** Quick ROI entry, guided business plan wizard (multi-session), scenario modeling, sensitivity analysis, ROI Threshold Guardian
+**Phase 3 — Output:** Document production (template-driven), lender-ready export
+**Phase 4 — Lifecycle:** Location lifecycle state management, estimated vs. actual tracking
+**Phase 5 — Portfolio:** Multi-unit cascade modeling (simulation layer on top of engine)
+**Phase 6 — Support Systems:** Document vault, admin dashboards (franchisor + Katalyst), metrics instrumentation
+
+The vault and dashboards are lowest technical risk — straightforward CRUD. The engine and cascade are where the complexity lives.
+
+### Core Features (MVP)
+
+#### 1. Onboarding & Adaptive Experience Tiers
+- 3-question onboarding flow that recommends Story Mode, Normal Mode, or Expert Mode based on franchisee experience level
+- Franchisee can override the recommendation at any time and switch tiers during use
+- Brand-specific configuration: logo, colors, FDD data, and benchmark defaults seeded by Katalyst during brand setup
+- FTC Franchise Rule compliance built into onboarding: tool is positioned as a self-assessment planning resource, not a sales or earnings claims tool
+
+#### 2. Entry Paths (MVP: Two primary, one deferred)
+
+**MVP Entry Paths:**
+- **Quick ROI Entry:** As few inputs as possible to deliver a valid preliminary ROI range. The constraint is "right inputs for real value," not an arbitrary input count or time limit. The goal is an immediate hook that demonstrates the tool's value before the franchisee commits to the full planning process
+- **Guided Business Plan Wizard:** Step-by-step financial plan builder that walks the franchisee through every section of the business plan, with educational layers available at each step (surfaced in Story Mode, available on demand in Normal Mode, tucked away in Expert Mode). **Designed for multi-session completion** — the wizard is not a single continuous flow. Clear progress indicators, graceful save/resume, and session-appropriate complexity. Story Mode sequences decisions across multiple sessions so Sam never feels overwhelmed in a single sitting, even with account manager guidance.
+
+**Deferred to v1.1:**
+- **Reverse Goal-Setting:** "What ROI do you need?" — works backward from a target return to show what inputs would need to be true. Powerful for experienced operators but not essential for PostNet proof of concept. Will strengthen the pitch to the second brand where more multi-unit operators will use it.
+
+#### 3. Financial Engine
+- Configurable, schema-driven financial calculation engine — line items, cost categories, revenue assumptions, formulas, and relationships are all configured per brand by Katalyst
+- PostNet Business Plan spreadsheet logic is the first configuration, not the hardcoded model
+- Good/better/best scenario modeling (3-scenario planning minimum)
+- Sensitivity analysis: which inputs have the biggest impact on ROI, surfaced visually so franchisees understand their key risk levers
+- ROI Threshold Guardian: persistent monitoring that alerts when changes to any input push the projected return below an acceptable threshold (configurable per brand by Katalyst)
+
+#### 4. Document Production
+- Pro forma P&L (income statement)
+- Cash flow projections
+- Balance sheet
+- Break-even analysis
+- Lender-ready export format (PDF) — documents must meet the standard franchise lenders expect
+- Template-driven generation: document layouts are configured per brand so different brands can produce documents in their required formats
+- All documents reflect the franchisee's own inputs and scenario selections — the franchisee is the author
+
+#### 5. Multi-Unit Cascade Modeling
+- Portfolio view across multiple locations in different lifecycle states
+- Cash flow cascade: models when the portfolio's aggregate cash flow generates enough to support opening the next location
+- Per-location lifecycle state tracking: planning, site evaluation, under construction, open, operating
+- Implemented as a simulation layer on top of the per-location financial engine — separate concerns
+- MVP models locations planned and tracked through the tool; importing existing location data is a fast follow
+
+#### 6. Estimated vs. Actual Tracking
+- Side-by-side comparison of projected vs. actual performance for each location
+- Evolves the pro forma from best guess to ground truth as real operating data comes in
+- Enables Persona C's "aha!" moment: using location #1 actuals to build a tighter plan for location #2
+- Creates the baseline data that proves Katalyst's service impact (solves the "deleted control sample" problem)
+
+#### 7. Document Vault
+- Per-location file storage for leases, permits, bids, contracts, and other planning documents
+- Upload and organize — simple folder/category structure per location
+- No external service integration required for MVP (no Google Drive, no Dropbox — native storage)
+
+#### 8. Admin Dashboards (MVP versions)
+
+**Franchisor Admin Dashboard:**
+- Pipeline view: all franchisees and their current lifecycle state per location
+- Projected opening timelines across the franchisee base
+- Basic status filtering and sorting
+- No access to individual franchisee financial details (data isolation)
+
+**Katalyst Admin Dashboard:**
+- Cross-brand visibility: all brands, all franchisees, all locations
+- Engagement timing indicators: which franchisees are in site selection, which are approaching construction phase
+- Data completeness tracking: which franchisees have complete plans vs. incomplete
+- Basic operational intelligence views for service planning
+
+Both dashboards start as functional list views with status filters and basic timeline visualization — growing into richer analytics over time.
+
+#### 9. Metrics Instrumentation
+- Backend event logging on all key state transitions and user actions as defined in the Success Metrics section
+- Timestamp logging: account creation, onboarding, Quick ROI, wizard progress, document exports, scenario creation, estimated vs. actual updates, lifecycle state changes, document vault uploads, session data
+- Not a user-facing feature — infrastructure that powers every success metric and prevents the "we forgot to measure" problem
+- Also captures the raw data that feeds the future Data Flywheel
+
+### Out of Scope for MVP
+
+**Reverse Goal-Setting Entry Path (v1.1)**
+- "What ROI do you need?" working backward to required inputs
+- Deferred because Quick ROI + Guided Wizard cover the primary use cases for PostNet's proof of concept
+- Prioritized for v1.1 to strengthen the pitch to the second brand where more sophisticated operators will use it
+
+**Existing Location Data Import (Fast Follow)**
+- Multi-unit operators cannot enter historical data for already-open locations to see their full portfolio in the cascade model
+- MVP cascade modeling works with locations planned and tracked through the tool
+- Fast follow: a streamlined data entry flow for importing existing location financials so operators see their complete portfolio picture
+- This is the most important post-MVP feature for multi-unit operators
+
+**Document Intake / Data Extraction**
+- Automated extraction of data from uploaded documents (leases, FDDs, financial statements)
+- MVP vault is storage and organization only — no parsing or data extraction
+- Fast follow priority: enables capturing structured data from documents franchisees already have, reducing manual entry
+
+**Advanced Analytics and Benchmarking Reports**
+- Brand-specific benchmark reports derived from aggregated franchisee data (the Data Flywheel output)
+- MVP captures the data; post-MVP surfaces the insights
+- Requires sufficient data volume (multiple brands, multiple completed location lifecycles) to be meaningful
+
+**External Integrations**
+- Google Drive, Dropbox, or other cloud storage integration for document vault
+- Accounting software integration (QuickBooks, Xero) for actual financial data import
+- CRM integration (FranConnect or similar) for franchisor pipeline sync
+- All deferred to post-MVP based on user demand
+
+**Multi-Brand Portfolio View**
+- Operators running locations across multiple franchise brands seeing a unified portfolio view
+- MVP is single-brand per deployment (isolated instances); cross-brand views require future multi-tenant architecture
+
+**AI/ML Features**
+- AI-powered financial projections, natural language plan generation, or automated recommendations
+- The tool empowers human decision-making; it does not make decisions for the franchisee
+- May be explored post-MVP for specific use cases (e.g., anomaly detection in estimated vs. actual variance)
+
+### MVP Success Criteria
+
+The MVP is validated through the 6-Month Evaluation Gate defined in Success Metrics:
+
+1. **2-3 brands live** within 6 months of initial deployment (PostNet + at least one additional brand)
+2. **80%+ franchisee adoption** across live brands (justified by high-touch account manager model)
+3. **At least one documented instance** of Katalyst using tool data to make a service decision that would not have been possible without the tool
+4. **Franchisees produce lender-ready packages** through the tool (validated by account manager confirmation)
+5. **Estimated vs. actual tracking** is being used by at least one franchisee with an open location
+6. **Admin dashboards** are being used by both Katalyst team and at least one franchisor development team
+
+If these criteria are met, the product thesis is validated and investment in post-MVP features is justified.
+
+### Future Vision
+
+**Year 1-2: Platform Maturation**
+- Reverse goal-setting entry path
+- Existing location data import for complete portfolio modeling
+- Document intake with data extraction
+- Richer admin dashboards with analytics and trend reporting
+- Data Flywheel begins producing brand-specific benchmarks
+- 5-10 brands on the platform
+
+**Year 2-3: Intelligence Layer**
+- Aggregated benchmark data enables "operators like you" comparisons
+- Predictive analytics on location success probability based on accumulated data
+- Automated early warning system for at-risk locations (estimated vs. actual variance triggers)
+- Multi-tenant architecture migration as operational overhead of isolated instances grows
+- Potential for franchisee self-serve onboarding (reduced dependency on Katalyst account managers for tool setup)
+
+**Year 3+: Ecosystem Expansion**
+- Integration marketplace: accounting, CRM, project management tools
+- Lender portal: direct submission of financial packages to franchise-friendly lenders
+- Contractor/vendor marketplace: connecting franchisees to vetted service providers (including Katalyst services)
+- Cross-brand portfolio intelligence for multi-brand operators
+- The tool becomes the operating system for franchise location lifecycle management
