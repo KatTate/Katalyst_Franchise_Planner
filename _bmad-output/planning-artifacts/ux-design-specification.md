@@ -603,3 +603,192 @@ The following improvements were incorporated via Party Mode review (Architect Wi
 | 3 | Expert Mode grid explicitly specified as purpose-built on TanStack Table; highest-risk component flagged | De-risks the most complex custom component with a proven headless foundation |
 | 4 | Dark mode deferred to post-MVP; token architecture supports it with zero refactoring cost later | Eliminates testing matrix doubling; ships faster without architectural compromise |
 | 5 | Recognition test made concrete: only accent color, logo, and brand copy differ; everything else pixel-identical | Converts aspirational principle into verifiable checklist |
+
+## Core Experience Design
+
+### Defining Experience
+
+**"I told it about my business, and it built my plan."**
+
+That's the sentence Sam would say to a friend. The defining experience of the Katalyst Growth Planner is **natural-language financial planning with real-time visual feedback** — the moment where Sam describes his situation in plain English and watches a professional financial plan materialize on the right side of the screen.
+
+This is the interaction that differentiates Katalyst from every spreadsheet template, every SBA calculator, and every consultant-driven engagement. The user doesn't fill out a form — they have a conversation. The plan doesn't appear at the end — it builds live as they talk.
+
+But the defining experience must also work for Maria, who would describe the product differently: **"I finished the whole plan in twelve minutes without touching a mouse."** Her defining experience is the Expert Mode tab-through — the same financial engine, the same output, but the interaction is raw speed instead of guided conversation.
+
+The unifying defining experience across all personas is: **"I changed something, and the plan immediately showed me what it meant."** Real-time financial feedback is the common thread. The input method varies (conversation, form, grid); the magic moment is the same — numbers change, meaning surfaces, the plan evolves.
+
+### User Mental Model
+
+**How users currently solve this problem:**
+
+- **Sam (first-timer):** Has no mental model for financial planning. His reference point is the FDD (Franchise Disclosure Document) — a dense legal document that lists Item 7 costs but doesn't help him understand what they mean for HIS situation. He may have a spreadsheet his franchisor gave him, or he's working with a Katalyst account manager who walks him through numbers on a screen share. His mental model is: "Someone smart tells me the numbers, and I trust them."
+- **Maria (veteran):** Has a highly developed mental model based on Excel. She thinks in rows and columns. Her financial planning is a spreadsheet she's refined over years. Her mental model is: "I know my numbers; the tool just needs to organize them and produce the output."
+- **Chris (scaling):** Has a hybrid mental model. She's done this once, so she has reference points (Location #1 actuals), but she's not confident enough to work without structure. Her mental model is: "Last time I guessed; this time I want to be smarter about it."
+
+**Mental model shifts the product must create:**
+
+| From | To | Mechanism |
+|------|----|-----------|
+| "Someone tells me the numbers" (Sam) | "I understand and own my numbers" | Story Mode conversation extracts Sam's knowledge; the AI doesn't tell him the answers — it helps him discover them |
+| "I need a spreadsheet" (Maria) | "I need a planning system" | Expert Mode matches spreadsheet speed; scenario comparison and document generation exceed spreadsheet capability |
+| "I'm guessing" (Chris) | "I'm improving" | Location #1 actuals visible during Location #2 planning; quantified tightening of assumptions |
+
+**Where users will get confused or frustrated:**
+
+- **Sam:** The gap between "I'm having a conversation" and "this produced a financial plan" is conceptually large. If the dashboard doesn't update visibly during the conversation, Sam won't trust that the conversation is doing anything productive. The live dashboard is not a nice-to-have — it's the proof that the conversation has purpose.
+- **Maria:** If Expert Mode has ANY unnecessary friction (confirmation dialogs, slow recalculation, mouse-required interactions), Maria will perceive the entire product as amateur. Her frustration tolerance is near zero.
+- **Chris:** The scenario comparison feature must be discoverable without being forced. Chris needs to find it naturally after building her primary plan, not be pushed into it before she's ready.
+
+### Success Criteria
+
+**The core interaction succeeds when:**
+
+| Criterion | Measurable Indicator | Persona |
+|-----------|---------------------|---------|
+| **Real-time feedback feels instant** | Dashboard updates within 200ms of input change (optimistic UI); full recalculation completes within 500ms | All |
+| **Story Mode conversation populates fields accurately** | 80%+ of AI-extracted values require no correction from the user | Sam |
+| **Story Mode conversation covers the plan** | 70%+ of material financial inputs addressable through guided conversation in a single session; remaining 30% are brand defaults that don't require discussion (insurance rates, depreciation schedules, etc.) | Sam |
+| **The plan feels like "mine"** | Franchisee edits 3+ AI-populated or default values (not just accepts everything) | Sam, Chris |
+| **Expert Mode matches spreadsheet speed** | Plan completion in under 20 minutes with tab-through, no mouse required for core input | Maria |
+| **Scenario comparison drives conviction** | User creates or reviews 2+ scenarios before document generation | Sam, Chris |
+| **Document output exceeds expectations** | User downloads or shares the document within the same session (not "I'll look at this later") | All |
+| **Mode switching preserves trust** | User switches modes at least once without losing data or needing to re-enter values | Chris |
+| **Quick ROI creates engagement** | User proceeds from Quick ROI to full planning within 48 hours | Sam |
+
+### Novel UX Patterns
+
+**Pattern classification for each major interaction:**
+
+| Interaction | Classification | Analysis |
+|------------|---------------|----------|
+| **AI conversation → financial field population** | **Novel** | No mainstream financial planning tool uses conversational AI to extract structured financial inputs from natural language. This is the highest-risk, highest-reward interaction. The precedent is Intercom's data extraction from support conversations, adapted for a very different domain. Users have no prior expectation for this — the UX must teach the pattern through immediate, visible results (field populations on the dashboard). |
+| **Split-screen conversation + live dashboard** | **Novel combination of established patterns** | Split-screen panels are established (Intercom, IDEs, email clients). Live-updating dashboards are established (Mercury, trading platforms). The combination — a conversation that drives live dashboard updates — is novel. The risk is cognitive split: users watching the dashboard might stop engaging with the conversation, or vice versa. The AI advisor must reference dashboard changes conversationally ("I've updated your facilities cost — notice how that shifted your break-even by a month") to bridge the two panels. |
+| **Three-mode view switching on shared data** | **Established (Notion precedent)** | Notion's database views prove this pattern works. The key is maintaining the Notion-like "same data, different camera angle" feel. The segmented control must be lightweight, the data transition must be instant, and the summary cards must appear in all three modes to anchor the user's sense of continuity. |
+| **Brand-default pre-fill with per-field reset** | **Established (template pattern)** | Notion templates, CRM lead defaults, email template customization. Users understand "start with a template, customize." The novelty is per-field source attribution (Brand Default / AI-Populated / Your Entry) and per-field reset — these extend the familiar template pattern with transparency affordances. |
+| **Scenario comparison (Good/Better/Best)** | **Established (spreadsheet what-if)** | Excel users understand scenario modeling. The Katalyst version adds visual side-by-side comparison with contextual sentiment ("Your conservative case still shows positive ROI by month 18"). The pattern is familiar; the presentation is elevated. |
+| **Expert Mode spreadsheet grid** | **Established (spreadsheet pattern)** | The mental model is Excel. Tab-through, inline editing, instant recalculation. The only novelty is the integration with the financial engine (calculated fields that update as you type) and source attribution per row. Maria expects spreadsheet behavior; deliver it exactly. |
+
+**Novel pattern education strategy:**
+
+For the two novel patterns (AI field population and split-screen conversation + dashboard), the education strategy is **immediate demonstration, not explanation:**
+
+- **Story Mode's first interaction** should produce a visible field population within the first 2-3 messages. Sam says his name and location → the plan header updates. Sam mentions his rent → the facilities cost field populates. The pattern teaches itself through immediate cause-and-effect. No tutorial overlay needed.
+- **The AI advisor bridges the split screen** by explicitly referencing dashboard changes in conversation: "I've updated your monthly rent to $4,200. Look at how that affects your monthly operating costs on the right — they've gone from $12,300 to $14,100." This conversational bridging teaches Sam to watch the dashboard during the conversation.
+
+**AI Extraction Confidence Threshold:**
+
+Not all conversational extractions are equally certain. The AI must handle ambiguity gracefully using a **confidence threshold pattern:**
+
+| AI Confidence | User Said | AI Behavior | Field Visual State |
+|--------------|-----------|-------------|-------------------|
+| **High confidence** | "My rent is $4,200 a month" | Populates field silently with accent-color pulse animation | Solid value, "AI" source badge |
+| **Tentative** | "Rent is around four thousand" | Populates $4,000 as a tentative value AND asks a clarifying question: "I've estimated your rent at $4,000 — is that close, or did you have a more specific figure?" | **Dashed border** on the field + "~" prefix on the value, indicating "tentative, awaiting confirmation" |
+| **Uncertain** | "Rent depends on the lease negotiation" | Does NOT populate a value; asks a guiding question: "That makes sense — do you have a ballpark range in mind? Even a rough estimate helps build the initial picture." | Field remains at brand default |
+
+This three-tier approach prevents both trust-erosion failure modes:
+- **Silent wrong values** (AI confident but wrong → field shows as populated, Sam doesn't notice the error) — mitigated by the tentative state for ambiguous inputs
+- **Excessive clarifying questions** (AI asks about everything → conversation feels like a form in disguise) — mitigated by silent population for high-confidence extractions
+
+### Experience Mechanics
+
+**Mode Switcher Interaction Design:**
+
+The mode switcher is a **segmented control** (Story | Normal | Expert) positioned at the top of the workspace, below the header and above the content area. It is always visible regardless of which mode is active.
+
+- **Switching is instant** — no loading state, no confirmation dialog, no "are you sure?" The content below the segmented control restructures immediately.
+- **The segmented control stays fixed** during transition — the Notion database view-switch feel. Only the content area changes.
+- **Story → Normal:** The split screen collapses to a single-panel form view. All AI-populated values are visible in the form fields with their source badges. The conversation is preserved in Story Mode's state — when Sam returns, it picks up where he left off.
+- **Story → Expert:** The split screen collapses to the grid view. All values (AI-populated, default, user-edited) appear in the grid rows.
+- **Normal/Expert → Story:** The split screen re-opens. The conversation panel scrolls to where Sam left off. If financial inputs changed while in Normal/Expert mode, the AI advisor acknowledges them on return: "I see you've updated a few values while in Normal Mode — your break-even is now at month 15."
+- **Background AI completion:** If the user switches away from Story Mode while an AI response is in progress, the response completes in the background. Extracted values populate into the shared financial state. When the user returns to Story Mode, the completed AI message is visible and any populated fields reflect their new values.
+
+**Story Mode — Detailed Interaction Flow:**
+
+**1. Initiation:**
+- Sam logs in and sees his plan dashboard (or creates a new plan)
+- Clicks "Start Planning" or selects Story Mode from the mode switcher
+- The split screen opens: conversation panel (left, ~40%), financial dashboard (right, ~60%)
+- The AI advisor introduces itself with a warm, brief greeting: "Hi Sam, I'm here to help you build your PostNet business plan. Let's start with the basics — tell me a bit about the location you're considering."
+
+**2. Interaction Loop (repeats throughout the session):**
+- Sam types a natural-language response ("I'm looking at a spot on Main Street, rent is about $4,200 a month, it's about 1,200 square feet")
+- The AI parses the response, applies the **confidence threshold** (see above), and extracts structured values
+- **Dashboard update animation:** Extracted fields highlight briefly (accent-color pulse for confident values, dashed-border for tentative), then settle with their new values. The summary cards recalculate. If a key metric changed (break-even, ROI), it animates the transition.
+- The AI acknowledges the extraction and bridges to the dashboard: "Got it — I've set your monthly rent to $4,200 and your space at 1,200 sq ft. Your monthly operating costs are now $14,100. Let's talk about your revenue expectations next."
+- **Field source badge:** The rent field now shows an "AI" badge indicating it was AI-populated. Sam can click the field to edit it directly if the AI got it wrong.
+- If Sam edits a field directly on the dashboard (not through conversation), the AI acknowledges: "I see you adjusted the rent to $4,500 — that bumps your break-even out by about two weeks."
+
+**3. Feedback:**
+- **Live dashboard** is the primary feedback mechanism — every input immediately recalculates
+- **Summary cards** at the top of the dashboard show 4-5 headline metrics that update in real time
+- **Section completion** indicators show which categories of the plan have been addressed (Revenue, Operating Costs, Startup Costs, etc.)
+- **Sentiment indicators** on key metrics provide context: "Break-even: Month 14 (typical PostNet range: 12-18 months)"
+- **The AI advisor provides verbal feedback** that translates numbers into meaning: "At these numbers, you'd start making money by March 2027."
+
+**4. Completion:**
+- The AI advisor recognizes when all major sections have inputs and prompts scenario consideration: "Your base plan looks solid. Want to explore what happens if revenue comes in 15% higher or lower? Comparing scenarios is how you build real confidence for the bank meeting."
+- Section completion indicator shows 100% (all categories have at least default or user-entered values)
+- "Generate Package" button becomes prominent (was available but de-emphasized before completion)
+- Document preview pane shows the plan taking professional shape
+
+**Normal Mode — Interaction Flow:**
+
+**1. Initiation:**
+- Chris selects Normal Mode from the mode switcher (or it's her default)
+- The workspace shows a single-panel layout with a **plan completeness dashboard** at the top: a visual summary showing each section's progress (e.g., "Revenue: 8/10 fields | Operating Costs: 3/12 fields | Startup Costs: Complete | Staffing: Not started"). This is Chris's re-entry point when she returns after a week — she can see at a glance exactly where she left off without opening any sections.
+- Below the completeness dashboard: collapsible sections organized by financial category
+- All fields pre-filled with brand defaults
+- A suggested order indicator shows "Start here: Revenue" but all sections are accessible — the sequence is a recommendation, not a lock
+
+**2. Interaction:**
+- Chris opens a section (Revenue) and sees form fields with pre-filled brand defaults
+- She edits values directly in form fields — standard input behavior
+- **Metadata on demand:** On field focus, a subtle panel shows the brand default value, Item 7 range (if applicable), and source attribution. On blur, the metadata disappears and the field shows only its value.
+- Summary cards at the top of the page update as she types (same cards as Story Mode dashboard)
+
+**3. Feedback:**
+- Summary cards provide real-time recalculation feedback (same as Story Mode)
+- Section completion indicators track progress across categories — the plan completeness dashboard at the top updates as Chris works
+- Inline contextual help is available (expand/collapse) for each section — not tooltips, but brief explanatory paragraphs about what this category covers and why it matters
+
+**4. Completion:**
+- Same as Story Mode: scenario comparison prompt, document preview, "Generate Package"
+
+**Expert Mode — Interaction Flow:**
+
+**1. Initiation:**
+- Maria selects Expert Mode (or it's her default)
+- The workspace shows a dense, spreadsheet-style grid built on TanStack Table with **category grouping**: rows are organized into collapsible groups (Revenue | Operating Costs | Startup Costs | Staffing). Maria can collapse categories she doesn't need and focus on the ones she's editing.
+- Column headers: Category | Input Name | Value | Unit | Source | Brand Default
+- All fields pre-filled with brand defaults
+- **Virtualization** ensures smooth scrolling and rendering performance even with 60+ financial input rows
+
+**2. Interaction:**
+- Maria tabs through cells, editing values inline
+- Each cell accepts keyboard input immediately — no click-to-edit, no modals
+- Tab advances to the next editable cell; Shift+Tab goes back
+- Enter confirms the current value and moves down
+- Type-aware inputs: currency cells auto-format with $ and commas; percentage cells auto-append %; month cells accept integers only
+- **Category group collapse/expand:** Maria can collapse entire categories with a single click or keyboard shortcut, reducing the grid to only the rows she cares about
+
+**3. Feedback:**
+- Summary row at the top of the grid (sticky) shows the 4-5 headline metrics, updating with every cell change
+- Out-of-range values get a subtle "Gurple" background (advisory, not error) with a hover tooltip showing the typical range
+- Source column updates as Maria edits: "Brand Default" → "Your Entry"
+
+**4. Completion:**
+- Same completion flow as other modes: scenario comparison, document preview, "Generate Package"
+- Maria's completion is typically faster — she may skip scenario comparison entirely and go straight to document generation
+
+### Party Mode Review Notes
+
+The following improvements were incorporated via Party Mode review (Architect Winston, UX Sally, PM John, BA Mary, SM Bob):
+
+| # | Improvement | Rationale |
+|---|------------|-----------|
+| 1 | AI extraction confidence threshold: confident = silent populate; tentative = dashed border + clarifying question; uncertain = no populate + guiding question | Prevents trust erosion from wrong values AND friction from excessive questions |
+| 2 | Expert Mode grid requires category grouping (collapsible row groups) and virtualization for 60+ rows | Prevents Maria from scroll-hunting in a flat list; TanStack Table supports both |
+| 3 | Story Mode coverage criterion added: 70%+ of financial inputs addressable through guided conversation in a single session | Sets design target for AI conversation completeness, not just extraction accuracy |
+| 4 | Normal Mode plan completeness dashboard for session re-entry: top-level section progress visible before opening any section | Solves Chris's "where did I leave off?" problem on return visits |
+| 5 | Mode switcher mechanics defined: segmented control, always visible, instant switch, background AI completion on mode-away | Fills the undefined mode-switching interaction design with concrete behavior |
