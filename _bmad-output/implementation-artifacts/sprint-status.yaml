@@ -1,0 +1,112 @@
+# generated: 2026-02-08
+# project: Katalyst Growth Planner
+# project_key: NOKEY
+# tracking_system: file-system
+# story_location: _bmad-output/implementation-artifacts
+
+# STATUS DEFINITIONS:
+# ==================
+# Epic Status:
+#   - backlog: Epic not yet started
+#   - in-progress: Epic actively being worked on
+#   - done: All stories in epic completed
+#
+# Epic Status Transitions:
+#   - backlog → in-progress: Automatically when first story is created (via create-story)
+#   - in-progress → done: Manually when all stories reach 'done' status
+#
+# Story Status:
+#   - backlog: Story only exists in epic file
+#   - ready-for-dev: Story file created in stories folder
+#   - in-progress: Developer actively working on implementation
+#   - review: Ready for code review (via Dev's code-review workflow)
+#   - done: Story completed
+#
+# Retrospective Status:
+#   - optional: Can be completed but not required
+#   - done: Retrospective has been completed
+#
+# WORKFLOW NOTES:
+# ===============
+# - Epic transitions to 'in-progress' automatically when first story is created
+# - Stories can be worked in parallel if team capacity allows
+# - SM typically creates next story after previous one is 'done' to incorporate learnings
+# - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
+
+generated: 2026-02-08
+project: Katalyst Growth Planner
+project_key: NOKEY
+tracking_system: file-system
+story_location: _bmad-output/implementation-artifacts
+
+development_status:
+  # Epic 1: Auth, Onboarding & User Management
+  epic-1: backlog
+  1-1-project-initialization-auth-database-schema: backlog
+  1-2-invitation-creation-by-admin: backlog
+  1-3-invitation-acceptance-account-creation: backlog
+  1-4-login-logout-session-management: backlog
+  1-5-role-based-access-control-middleware: backlog
+  1-6-franchisee-onboarding-tier-recommendation: backlog
+  epic-1-retrospective: optional
+
+  # Epic 2: Brand Configuration & Administration
+  epic-2: backlog
+  2-1-brand-entity-financial-parameter-configuration: backlog
+  2-2-startup-cost-template-management: backlog
+  2-3-brand-identity-dynamic-theming: backlog
+  2-4-account-manager-assignment: backlog
+  2-5-brand-configuration-validation: backlog
+  epic-2-retrospective: optional
+
+  # Epic 3: Financial Planning Engine
+  epic-3: backlog
+  3-1-financial-engine-core-plan-schema: backlog
+  3-2-brand-default-integration-per-field-metadata: backlog
+  3-3-startup-cost-computation-custom-line-items: backlog
+  3-4-live-summary-metrics-accounting-validation: backlog
+  3-5-financial-input-api-per-field-reset: backlog
+  3-6-quick-roi-first-90-second-experience: backlog
+  epic-3-retrospective: optional
+
+  # Epic 4: Forms & Quick Entry Experience
+  epic-4: backlog
+  4-1-planning-layout-dashboard-mode-switcher: backlog
+  4-2-forms-mode-section-based-input: backlog
+  4-3-quick-entry-mode-grid-foundation: backlog
+  4-4-quick-entry-mode-keyboard-navigation-formatting: backlog
+  4-5-auto-save-session-recovery: backlog
+  4-6-consultant-booking-link-workspace-chrome: backlog
+  epic-4-retrospective: optional
+
+  # Epic 5: Advisory Guardrails & Smart Guidance
+  epic-5: backlog
+  5-1-input-range-validation-advisory-nudges: backlog
+  5-2-weak-business-case-detection-actionable-guidance: backlog
+  epic-5-retrospective: optional
+
+  # Epic 6: AI Planning Advisor (Planning Assistant)
+  epic-6: backlog
+  6-1-llm-integration-conversation-api: backlog
+  6-2-split-screen-planning-assistant-interface: backlog
+  6-3-ai-value-extraction-field-population: backlog
+  6-4-graceful-degradation-mode-continuity: backlog
+  epic-6-retrospective: optional
+
+  # Epic 7: Scenario Comparison & Document Generation
+  epic-7: backlog
+  7-1-scenario-management-comparison: backlog
+  7-2-pdf-document-generation: backlog
+  7-3-document-history-downloads: backlog
+  epic-7-retrospective: optional
+
+  # Epic 8: Data Sharing, Privacy & Pipeline Dashboards
+  epic-8: backlog
+  8-1-franchisee-data-sharing-controls: backlog
+  8-2-franchisor-pipeline-dashboard: backlog
+  8-3-katalyst-admin-cross-brand-dashboard: backlog
+  epic-8-retrospective: optional
+
+  # Epic 9: Advisory Board Meeting (Phase 2 — Deferred)
+  epic-9: backlog
+  epic-9-retrospective: optional
