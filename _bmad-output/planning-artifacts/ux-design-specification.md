@@ -312,3 +312,162 @@ The following improvements were incorporated via Party Mode review (BA Mary, PM 
 | 4 | Behavioral proxies added for each emotional milestone | Anchors emotional goals in observable, measurable behavior |
 | 5 | "Speed is respect" added as Emotional Design Principle #6 | Gives Expert Mode its own emotional identity beyond "absence of features" |
 | 6 | Live document preview added to pride-building design | Builds professional pride during the process, not just at generation time |
+
+## UX Pattern Analysis & Inspiration
+
+### Inspiring Products Analysis
+
+**1. Notion — Multi-paradigm interaction on the same data**
+
+Notion is the closest precedent for the "same data, different lens" principle. A Notion database can be viewed as a table (Expert Mode analog), a board (Normal Mode analog), or a list with rich content (Story Mode analog) — all operating on the same underlying records. What Notion does well:
+
+- **View switching feels like a camera angle change, not a product switch.** The toolbar stays consistent, the data is recognizably the same, and the user's mental model survives the transition.
+- **Progressive disclosure through toggle blocks and expandable rows.** Summary information is visible; detail is one click away. This maps directly to the financial field metadata challenge (brand default, Item 7 range, source attribution).
+- **Templates with pre-filled content that users customize.** Notion templates are "edit, don't create" — exactly the brand-defaults-as-starting-point pattern the Katalyst Growth Planner needs.
+
+**Transferable insight:** The view-switching affordance (tabs or segmented control at the top of the workspace) should feel like Notion's database views — lightweight, instant, and the data below is recognizably continuous.
+
+**2. Linear — Opinionated speed and keyboard-first interaction**
+
+Linear is the gold standard for Maria's emotional design principle: "speed is respect." What Linear does well:
+
+- **Keyboard-first everything.** Cmd+K command palette, single-key shortcuts, tab-through forms. Power users never touch the mouse. This is the interaction model for Expert Mode.
+- **Instant optimistic updates.** When you change a field in Linear, the UI updates before the server confirms. The interface feels faster than the network. This is critical for the "real-time recalculation" core interaction — the dashboard should update optimistically while the financial engine computes.
+- **Minimal chrome, maximum content.** Linear's UI is famously sparse. Sidebars collapse, headers shrink, and the work takes center stage. Expert Mode should feel this clean.
+- **Opinionated defaults.** Linear doesn't ask "how would you like to configure your workflow?" — it provides a workflow and lets you adjust. This maps to brand defaults that pre-fill everything.
+- **Filtering and bulk operations.** Linear's ability to filter, sort, and perform bulk actions across issues maps to Expert Mode's portfolio management needs — Maria working across multiple location plans needs similar filtering, sorting, and quick-switch capabilities.
+
+**Transferable insight:** Expert Mode's tab-through experience should aim for Linear-level keyboard responsiveness. The absence of friction IS the feature. Linear's filtering paradigm should inform Expert Mode's portfolio-level plan management and a **quick plan-switch shortcut** for Maria navigating between locations.
+
+**3. Coda / Airtable — Financial modeling with approachable UX**
+
+Coda (and to a lesser extent Airtable) bridges the gap between spreadsheet power and document approachability. What they do well:
+
+- **Formulas hidden behind friendly displays.** Coda shows calculated results with formatting, not raw formulas. The user sees "$4,200/month" not "=B12*0.07." This is essential for Sam — the financial engine's complexity must be invisible.
+- **Inline charts that update with the data.** When a value changes in a Coda table, embedded charts redraw instantly. This is the live dashboard pattern for Story Mode's split screen.
+- **Section-based document organization.** Coda organizes content into collapsible sections with clear headers — the exact pattern Normal Mode needs for organizing financial input categories (Revenue, Operating Costs, Startup Costs, etc.).
+
+**Transferable insight:** Normal Mode's section-based form layout should feel like a Coda document — collapsible sections, clear progress through categories, and inline summary visualizations that update as you work.
+
+**4. Intercom / Drift — AI conversation with structured data extraction**
+
+Modern AI support tools demonstrate the split-screen conversational pattern. What they do well:
+
+- **Conversation panel + context panel side by side.** The agent chats on the left; customer context, order history, and actions appear on the right. This is architecturally identical to Story Mode's conversation + dashboard layout.
+- **Structured data extracted from natural language.** When a customer says "I ordered the blue one last Tuesday," the system highlights the matching order in the context panel. This is the pattern for AI-populated financial fields.
+- **Suggested responses and actions.** The AI suggests next steps that the agent can accept or modify. Story Mode's AI advisor suggesting financial values follows this same pattern — suggest, don't override.
+
+**Transferable insight:** Story Mode's split-screen layout should study Intercom's proportions and interaction flow — particularly how the context panel highlights relevant data when the conversation references it.
+
+**5. Mercury / Brex — Financial dashboards that feel approachable**
+
+Modern fintech dashboards have solved the "financial data without intimidation" problem. What Mercury does well:
+
+- **Summary cards with progressive drill-down.** The dashboard shows 4-5 key metrics prominently. Click any metric for detail. This maps directly to the financial summary dashboard in Story/Normal mode.
+- **Clean data visualization with contextual annotations.** Charts include helpful context ("This is 12% higher than last month") without cluttering the visual. The sentiment framing for Quick ROI follows this pattern.
+- **Professional but warm visual design.** Mercury proves that financial tools can be visually warm without feeling unserious. The warm neutral palette from the Katalyst design system achieves this same balance.
+
+**Transferable insight:** The financial summary dashboard should study Mercury's card-based layout — 4-5 headline metrics (Total Investment, Monthly Revenue, Break-Even Month, ROI Range, Monthly Cashflow) with drill-down to detail.
+
+**6. Shopify / Zendesk — White-label theming with platform identity**
+
+The white-label theming challenge has a direct precedent in platforms that maintain platform identity across branded deployments. What Shopify does well:
+
+- **Admin panel = platform identity.** The Shopify admin is unmistakably Shopify regardless of the store brand — consistent navigation, component library, interaction patterns. The merchant recognizes "I'm in Shopify" even though their storefront is fully branded. This is architecturally identical to the Katalyst approach: the planning workspace IS the Katalyst design system, the brand accent/logo is the customer-facing layer.
+- **Storefront = brand layer.** The brand owns colors, logos, and customer-facing copy. The platform owns structure, interaction patterns, and the admin experience.
+- **Cross-deployment recognition.** A Shopify merchant who manages multiple stores instantly recognizes the admin experience. This is the multi-unit franchisee requirement — Maria working across PostNet and Tint World immediately recognizes "this is a Katalyst tool."
+
+Zendesk follows a similar pattern: the agent workspace is recognizably Zendesk across all customer deployments, while the customer-facing help center carries the brand's identity.
+
+**Transferable insight:** The Katalyst theming architecture should follow the Shopify admin/storefront split — CSS custom properties swap brand accent colors and logos, but the design system foundation (component shapes, typography, spacing, interaction patterns) is constant and recognizable across all brand deployments.
+
+**7. Google Docs / Figma — Auto-save trust signals**
+
+Auto-save trust is an emotional design requirement, and two products have perfected the pattern:
+
+- **Google Docs' save indicator:** A tiny, unobtrusive status line in the header transitions through precise states: typing → "Saving..." → "All changes saved to Drive" with timestamp. It's visible enough to provide comfort, quiet enough to never distract. The transitions are smooth and the language is confident.
+- **Figma's save status:** Similar pattern with "All changes saved" in the toolbar. Figma adds visual file version history as a safety net — users can see and restore any previous state.
+
+**Transferable insight:** The auto-save indicator should follow Google Docs' exact pattern — a small status element in the workspace chrome with "Saving..." / "All changes saved" transitions. Include a last-saved timestamp for multi-session planning confidence. The indicator must be visible but never compete for attention with the planning workspace.
+
+### Transferable UX Patterns
+
+**Navigation Patterns:**
+
+| Pattern | Source | Application in Katalyst |
+|---------|--------|------------------------|
+| Segmented control for view switching | Notion database views | Mode switcher (Story / Normal / Expert) — lightweight tabs, not heavy navigation |
+| Collapsible sidebar with icon-only state | Linear | Brand-themed sidebar collapses to 44px icons at narrow viewports |
+| Section-based vertical scrolling | Coda documents | Normal Mode organizes financial inputs into collapsible category sections |
+| Persistent context panel | Intercom | Story Mode dashboard stays visible while conversation scrolls |
+| Quick-switch shortcut | Linear filtering | Expert Mode plan-switch for Maria navigating between location plans |
+
+**Interaction Patterns:**
+
+| Pattern | Source | Application in Katalyst |
+|---------|--------|------------------------|
+| Optimistic UI updates | Linear | Dashboard recalculates instantly on input change; server confirmation is invisible |
+| Keyboard-first tabbing | Linear | Expert Mode tab-through for Maria's 15-minute plan completion |
+| AI suggestion → user confirmation | Intercom/Drift | Story Mode AI populates a field; field shows "AI-populated" badge, user can edit or accept |
+| Template-as-starting-point | Notion | Brand defaults pre-fill every field; planning is "editing," not "creating from scratch" |
+| Metadata on demand (focus/hover) | Coda (adapted) | Per-field metadata (brand default, Item 7 range, source) appears on focus or hover, not at rest — prevents tooltip overload while keeping information accessible |
+| Auto-save trust transitions | Google Docs / Figma | "Saving..." → "All changes saved" status in workspace chrome with last-saved timestamp |
+
+**Visual Patterns:**
+
+| Pattern | Source | Application in Katalyst |
+|---------|--------|------------------------|
+| Summary cards with drill-down | Mercury/Brex | Financial dashboard: 4-5 headline metrics, click for detail breakdowns |
+| Warm-neutral financial UI | Mercury | Katalyst's warm neutral palette proves financial tools can feel approachable |
+| Contextual data annotations | Mercury | "Your estimate is within the typical PostNet range" annotations on charts |
+| Clean chart + table hybrid | Airtable | Scenario comparison rendered as cards with embedded sparklines |
+| Admin/storefront theming split | Shopify/Zendesk | CSS custom properties swap brand accent; design system foundation stays constant |
+
+### Anti-Patterns to Avoid
+
+| Anti-Pattern | Why It Fails | Katalyst Alternative |
+|-------------|-------------|---------------------|
+| **Forced-linear wizard forms** | Prevents skipping ahead, traps experienced users (Maria), creates frustration when you know where you want to go | Section-based layout with all sections accessible and a **suggested order** with completion indicators. The sequence is a recommendation, not a lock — Sam follows it naturally, Chris skips ahead freely, Maria ignores it entirely. |
+| **Modal confirmations for routine actions** | Interrupts flow state, disrespects Maria's time, creates anxiety ("did I do something dangerous?") | Optimistic updates with undo capability; auto-save eliminates the need for "are you sure?" |
+| **Dashboard-only views** (no interaction with the data) | Passive consumption, not authorship; the user feels like a spectator, not the author | Every number on the dashboard links back to the input that drives it; the dashboard is interactive, not read-only |
+| **Onboarding tutorial overlays** | Patronizing for experienced users, easily dismissed and forgotten by new users | Story Mode IS the onboarding for Sam; Expert Mode skips it entirely; Normal Mode has inline contextual help |
+| **Single-number comparisons to averages** | Creates shame/judgment ("you're below average") | Range-based context with market tier: "PostNet locations range from $220K-$550K depending on market" |
+| **Red/error styling for business judgment** | Treats legitimate business decisions as mistakes; undermines authorship | Reserve red for actual errors (missing required fields, system errors). Use advisory blue/purple (the "Gurple" pattern) for guardrail suggestions |
+| **Separate "reports" section** | Disconnects the planning experience from the output; documents feel like an afterthought | Live document preview during planning; generation is the culmination of the same workspace |
+| **Tooltip overload (visible metadata on every field)** | Creates visual "chickenpox" — info icons on every field make the UI feel cluttered and overwhelming, especially when every financial input carries brand defaults, Item 7 ranges, and source attribution | **Metadata on demand:** Fields show their value cleanly at rest. Brand default, Item 7 range, source attribution, and reset affordance appear on field focus or hover — accessible when needed, invisible when not. This preserves clean visual density while keeping full information depth available. |
+
+### Design Inspiration Strategy
+
+**What to Adopt:**
+
+- **Notion's view-switching mental model** — Mode switching must feel like changing a view on the same document, not navigating to a different product. Segmented control, continuous data, instant transition.
+- **Linear's keyboard-first speed** — Expert Mode must match Linear's responsiveness. Tab-through, instant updates, minimal chrome. Maria's satisfaction depends on this.
+- **Mercury's financial summary cards** — The dashboard layout of 4-5 headline metrics with drill-down is proven and appropriate. Don't reinvent financial data presentation.
+- **Intercom's split-screen conversation + context** — Story Mode's architecture already mirrors this pattern. Study the proportions and interaction flow.
+- **Shopify's admin/storefront theming split** — The Katalyst design system is the "admin panel" (constant across deployments); brand accent colors and logos are the "storefront" layer (swapped per brand via CSS custom properties).
+- **Google Docs' auto-save trust signals** — The "Saving..." / "All changes saved" pattern with timestamp is the exact UX needed for multi-session planning confidence.
+
+**What to Adapt:**
+
+- **Coda's section-based organization → Normal Mode forms.** Coda sections are free-form documents; Normal Mode sections are structured financial input categories. Adopt the collapsible-section pattern but with form fields and validation, not rich text.
+- **Linear's filtering and portfolio operations → Expert Mode plan management.** Linear's ability to filter, sort, and bulk-operate across issues maps to Maria's need to manage multiple location plans efficiently. Adapt as a quick plan-switch shortcut and portfolio-level filtering, not as a command palette for AI conversation.
+- **Mercury's annotations → brand-contextual sentiment.** Mercury annotates with month-over-month change; Katalyst annotates with brand-range context and business-timeline impact. Same pattern, different content.
+- **Coda's inline detail → metadata on demand.** Coda shows formula details on cell focus; Katalyst shows field metadata (source, brand default, Item 7 range) on field focus/hover. Same progressive-disclosure principle, applied to financial input metadata.
+
+**What to Avoid:**
+
+- **Notion's flexibility overload.** Notion lets you build anything, which means new users build nothing. Katalyst has a defined structure (startup costs, revenue, operating costs) — the flexibility is in the numbers, not the structure.
+- **Linear's learning curve.** Linear's power comes with a steep learning curve for non-technical users. Story Mode must be immediately accessible to Sam with zero learning required.
+- **Airtable's formula complexity.** Airtable eventually exposes users to formula syntax. Katalyst must never expose the financial engine's formulas — the math is always invisible.
+
+### Party Mode Review Notes
+
+The following improvements were incorporated via Party Mode review (Architect Winston, UX Sally, PM John, BA Mary, SM Bob):
+
+| # | Improvement | Rationale |
+|---|------------|-----------|
+| 1 | Added Shopify/Zendesk as white-label theming inspiration (admin panel = platform identity, storefront = brand layer) | Fills the theming gap — no prior inspiration addressed the white-label challenge |
+| 2 | Added Google Docs/Figma as auto-save trust signal inspiration with specific pattern details | Provides concrete pattern reference for the save status UX emotional requirement |
+| 3 | Wizard anti-pattern refined: forced-linear locking is the problem, not sequential guidance | Allows helpful sequencing in Normal Mode while preventing Maria's frustration |
+| 4 | Tooltip-overload anti-pattern added; metadata-on-demand (focus/hover, not at-rest) prescribed | Solves per-field metadata density without visual clutter — critical for 50+ financial input fields |
+| 5 | Linear's Cmd+K adaptation replaced with filtering/portfolio management and quick plan-switch shortcut | More accurate pattern mapping for Maria's multi-plan workflow |
