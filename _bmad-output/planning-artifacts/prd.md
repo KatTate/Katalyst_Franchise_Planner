@@ -1,5 +1,5 @@
 ---
-stepsCompleted: ['step-01-init', 'step-02-discovery', 'step-03-success', 'step-04-journeys', 'step-05-domain', 'step-06-innovation', 'step-07-project-type', 'step-08-scoping', 'step-09-functional']
+stepsCompleted: ['step-01-init', 'step-02-discovery', 'step-03-success', 'step-04-journeys', 'step-05-domain', 'step-06-innovation', 'step-07-project-type', 'step-08-scoping', 'step-09-functional', 'step-10-nonfunctional', 'step-11-polish', 'step-12-complete']
 inputDocuments: ['_bmad-output/planning-artifacts/product-brief-workspace-2026-02-08.md', '_bmad-output/brainstorming/brainstorming-session-2026-02-08.md', 'attached_assets/katalyst-replit-agent-context-final_1770513125481.md', 'attached_assets/PostNet_-_Business_Plan_1770511701987.xlsx', 'attached_assets/Pasted-Persona-A-First-Time-Franchisee-Sam-The-New-Owner-Snaps_1770523428988.txt']
 workflowType: 'prd'
 briefCount: 1
@@ -116,44 +116,6 @@ Identical across all: Payroll taxes (20%), Other OpEx (3%), Target pre-tax profi
 | Early engagement window | 60-90 days advance | 6 months |
 | Brand onboarding time | < 30 minutes, < 20 parameters | Per brand |
 | Model validation | 4/4 brand parameter sets pass | Pre-launch |
-
-## Product Scope
-
-### MVP
-
-1. Parameterized financial engine (single universal model, brand parameter sets, all values franchisee-editable with reset-to-default)
-2. Startup/construction cost detail builder (brand-defined templates with variable line items, franchisee add/remove/edit, reset-to-defaults)
-3. Onboarding & adaptive experience tiers (Story/Normal/Expert)
-4. Quick ROI entry point (5 inputs, under 2 minutes)
-5. Multi-session guided business plan wizard with save/resume and auto-save
-6. Ever-present consultant booking link (Calendly-style)
-7. 3-scenario modeling + sensitivity analysis + ROI Threshold Guardian (advisory, handles both outlier inputs and weak business cases)
-8. Template-driven document production (pro forma P&L, cash flow, balance sheet, break-even, lender-ready PDF)
-9. Estimated vs. actual tracking
-10. Per-location document vault
-11. Opt-in data sharing with visible value exchange (franchisee controls what franchisor sees)
-12. Franchisor admin dashboard (MVP: read-only pipeline list view with explicit data boundaries)
-13. Katalyst admin dashboard (MVP: brand parameter management + startup cost template builder + cross-brand views + franchisee activity visibility)
-14. Metrics instrumentation (backend event logging)
-
-### Growth Features (Post-MVP)
-
-- Multi-unit cascade modeling (simulation layer on financial engine)
-- Reverse goal-setting entry path ("What ROI do you need?")
-- Existing location data import for complete portfolio modeling
-- Document intake with data extraction
-- Richer admin dashboards with analytics and trend reporting
-- Data Flywheel benchmark reports from aggregated franchisee data
-
-### Vision (Future)
-
-- Predictive analytics on location success probability
-- Automated early warning for at-risk locations
-- Multi-tenant architecture migration
-- Integration marketplace (accounting, CRM, project management)
-- Lender portal for direct financial package submission
-- Contractor/vendor marketplace
-- Cross-brand portfolio intelligence
 
 ## User Journeys
 
@@ -407,19 +369,6 @@ Brand templates pre-tag each default line item (franchise fee = non-CapEx, equip
 - Multi-session persistence with auto-save is critical — losing a franchisee's work is unacceptable
 - Estimated vs. actual tracking means data evolves over the location's lifetime
 
-### Integration Requirements
-
-**MVP — Minimal integrations:**
-- Consultant booking: External link (Calendly or similar) — no API integration needed, just a configurable URL per brand/account manager
-- PDF generation: Server-side document rendering for lender-grade output
-- No accounting system integrations in MVP
-- No CRM integrations in MVP
-
-**Post-MVP integration candidates:**
-- Accounting software (QuickBooks, Xero) for actuals import
-- Construction project management tools
-- Franchise management systems (FranConnect)
-
 ### Risk Mitigations
 
 **Risk 1: Financial model accuracy failures**
@@ -556,42 +505,15 @@ The ever-present booking link is configurable at the **franchisee-to-account-man
 
 ### Integration List
 
-**MVP integrations (minimal):**
-- Consultant booking: Configurable external URL per account manager
+**MVP — minimal integrations:**
+- Consultant booking: Configurable external URL per account manager (no API integration)
 - PDF generation: Server-side document rendering for lender-grade output
 - Authentication: Invitation-based with secure link + password setup
 
-**Post-MVP integrations:**
+**Post-MVP candidates:**
 - Accounting software (QuickBooks, Xero) for actuals import
 - Franchise management systems (FranConnect) for pipeline sync
 - Construction project management tools
-
-### Implementation Considerations
-
-**Session Management:**
-- Multi-session wizard with persistent state — franchisees work on plans over weeks/months
-- Auto-save every few minutes for crash recovery
-- Explicit save points at wizard section boundaries
-- Session state must survive browser crashes, device changes, and network interruptions
-
-**Document Generation:**
-- Server-side PDF rendering for lender-grade documents
-- Documents must be visually professional — these go to banks
-- Multiple document types: pro forma P&L, cash flow projection, balance sheet, break-even analysis, lender summary package
-- Documents include FTC-compliant disclaimers
-
-**Financial Engine:**
-- Pure calculation engine — no external API dependencies for core math
-- 5-year monthly projection model (60 months)
-- Must be deterministic — same inputs always produce identical outputs
-- < 2 second recalculation for live-updating summary metrics
-- Accounting identity checks run on every calculation
-
-**Brand Onboarding:**
-- Katalyst admin configures brand in < 30 minutes
-- Parameter set: ~15-20 financial values + startup cost template + Item 7 ranges + brand identity
-- Validation step: run model against known-good spreadsheet outputs
-- Account manager assignment and booking URL configuration
 
 ## Project Scoping & Phased Development
 
@@ -776,3 +698,45 @@ This section defines THE CAPABILITY CONTRACT for the entire product. UX designer
 ### 9. Brand Identity & Experience
 
 - **FR49:** Franchisee sees their franchise brand's identity (name, logo, colors) throughout the planning experience
+
+## Non-Functional Requirements
+
+### Performance
+
+- **NFR1:** Financial model recalculation completes in < 2 seconds for live-updating summary metrics as the franchisee edits inputs
+- **NFR2:** Wizard page transitions complete in < 1 second, including loading saved state and brand defaults
+- **NFR3:** PDF document generation completes in < 30 seconds for a full lender package (5 documents)
+- **NFR4:** Dashboard views (franchisor pipeline, Katalyst admin) load in < 3 seconds with up to 200 franchisees per brand
+- **NFR5:** Auto-save operations complete without interrupting the franchisee's workflow (non-blocking, background operation)
+
+### Security
+
+- **NFR6:** All data transmitted over HTTPS/TLS — no unencrypted connections
+- **NFR7:** Passwords hashed using industry-standard algorithms (bcrypt or equivalent) — never stored in plaintext
+- **NFR8:** Session tokens expire after a reasonable inactivity period, with configurable timeout
+- **NFR9:** Every API endpoint enforces role-based access control — no endpoint returns data the requesting user's role should not see
+- **NFR10:** Franchisee data isolation enforced at the database query level — queries always scoped to the authenticated user's permissions, not filtered after retrieval
+- **NFR11:** Invitation tokens are single-use, time-limited, and cryptographically secure
+- **NFR12:** No financial data, passwords, or secrets logged or exposed in error messages
+
+### Reliability & Data Integrity
+
+- **NFR13:** Auto-save occurs at minimum every 2 minutes during active wizard sessions — maximum data loss on crash is 2 minutes of work
+- **NFR14:** System gracefully handles concurrent edits to the same plan from different browser tabs/devices (last-write-wins or conflict detection)
+- **NFR15:** Financial calculation engine produces identical outputs for identical inputs across all environments (deterministic — no floating-point inconsistencies across server/client)
+- **NFR16:** Database backups occur daily at minimum, with point-in-time recovery capability
+- **NFR17:** System remains functional during brand parameter updates — active franchisee sessions are not disrupted by admin configuration changes
+- **NFR18:** Generated PDF documents are immutable after creation — changing plan inputs does not alter previously generated documents
+
+### Scalability
+
+- **NFR19:** System supports up to 10 brands and 500 active franchisees without architectural changes
+- **NFR20:** Financial engine scales linearly — adding brands does not increase calculation time for existing brands
+- **NFR21:** Database schema supports multi-brand partitioning from day one (brand_id on all relevant tables)
+
+### Usability
+
+- **NFR22:** Wizard is usable on desktop browsers (minimum 1024px width) — mobile optimization is not required for MVP but layout should not break on tablet
+- **NFR23:** All user-facing error messages written in plain language, not technical jargon — franchisees are not technical users
+- **NFR24:** Financial values displayed with consistent formatting (currency symbols, thousand separators, appropriate decimal places) throughout the application
+- **NFR25:** The system provides visual feedback within 200ms for any user action (click, keystroke, toggle) — even if the underlying operation takes longer
