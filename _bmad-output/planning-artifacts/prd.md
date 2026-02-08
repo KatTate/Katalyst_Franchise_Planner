@@ -1,5 +1,5 @@
 ---
-stepsCompleted: ['step-01-init', 'step-02-discovery', 'step-03-success', 'step-04-journeys']
+stepsCompleted: ['step-01-init', 'step-02-discovery', 'step-03-success', 'step-04-journeys', 'step-05-domain', 'step-06-innovation']
 inputDocuments: ['_bmad-output/planning-artifacts/product-brief-workspace-2026-02-08.md', '_bmad-output/brainstorming/brainstorming-session-2026-02-08.md', 'attached_assets/katalyst-replit-agent-context-final_1770513125481.md', 'attached_assets/PostNet_-_Business_Plan_1770511701987.xlsx', 'attached_assets/Pasted-Persona-A-First-Time-Franchisee-Sam-The-New-Owner-Snaps_1770523428988.txt']
 workflowType: 'prd'
 briefCount: 1
@@ -342,3 +342,135 @@ In another session, Sam tries to generate his lender package but hasn't complete
 | Pipeline Dashboard | - | - | - | - | Cross-brand view | Brand-specific view |
 | Activity/Inactivity Visibility | - | - | - | Triggers follow-up | Proactive outreach | Stalled alerts |
 | All Values Editable + Reset | Empowerment + safety | Expertise + reference | Speed + reference | Edits with guidance | - | - |
+
+## Domain-Specific Requirements
+
+### Compliance & Regulatory
+
+**FTC Franchise Rule (16 CFR Part 436):**
+- The tool must NEVER make earnings claims or projections on behalf of the franchisor. The franchisee is the author of all projections — the tool provides structure and defaults, the franchisee makes the decisions
+- All financial outputs must be clearly labeled as franchisee-created projections, not franchisor representations
+- The tool cannot be used as a franchise sales tool — it's only available to post-agreement franchisees
+- Educational content and tooltips must be carefully worded to inform without implying guaranteed outcomes
+- Brand defaults should reference FDD data (Item 19, Item 7) but the tool itself doesn't make claims about what a franchisee "should" expect
+
+**FDD Item 7 Integration:**
+- Every franchise brand has an Item 7 ("Estimated Initial Investment") table in their FDD with low/high ranges for each startup cost category
+- Brand parameter setup includes Item 7 ranges alongside default values
+- Franchisee view shows: "Item 7 range: $15,000 - $45,000 | Brand default: $28,000 | Your estimate: ___"
+- Serves three purposes: educational (franchisee sees official range), FTC compliance reinforcement (franchisor's published estimate shown alongside franchisee's independent decision), and guardrail (ROI Threshold Guardian flags estimates wildly outside Item 7 range)
+- Item 7 data is public information (in the FDD) — displaying it is compliance-positive
+
+**Practical impact on architecture:**
+- This is primarily a content/positioning constraint, not a technical architecture constraint
+- No special encryption, audit trail, or regulatory reporting required beyond standard application security
+- The constraint manifests in: onboarding copy, tooltip language, document disclaimers, and the fundamental UX principle that the franchisee drives all inputs
+
+### Technical Constraints
+
+**Financial Accuracy — Three-Tier Validation Strategy:**
+
+1. **Known-good spreadsheet validation:** Model outputs must match all four brand spreadsheets (PostNet, Jeremiah's, Ubreakifix, Tint World) with exact parameter sets. Automated regression tests compare tool output to known-correct spreadsheet outputs
+2. **Edge case parameter testing:** Extreme inputs (0% growth, 80% COGS, $0 investment, maximum values) must not produce nonsensical outputs (negative revenue, division by zero, NaN). Model must degrade gracefully at boundaries
+3. **Built-in accounting identity checks:** Internal consistency checks that must always hold regardless of inputs:
+   - Balance sheet must balance (Assets = Liabilities + Equity)
+   - P&L net income must equal cash flow starting point (before adjustments)
+   - ROIC must derive correctly from net income and invested capital
+   - Depreciation must equal CapEx * depreciation rate
+   - These are accounting identities — if they fail, the model is wrong regardless of what the inputs are
+   - Mirrors the Audit sheet functionality in the existing spreadsheets
+
+**Startup Cost → Financial Engine Data Flow:**
+
+Each startup cost line item must be classified as one of three categories, because the classification drives different financial calculations:
+- **CapEx** (depreciable assets — equipment, fixtures, signage) → Drives Depreciation & Amortization line in P&L → Affects EBITDA and Valuation
+- **Non-CapEx** (franchise fee, initial inventory, professional fees) → Expensed in period → P&L impact
+- **Working Capital** (cash reserve, additional funds) → Cash reserve → Balance Sheet and Cash Flow
+
+Brand templates pre-tag each default line item (franchise fee = non-CapEx, equipment = CapEx, etc.). When franchisees add custom line items, they classify them. In Story Mode, this is presented simply: "Is this something you'll own for years (like equipment) or something you'll use up quickly (like initial inventory)?"
+
+**Rounding and Determinism:**
+- Lender-grade documents cannot have $1 discrepancies between summary and detail
+- The 5-year projection model with monthly granularity (60 months of calculations) must be deterministic — same inputs always produce same outputs
+- Sensitivity analysis must correctly propagate changes across the entire model
+
+**Data Isolation (The Throuple Problem):**
+- Franchisee financial data is confidential — no cross-franchisee visibility
+- Franchisor sees pipeline status by default, financial details only with explicit franchisee opt-in
+- Katalyst sees all data for operational intelligence (they're the platform operator)
+- Opt-in is granular and reversible — franchisee can share and un-share at any time
+- Data boundaries must be enforced at the API level, not just the UI level
+
+**Stateful Planning System:**
+- Locations have lifecycle states: planning, site evaluation, financing, construction, open, operating
+- State transitions happen over weeks/months — this is not a session-based tool
+- Multi-session persistence with auto-save is critical — losing a franchisee's work is unacceptable
+- Estimated vs. actual tracking means data evolves over the location's lifetime
+
+### Integration Requirements
+
+**MVP — Minimal integrations:**
+- Consultant booking: External link (Calendly or similar) — no API integration needed, just a configurable URL per brand/account manager
+- PDF generation: Server-side document rendering for lender-grade output
+- No accounting system integrations in MVP
+- No CRM integrations in MVP
+
+**Post-MVP integration candidates:**
+- Accounting software (QuickBooks, Xero) for actuals import
+- Construction project management tools
+- Franchise management systems (FranConnect)
+
+### Risk Mitigations
+
+**Risk 1: Financial model accuracy failures**
+- Mitigation: Three-tier validation (spreadsheet match, edge case testing, accounting identity checks). Identity checks run on every calculation, not just during testing
+- Severity: High — inaccurate financial documents undermine lender relationships and platform credibility
+
+**Risk 2: Franchisee enters wildly incorrect data, produces misleading documents**
+- Mitigation: ROI Threshold Guardian provides advisory guardrails (flags outliers vs. Item 7 ranges and brand averages) without blocking. Account managers review during guided sessions. Documents include disclaimers that projections are franchisee-created
+- Severity: Medium — FTC compliance and franchisee empowerment both require allowing this, but the tool should make bad assumptions visible
+
+**Risk 3: Data leak between franchisees or unauthorized franchisor access**
+- Mitigation: API-level data isolation enforcement, not just UI. Authorization checks on every data access. Opt-in sharing is explicit and logged
+- Severity: High — trust is foundational to the throuple model
+
+**Risk 4: Franchisee loses work (session crash, data loss)**
+- Mitigation: Frequent auto-save, session recovery on re-login, explicit save confirmations
+- Severity: High — losing a franchisee's plan data destroys trust permanently
+
+**Risk 5: Brand parameter misconfiguration produces incorrect defaults**
+- Mitigation: Katalyst admin validation step (run model against known spreadsheet outputs after brand setup). Brand parameter change audit log
+- Severity: Medium — fixable but embarrassing if franchisees see wrong defaults
+
+**Risk 6: CapEx/non-CapEx misclassification in startup costs**
+- Mitigation: Brand templates pre-tag defaults correctly. Story Mode simplifies the classification question for custom items. Financial identity checks catch downstream errors (depreciation doesn't match CapEx total)
+- Severity: Medium — affects EBITDA and valuation calculations but catchable via identity checks
+
+## Innovation & Novel Patterns
+
+### Detected Innovation Areas
+
+This product has several genuinely innovative aspects — not technological breakthroughs, but novel combinations and applications:
+
+1. **Three-stakeholder value from single data entry** — The "throuple" architecture where one franchisee action (entering their plan data) simultaneously serves the franchisee (planning power), the franchisor (pipeline visibility), and Katalyst (operational intelligence). No existing franchise tool serves all three stakeholders from a single data layer.
+
+2. **Adaptive experience tiers on a shared financial engine** — Story/Normal/Expert modes are not different products. They're different presentation layers over the same calculation engine, producing equally rigorous outputs. This is distinct from "beginner/advanced" feature gating — the output quality doesn't degrade in Story Mode.
+
+3. **Configuration via parameterization** — The spreadsheet analysis revealed that brand "configuration" is really just ~15-20 seed values, not structural model changes. This insight enables a simpler, more reliable architecture than a fully configurable financial engine. The one exception (startup cost detail builder) is handled as a template pattern, not a schema-definition pattern.
+
+4. **Estimated vs. actual as a living system** — Most planning tools produce a static document. This tool creates a baseline that evolves — the plan becomes an operational tracking system. This is uncommon in franchise planning and creates the return engagement that distinguishes a platform from a calculator.
+
+5. **FTC compliance as UX strength** — The legal requirement that the franchisee must be the "author" of their projections (not passive recipient) is turned into the product's core UX philosophy. The constraint becomes the differentiator.
+
+### Validation Approach
+
+- **Parameterization model:** Validated by spreadsheet analysis — 4 brands confirm identical model structure. Pre-launch validation against all 4 brand parameter sets
+- **Adaptive tiers:** Validated by persona research (Sam/Chris/Maria). Account managers confirm that first-timers and veterans have fundamentally different guidance needs
+- **Throuple value:** Validated at 6-month gate — does Katalyst gain operational intelligence? Does the franchisor use pipeline data? Do franchisees return to update plans?
+- **Living plan:** Validated by return engagement rate (target: 60%+)
+
+### Risk Mitigation
+
+- If adaptive tiers prove unnecessary (all users prefer one mode), the engine still works — tiers are a presentation layer, not a structural dependency
+- If throuple model doesn't deliver franchisor value, the tool still serves franchisees and Katalyst — franchisor dashboard is the lightest-weight component
+- If return engagement is low, the tool still produces value as a one-time planning tool — the "living plan" is additive, not foundational
