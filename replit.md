@@ -66,7 +66,8 @@ When the user's message matches a BMAD trigger phrase, agent name, or workflow c
     - Step 5: Implementation Patterns (25 conflict points, Party Mode review)
     - Step 6: Project Structure & Boundaries (complete file tree, Party Mode review)
     - Step 7: Architecture Validation (coherence, coverage, readiness — all PASS, Party Mode review)
-- **Next:** Architecture Step 8 (Completion)
+    - Step 8: Completion (workflow complete)
+- **Next:** Create Epics & Stories (CE) — break architecture into implementable work units
 
 ## BMad File Structure
 
