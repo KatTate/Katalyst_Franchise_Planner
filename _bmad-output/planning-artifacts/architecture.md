@@ -1,5 +1,5 @@
 ---
-stepsCompleted: [1, 2, 3, 4, 5, 6]
+stepsCompleted: [1, 2, 3, 4, 5, 6, 7]
 inputDocuments:
   - _bmad-output/planning-artifacts/prd.md
   - _bmad-output/planning-artifacts/prd-validation-report.md
@@ -1633,3 +1633,235 @@ User Input (any tier)
 - No separate test directory — tests authored through testing tool
 - `data-testid` coverage mandatory for all interactive and financial display elements
 - Financial engine validated against `shared/brand-seed-data/postnet.ts` reference calculations
+
+---
+
+## Architecture Validation Results
+
+_Reviewed via Party Mode with Dev (Amelia), QA (Quinn), UX (Sally), SM (Bob), and PM (John). All team recommendations incorporated._
+
+### Coherence Validation — PASS
+
+**Decision Compatibility:**
+All 15 architectural decisions are compatible. React + Express + PostgreSQL + Drizzle + TanStack Query is a proven stack with no version conflicts. Session auth (express-session + connect-pg-simple) works natively with PostgreSQL. Drizzle + drizzle-zod produces shared schemas consumed by both React Hook Form (zodResolver) and Express route validation — single source of truth. Financial engine as pure shared module imports cleanly into both Vite client bundle and Express server. JSONB columns for per-field metadata pair naturally with Drizzle's `jsonb()` type and TypeScript interfaces.
+
+**Pattern Consistency:**
+- Database naming (snake_case) and JSONB internals (camelCase) explicitly separated
+- API naming (kebab-case endpoints, camelCase query params) aligns with Express conventions
+- Code naming (PascalCase components, kebab-case files) matches template convention
+- Currency-as-cents rule enforced at every layer: engine → storage → API → UI (`format.ts`)
+- `.partial()` update schemas for every PATCH-able entity — consistent auto-save pattern
+
+**Structure Alignment:**
+- Route modules (8 files under `server/routes/`) map 1:1 to API boundary table
+- Three layout components match the three experience tiers — clear separation
+- `components/common/` holds cross-tier components; `components/planning/` holds tier-specific
+- `[T]`/`[C]` legend prevents agents from recreating template files
+- Error boundary in `common/` enables fault isolation per panel in split-screen layouts
+
+---
+
+### Requirements Coverage Validation — PASS
+
+**Functional Requirements (58 FRs):**
+
+| FR Range | Category | Architectural Support | Status |
+|----------|----------|----------------------|--------|
+| FR1-10 | Financial Planning | `financial-engine.ts` (pure), `financial-service.ts` (orchestration), `financial-dashboard.tsx` + `roi-summary-card.tsx` (display) | COVERED |
+| FR11-19 | Guided Experience | `plan.tsx` → 3 layout components, `plan-header.tsx` (booking link, tier selector, save indicator), `use-plan-auto-save.ts` | COVERED |
+| FR20-23 | Advisory & Guardrails | Engine identity checks (never throws), `detail-panel.tsx` (range warnings, source attribution) | COVERED |
+| FR24-27 | Documents | `document-service.ts` (PDF + immutable storage), `storage.ts` (createDocument/getDocument only) | COVERED |
+| FR28-32 | Auth & Access | `auth.ts` middleware (session + requireRole), `use-auth.ts` hook, `protected-route.tsx`, invitation token flow | COVERED |
+| FR33-38 | Data Sharing & Consent | `rbac.ts` (scopeToUser + projectForRole), `consent-dialog.tsx` (human-readable field lists), `routes/consent.ts` | COVERED |
+| FR39-44 | Brand Admin | `routes/admin.ts`, admin pages, `brand-defaults-editor.tsx`, `startup-cost-template.tsx`, `brand-seed-data/postnet.ts` | COVERED |
+| FR45-48 | Pipeline | `routes/pipeline.ts`, `pipeline.tsx` page, `pipeline-board.tsx`, RBAC projection | COVERED |
+| FR49 | Brand Identity | `brand-theme.ts` (runtime CSS variables), `schema.ts` (brand theme columns + booking_url) | COVERED |
+| FR50-54 | AI Planning Advisor | `ai-service.ts` (LLM proxy + NL extraction), `story-layout.tsx` (split-screen), `routes/ai.ts` | COVERED |
+| FR55-58 | Advisory Board | Explicitly deferred to Phase 2 — not in MVP structure | DEFERRED (by design) |
+
+**Non-Functional Requirements (28 NFRs):**
+
+| NFR Area | Architectural Support | Status |
+|----------|----------------------|--------|
+| Performance | Client-side engine for live preview, server-side for document generation, TanStack Query caching | COVERED |
+| Security | Session-based auth, RBAC at 3 layers, httpOnly cookies, no secrets exposed to client | COVERED |
+| Data Integrity | Currency as cents, immutable documents, auto-save with conflict detection | COVERED |
+| FTC Compliance | Consent dialog with field lists, disclaimer injection, source attribution | COVERED |
+| Accessibility | Shadcn components (built-in ARIA), data-testid convention, proper form labels | COVERED |
+| Scalability | Stateless engine, PostgreSQL with indexes, JSONB for flexible schema evolution | COVERED |
+| Graceful Degradation | AI is enhancement — Normal/Expert work without LLM, cut order documented | COVERED |
+
+---
+
+### Implementation Readiness Validation — PASS
+
+**Decision Completeness:**
+- 15 decisions documented with specific technology versions
+- 25 conflict points resolved with code examples (good and bad patterns)
+- 10 enforcement guidelines + 10 anti-patterns provide guardrails
+
+**Structure Completeness:**
+- 50+ files explicitly defined with `[T]`/`[C]` legend
+- Page access matrix documents public vs. protected routes with roles
+- Route module pattern includes composition code example
+- Storage wiring documented: `routes.ts` creates `DatabaseStorage` internally and passes to route modules (Party Mode: Amelia)
+
+**Pattern Completeness:**
+- All naming conventions specified (6 categories)
+- Number format rules explicit (currency vs. rates vs. counts)
+- Error handling: 3-part actionable messages, engine never throws
+- Auto-save: debounce, conflict detection, in-flight handling, UI indicator
+- Loading states: split-screen independent loading, skeleton vs. inline spinner
+
+---
+
+### Gap Analysis Results
+
+**Critical Gaps: NONE**
+
+**Important Gaps (3 found — all resolved):**
+
+1. **Session configuration details.** Architecture specifies express-session + connect-pg-simple but doesn't detail cookie config. **Resolution:** Implementation detail — agents follow standard secure defaults (httpOnly, secure in production, sameSite: lax). SESSION_SECRET already configured.
+
+2. **Rate limiting on public endpoints.** Quick ROI and auth endpoints are public with no rate limiting. **Resolution:** Post-MVP operational hardening. Noted as future enhancement.
+
+3. **Auto-save conflict resolution (Party Mode: Quinn).** Step 5 defines conflict detection but doesn't specify the full failure path. **Resolution — new decision:**
+
+> **Auto-Save Conflict Handling (MVP):**
+> - Server detects stale `lastAutoSave` timestamp → returns `409 Conflict` with server's current version
+> - Client shows 3-part message: "Your changes conflict with a more recent save. Your work has been preserved locally. Please refresh to see the latest version."
+> - Client preserves unsaved changes in local state (not lost on refresh)
+> - **No merge UI in MVP** — merge is Phase 2 complexity
+> - User refreshes to get server version, then re-applies their changes manually
+
+**Nice-to-Have Gaps (2 found):**
+
+1. **Monitoring/observability.** No logging framework specified. **Resolution:** Standard `console.log` with Express error handler sufficient for MVP on Replit. Structured logging in Phase 2.
+
+2. **Split-screen responsive behavior (Party Mode: Sally).** Architecture specifies side-by-side split for Story Mode but doesn't address narrow viewports. **Resolution — implementation note:**
+
+> **Split-Screen Responsive Rule:**
+> - Viewports ≥ 1024px: side-by-side (chat left, dashboard right)
+> - Viewports < 1024px: stacked vertically or tab-based toggle between chat and dashboard
+> - Agents must implement responsive breakpoint — never build rigid two-column layout
+
+---
+
+### Validation Issues Addressed
+
+All issues found during validation have been resolved:
+
+| Issue | Severity | Resolution |
+|-------|----------|------------|
+| Auto-save conflict path undefined | Important | `409 Conflict` → 3-part message → preserve local → no merge in MVP (Quinn) |
+| Implementation priority order | Important | Engine before client pages — engine types needed by components (Amelia) |
+| Storage wiring undocumented | Important | `routes.ts` creates DatabaseStorage, passes to modules (Amelia) |
+| Quick ROI → registration funnel | Minor | Note CTA in Quick ROI page: "Build a full plan → Sign up" (Sally) |
+| Split-screen responsive behavior | Minor | Stack/tab below 1024px breakpoint (Sally) |
+| Cut order buried in Decision 15 | Minor | Elevated to implementation handoff section (John) |
+| Shippable unit boundaries unclear | Minor | Independently shippable units documented for sprint planning (Bob) |
+
+---
+
+### Architecture Completeness Checklist
+
+**Requirements Analysis**
+- [x] Project context thoroughly analyzed (Step 2 — multi-tenant B2B2C, throuple problem, FTC compliance)
+- [x] Scale and complexity assessed (Step 2 — 3 user roles, 3 experience tiers, franchise domain)
+- [x] Technical constraints identified (Step 3 — Replit template, single PostgreSQL, no containerization)
+- [x] Cross-cutting concerns mapped (Step 6 — RBAC, auto-save, formatting, FTC, metadata, fault isolation, theming)
+
+**Architectural Decisions**
+- [x] Critical decisions documented with versions (15 decisions, Step 4)
+- [x] Technology stack fully specified (React 18 + Express + PostgreSQL + Drizzle + TanStack Query v5)
+- [x] Integration patterns defined (LLM proxy, PDF generation, Object Storage)
+- [x] Performance considerations addressed (client-side engine preview, query caching, debounced auto-save)
+
+**Implementation Patterns**
+- [x] Naming conventions established (database, API, code, JSONB, data-testid — 6 categories)
+- [x] Structure patterns defined (project organization, schema patterns, route modules)
+- [x] Communication patterns specified (TanStack Query, auto-save, auth flow, validation)
+- [x] Process patterns documented (error handling, loading states, consent, engine purity)
+
+**Project Structure**
+- [x] Complete directory structure defined (50+ files with [T]/[C] legend)
+- [x] Component boundaries established (pages → layouts → common/tier components)
+- [x] Integration points mapped (client→server REST, client→engine direct, server→LLM, server→Object Storage)
+- [x] Requirements to structure mapping complete (11 FR categories + 7 cross-cutting concerns)
+
+---
+
+### Architecture Readiness Assessment
+
+**Overall Status:** READY FOR IMPLEMENTATION
+
+**Confidence Level:** HIGH
+
+**Key Strengths:**
+- Financial engine purity architecturally enforced — computation is deterministic and testable
+- Three-tier experience model writes to same state — no data divergence risk
+- RBAC at three layers prevents authorization gaps
+- Per-field metadata enables attribution, reset, and range display uniformly
+- Immutable document storage prevents tampering — no update/delete methods exist
+- Party Mode reviews at Steps 5, 6, and 7 resolved 25+ potential implementation conflicts
+- Graceful degradation baked in — AI is enhancement, not foundation
+- Auto-save conflict handling explicitly decided (no merge in MVP)
+- Split-screen responsive behavior specified (stack below 1024px)
+
+**Areas for Future Enhancement:**
+- Rate limiting on public endpoints (post-MVP)
+- Structured logging/observability (Phase 2)
+- WebSocket for real-time pipeline updates (Phase 2)
+- Advisory Board feature (FR55-58, Phase 2)
+- Auto-save merge UI for conflict resolution (Phase 2)
+- Multi-language support (not in current requirements)
+
+---
+
+### Implementation Handoff
+
+**AI Agent Guidelines:**
+1. Follow all 15 architectural decisions exactly as documented
+2. Use the 10 enforcement rules and avoid all 10 anti-patterns
+3. Respect `[T]`/`[C]` file legend — never recreate template files
+4. Financial engine (`shared/financial-engine.ts`) must remain pure — verify with `@engine-pure` comment
+5. Every component must have `data-testid` attributes following the documented convention
+6. Use `components/common/` for cross-tier components, never duplicate per tier
+7. `routes.ts` creates `DatabaseStorage` instance and passes it to each route module via `registerXxxRoutes(app, storage)` (Party Mode: Amelia)
+8. Auto-save conflicts return `409` — no merge UI in MVP (Party Mode: Quinn)
+9. Split-screen layouts must stack/tab below 1024px viewport (Party Mode: Sally)
+
+**Resource-Constrained Cut Order (Party Mode: John — elevated from Decision 15):**
+
+| Priority | What | Cut Impact |
+|----------|------|-----------|
+| **NEVER CUT** | Financial engine, Normal Mode, Expert Mode, PDF generation, save/resume, auth, RBAC | Product doesn't work |
+| **First cut** | AI Planning Advisor (Story Mode) | Falls back to form-based Normal Mode |
+| **Second cut** | Franchisor pipeline dashboard | Katalyst uses direct DB queries |
+| **Third cut** | ROI Threshold Guardian (advisory guardrails) | Users see raw numbers without warnings |
+
+**Implementation Priority Order (Party Mode: Amelia — engine before client):**
+
+1. `shared/schema.ts` — All tables, insert/update schemas, types
+2. `shared/financial-engine.ts` — Pure computation module + interfaces (EngineInput, EngineOutput)
+3. `shared/brand-seed-data/postnet.ts` — PostNet defaults from Excel reference
+4. `server/storage.ts` — IStorage interface + DatabaseStorage implementation
+5. `server/middleware/auth.ts` + `server/middleware/rbac.ts` — Auth and authorization
+6. `server/routes.ts` + `server/routes/*.ts` — API endpoints (routes.ts creates storage, passes to modules)
+7. `client/src/pages/login.tsx` + `client/src/pages/plans.tsx` — Core user flow
+8. `client/src/pages/plan.tsx` + layout components — Planning experience
+9. `client/src/pages/quick-roi.tsx` — Public lead capture (with registration CTA — Party Mode: Sally)
+10. `client/src/pages/pipeline.tsx` + admin pages — Franchisor/Katalyst views
+
+**Independently Shippable Units (Party Mode: Bob — for sprint boundaries):**
+
+| Unit | Dependencies | Can Demo/Test Independently |
+|------|-------------|---------------------------|
+| Financial engine + seed data | None | Yes — pure functions, testable with reference calculations |
+| Auth flow (login/register) | schema + storage | Yes — standalone user management |
+| Plans list + empty state | auth + schema + storage | Yes — CRUD without financial features |
+| Quick ROI page | financial engine only | Yes — no auth, stateless calculation |
+| Plan workspace (Normal Mode) | engine + auth + storage + routes | Yes — full planning experience |
+| Plan workspace (Story Mode) | Normal Mode + AI service | Yes — adds AI layer on top |
+| Pipeline dashboard | plans + consent + RBAC | Yes — read-only view of existing plans |
+| Brand admin | schema + storage + seed data | Yes — configuration interface |
