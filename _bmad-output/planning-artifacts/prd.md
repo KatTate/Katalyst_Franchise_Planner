@@ -1,5 +1,5 @@
 ---
-stepsCompleted: ['step-01-init', 'step-02-discovery', 'step-03-success', 'step-04-journeys', 'step-05-domain', 'step-06-innovation', 'step-07-project-type']
+stepsCompleted: ['step-01-init', 'step-02-discovery', 'step-03-success', 'step-04-journeys', 'step-05-domain', 'step-06-innovation', 'step-07-project-type', 'step-08-scoping']
 inputDocuments: ['_bmad-output/planning-artifacts/product-brief-workspace-2026-02-08.md', '_bmad-output/brainstorming/brainstorming-session-2026-02-08.md', 'attached_assets/katalyst-replit-agent-context-final_1770513125481.md', 'attached_assets/PostNet_-_Business_Plan_1770511701987.xlsx', 'attached_assets/Pasted-Persona-A-First-Time-Franchisee-Sam-The-New-Owner-Snaps_1770523428988.txt']
 workflowType: 'prd'
 briefCount: 1
@@ -592,3 +592,107 @@ The ever-present booking link is configurable at the **franchisee-to-account-man
 - Parameter set: ~15-20 financial values + startup cost template + Item 7 ranges + brand identity
 - Validation step: run model against known-good spreadsheet outputs
 - Account manager assignment and booking URL configuration
+
+## Project Scoping & Phased Development
+
+### MVP Strategy & Philosophy
+
+**MVP Approach:** Problem-Solving MVP — replace the spreadsheet with a better experience for one brand (PostNet), proving the financial engine, the adaptive UX, and the throuple data model.
+
+**Core thesis to validate:** Can a single data-entry experience simultaneously serve a franchisee's planning needs, give the franchisor pipeline visibility, and give Katalyst operational intelligence?
+
+**Single brand: PostNet.** The parameterized engine supports multiple brands architecturally (brand_id partitioning from day one), but MVP focuses on one brand to validate the model thoroughly. Adding a second brand in Phase 2 should be a configuration task (Katalyst admin enters parameters), not a development task.
+
+**Architectural principle:** Multi-brand architecture from day one. Not additional scope — brand_id partitioning on every table, brand-aware auth, brand-aware admin tools. This means Phase 2 brand additions are configuration, not code.
+
+### MVP Feature Set (Phase 1)
+
+**Core User Journeys Supported:**
+- **Sam (Story Mode)** — First-time franchisee guided planning. Primary MVP journey. If Sam can produce a lender-grade business plan, the product works.
+- **Chris (Normal Mode)** — Experienced operator standard planning. Validates that the same engine serves a different experience level.
+- **Denise (Katalyst Admin)** — Brand parameter setup. Must work to onboard PostNet. Validates < 30 minute brand onboarding target.
+- **Linda (Franchisor Admin)** — Pipeline visibility dashboard. Lightweight read-only view. Validates franchisor value proposition and proves the throuple model.
+
+**Deferred from MVP:**
+- Maria (Expert Mode) — Expert tier is additive; Story + Normal prove the adaptive concept
+- Kevin (Reluctant Franchisee) — Kevin's journey is handled by Sam's journey + consultant booking link + ROI Threshold Guardian
+- Multi-location planning — Sam's first location is the MVP scenario
+
+**Must-Have Capabilities:**
+
+| Capability | MVP Scope | Rationale |
+|-----------|-----------|-----------|
+| Financial Engine | Full 5-year monthly model with all accounting identity checks | This is the product. No shortcuts here. |
+| Startup Cost Detail Builder | Full — configurable line items, CapEx/non-CapEx classification, Item 7 ranges | Critical for accurate financial projections |
+| Wizard UX (Story + Normal modes) | Two experience tiers — Story for first-timers, Normal for experienced operators | Proves adaptive concept without building all three tiers |
+| Real-time Calculations | Live-updating summary metrics as franchisee edits inputs | Core UX differentiator vs. spreadsheet |
+| Editable Values + Reset (per-field pattern) | Every input has three states: (1) brand default value, (2) franchisee-modified value, (3) Item 7 range reference. Reset restores state 1. UI shows state 3 for context. This is a UX pattern affecting every wizard input, not a single feature. | Franchisee empowerment philosophy — non-negotiable |
+| ROI Threshold Guardian | Advisory nudges for outlier inputs + weak business case guidance with specific levers | Safety net without blocking. Includes consultant booking prompt |
+| Document Generation (PDF) | Lender-grade P&L, cash flow, balance sheet, break-even, summary package | Primary deliverable — this goes to banks |
+| Basic Document Vault | Simple list of generated PDFs with timestamps, plan version metadata, and download links. No organization, tagging, or search. | Prevents real user pain: Sam generates multiple versions, brings wrong one to bank. Minimal development effort. |
+| Save/Resume + Auto-save | Persistent multi-session state with auto-save | Losing work is trust-destroying |
+| Invitation-Only Auth | Katalyst invites franchisees and franchisor admins | Security + FTC compliance |
+| RBAC (3 roles) | Franchisee, Franchisor Admin, Katalyst Admin with API-level data isolation | Throuple model foundation |
+| Opt-in Data Sharing | Franchisee controls what franchisor sees, granular and reversible | Trust foundation |
+| Consultant Booking Link | Ever-present, configurable per account manager | Core Katalyst value — connects digital tool to human guidance |
+| Brand Parameter Setup (Admin) | Katalyst admin configures PostNet parameters + startup cost template | Brand onboarding |
+| Pipeline Dashboard (Franchisor) | Read-only view: which franchisees are planning, what stage, what market. Minimal but must exist to prove platform value. | Franchisor value proposition — essential for throuple proof |
+| Katalyst Admin Dashboard | Brand configuration, franchisee progress monitoring, model validation | Operational intelligence |
+
+**Explicitly NOT in MVP:**
+
+| Capability | Phase | Rationale |
+|-----------|-------|-----------|
+| Expert Mode (third experience tier) | Phase 2 | Story + Normal prove the concept |
+| 3-Scenario Modeling | Phase 2 | One excellent plan with ROI Threshold Guardian is sufficient for MVP. Reduces engine, document, and UX complexity. |
+| Estimated vs. Actual tracking | Phase 2 | Requires post-opening data — MVP franchisees haven't opened yet |
+| Multi-location planning | Phase 2 | First location first |
+| Deep Sensitivity Analysis | Phase 2 | ROI Threshold Guardian covers the MVP need |
+| Franchisor Acknowledgment | Phase 2 | Optional, brand-configurable — not essential for MVP validation |
+| Additional brands beyond PostNet | Phase 2 | Architecture supports it; validation focuses on one brand |
+| Activity/Inactivity alerts | Phase 2 | Katalyst can check the dashboard manually |
+
+### Resource-Constrained Cut Order
+
+If resources are critically constrained, cut in this order (each cut is independent):
+
+1. **First cut: Normal Mode.** Story Mode alone proves the adaptive concept exists (the engine is tier-agnostic; adding Normal Mode later is purely a presentation layer). Saves wizard UX work without touching the engine.
+2. **Second cut: Franchisor dashboard.** Linda's pipeline view is the lightest-weight component and easiest to add later. Data model still captures everything — just no franchisor-facing UI yet. Katalyst shares pipeline updates manually via account manager conversations.
+3. **Third cut: ROI Threshold Guardian.** Painful to cut because it's the safety net, but the account manager relationship provides a human safety net. Guardian is a business rules layer on top of the engine — can be added later without engine changes.
+
+**Never cut:** Financial engine, Story Mode wizard, PDF generation + basic document vault, save/resume, invitation auth, RBAC with data isolation, brand parameter setup. These are the irreducible core.
+
+### Post-MVP Features
+
+**Phase 2 (after MVP validation):**
+- Expert Mode (third experience tier)
+- 3-Scenario Modeling (base/optimistic/pessimistic)
+- Additional brands (Jeremiah's, Ubreakifix, Tint World) — should be configuration tasks, not development
+- Estimated vs. actual tracking
+- Enhanced Document Vault (organization, tagging)
+- Multi-location planning for scaling operators
+- Deep sensitivity analysis
+- Franchisor acknowledgment feature (brand-configurable)
+- Activity/inactivity alerts for Katalyst proactive outreach
+
+**Phase 3 (platform expansion):**
+- Accounting software integration (QuickBooks, Xero) for actuals import
+- Construction project management integration
+- Franchise management system integration (FranConnect)
+- Advanced portfolio analytics for multi-unit operators
+- Benchmark data across franchisees (anonymized, opt-in)
+- White-label branding per franchisor
+
+### Risk Mitigation Strategy
+
+**Technical Risk: Financial model accuracy**
+- Mitigation: Build and validate the engine first, before building any UI. Three-tier validation against PostNet spreadsheet data. This is the highest-risk, highest-value component.
+
+**Market Risk: Franchisees don't adopt**
+- Mitigation: MVP focuses on the clearest value prop (lender-grade documents) rather than trying to be a full platform. If document generation works, the rest follows.
+
+**Resource Risk: Scope creep**
+- Mitigation: Clear cut order defined above. Each cut removes a distinct capability without affecting others. Structured degradation path from full MVP to irreducible core.
+
+**Throuple Risk: Platform value not demonstrated**
+- Mitigation: Franchisor dashboard included in MVP (even if minimal) specifically to prove the throuple model. If we ship only a franchisee tool, we've built a spreadsheet replacement, not a platform.
