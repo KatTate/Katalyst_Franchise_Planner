@@ -24,7 +24,7 @@ classification:
 
 - **Project Type:** B2B2C Vertical SaaS Platform
 - **Domain:** Franchise Operations with Financial Planning & Analysis engine
-- **Complexity:** High — primary driver is parameterization and startup cost detail (brand-parameterized financial engine, UX, documents, wizard steps, educational content), compounded by multi-stakeholder data isolation ("the throuple problem"), complex location lifecycle state management, and FTC compliance constraints on content positioning
+- **Complexity:** High — primary driver is parameterization and startup cost detail (brand-parameterized financial engine, UX, documents, planning experience, educational content), compounded by multi-stakeholder data isolation ("the throuple problem"), AI-powered conversational planning layer (Story Mode), complex location lifecycle state management, and FTC compliance constraints on content positioning
 - **Project Context:** Greenfield
 
 **Key Classification Notes:**
@@ -95,11 +95,12 @@ Identical across all: Payroll taxes (20%), Other OpEx (3%), Target pre-tax profi
 - **Parameterized financial model validated:** Single universal model produces correct outputs for all four existing brand parameter sets (PostNet, Jeremiah's, Ubreakifix, Tint World)
 - **Startup/construction cost detail builder:** Brand-defined templates with variable line items per brand. Franchisees can add/remove/edit any line item. "Reset to brand defaults" restores template without losing custom additions. Total feeds into financial engine as "Total Investment Required"
 - **All values franchisee-editable:** Every number in the plan is editable by the franchisee (franchisee empowerment). Defaults are seeded by brand parameters with easy "reset to default" buttons, but nothing is locked
-- **Multi-session wizard stability:** Save mid-session, resume days later, zero data loss. Auto-save every few minutes for crash recovery
+- **Multi-session planning stability:** Save mid-session, resume days later, zero data loss. Auto-save every few minutes for crash recovery. Applies across all three experience tiers (Story Mode conversation, Normal Mode forms, Expert Mode spreadsheet).
 - **Document accuracy:** Financial outputs match manual spreadsheet calculations exactly
 - **Data isolation with opt-in sharing:** Franchisee data invisible to other franchisees. Without opt-in, franchisor sees pipeline status only (when/where: stage, quarter, market). With opt-in, franchisor additionally sees financial details (how much: projections, investment, documents). Opt-in UI makes value exchange visible
 - **Performance:** ROI/summary calculations < 2 seconds (live-updating as franchisee adjusts inputs); document generation can take longer (not expected to be live-update)
-- **Ever-present consultant booking link:** Calendly-style booking link visible across all wizard sessions
+- **Ever-present consultant booking link:** Calendly-style booking link visible across all planning sessions
+- **AI Planning Advisor accuracy:** AI-populated financial values validated against field schemas before writing to input state. Franchisee can verify and correct any AI-populated value.
 - **ROI Threshold Guardian:** Advisory, not blocking. Handles both outlier inputs (unrealistic growth) and weak business cases (low ROI) — guides without judging, suggests levers to adjust
 
 ### Measurable Outcomes (KPIs)
@@ -129,9 +130,13 @@ His Katalyst account manager, Denise, sends him a link: "Hey Sam, before our cal
 
 *Session 1 (alone, 10 minutes):* Sam clicks the link. Three onboarding questions determine he's a first-timer — Story Mode activates. The Quick ROI asks for 5 inputs: location type, estimated investment, expected revenue, and two quick cost percentages. In 90 seconds, Sam sees a preliminary ROI range: "Based on these inputs, your estimated annual return is 12-18%." There's a note: "This is a rough range. Your full plan will refine this significantly." He sees the consultant booking link in the corner — "Book time with Denise" — and clicks it. Thursday confirmed.
 
-*Session 2 (with Denise, 45 minutes):* They open the wizard together. Story Mode shows Sam each section with plain-language explanations. They hit the **Startup Cost Detail Builder** — this is where Sam learns. Instead of entering one "Total Investment: $256,507" number, the wizard walks him through: franchise fee, leasehold improvements, equipment & fixtures, signage, initial inventory, insurance deposits, professional fees, working capital reserve. Each line has a brand default from PostNet's FDD with an explanation of what it covers. Sam adjusts some — his landlord is giving him a TI allowance, so leasehold improvements drop. He sees the total update in real time. "I didn't even think about the insurance deposits," he tells Denise. She says "that's the point."
+*Session 2 (with Denise, 45 minutes):* They open the planning tool together. Story Mode activates the AI Planning Advisor — a conversational interface on the left with a live financial dashboard on the right. The advisor opens: "Welcome back, Sam! Last time we got your Quick ROI range. Let's start building your full plan. Tell me about the location you're considering."
 
-They move through revenue assumptions, operating expenses, financing structure. Every number has a default. Sam adjusts his growth rate down — he's conservative. Denise says "that's fine, these are your numbers." Sam sees the "Reset to Default" button but likes his more cautious assumptions. They save mid-session — the wizard shows a progress indicator and "Resume anytime."
+Sam types: "I'm looking at a spot on Main Street, rent is about $4,200 a month." The advisor extracts the location and rent, populates the facilities cost field, and the dashboard updates in real-time. "Great — $4,200/month for Main Street. I've updated your plan. The PostNet average is around $10,000/month, so your rent is favorable. Now, let's talk startup costs."
+
+The advisor guides Sam through the **Startup Cost Detail Builder** conversationally. Instead of filling out a form, Sam has a dialogue: the advisor walks through each category — franchise fee, leasehold improvements, equipment & fixtures, signage, initial inventory, insurance deposits, professional fees, working capital reserve. Each has a brand default visible in the detail panel on the right, alongside the FDD Item 7 range. Sam mentions his landlord is giving him a TI allowance — the advisor adjusts leasehold improvements and Sam sees the total update live. "I didn't even think about the insurance deposits," he tells Denise. She says "that's the point."
+
+They continue through revenue assumptions, operating expenses, financing structure — all through conversation. Every value the AI populates is visible in the detail panel where Sam can verify or manually adjust. Sam tells the advisor he wants to be conservative on growth — the advisor adjusts and confirms: "I've set your Year 1 growth to 10% instead of the PostNet default of 13%. Your numbers, your plan." They save mid-session — the tool shows "All changes saved" with a resume-anytime indicator.
 
 *Session 3 (with Denise, 30 minutes):* They run the 3-scenario model. Good/Better/Best scenarios show Sam that even in the conservative case, he breaks even in 14 months. The ROI Threshold Guardian flags that his rent assumption is high relative to his revenue — not blocking, just noting. Sam decides to negotiate harder on the lease. They generate documents: pro forma P&L, cash flow projection, break-even analysis, lender summary. Sam downloads a PDF.
 
@@ -147,7 +152,7 @@ They move through revenue assumptions, operating expenses, financing structure. 
 
 **Rising Action:**
 
-*Session 1 (alone, 20 minutes):* Chris logs in and the onboarding detects Normal Mode — she's done this before but isn't a portfolio operator. She sees her location #1 in the system with the estimated vs. actual data she's been updating. She starts a new location plan for location #2. The wizard pre-fills brand defaults for Tint World, and Chris immediately starts editing — she knows her COGS run closer to 23% than the default 20%, and her labor is higher than average at 22%.
+*Session 1 (alone, 20 minutes):* Chris logs in and the onboarding detects Normal Mode — she's done this before but isn't a portfolio operator. She sees her location #1 in the system with the estimated vs. actual data she's been updating. She starts a new location plan for location #2. The form-based planning sections pre-fill brand defaults for Tint World, and Chris immediately starts editing — she knows her COGS run closer to 23% than the default 20%, and her labor is higher than average at 22%.
 
 The Startup Cost Detail Builder is where Chris shines this time. She goes line by line, cross-referencing against her location #1 actuals. Leasehold improvements — her first location was $15K over because of HVAC work she didn't anticipate. She adds a buffer. Equipment — she knows which suppliers give better pricing now, adjusts down. She finishes the startup costs section feeling sharp.
 
@@ -165,7 +170,7 @@ The Startup Cost Detail Builder is where Chris shines this time. She goes line b
 
 **Rising Action:**
 
-*Session 1 (alone, 15 minutes):* Expert Mode activates. No tooltips, no educational overlays — just the inputs. Maria rips through the wizard for location #8 in 15 minutes flat. She adjusts COGS to 34% (she runs higher materials than the brand default of 32%), drops the ad fund to 0% (Ubreakifix doesn't charge one), and enters her negotiated lease rate. She runs three scenarios in rapid succession, toggling growth rates and staffing levels.
+*Session 1 (alone, 15 minutes):* Expert Mode activates. No tooltips, no educational overlays — just the inputs in a spreadsheet-style interface. Maria rips through the plan for location #8 in 15 minutes flat. She adjusts COGS to 34% (she runs higher materials than the brand default of 32%), drops the ad fund to 0% (Ubreakifix doesn't charge one), and enters her negotiated lease rate. She runs three scenarios in rapid succession, toggling growth rates and staffing levels.
 
 She notices something in the sensitivity analysis — her break-even is highly sensitive to the first 6 months' revenue ramp. She adjusts the "starting month AUV %" from the default 8% up to 15% — her brand recognition in this market should drive faster initial traffic.
 
@@ -192,7 +197,7 @@ She notices something in the sensitivity analysis — her break-even is highly s
 
 She validates by running the model against the Jeremiah's spreadsheet data she already has. The outputs match. Brand is live.
 
-*Client Onboarding (per franchisee):* A new Jeremiah's franchisee, David, gets an invitation email with his login. Denise has a 45-minute call scheduled. She can see David's progress in the Katalyst dashboard — he completed Quick ROI on his own before the call (good sign). During the call, she walks him through the wizard, Story Mode active. She watches his inputs populate in her admin view — not to judge, but to ensure data quality. She notices his facilities estimate seems low for his market and mentions it. David adjusts.
+*Client Onboarding (per franchisee):* A new Jeremiah's franchisee, David, gets an invitation email with his login. Denise has a 45-minute call scheduled. She can see David's progress in the Katalyst dashboard — he completed Quick ROI on his own before the call (good sign). During the call, she walks him through the planning tool, Story Mode active — the AI Planning Advisor guides David through conversation while Denise observes. She watches his inputs populate in her admin view — not to judge, but to ensure data quality. She notices his facilities estimate seems low for his market and mentions it. David adjusts.
 
 **Climax:** Three months in, Denise has 8 Jeremiah's franchisees active in the tool. She pulls up the Katalyst dashboard — she can see who's in planning, who's in site evaluation, who's stuck. She notices one franchisee hasn't logged in for 3 weeks and reaches out. He was stalled on financing — Denise connects him with a lending partner. Without the tool's visibility, she wouldn't have known until it was too late.
 
@@ -247,7 +252,7 @@ One franchisee, Tom, has opted in to share financials with PostNet. Linda clicks
 
 Kevin clicks the link because Denise asked him to. Three onboarding questions — Story Mode is recommended. He overrides to Normal (he's not a newbie in his mind, even though this is his first franchise). The Quick ROI asks for 5 inputs. Kevin fills them in quickly — maybe a bit carelessly. 90 seconds later: "Estimated annual return: 8-14%." Kevin thinks: "That seems about right" and closes the tab.
 
-The Katalyst dashboard shows Denise that Kevin completed Quick ROI but didn't proceed to the wizard. His last activity: 12 days ago.
+The Katalyst dashboard shows Denise that Kevin completed Quick ROI but didn't proceed to the full planning tool. His last activity: 12 days ago.
 
 Denise calls Kevin: "Hey Kevin, I saw your Quick ROI came back in the 8-14% range — that's reasonable for your market. I'd love to spend 20 minutes walking through the full plan with you. The bank is going to want to see projections, and this tool builds exactly what they need. It'll save you a lot of time later." Kevin agrees — not because the tool convinced him, but because Denise did.
 
@@ -261,17 +266,17 @@ Denise calls Kevin: "Hey Kevin, I saw your Quick ROI came back in the 8-14% rang
 
 ### Journey 7: Sam Hits a Wall — Error Recovery & Edge Cases
 
-**Opening Scene:** Sam is halfway through his business plan wizard, Session 2. He's been editing numbers and accidentally deletes his entire startup cost breakdown — 15 line items he carefully entered with Denise.
+**Opening Scene:** Sam is halfway through his business plan, Session 2. He's been editing numbers in the detail panel and accidentally deletes his entire startup cost breakdown — 15 line items he carefully built with Denise through the AI advisor.
 
 **Rising Action:**
 
-Sam panics. He clicks "Undo" — the wizard restores his last auto-saved state (auto-saved 5 minutes ago). He loses one edit, not fifteen. Relief.
+Sam panics. He clicks "Undo" — the system restores his last auto-saved state (auto-saved 5 minutes ago). He loses one edit, not fifteen. Relief.
 
-Later, Sam enters an unrealistic number — he sets his revenue growth rate to 50% year-over-year. The ROI Threshold Guardian activates: "This growth rate is significantly above the PostNet brand average of 13%. Your plan will still calculate, but you may want to discuss this with your consultant." It's a nudge, not a block — Sam can proceed. It's his plan.
+Later, Sam tells the AI advisor he expects 50% year-over-year growth. The ROI Threshold Guardian activates naturally in the conversation: "That growth rate is significantly above the PostNet brand average of 13%. Your plan will still calculate with 50%, but you may want to discuss this with Denise." It's a nudge, not a block — Sam can proceed. It's his plan.
 
-In another scenario, Sam enters everything correctly but his numbers produce a weak result — ROI of 3%. The ROI Threshold Guardian handles this differently: "Your projected ROI of 3% is below the PostNet brand average of 12-18%. This doesn't mean the location won't work — it means your current assumptions produce a low return. Consider adjusting: location cost, revenue assumptions, or financing structure. Or book time with your consultant to explore options." The tool guides without judging. It suggests specific levers Sam could adjust and offers the consultant booking link.
+In another scenario, Sam's numbers produce a weak result — ROI of 3%. The advisor handles this conversationally: "Your projected ROI of 3% is below the PostNet average of 12-18%. This doesn't mean the location won't work — it means your current assumptions produce a low return. Want to explore adjusting your location cost, revenue assumptions, or financing structure? Or I can help you book time with Denise to talk it through." The advisor guides without judging, suggests specific levers, and offers the consultant booking link.
 
-In another session, Sam tries to generate his lender package but hasn't completed the financing section. The document generator shows: "Your lender package requires a financing structure. Complete the Financing section to generate this document." It doesn't error out — it tells him exactly what's missing and links to that wizard step.
+In another session, Sam tries to generate his lender package but hasn't completed the financing section. The document generator shows: "Your lender package requires a financing structure. Complete the Financing section to generate this document." It doesn't error out — it tells him exactly what's missing and links to that section in the detail panel.
 
 **Climax:** Sam's browser crashes during a session. He reopens the tool, logs in, and picks up exactly where he left off — the auto-save preserved everything.
 
@@ -499,7 +504,7 @@ This is NOT a traditional SaaS subscription:
 The ever-present booking link is configurable at the **franchisee-to-account-manager level**, not just per brand:
 - Katalyst account managers each have their own Calendly (or similar) URL
 - When a Katalyst admin creates a franchisee invitation, they associate the franchisee with an account manager
-- The booking URL is stored on the franchisee record and displayed throughout the wizard
+- The booking URL is stored on the franchisee record and displayed throughout the planning experience
 - Katalyst admin can reassign account managers (and booking URLs) as needed
 - Fallback: brand-level default booking URL if no account manager is assigned
 
@@ -530,13 +535,13 @@ The ever-present booking link is configurable at the **franchisee-to-account-man
 ### MVP Feature Set (Phase 1)
 
 **Core User Journeys Supported:**
-- **Sam (Story Mode)** — First-time franchisee guided planning. Primary MVP journey. If Sam can produce a lender-grade business plan, the product works.
-- **Chris (Normal Mode)** — Experienced operator standard planning. Validates that the same engine serves a different experience level.
+- **Sam (Story Mode — AI Planning Advisor)** — First-time franchisee guided planning via AI conversation. Primary MVP journey. If Sam can produce a lender-grade business plan through conversational interaction with the AI advisor, the product works.
+- **Chris (Normal Mode — Form-based)** — Experienced operator standard planning. Validates that the same engine serves a different experience level through structured forms.
+- **Maria (Expert Mode — Spreadsheet-style)** — Portfolio operator direct input. Validates that the same engine serves power users. Also serves as the validation interface for Katalyst to verify engine outputs against known-good spreadsheets.
 - **Denise (Katalyst Admin)** — Brand parameter setup. Must work to onboard PostNet. Validates < 30 minute brand onboarding target.
 - **Linda (Franchisor Admin)** — Pipeline visibility dashboard. Lightweight read-only view. Validates franchisor value proposition and proves the throuple model.
 
 **Deferred from MVP:**
-- Maria (Expert Mode) — Expert tier is additive; Story + Normal prove the adaptive concept
 - Kevin (Reluctant Franchisee) — Kevin's journey is handled by Sam's journey + consultant booking link + ROI Threshold Guardian
 - Multi-location planning — Sam's first location is the MVP scenario
 
@@ -546,10 +551,11 @@ The ever-present booking link is configurable at the **franchisee-to-account-man
 |-----------|-----------|-----------|
 | Financial Engine | Full 5-year monthly model with all accounting identity checks | This is the product. No shortcuts here. |
 | Startup Cost Detail Builder | Full — configurable line items, CapEx/non-CapEx classification, Item 7 ranges | Critical for accurate financial projections |
-| Wizard UX (Story + Normal modes) | Two experience tiers — Story for first-timers, Normal for experienced operators | Proves adaptive concept without building all three tiers |
-| Real-time Calculations | Live-updating summary metrics as franchisee edits inputs | Core UX differentiator vs. spreadsheet |
-| Editable Values + Reset (per-field pattern) | Every input has three states: (1) brand default value, (2) franchisee-modified value, (3) Item 7 range reference. Reset restores state 1. UI shows state 3 for context. This is a UX pattern affecting every wizard input, not a single feature. | Franchisee empowerment philosophy — non-negotiable |
-| ROI Threshold Guardian | Advisory nudges for outlier inputs + weak business case guidance with specific levers | Safety net without blocking. Includes consultant booking prompt |
+| Three Experience Tiers | Story Mode (AI Planning Advisor conversation), Normal Mode (form-based), Expert Mode (spreadsheet-style direct input). All three tiers write to the same financial input state. | Three fundamentally different interaction paradigms serving three persona types (Sam/Chris/Maria), unified by one engine. Expert Mode also serves as engine validation interface. |
+| Real-time Calculations | Live-updating summary financial dashboard as franchisee edits inputs (via any tier) | Core UX differentiator vs. spreadsheet |
+| Editable Values + Reset (per-field pattern) | Every input has four states: (1) brand default value, (2) franchisee-modified value, (3) AI-populated value, (4) Item 7 range reference. Reset restores state 1. UI shows state 4 for context. Value attribution tracks source. | Franchisee empowerment philosophy — non-negotiable. AI attribution ensures trust and verifiability. |
+| AI Planning Advisor (Story Mode) | LLM-powered conversational interface that collects plan inputs through natural dialogue. Split-screen: conversation panel + live financial dashboard. | The 2026 experience — transforms Story Mode from a linear form into an AI consulting conversation. Gracefully degrades to Normal/Expert mode if AI unavailable. |
+| ROI Threshold Guardian | Advisory nudges for outlier inputs + weak business case guidance with specific levers. In Story Mode, integrated naturally into the AI Advisor conversation. | Safety net without blocking. Includes consultant booking prompt |
 | Document Generation (PDF) | Lender-grade P&L, cash flow, balance sheet, break-even, summary package | Primary deliverable — this goes to banks |
 | Basic Document Vault | Simple list of generated PDFs with timestamps, plan version metadata, and download links. No organization, tagging, or search. | Prevents real user pain: Sam generates multiple versions, brings wrong one to bank. Minimal development effort. |
 | Save/Resume + Auto-save | Persistent multi-session state with auto-save | Losing work is trust-destroying |
@@ -565,7 +571,7 @@ The ever-present booking link is configurable at the **franchisee-to-account-man
 
 | Capability | Phase | Rationale |
 |-----------|-------|-----------|
-| Expert Mode (third experience tier) | Phase 2 | Story + Normal prove the concept |
+| Advisory Board Meeting | Phase 2 | Multi-persona stress-testing is the differentiator feature but requires the AI Planning Advisor to be stable first. Can be released as "bring your plan to the board" once Story Mode AI is proven. |
 | 3-Scenario Modeling | Phase 2 | One excellent plan with ROI Threshold Guardian is sufficient for MVP. Reduces engine, document, and UX complexity. |
 | Estimated vs. Actual tracking | Phase 2 | Requires post-opening data — MVP franchisees haven't opened yet |
 | Multi-location planning | Phase 2 | First location first |
@@ -578,16 +584,28 @@ The ever-present booking link is configurable at the **franchisee-to-account-man
 
 If resources are critically constrained, cut in this order (each cut is independent):
 
-1. **First cut: Normal Mode.** Story Mode alone proves the adaptive concept exists (the engine is tier-agnostic; adding Normal Mode later is purely a presentation layer). Saves wizard UX work without touching the engine.
+1. **First cut: AI Planning Advisor (Story Mode AI).** Fall back to form-based Story Mode with educational guidance (original wizard concept). Normal + Expert modes are unaffected. The AI conversation layer is the highest-effort, highest-reward feature — cutting it reduces the product to a very good form-based tool rather than a 2026 AI-powered experience.
 2. **Second cut: Franchisor dashboard.** Linda's pipeline view is the lightest-weight component and easiest to add later. Data model still captures everything — just no franchisor-facing UI yet. Katalyst shares pipeline updates manually via account manager conversations.
 3. **Third cut: ROI Threshold Guardian.** Painful to cut because it's the safety net, but the account manager relationship provides a human safety net. Guardian is a business rules layer on top of the engine — can be added later without engine changes.
 
-**Never cut:** Financial engine, Story Mode wizard, PDF generation + basic document vault, save/resume, invitation auth, RBAC with data isolation, brand parameter setup. These are the irreducible core.
+**Never cut:** Financial engine, Normal Mode (form-based planning), Expert Mode (spreadsheet input), PDF generation + basic document vault, save/resume, invitation auth, RBAC with data isolation, brand parameter setup. These are the irreducible core.
+
+### MVP Internal Phasing (AI Integration Strategy)
+
+The MVP itself is internally phased to manage AI dependency risk. Each phase is independently valuable:
+
+| Phase | What Ships | AI Dependency | Value Delivered |
+|-------|-----------|---------------|-----------------|
+| **MVP Core** | Financial engine + Expert Mode + Normal Mode + all infrastructure (auth, RBAC, data isolation, documents, auto-save, dashboards) | None | Product fully functional. Chris and Maria are productive. Katalyst can validate engine. Franchisor sees pipeline. |
+| **MVP Enhanced** | AI Planning Advisor (Story Mode) | LLM required for Story Mode only | Sam gets the 2026 experience. Normal/Expert modes unaffected if AI unavailable. |
+| **MVP Complete** | Advisory Board Meeting (Phase 2 feature, built after MVP validation) | LLM required for advisory sessions | The differentiator. Multi-persona stress testing. Category-creating feature. |
+
+**Architectural principle:** If the LLM has a bad day, franchisees can still build complete financial plans using Normal or Expert mode. The AI layer degrades gracefully — it's never a single point of failure.
 
 ### Post-MVP Features
 
 **Phase 2 (after MVP validation):**
-- Expert Mode (third experience tier)
+- Advisory Board Meeting — multi-persona AI stress-testing of plan assumptions (the category-creating differentiator)
 - 3-Scenario Modeling (base/optimistic/pessimistic)
 - Additional brands (Jeremiah's, Ubreakifix, Tint World) — should be configuration tasks, not development
 - Estimated vs. actual tracking
@@ -636,13 +654,16 @@ This section defines THE CAPABILITY CONTRACT for the entire product. UX designer
 - **FR9:** System produces deterministic outputs — identical inputs always produce identical financial projections
 - **FR10:** System computes financial projections using a single parameterized model that accepts brand-specific seed values without requiring structural changes per brand
 
-### 2. Guided Planning Experience (Wizard)
+### 2. Guided Planning Experience
 
-- **FR11:** Franchisee can complete a multi-section planning wizard that collects all inputs needed for a complete financial projection
-- **FR12:** Franchisee can experience the wizard in Story Mode (guided, educational, contextual explanations) or Normal Mode (standard form-based, less guidance)
-- **FR13:** Franchisee can switch between experience tiers (Story/Normal) at any time from their profile settings
+- **FR11:** Franchisee can complete a planning experience that collects all inputs needed for a complete financial projection
+- **FR12:** Franchisee can experience the planning tool in three experience tiers, each representing a fundamentally different interaction paradigm over the same financial engine:
+  - **Story Mode:** AI Planning Advisor — a conversational interface where an LLM-powered advisor asks questions in natural language, extracts structured financial inputs from the conversation, and populates the plan. Split-screen layout: conversation panel + live financial dashboard. Designed for first-time franchisees (Sam).
+  - **Normal Mode:** Form-based guided sections — structured sections with field-by-field input, labels, and validation. Efficient for experienced operators who know their numbers (Chris).
+  - **Expert Mode:** Spreadsheet-style direct input — minimal UI, maximum speed, direct access to every parameter. Also serves as the validation interface for Katalyst to verify engine outputs against known-good spreadsheets (Maria). 
+- **FR13:** Franchisee can switch between experience tiers (Story/Normal/Expert) at any time from their profile settings
 - **FR14:** System recommends an initial experience tier based on onboarding questions (franchise experience, financial literacy, planning experience)
-- **FR15:** Franchisee can navigate freely between completed wizard sections without losing progress
+- **FR15:** Franchisee can navigate freely between completed sections without losing progress
 - **FR16:** Franchisee can save their progress and resume from where they left off across sessions
 - **FR17:** System auto-saves franchisee progress periodically to prevent data loss from crashes or interruptions
 - **FR18:** System recovers franchisee progress to the last auto-save point when a session is interrupted unexpectedly (browser crash, network loss, device change)
@@ -699,6 +720,21 @@ This section defines THE CAPABILITY CONTRACT for the entire product. UX designer
 
 - **FR49:** Franchisee sees their franchise brand's identity (name, logo, colors) throughout the planning experience
 
+### 10. AI Planning Advisor (Story Mode)
+
+- **FR50:** In Story Mode, franchisee interacts with an AI Planning Advisor that collects plan inputs through natural language conversation rather than form fields
+- **FR51:** AI Planning Advisor extracts structured financial inputs from the franchisee's conversational responses and populates the corresponding fields in the financial input state
+- **FR52:** Franchisee can view, verify, and manually correct any value that the AI Planning Advisor populated — AI-populated values are clearly distinguishable from manually entered values and brand defaults
+- **FR53:** AI Planning Advisor has access to the brand's parameter set, Item 7 ranges, and the current state of the franchisee's plan to provide contextually relevant questions and guidance
+- **FR54:** System gracefully degrades when AI services are unavailable — franchisee can switch to Normal or Expert mode to continue planning without interruption
+
+### 11. Advisory Board Meeting
+
+- **FR55:** Franchisee can initiate an Advisory Board Meeting from any experience tier to stress-test their current plan assumptions with multiple AI advisor personas
+- **FR56:** Advisory Board Meeting presents multiple domain-specific advisor personas (e.g., financial analyst, marketing strategist, operations/HR advisor, lending specialist, seasoned franchisee) who examine the plan from their domain perspective and provide cross-cutting feedback through natural cross-talk
+- **FR57:** Franchisee can accept or reject specific Advisory Board suggestions — accepted suggestions are written back to the financial input state with appropriate attribution
+- **FR58:** Advisory Board persona definitions (domain expertise, communication style, advisory priorities) are data-driven and configurable by Katalyst admin
+
 ## Non-Functional Requirements
 
 ### Performance
@@ -721,7 +757,7 @@ This section defines THE CAPABILITY CONTRACT for the entire product. UX designer
 
 ### Reliability & Data Integrity
 
-- **NFR13:** Auto-save occurs at minimum every 2 minutes during active wizard sessions — maximum data loss on crash is 2 minutes of work
+- **NFR13:** Auto-save occurs at minimum every 2 minutes during active planning sessions — maximum data loss on crash is 2 minutes of work
 - **NFR14:** System gracefully handles concurrent edits to the same plan from different browser tabs/devices (last-write-wins or conflict detection)
 - **NFR15:** Financial calculation engine produces identical outputs for identical inputs across all environments (deterministic — no floating-point inconsistencies across server/client)
 - **NFR16:** Database backups occur daily at minimum, with point-in-time recovery capability
@@ -734,9 +770,15 @@ This section defines THE CAPABILITY CONTRACT for the entire product. UX designer
 - **NFR20:** Financial engine scales linearly — adding brands does not increase calculation time for existing brands
 - **NFR21:** Database schema supports multi-brand partitioning from day one (brand_id on all relevant tables)
 
+### AI Integration
+
+- **NFR22:** AI Planning Advisor responds to franchisee conversation inputs within 5 seconds — visual typing indicator shown while processing
+- **NFR23:** AI-populated financial values are validated against the field's expected type and range before being written to the financial input state — AI cannot silently inject invalid data
+- **NFR24:** System remains fully functional when AI services are unavailable — franchisee can seamlessly switch to Normal or Expert mode without data loss
+
 ### Usability
 
-- **NFR22:** Wizard is usable on desktop browsers (minimum 1024px width) — mobile optimization is not required for MVP but layout should not break on tablet
-- **NFR23:** All user-facing error messages written in plain language, not technical jargon — franchisees are not technical users
-- **NFR24:** Financial values displayed with consistent formatting (currency symbols, thousand separators, appropriate decimal places) throughout the application
-- **NFR25:** The system provides visual feedback within 200ms for any user action (click, keystroke, toggle) — even if the underlying operation takes longer
+- **NFR25:** Planning experience is usable on desktop browsers (minimum 1024px width) — mobile optimization is not required for MVP but layout should not break on tablet
+- **NFR26:** All user-facing error messages written in plain language, not technical jargon — franchisees are not technical users
+- **NFR27:** Financial values displayed with consistent formatting (currency symbols, thousand separators, appropriate decimal places) throughout the application
+- **NFR28:** The system provides visual feedback within 200ms for any user action (click, keystroke, toggle) — even if the underlying operation takes longer
