@@ -194,7 +194,7 @@ Every output should present ranges (good/better/best), not single numbers. The t
 | **Site & Real Estate** | Manual entry of location details |
 | **Construction & Timeline** | Simple buildout cost and timeline estimate fields linked to financial model |
 | **Financing** | Manual financing terms entry |
-| **Document Management** | Per-location document vault (Google Drive integration or equivalent) |
+| **Document Management** | Per-location document vault (simple file storage to start; integration options explored later) |
 | **Franchisor Setup** | Katalyst performs initial setup: FDD data entry + brand customization (this is how Katalyst charges the franchisor) |
 | **Legal** | Terms and Conditions / liability coverage screen |
 
