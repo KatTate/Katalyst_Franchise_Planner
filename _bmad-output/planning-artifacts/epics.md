@@ -191,7 +191,7 @@ This document provides the complete epic and story breakdown for the Katalyst Gr
 | FR4 | Epic 3 | See FDD Item 7 range alongside defaults and estimates |
 | FR5 | Epic 3 | Add, remove, reorder custom startup cost line items |
 | FR6 | Epic 3 | Classify custom line items as CapEx or non-CapEx |
-| FR7 | Epic 3 | View live-updating summary financial metrics |
+| FR7 | Epic 3, 4 | View live-updating summary financial metrics |
 | FR8 | Epic 3 | Validate accounting identities on every calculation |
 | FR9 | Epic 3 | Deterministic outputs for identical inputs |
 | FR10 | Epic 3 | Single parameterized model accepts brand-specific seeds |
@@ -244,7 +244,7 @@ This document provides the complete epic and story breakdown for the Katalyst Gr
 | FR57 | Epic 9 | Accept/reject Advisory Board suggestions (Phase 2) |
 | FR58 | Epic 9 | Configurable persona definitions (Phase 2) |
 
-**Coverage Summary:** 58/58 FRs mapped. All functional requirements covered.
+**Coverage Summary:** 58/58 FRs mapped. All functional requirements covered. 36 stories across 8 MVP epics (+ 1 deferred Phase 2 epic).
 
 ## Epic List
 
@@ -313,6 +313,7 @@ So that all authentication and user management features have the data layer they
 **And** Drizzle insert schemas and types are exported from `shared/schema.ts`
 **And** Passport.js is configured with local strategy and session serialization
 **And** the Express app uses session middleware backed by PostgreSQL
+**And** a seed script creates the initial Katalyst admin account (email from environment variable) for platform bootstrap — this is the entry point for the entire invitation chain
 
 ### Story 1.2: Invitation Creation by Admin
 
@@ -379,6 +380,8 @@ So that users can only see and modify data they are authorized to access (FR32).
 **And** Layer 3 (response-level) filters fields based on role and data sharing status
 **And** unauthenticated requests to protected endpoints return 401
 **And** no endpoint returns data the requesting user's role should not see (NFR9, NFR10)
+**And** a franchisee cannot access another franchisee's plan data even by manipulating API parameters (direct URL, ID guessing, sequential ID enumeration)
+**And** a franchisor admin cannot access data for brands they are not assigned to
 
 ### Story 1.6: Franchisee Onboarding & Tier Recommendation
 
@@ -394,7 +397,8 @@ So that the platform recommends a planning approach that fits my experience leve
 **And** the recommendation is a suggestion, not a restriction — all three tiers remain accessible
 **And** my onboarding responses and recommended tier are saved to my user profile
 **And** I can skip onboarding if I choose (all tiers remain available)
-**And** the onboarding UI is warm and approachable, matching the emotional design for Sam's first interaction
+**And** the onboarding UI is warm and approachable, matching the emotional design for Sam's first interaction — low-commitment, jargon-free language, matching the "cautious hope" pre-entry emotional state
+**And** onboarding takes no more than 2-3 questions to minimize friction
 
 ---
 
@@ -547,7 +551,7 @@ So that I immediately understand the impact of each change (FR7, FR8).
 **Then** summary metrics update: total startup investment, projected annual revenue, ROI percentage, break-even month
 **And** recalculation completes in < 2 seconds (NFR1)
 **And** the engine validates accounting identities on every calculation: balance sheet balances, P&L-to-cash-flow consistency, depreciation-to-CapEx consistency, ROIC derivation (FR8)
-**And** validation failures are logged for debugging but do not block the user
+**And** validation failures are logged with full input/output context to a structured log (not just console) with severity level that triggers monitoring alerts, so accounting bugs can be diagnosed — failures do not block the user
 
 ### Story 3.5: Financial Input API & Per-Field Reset
 
@@ -568,17 +572,35 @@ So that I can experiment freely without fear of losing the starting point (FR2, 
 **And** GET `/api/plans/:id` returns the complete plan with all financial inputs and their metadata
 **And** GET `/api/plans/:id/outputs` returns the computed financial outputs from the engine
 
+### Story 3.6: Quick ROI — First 90-Second Experience
+
+As a new franchisee (Sam),
+I want to enter just 5 key numbers and immediately see a preliminary ROI range,
+So that I feel engaged and hopeful within 90 seconds of starting — the conversion hook that keeps me planning.
+
+**Acceptance Criteria:**
+
+**Given** I have just completed onboarding (or skipped it) and created my first plan
+**When** I land on the planning workspace for the first time
+**Then** a focused "Quick Start" experience prompts me for 5 high-impact inputs: target market population, estimated rent, initial investment budget, expected monthly revenue, and staffing count
+**And** all 5 fields are pre-filled with brand defaults so I can accept or adjust
+**And** after entering each value, the dashboard's ROI and break-even metrics update in real time
+**And** upon completing the 5 inputs, a summary card highlights: "Based on your inputs, your estimated ROI is X% with break-even at month Y"
+**And** the experience feels rewarding — the franchisee sees meaningful output from minimal effort
+**And** I can dismiss the Quick Start at any time to access full Forms/Quick Entry/Planning Assistant
+**And** the Quick Start is shown only on first plan creation — returning users go directly to the planning workspace
+
 ---
 
 ## Epic 4: Forms & Quick Entry Experience
 
 Franchisees can build financial plans using two manual input paradigms — Forms (guided sections with progressive disclosure) and Quick Entry (spreadsheet-style grid with tab-through navigation). Includes mode switching, auto-save, session recovery, and persistent consultant booking link.
 
-### Story 4.1: Planning Layout & Mode Switcher
+### Story 4.1: Planning Layout, Dashboard & Mode Switcher
 
 As a franchisee,
-I want to choose how I enter my plan data using a clear mode switcher,
-So that I can use the input method that works best for me (FR12, FR13).
+I want to choose how I enter my plan data using a clear mode switcher, with a live financial dashboard always available,
+So that I can use the input method that works best for me and see the impact of every change (FR12, FR13, FR7).
 
 **Acceptance Criteria:**
 
@@ -590,7 +612,14 @@ So that I can use the input method that works best for me (FR12, FR13).
 **And** the Direction F (Hybrid Adaptive) layout is implemented: sidebar collapses in Planning Assistant mode for immersion, restores in Forms/Quick Entry for power navigation
 **And** sidebar transition uses 200-300ms animation with `prefers-reduced-motion` support
 **And** financial input state is preserved when switching modes
-**And** my mode preference is persisted to my user profile
+**And** my mode preference is persisted to my user profile and restored on next login (the segmented control is the primary mode switch — no separate settings page needed for MVP)
+**And** a financial dashboard panel is rendered alongside the input area in a resizable split view
+**And** the dashboard shows summary cards with 4-5 headline metrics: total investment, projected revenue, ROI, break-even month, monthly cash flow
+**And** charts (Recharts) visualize projections over the 5-year period
+**And** per-field source attribution badges display: "Brand Default" / "AI-Populated" / "Your Entry"
+**And** split-view panels enforce minimum widths (360px input, 480px dashboard)
+**And** financial values display with consistent formatting: currency with $ and commas, percentages with 1 decimal (NFR27)
+**And** the dashboard updates within 200ms (optimistic UI) with full recalculation within 500ms when any financial input changes
 
 ### Story 4.2: Forms Mode — Section-Based Input
 
@@ -606,15 +635,15 @@ So that I can work through each category systematically (FR11, FR15).
 **And** a plan completeness dashboard at the top shows each section's progress (e.g., "Revenue: 8/10 fields")
 **And** all fields are pre-filled with brand defaults
 **And** a suggested order indicator shows "Start here: Revenue" but all sections are accessible
-**And** on field focus, a metadata panel shows: brand default value, Item 7 range (if applicable), source attribution
+**And** on field focus, a metadata panel shows: brand default value, Item 7 range (if applicable), source attribution; on blur, the metadata panel hides to keep the interface clean
 **And** section completion indicators update as I fill in values
 **And** I can navigate freely between sections without losing progress (FR15)
 
-### Story 4.3: Quick Entry Mode — Spreadsheet Grid
+### Story 4.3: Quick Entry Mode — Grid Foundation
 
 As a franchisee (Maria),
-I want to enter my plan data in a spreadsheet-style grid,
-So that I can complete the entire plan at maximum speed (FR12 — Quick Entry tier).
+I want to enter my plan data in a spreadsheet-style grid with inline editing,
+So that I can see and edit all my inputs at a glance (FR12 — Quick Entry tier).
 
 **Acceptance Criteria:**
 
@@ -622,31 +651,24 @@ So that I can complete the entire plan at maximum speed (FR12 — Quick Entry ti
 **When** the workspace renders
 **Then** I see a dense grid built on TanStack Table with columns: Category, Input Name, Value, Unit, Source, Brand Default
 **And** rows are organized into collapsible category groups (Revenue, Operating Costs, Startup Costs, Staffing)
-**And** I can tab through editable cells — Tab advances forward, Shift+Tab goes back, Enter confirms and moves down
 **And** cells accept keyboard input immediately (no click-to-edit)
-**And** type-aware inputs: currency auto-formats with $ and commas, percentages auto-append %, months accept integers only
 **And** a sticky summary row at the top shows 4-5 headline metrics, updating with every cell change
 **And** out-of-range values get a subtle "Gurple" (#A9A2AA) background with hover tooltip showing typical range
-**And** the grid uses virtualization for smooth performance with 60+ rows (NFR28)
-**And** plan completion in under 20 minutes with tab-through, no mouse required for core input
 
-### Story 4.4: Financial Dashboard Panel
+### Story 4.4: Quick Entry Mode — Keyboard Navigation & Formatting
 
-As a franchisee,
-I want to see a live financial dashboard alongside my inputs,
-So that I immediately understand the impact of every change I make (FR7).
+As a franchisee (Maria),
+I want keyboard-driven navigation and auto-formatting in the spreadsheet grid,
+So that I can complete the entire plan at maximum speed without a mouse.
 
 **Acceptance Criteria:**
 
-**Given** I am in any planning mode
-**When** I change a financial input
-**Then** the dashboard panel updates within 200ms (optimistic UI) with full recalculation within 500ms
-**And** summary cards show 4-5 headline metrics: total investment, projected revenue, ROI, break-even month, monthly cash flow
-**And** charts (Recharts) visualize projections over the 5-year period
-**And** per-field source attribution badges display: "Brand Default" / "AI-Populated" / "Your Entry"
-**And** in Forms/Quick Entry mode, the dashboard is a shared right-side panel in a resizable split view
-**And** split-view panels enforce minimum widths (360px input, 480px dashboard)
-**And** financial values display with consistent formatting: currency with $ and commas, percentages with 1 decimal (NFR27)
+**Given** I am in Quick Entry mode
+**When** I navigate the grid
+**Then** Tab advances to the next editable cell, Shift+Tab goes back, Enter confirms and moves down
+**And** type-aware inputs: currency auto-formats with $ and commas, percentages auto-append %, months accept integers only
+**And** the grid uses virtualization for smooth performance with 60+ rows (NFR28)
+**And** plan completion in under 20 minutes with tab-through, no mouse required for core input
 
 ### Story 4.5: Auto-Save & Session Recovery
 
@@ -661,8 +683,9 @@ So that I can plan across multiple sessions with confidence (FR16, FR17, FR18).
 **Then** auto-save triggers after 2 seconds of inactivity (debounced) via PATCH `/api/plans/:id`
 **And** only changed fields are sent (partial update)
 **And** a save status indicator shows "All changes saved" / "Saving..." / "Unsaved changes" in the workspace header
-**And** maximum data loss on crash is 2 minutes of work (NFR13)
+**And** if the browser crashes during active editing, reopening the plan recovers all changes up to the last auto-save point, which is at most 2 minutes old (NFR13)
 **And** browser `beforeunload` handler warns if unsaved changes exist
+**And** if two tabs save simultaneously, the server returns 409 Conflict and the client handles it gracefully — displaying a message to reload or merge, never silently losing data
 **When** I return to the platform after an interruption
 **Then** my plan loads the last auto-saved state with all values preserved
 **And** my active section/mode is restored to where I left off
@@ -833,7 +856,7 @@ So that I can walk into a bank meeting feeling confident and prepared (FR24, FR2
 **When** I click "Generate Package"
 **Then** a PDF package is generated within 30 seconds (NFR3) containing: pro forma P&L, cash flow projection, balance sheet, break-even analysis, and executive summary
 **And** the document header reads "[Franchisee Name]'s [Brand] Plan" — franchisee name before brand name
-**And** professional formatting with brand identity (logo, colors) and Katalyst design
+**And** professional formatting with brand identity (logo, colors) and Katalyst design — consistent typography, proper page breaks, branded headers/footers, and financial tables with formatting that matches or exceeds what a financial consultant would produce
 **And** FTC-compliant disclaimers state that projections are franchisee-created, not franchisor representations (FR25)
 **And** financial values use consistent formatting throughout (NFR27)
 **And** a live document preview is visible during planning so the franchisee can see the artifact taking shape
