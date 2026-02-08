@@ -1,0 +1,1432 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Katalyst Growth Planner — Design Direction Mockups</title>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@500;600;700&family=Roboto:wght@400;500&family=Roboto+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --kat-green: #78BF26;
+    --kat-green-dark: #676F13;
+    --kat-red: #EF4444;
+    --kat-warning: #E1D660;
+    --kat-black: #3D3936;
+    --kat-charcoal: #50534C;
+    --kat-gauntlet: #8C898C;
+    --kat-gray: #D0D1DB;
+    --kat-graylight: #F5F6F8;
+    --kat-white: #FFFFFF;
+    --kat-edamame: #96A487;
+    --kat-basque: #676F13;
+    --kat-wheat: #DDCDAE;
+    --kat-zeus: #A6A091;
+    --kat-mystical: #A9A2AA;
+    --kat-cobalt: #3D59A1;
+    --kat-amethyst: #712F91;
+    --radius-sm: 0.5rem;
+    --radius-md: 0.75rem;
+    --radius-lg: 1rem;
+    --radius-xl: 1.25rem;
+    --radius-2xl: 1.5rem;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'Roboto', sans-serif;
+    background: var(--kat-graylight);
+    color: var(--kat-charcoal);
+    line-height: 1.5;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    font-family: 'Montserrat', sans-serif;
+    color: var(--kat-black);
+  }
+
+  .mono { font-family: 'Roboto Mono', monospace; }
+
+  /* === TOP NAV === */
+  .top-nav {
+    position: sticky; top: 0; z-index: 100;
+    background: var(--kat-white);
+    border-bottom: 2px solid var(--kat-gray);
+    padding: 16px 32px;
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .top-nav h1 { font-size: 1.25rem; font-weight: 700; }
+  .top-nav .subtitle { font-size: 0.875rem; color: var(--kat-gauntlet); margin-top: 2px; }
+
+  .direction-tabs {
+    display: flex; gap: 4px;
+    background: var(--kat-graylight);
+    border-radius: var(--radius-xl);
+    padding: 4px;
+  }
+  .direction-tab {
+    padding: 8px 16px;
+    border-radius: var(--radius-md);
+    font-family: 'Montserrat', sans-serif;
+    font-weight: 600;
+    font-size: 0.875rem;
+    cursor: pointer;
+    border: none;
+    background: transparent;
+    color: var(--kat-charcoal);
+    transition: all 0.2s;
+  }
+  .direction-tab:hover { background: var(--kat-gray); color: var(--kat-black); }
+  .direction-tab.active { background: var(--kat-green); color: white; }
+
+  /* === DIRECTION CONTAINER === */
+  .direction-container { display: none; }
+  .direction-container.active { display: block; }
+
+  .direction-header {
+    padding: 32px;
+    background: var(--kat-white);
+    border-bottom: 1px solid var(--kat-gray);
+  }
+  .direction-header h2 { font-size: 1.5rem; margin-bottom: 8px; }
+  .direction-header .desc { color: var(--kat-charcoal); max-width: 720px; }
+  .direction-header .tags { display: flex; gap: 8px; margin-top: 16px; flex-wrap: wrap; }
+  .direction-header .tag {
+    padding: 4px 12px;
+    background: var(--kat-graylight);
+    border-radius: var(--radius-sm);
+    font-size: 0.75rem;
+    font-weight: 500;
+    color: var(--kat-charcoal);
+  }
+
+  /* === MOCKUP FRAME === */
+  .mockup-frame {
+    margin: 24px 32px;
+    border: 2px solid var(--kat-gray);
+    border-radius: var(--radius-2xl);
+    overflow: hidden;
+    background: var(--kat-graylight);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.06);
+  }
+
+  .mode-tabs-row {
+    display: flex; gap: 8px; margin: 24px 32px 0;
+  }
+  .mode-tab {
+    padding: 8px 20px;
+    border-radius: var(--radius-md);
+    font-family: 'Montserrat', sans-serif;
+    font-weight: 600;
+    font-size: 0.8rem;
+    cursor: pointer;
+    border: 1px solid var(--kat-gray);
+    background: var(--kat-white);
+    color: var(--kat-charcoal);
+    transition: all 0.2s;
+  }
+  .mode-tab:hover { border-color: var(--kat-green); color: var(--kat-green); }
+  .mode-tab.active { background: var(--kat-charcoal); color: white; border-color: var(--kat-charcoal); }
+
+  /* === SHARED LAYOUT COMPONENTS === */
+  .sidebar {
+    width: 260px;
+    background: var(--kat-white);
+    border-right: 2px solid var(--kat-gray);
+    display: flex; flex-direction: column;
+    min-height: 100%;
+  }
+  .sidebar-slim {
+    width: 56px;
+    background: var(--kat-white);
+    border-right: 2px solid var(--kat-gray);
+    display: flex; flex-direction: column;
+    align-items: center;
+    padding-top: 16px;
+    min-height: 100%;
+  }
+  .sidebar-logo {
+    padding: 20px 20px 16px;
+    border-bottom: 1px solid var(--kat-gray);
+    display: flex; align-items: center; gap: 10px;
+  }
+  .sidebar-logo .logo-circle {
+    width: 32px; height: 32px;
+    background: var(--kat-green);
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    color: white; font-family: 'Montserrat'; font-weight: 700; font-size: 14px;
+  }
+  .sidebar-logo span { font-family: 'Montserrat'; font-weight: 700; font-size: 0.95rem; color: var(--kat-black); }
+
+  .sidebar-nav { padding: 12px 8px; flex: 1; }
+  .sidebar-item {
+    padding: 10px 12px;
+    border-radius: var(--radius-md);
+    font-size: 0.875rem;
+    color: var(--kat-charcoal);
+    display: flex; align-items: center; gap: 10px;
+    cursor: pointer;
+    margin-bottom: 2px;
+  }
+  .sidebar-item:hover { background: var(--kat-graylight); }
+  .sidebar-item.active { background: var(--kat-graylight); color: var(--kat-black); font-weight: 500; }
+  .sidebar-item .icon { width: 18px; height: 18px; background: var(--kat-gauntlet); border-radius: 4px; opacity: 0.4; }
+  .sidebar-item.active .icon { background: var(--kat-green); opacity: 0.7; }
+
+  .sidebar-footer {
+    padding: 16px 20px;
+    border-top: 1px solid var(--kat-gray);
+    font-size: 0.7rem;
+    color: var(--kat-gauntlet);
+    display: flex; align-items: center; gap: 6px;
+  }
+  .sidebar-footer .kat-badge {
+    width: 14px; height: 14px; background: var(--kat-green); border-radius: 50%;
+    display: inline-flex; align-items: center; justify-content: center;
+    color: white; font-size: 8px; font-weight: 700;
+  }
+
+  .main-content { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+
+  .top-bar {
+    padding: 12px 24px;
+    display: flex; align-items: center; justify-content: space-between;
+    border-bottom: 1px solid var(--kat-gray);
+    background: var(--kat-white);
+  }
+  .top-bar .page-title { font-family: 'Montserrat'; font-weight: 600; font-size: 1rem; color: var(--kat-black); }
+  .autosave { font-size: 0.75rem; color: var(--kat-gauntlet); }
+
+  .mode-switcher {
+    display: flex; gap: 2px;
+    background: var(--kat-graylight);
+    border-radius: var(--radius-xl);
+    padding: 3px;
+  }
+  .mode-switcher-btn {
+    padding: 6px 14px;
+    border-radius: var(--radius-md);
+    font-size: 0.8rem;
+    font-weight: 500;
+    border: none;
+    cursor: pointer;
+    background: transparent;
+    color: var(--kat-charcoal);
+  }
+  .mode-switcher-btn.active { background: var(--kat-green); color: white; }
+
+  .workspace { flex: 1; padding: 24px; overflow-y: auto; }
+
+  /* KPI Cards */
+  .kpi-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 24px; }
+  .kpi-card {
+    background: var(--kat-white);
+    border: 2px solid var(--kat-gray);
+    border-radius: var(--radius-2xl);
+    padding: 20px;
+  }
+  .kpi-label { font-size: 0.75rem; color: var(--kat-gauntlet); font-weight: 500; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 8px; }
+  .kpi-value { font-family: 'Roboto Mono'; font-size: 1.5rem; font-weight: 500; color: var(--kat-black); }
+  .kpi-value.positive { color: var(--kat-green); }
+  .kpi-value.negative { color: var(--kat-red); }
+  .kpi-sparkline { margin-top: 12px; height: 24px; background: linear-gradient(90deg, var(--kat-red) 0%, var(--kat-red) 30%, var(--kat-warning) 50%, var(--kat-green) 100%); border-radius: 4px; opacity: 0.3; }
+
+  /* Section Cards */
+  .section-card {
+    background: var(--kat-white);
+    border: 2px solid var(--kat-gray);
+    border-radius: var(--radius-2xl);
+    padding: 24px;
+    margin-bottom: 16px;
+  }
+  .section-card-header {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 16px;
+  }
+  .section-card-title { font-family: 'Montserrat'; font-weight: 600; font-size: 1rem; }
+
+  /* Form fields */
+  .form-group { margin-bottom: 16px; }
+  .form-label { font-size: 0.875rem; font-weight: 500; color: var(--kat-black); margin-bottom: 6px; display: block; }
+  .form-input {
+    width: 100%;
+    padding: 10px 14px;
+    border: 2px solid var(--kat-gray);
+    border-radius: var(--radius-xl);
+    font-family: 'Roboto';
+    font-size: 0.875rem;
+    color: var(--kat-black);
+    background: var(--kat-white);
+    outline: none;
+  }
+  .form-input:focus { border-color: var(--kat-green); box-shadow: 0 0 0 3px rgba(120,191,38,0.15); }
+  .form-input.tentative { border-style: dashed; border-color: var(--kat-mystical); background: rgba(169,162,170,0.05); }
+  .form-hint { font-size: 0.75rem; color: var(--kat-gauntlet); margin-top: 4px; }
+
+  /* Chat bubble */
+  .chat-area { display: flex; flex-direction: column; gap: 16px; }
+  .chat-bubble {
+    max-width: 85%;
+    padding: 14px 18px;
+    border-radius: var(--radius-2xl);
+    font-size: 0.9rem;
+    line-height: 1.6;
+  }
+  .chat-bubble.ai {
+    background: var(--kat-white);
+    border: 2px solid var(--kat-gray);
+    align-self: flex-start;
+  }
+  .chat-bubble.user {
+    background: var(--kat-charcoal);
+    color: white;
+    align-self: flex-end;
+  }
+  .chat-input-bar {
+    display: flex; gap: 8px;
+    padding: 16px;
+    border-top: 1px solid var(--kat-gray);
+    background: var(--kat-white);
+  }
+  .chat-input {
+    flex: 1;
+    padding: 12px 16px;
+    border: 2px solid var(--kat-gray);
+    border-radius: var(--radius-xl);
+    font-family: 'Roboto';
+    font-size: 0.9rem;
+    outline: none;
+  }
+  .chat-send {
+    padding: 10px 20px;
+    background: var(--kat-green);
+    color: white;
+    border: none;
+    border-radius: var(--radius-xl);
+    font-family: 'Montserrat';
+    font-weight: 600;
+    cursor: pointer;
+  }
+
+  /* Expert grid */
+  .expert-grid { width: 100%; border-collapse: collapse; font-size: 0.8rem; }
+  .expert-grid th {
+    text-align: left;
+    padding: 8px 12px;
+    background: var(--kat-graylight);
+    font-family: 'Montserrat';
+    font-weight: 600;
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--kat-charcoal);
+    border-bottom: 2px solid var(--kat-gray);
+  }
+  .expert-grid td {
+    padding: 6px 12px;
+    border-bottom: 1px solid rgba(208,209,219,0.3);
+    color: var(--kat-charcoal);
+  }
+  .expert-grid td.mono { font-family: 'Roboto Mono'; font-size: 0.8rem; text-align: right; }
+  .expert-grid tr:hover td { background: rgba(245,246,248,0.5); }
+  .expert-grid .group-header {
+    background: var(--kat-graylight);
+    font-family: 'Montserrat';
+    font-weight: 600;
+    font-size: 0.8rem;
+    color: var(--kat-black);
+    cursor: pointer;
+  }
+
+  /* Gurple info panel */
+  .info-panel {
+    background: rgba(169,162,170,0.12);
+    border: 1px solid rgba(169,162,170,0.3);
+    border-radius: var(--radius-lg);
+    padding: 14px 16px;
+    display: flex; gap: 10px;
+    margin-bottom: 16px;
+  }
+  .info-panel .info-icon { color: var(--kat-mystical); font-size: 1.1rem; flex-shrink: 0; margin-top: 2px; }
+  .info-panel p { font-size: 0.85rem; color: var(--kat-charcoal); }
+
+  /* Chart placeholder */
+  .chart-placeholder {
+    height: 200px;
+    background: var(--kat-white);
+    border: 2px solid var(--kat-gray);
+    border-radius: var(--radius-2xl);
+    display: flex; align-items: center; justify-content: center;
+    position: relative;
+    overflow: hidden;
+  }
+  .chart-placeholder .chart-line {
+    position: absolute; bottom: 20px; left: 20px; right: 20px; height: 120px;
+  }
+  .chart-placeholder .chart-label { position: absolute; top: 16px; left: 20px; font-size: 0.8rem; font-weight: 600; font-family: 'Montserrat'; color: var(--kat-black); }
+  .chart-area-fill {
+    width: 100%; height: 100%;
+    background: linear-gradient(180deg, rgba(120,191,38,0.15) 0%, rgba(120,191,38,0.02) 100%);
+    clip-path: polygon(0% 100%, 5% 90%, 15% 85%, 25% 70%, 35% 55%, 45% 40%, 55% 30%, 65% 25%, 75% 15%, 85% 10%, 95% 5%, 100% 8%, 100% 100%);
+  }
+  .chart-breakeven {
+    width: 100%; height: 100%;
+    background: linear-gradient(180deg, rgba(239,68,68,0.08) 0%, transparent 50%, rgba(120,191,38,0.12) 100%);
+    clip-path: polygon(0% 10%, 10% 20%, 20% 35%, 30% 50%, 40% 60%, 50% 70%, 55% 75%, 60% 72%, 70% 60%, 80% 45%, 90% 30%, 100% 20%, 100% 100%, 0% 100%);
+  }
+
+  /* Scenario badges */
+  .scenario-badge {
+    display: inline-flex; align-items: center; gap: 4px;
+    padding: 4px 10px;
+    border-radius: var(--radius-sm);
+    font-size: 0.7rem;
+    font-weight: 500;
+  }
+  .scenario-badge.good { background: rgba(150,164,135,0.15); color: var(--kat-charcoal); }
+  .scenario-badge.better { background: rgba(120,191,38,0.12); color: var(--kat-charcoal); }
+  .scenario-badge.best { background: rgba(103,111,19,0.12); color: var(--kat-charcoal); }
+
+  /* Comparison callout */
+  .comparison-note {
+    font-size: 0.75rem;
+    color: var(--kat-gauntlet);
+    margin-top: 24px;
+    padding-top: 16px;
+    border-top: 1px solid var(--kat-gray);
+  }
+
+  /* Split panel */
+  .split-panel { display: flex; height: 520px; }
+  .split-left { flex: 1; display: flex; flex-direction: column; border-right: 2px solid var(--kat-gray); }
+  .split-right { flex: 1; display: flex; flex-direction: column; }
+  .split-left .workspace, .split-right .workspace { padding: 20px; }
+
+  /* Floating panel */
+  .floating-summary {
+    position: absolute;
+    top: 16px; right: 16px;
+    width: 320px;
+    background: var(--kat-white);
+    border: 2px solid var(--kat-gray);
+    border-radius: var(--radius-2xl);
+    padding: 20px;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+    z-index: 10;
+  }
+  .floating-summary .kpi-mini {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 8px 0;
+    border-bottom: 1px solid rgba(208,209,219,0.3);
+    font-size: 0.8rem;
+  }
+  .floating-summary .kpi-mini:last-child { border-bottom: none; }
+  .floating-summary .kpi-mini .label { color: var(--kat-gauntlet); }
+  .floating-summary .kpi-mini .value { font-family: 'Roboto Mono'; font-weight: 500; color: var(--kat-black); }
+
+  /* Top navigation bar (for Direction E) */
+  .top-nav-bar {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 10px 24px;
+    background: var(--kat-white);
+    border-bottom: 2px solid var(--kat-gray);
+  }
+  .plan-tabs { display: flex; gap: 4px; }
+  .plan-tab {
+    padding: 8px 16px;
+    border-radius: var(--radius-md);
+    font-size: 0.8rem;
+    font-weight: 500;
+    color: var(--kat-charcoal);
+    cursor: pointer;
+  }
+  .plan-tab.active { background: var(--kat-graylight); color: var(--kat-black); font-weight: 600; }
+
+  /* Card workspace grid */
+  .card-workspace { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; padding: 24px; }
+
+  /* Progress indicators */
+  .progress-bar { height: 4px; background: var(--kat-graylight); border-radius: 2px; margin-top: 8px; }
+  .progress-fill { height: 100%; background: var(--kat-green); border-radius: 2px; }
+
+  .relative { position: relative; }
+
+  /* Stacked layout */
+  .stacked { display: flex; flex-direction: column; }
+  .stacked-top { height: 320px; border-bottom: 2px solid var(--kat-gray); display: flex; flex-direction: column; }
+  .stacked-bottom { flex: 1; }
+</style>
+</head>
+<body>
+
+<div class="top-nav">
+  <div>
+    <h1>Katalyst Growth Planner</h1>
+    <div class="subtitle">Design Direction Mockups — 6 Layout Approaches</div>
+  </div>
+  <div class="direction-tabs" id="directionTabs">
+    <button class="direction-tab active" data-dir="a">A: Command Center</button>
+    <button class="direction-tab" data-dir="b">B: Guided Journey</button>
+    <button class="direction-tab" data-dir="c">C: Immersive Story</button>
+    <button class="direction-tab" data-dir="d">D: Dashboard First</button>
+    <button class="direction-tab" data-dir="e">E: Card Workspace</button>
+    <button class="direction-tab" data-dir="f">F: Hybrid Adaptive</button>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- DIRECTION A: COMMAND CENTER -->
+<!-- ============================================================ -->
+<div class="direction-container active" id="dir-a">
+  <div class="direction-header">
+    <h2>Direction A: Command Center</h2>
+    <p class="desc">Full sidebar navigation + top header with mode switcher. Story Mode uses side-by-side split (conversation left, dashboard right). Productivity-focused, always-available navigation. Best for Maria (Expert) and multi-plan managers.</p>
+    <div class="tags">
+      <span class="tag">Full sidebar always visible</span>
+      <span class="tag">Side-by-side Story Mode</span>
+      <span class="tag">Dense, professional</span>
+      <span class="tag">Multi-plan friendly</span>
+    </div>
+  </div>
+
+  <div class="mode-tabs-row">
+    <button class="mode-tab active" data-mode="story" data-dir="a">Story Mode</button>
+    <button class="mode-tab" data-mode="normal" data-dir="a">Normal Mode</button>
+    <button class="mode-tab" data-mode="expert" data-dir="a">Expert Mode</button>
+  </div>
+
+  <!-- STORY MODE -->
+  <div class="mockup-frame" id="a-story">
+    <div style="display:flex; height: 560px;">
+      <div class="sidebar">
+        <div class="sidebar-logo">
+          <div class="logo-circle">P</div>
+          <span>PostNet</span>
+        </div>
+        <div class="sidebar-nav">
+          <div class="sidebar-item active"><div class="icon"></div> My Plan</div>
+          <div class="sidebar-item"><div class="icon"></div> Scenarios</div>
+          <div class="sidebar-item"><div class="icon"></div> Reports</div>
+          <div class="sidebar-item"><div class="icon"></div> Settings</div>
+        </div>
+        <div class="sidebar-footer">
+          <span class="kat-badge">K</span> Powered by Katalyst
+        </div>
+      </div>
+      <div class="main-content">
+        <div class="top-bar">
+          <div class="page-title">Sam's PostNet Plan</div>
+          <div style="display:flex; align-items:center; gap:16px;">
+            <div class="mode-switcher">
+              <button class="mode-switcher-btn active">Story</button>
+              <button class="mode-switcher-btn">Normal</button>
+              <button class="mode-switcher-btn">Expert</button>
+            </div>
+            <span class="autosave">All changes saved</span>
+          </div>
+        </div>
+        <div class="split-panel">
+          <div class="split-left">
+            <div class="workspace" style="flex:1; overflow-y:auto;">
+              <div class="chat-area">
+                <div class="chat-bubble ai">
+                  <strong style="font-family:Montserrat; font-size:0.85rem;">Hi Sam!</strong> Let's build your PostNet business plan together. I'll ask you some questions about your location and goals, and we'll have a complete financial picture by the end.<br><br>First up — <strong>where are you thinking of opening?</strong>
+                </div>
+                <div class="chat-bubble user">
+                  I'm looking at a spot in downtown Austin, TX. It's about 1,400 sq ft in a strip mall near a university.
+                </div>
+                <div class="chat-bubble ai">
+                  Great choice! College areas tend to have strong print and shipping demand. I've set your location to <strong>Austin, TX</strong> and your space to <strong>1,400 sq ft</strong>.<br><br>Now, do you know your <strong>estimated monthly rent</strong>? Strip malls near UT Austin typically run $18-28/sq ft annually.
+                </div>
+              </div>
+            </div>
+            <div class="chat-input-bar">
+              <input class="chat-input" placeholder="Tell me about your plans..." />
+              <button class="chat-send">Send</button>
+            </div>
+          </div>
+          <div class="split-right">
+            <div class="workspace">
+              <div class="kpi-row" style="grid-template-columns: repeat(2,1fr); margin-bottom:16px;">
+                <div class="kpi-card">
+                  <div class="kpi-label">Total Investment</div>
+                  <div class="kpi-value mono">$142,500</div>
+                </div>
+                <div class="kpi-card">
+                  <div class="kpi-label">Break-Even</div>
+                  <div class="kpi-value mono positive">14 months</div>
+                </div>
+              </div>
+              <div class="chart-placeholder" style="height:160px;">
+                <span class="chart-label">Break-Even Timeline</span>
+                <div class="chart-line"><div class="chart-breakeven"></div></div>
+              </div>
+              <div class="info-panel" style="margin-top:16px;">
+                <span class="info-icon">i</span>
+                <p>Your rent estimate is within the typical range for this market. 2 of 4 financial inputs captured so far.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- NORMAL MODE -->
+  <div class="mockup-frame" style="display:none;" id="a-normal">
+    <div style="display:flex; height: 560px;">
+      <div class="sidebar">
+        <div class="sidebar-logo">
+          <div class="logo-circle">P</div>
+          <span>PostNet</span>
+        </div>
+        <div class="sidebar-nav">
+          <div class="sidebar-item active"><div class="icon"></div> My Plan</div>
+          <div class="sidebar-item"><div class="icon"></div> Scenarios</div>
+          <div class="sidebar-item"><div class="icon"></div> Reports</div>
+          <div class="sidebar-item"><div class="icon"></div> Settings</div>
+        </div>
+        <div class="sidebar-footer">
+          <span class="kat-badge">K</span> Powered by Katalyst
+        </div>
+      </div>
+      <div class="main-content">
+        <div class="top-bar">
+          <div class="page-title">Sam's PostNet Plan</div>
+          <div style="display:flex; align-items:center; gap:16px;">
+            <div class="mode-switcher">
+              <button class="mode-switcher-btn">Story</button>
+              <button class="mode-switcher-btn active">Normal</button>
+              <button class="mode-switcher-btn">Expert</button>
+            </div>
+            <span class="autosave">All changes saved</span>
+          </div>
+        </div>
+        <div style="display:flex; flex:1;">
+          <div class="workspace" style="flex:1; overflow-y:auto;">
+            <div class="kpi-row">
+              <div class="kpi-card">
+                <div class="kpi-label">Total Investment</div>
+                <div class="kpi-value mono">$142,500</div>
+              </div>
+              <div class="kpi-card">
+                <div class="kpi-label">Monthly Revenue</div>
+                <div class="kpi-value mono">$28,400</div>
+              </div>
+              <div class="kpi-card">
+                <div class="kpi-label">Monthly Expenses</div>
+                <div class="kpi-value mono">$22,100</div>
+              </div>
+              <div class="kpi-card">
+                <div class="kpi-label">Break-Even</div>
+                <div class="kpi-value mono positive">14 months</div>
+              </div>
+            </div>
+
+            <div class="section-card">
+              <div class="section-card-header">
+                <span class="section-card-title">Location & Lease</span>
+                <div style="display:flex; gap:4px;">
+                  <span class="scenario-badge good">4/6 complete</span>
+                </div>
+              </div>
+              <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px;">
+                <div class="form-group">
+                  <label class="form-label">Location City</label>
+                  <input class="form-input" value="Austin, TX" />
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Square Footage</label>
+                  <input class="form-input" value="1,400" />
+                  <div class="form-hint">Typical PostNet: 1,000-2,000 sq ft</div>
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Monthly Rent</label>
+                  <input class="form-input tentative" value="$2,800" />
+                  <div class="form-hint" style="color:var(--kat-mystical);">AI suggested — confirm or update</div>
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Lease Term (months)</label>
+                  <input class="form-input" placeholder="e.g. 60" />
+                </div>
+              </div>
+            </div>
+
+            <div class="section-card">
+              <div class="section-card-header">
+                <span class="section-card-title">Startup Costs</span>
+                <div><span class="scenario-badge good">2/8 complete</span></div>
+              </div>
+              <div class="info-panel">
+                <span class="info-icon">i</span>
+                <p>PostNet franchise fee is $34,900. Equipment and build-out typically range from $85,000 to $120,000 depending on location condition.</p>
+              </div>
+              <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px;">
+                <div class="form-group">
+                  <label class="form-label">Franchise Fee</label>
+                  <input class="form-input" value="$34,900" style="background:var(--kat-graylight); color:var(--kat-gauntlet);" disabled />
+                  <div class="form-hint">Fixed by franchisor</div>
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Build-Out Costs</label>
+                  <input class="form-input" placeholder="$85,000 - $120,000" />
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- EXPERT MODE -->
+  <div class="mockup-frame" style="display:none;" id="a-expert">
+    <div style="display:flex; height: 560px;">
+      <div class="sidebar">
+        <div class="sidebar-logo">
+          <div class="logo-circle">P</div>
+          <span>PostNet</span>
+        </div>
+        <div class="sidebar-nav">
+          <div class="sidebar-item active"><div class="icon"></div> My Plan</div>
+          <div class="sidebar-item"><div class="icon"></div> Scenarios</div>
+          <div class="sidebar-item"><div class="icon"></div> Reports</div>
+          <div class="sidebar-item"><div class="icon"></div> Settings</div>
+        </div>
+        <div class="sidebar-footer">
+          <span class="kat-badge">K</span> Powered by Katalyst
+        </div>
+      </div>
+      <div class="main-content">
+        <div class="top-bar">
+          <div class="page-title">Sam's PostNet Plan — All Inputs</div>
+          <div style="display:flex; align-items:center; gap:16px;">
+            <div class="mode-switcher">
+              <button class="mode-switcher-btn">Story</button>
+              <button class="mode-switcher-btn">Normal</button>
+              <button class="mode-switcher-btn active">Expert</button>
+            </div>
+            <div style="display:flex; gap:8px;">
+              <span class="scenario-badge good">Good</span>
+              <span class="scenario-badge better">Better</span>
+              <span class="scenario-badge best">Best</span>
+            </div>
+          </div>
+        </div>
+        <div class="workspace" style="overflow-y:auto; padding:16px 24px;">
+          <table class="expert-grid">
+            <thead>
+              <tr>
+                <th style="width:35%;">Financial Input</th>
+                <th style="width:15%;">Good</th>
+                <th style="width:15%;">Better</th>
+                <th style="width:15%;">Best</th>
+                <th style="width:20%;">Source</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr class="group-header"><td colspan="5">Location & Lease</td></tr>
+              <tr><td>Monthly Rent</td><td class="mono">$2,800</td><td class="mono">$2,800</td><td class="mono">$2,800</td><td><span class="scenario-badge" style="background:rgba(169,162,170,0.15);">AI suggested</span></td></tr>
+              <tr><td>Square Footage</td><td class="mono">1,400</td><td class="mono">1,400</td><td class="mono">1,400</td><td><span class="scenario-badge" style="background:rgba(120,191,38,0.1);">User input</span></td></tr>
+              <tr><td>Lease Term (months)</td><td class="mono" style="color:var(--kat-gauntlet);">—</td><td class="mono" style="color:var(--kat-gauntlet);">—</td><td class="mono" style="color:var(--kat-gauntlet);">—</td><td></td></tr>
+              <tr><td>CAM Charges</td><td class="mono" style="color:var(--kat-gauntlet);">—</td><td class="mono" style="color:var(--kat-gauntlet);">—</td><td class="mono" style="color:var(--kat-gauntlet);">—</td><td></td></tr>
+              <tr class="group-header"><td colspan="5">Startup Costs</td></tr>
+              <tr><td>Franchise Fee</td><td class="mono">$34,900</td><td class="mono">$34,900</td><td class="mono">$34,900</td><td><span class="scenario-badge" style="background:rgba(221,205,174,0.3);">Franchisor</span></td></tr>
+              <tr><td>Build-Out / Improvements</td><td class="mono" style="color:var(--kat-gauntlet);">—</td><td class="mono" style="color:var(--kat-gauntlet);">—</td><td class="mono" style="color:var(--kat-gauntlet);">—</td><td></td></tr>
+              <tr><td>Equipment</td><td class="mono" style="color:var(--kat-gauntlet);">—</td><td class="mono" style="color:var(--kat-gauntlet);">—</td><td class="mono" style="color:var(--kat-gauntlet);">—</td><td></td></tr>
+              <tr><td>Initial Inventory</td><td class="mono" style="color:var(--kat-gauntlet);">—</td><td class="mono" style="color:var(--kat-gauntlet);">—</td><td class="mono" style="color:var(--kat-gauntlet);">—</td><td></td></tr>
+              <tr class="group-header"><td colspan="5">Revenue Projections</td></tr>
+              <tr><td>Monthly Revenue (Yr 1)</td><td class="mono">$22,000</td><td class="mono">$28,400</td><td class="mono">$35,000</td><td><span class="scenario-badge" style="background:rgba(169,162,170,0.15);">AI estimated</span></td></tr>
+              <tr><td>Growth Rate (Annual)</td><td class="mono">5%</td><td class="mono">8%</td><td class="mono">12%</td><td><span class="scenario-badge" style="background:rgba(169,162,170,0.15);">AI estimated</span></td></tr>
+              <tr class="group-header"><td colspan="5">Operating Expenses</td></tr>
+              <tr><td>Payroll (Monthly)</td><td class="mono" style="color:var(--kat-gauntlet);">—</td><td class="mono" style="color:var(--kat-gauntlet);">—</td><td class="mono" style="color:var(--kat-gauntlet);">—</td><td></td></tr>
+              <tr><td>Utilities</td><td class="mono" style="color:var(--kat-gauntlet);">—</td><td class="mono" style="color:var(--kat-gauntlet);">—</td><td class="mono" style="color:var(--kat-gauntlet);">—</td><td></td></tr>
+              <tr><td>Insurance</td><td class="mono" style="color:var(--kat-gauntlet);">—</td><td class="mono" style="color:var(--kat-gauntlet);">—</td><td class="mono" style="color:var(--kat-gauntlet);">—</td><td></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- DIRECTION B: GUIDED JOURNEY -->
+<!-- ============================================================ -->
+<div class="direction-container" id="dir-b">
+  <div class="direction-header">
+    <h2>Direction B: Guided Journey</h2>
+    <p class="desc">Slim sidebar (icon-only by default, text on hover). Mode switcher is a prominent center-positioned segmented control. Story Mode uses a stacked layout (conversation above, live dashboard below). Spacious, approachable. Best for Sam (first-time franchisee).</p>
+    <div class="tags">
+      <span class="tag">Icon sidebar (expands on hover)</span>
+      <span class="tag">Stacked Story Mode</span>
+      <span class="tag">Prominent mode switcher</span>
+      <span class="tag">First-timer friendly</span>
+    </div>
+  </div>
+
+  <div class="mode-tabs-row">
+    <button class="mode-tab active" data-mode="story" data-dir="b">Story Mode</button>
+    <button class="mode-tab" data-mode="normal" data-dir="b">Normal Mode</button>
+  </div>
+
+  <div class="mockup-frame" id="b-story">
+    <div style="display:flex; height:580px;">
+      <div class="sidebar-slim">
+        <div style="width:32px; height:32px; background:var(--kat-green); border-radius:50%; display:flex; align-items:center; justify-content:center; color:white; font-weight:700; font-size:14px; margin-bottom:24px;">P</div>
+        <div style="width:32px; height:32px; background:var(--kat-graylight); border-radius:8px; margin-bottom:8px;"></div>
+        <div style="width:32px; height:32px; background:var(--kat-graylight); border-radius:8px; margin-bottom:8px;"></div>
+        <div style="width:32px; height:32px; background:var(--kat-graylight); border-radius:8px; margin-bottom:8px;"></div>
+        <div style="flex:1;"></div>
+        <div style="width:14px; height:14px; background:var(--kat-green); border-radius:50%; margin-bottom:16px;"></div>
+      </div>
+      <div class="main-content">
+        <div class="top-bar" style="justify-content:center; position:relative;">
+          <div style="position:absolute; left:24px;" class="page-title">Sam's PostNet Plan</div>
+          <div class="mode-switcher" style="transform:scale(1.1);">
+            <button class="mode-switcher-btn active">Story</button>
+            <button class="mode-switcher-btn">Normal</button>
+            <button class="mode-switcher-btn">Expert</button>
+          </div>
+          <span class="autosave" style="position:absolute; right:24px;">All changes saved</span>
+        </div>
+        <div class="stacked">
+          <div class="stacked-top">
+            <div class="workspace" style="flex:1; overflow-y:auto;">
+              <div class="chat-area">
+                <div class="chat-bubble ai">
+                  <strong style="font-family:Montserrat;">Welcome, Sam!</strong> I'm your planning advisor. Let's figure out the financial picture for your PostNet location together. We'll start simple and build up.<br><br><strong>What city are you looking at?</strong>
+                </div>
+                <div class="chat-bubble user">Austin, Texas — near the UT campus.</div>
+                <div class="chat-bubble ai">Austin's a great market for PostNet. College neighborhoods have strong demand for shipping and printing. I've set your location.<br><br><strong>Do you have a lease or space in mind?</strong></div>
+              </div>
+            </div>
+            <div class="chat-input-bar">
+              <input class="chat-input" placeholder="Type your answer..." />
+              <button class="chat-send">Send</button>
+            </div>
+          </div>
+          <div class="stacked-bottom" style="display:flex; flex:1;">
+            <div class="workspace" style="overflow-y:auto;">
+              <div style="display:grid; grid-template-columns:repeat(3,1fr); gap:12px; margin-bottom:16px;">
+                <div class="kpi-card" style="padding:16px;">
+                  <div class="kpi-label" style="font-size:0.7rem;">Total Investment</div>
+                  <div class="kpi-value mono" style="font-size:1.2rem;">$142,500</div>
+                </div>
+                <div class="kpi-card" style="padding:16px;">
+                  <div class="kpi-label" style="font-size:0.7rem;">Break-Even</div>
+                  <div class="kpi-value mono positive" style="font-size:1.2rem;">14 mo</div>
+                </div>
+                <div class="kpi-card" style="padding:16px;">
+                  <div class="kpi-label" style="font-size:0.7rem;">Plan Complete</div>
+                  <div class="kpi-value" style="font-size:1.2rem; color:var(--kat-green);">25%</div>
+                  <div class="progress-bar"><div class="progress-fill" style="width:25%;"></div></div>
+                </div>
+              </div>
+              <div class="chart-placeholder" style="height:120px;">
+                <span class="chart-label" style="font-size:0.7rem;">Break-Even Timeline (updates live)</span>
+                <div class="chart-line" style="height:80px;"><div class="chart-breakeven"></div></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="mockup-frame" style="display:none;" id="b-normal">
+    <div style="display:flex; height:580px;">
+      <div class="sidebar-slim">
+        <div style="width:32px; height:32px; background:var(--kat-green); border-radius:50%; display:flex; align-items:center; justify-content:center; color:white; font-weight:700; font-size:14px; margin-bottom:24px;">P</div>
+        <div style="width:32px; height:32px; background:var(--kat-graylight); border-radius:8px; margin-bottom:8px;"></div>
+        <div style="width:32px; height:32px; background:var(--kat-graylight); border-radius:8px; margin-bottom:8px;"></div>
+        <div style="width:32px; height:32px; background:var(--kat-graylight); border-radius:8px;"></div>
+        <div style="flex:1;"></div>
+        <div style="width:14px; height:14px; background:var(--kat-green); border-radius:50%; margin-bottom:16px;"></div>
+      </div>
+      <div class="main-content">
+        <div class="top-bar" style="justify-content:center; position:relative;">
+          <div style="position:absolute; left:24px;" class="page-title">Sam's PostNet Plan</div>
+          <div class="mode-switcher" style="transform:scale(1.1);">
+            <button class="mode-switcher-btn">Story</button>
+            <button class="mode-switcher-btn active">Normal</button>
+            <button class="mode-switcher-btn">Expert</button>
+          </div>
+          <span class="autosave" style="position:absolute; right:24px;">All changes saved</span>
+        </div>
+        <div class="workspace" style="overflow-y:auto; max-width:720px; margin:0 auto;">
+          <div class="kpi-row" style="grid-template-columns:repeat(3,1fr); margin-bottom:24px;">
+            <div class="kpi-card"><div class="kpi-label">Total Investment</div><div class="kpi-value mono">$142,500</div></div>
+            <div class="kpi-card"><div class="kpi-label">Monthly Cash Flow</div><div class="kpi-value mono positive">$6,300</div></div>
+            <div class="kpi-card"><div class="kpi-label">Break-Even</div><div class="kpi-value mono positive">14 months</div></div>
+          </div>
+
+          <div class="section-card">
+            <div class="section-card-header">
+              <span class="section-card-title">Location & Lease</span>
+              <span class="scenario-badge good">4/6 complete</span>
+            </div>
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px;">
+              <div class="form-group"><label class="form-label">Location</label><input class="form-input" value="Austin, TX" /></div>
+              <div class="form-group"><label class="form-label">Square Footage</label><input class="form-input" value="1,400" /></div>
+              <div class="form-group"><label class="form-label">Monthly Rent</label><input class="form-input tentative" value="$2,800" /><div class="form-hint" style="color:var(--kat-mystical);">AI suggested — confirm or update</div></div>
+              <div class="form-group"><label class="form-label">Lease Term</label><input class="form-input" placeholder="e.g. 60 months" /></div>
+            </div>
+          </div>
+
+          <div class="section-card">
+            <div class="section-card-header">
+              <span class="section-card-title">Startup Costs</span>
+              <span class="scenario-badge" style="background:var(--kat-graylight);">0/8 complete</span>
+            </div>
+            <p style="color:var(--kat-gauntlet); font-size:0.875rem;">Ready to plan your startup costs? Let's build something great.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- DIRECTION C: IMMERSIVE STORY -->
+<!-- ============================================================ -->
+<div class="direction-container" id="dir-c">
+  <div class="direction-header">
+    <h2>Direction C: Immersive Story</h2>
+    <p class="desc">Story Mode gets the full canvas with a floating summary overlay panel. Normal/Expert modes restore traditional sidebar layout. Optimized for Sam's first experience — the conversation IS the product.</p>
+    <div class="tags">
+      <span class="tag">Full-canvas Story Mode</span>
+      <span class="tag">Floating dashboard overlay</span>
+      <span class="tag">Immersive conversation</span>
+      <span class="tag">Sidebar returns in other modes</span>
+    </div>
+  </div>
+
+  <div class="mode-tabs-row">
+    <button class="mode-tab active" data-mode="story" data-dir="c">Story Mode</button>
+    <button class="mode-tab" data-mode="normal" data-dir="c">Normal Mode</button>
+  </div>
+
+  <div class="mockup-frame" id="c-story">
+    <div style="height:580px; position:relative;">
+      <div class="top-bar" style="justify-content:space-between;">
+        <div style="display:flex; align-items:center; gap:12px;">
+          <div style="width:28px; height:28px; background:var(--kat-green); border-radius:50%; display:flex; align-items:center; justify-content:center; color:white; font-weight:700; font-size:12px;">P</div>
+          <span class="page-title">Sam's PostNet Plan</span>
+        </div>
+        <div class="mode-switcher">
+          <button class="mode-switcher-btn active">Story</button>
+          <button class="mode-switcher-btn">Normal</button>
+          <button class="mode-switcher-btn">Expert</button>
+        </div>
+        <span class="autosave">All changes saved</span>
+      </div>
+      <div style="display:flex; flex-direction:column; height:calc(100% - 49px); position:relative;">
+        <div style="flex:1; overflow-y:auto; padding:32px; max-width:680px; margin:0 auto; width:100%;">
+          <div class="chat-area">
+            <div class="chat-bubble ai" style="max-width:100%;">
+              <strong style="font-family:Montserrat; font-size:1rem;">Welcome to your PostNet planning journey.</strong><br><br>
+              I'll walk you through everything you need to build a confident financial plan for your new location. No spreadsheets, no jargon — just a conversation.<br><br>
+              <strong>Where are you thinking of opening your PostNet?</strong>
+            </div>
+            <div class="chat-bubble user">Downtown Austin, near UT. I found a 1,400 sq ft space in a strip mall.</div>
+            <div class="chat-bubble ai" style="max-width:100%;">
+              Excellent location. College neighborhoods generate strong, consistent demand for PostNet services — shipping peaks around move-in/move-out, and print services stay steady year-round.<br><br>
+              I've captured:<br>
+              <div style="margin:12px 0; padding:12px; background:var(--kat-graylight); border-radius:8px;">
+                <div style="display:flex; justify-content:space-between; margin-bottom:4px;"><span style="color:var(--kat-gauntlet); font-size:0.8rem;">Location</span><span style="font-weight:500; font-size:0.85rem;">Austin, TX</span></div>
+                <div style="display:flex; justify-content:space-between;"><span style="color:var(--kat-gauntlet); font-size:0.8rem;">Square Footage</span><span class="mono" style="font-weight:500; font-size:0.85rem;">1,400 sq ft</span></div>
+              </div>
+              Now, <strong>what's the monthly rent on that space?</strong> For a strip mall near UT Austin, I'd typically expect $18-28/sq ft annually — that's roughly $2,100-$3,300/month for your size.
+            </div>
+          </div>
+        </div>
+        <div class="chat-input-bar" style="max-width:680px; margin:0 auto; width:100%; border-top:none; padding:16px 0 24px;">
+          <input class="chat-input" placeholder="Tell me about your plans..." style="font-size:1rem; padding:14px 20px;" />
+          <button class="chat-send" style="padding:14px 24px;">Send</button>
+        </div>
+
+        <div class="floating-summary">
+          <div style="font-family:Montserrat; font-weight:600; font-size:0.85rem; color:var(--kat-black); margin-bottom:12px;">Live Summary</div>
+          <div class="kpi-mini"><span class="label">Total Investment</span><span class="value">$142,500</span></div>
+          <div class="kpi-mini"><span class="label">Break-Even</span><span class="value" style="color:var(--kat-green);">14 months</span></div>
+          <div class="kpi-mini"><span class="label">Monthly Cash Flow</span><span class="value" style="color:var(--kat-green);">$6,300</span></div>
+          <div class="kpi-mini"><span class="label">Plan Progress</span><span class="value">25%</span></div>
+          <div class="progress-bar" style="margin-top:4px;"><div class="progress-fill" style="width:25%;"></div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="mockup-frame" style="display:none;" id="c-normal">
+    <div style="display:flex; height:580px;">
+      <div class="sidebar">
+        <div class="sidebar-logo">
+          <div class="logo-circle">P</div>
+          <span>PostNet</span>
+        </div>
+        <div class="sidebar-nav">
+          <div class="sidebar-item active"><div class="icon"></div> My Plan</div>
+          <div class="sidebar-item"><div class="icon"></div> Scenarios</div>
+          <div class="sidebar-item"><div class="icon"></div> Reports</div>
+        </div>
+        <div class="sidebar-footer"><span class="kat-badge">K</span> Powered by Katalyst</div>
+      </div>
+      <div class="main-content">
+        <div class="top-bar">
+          <div class="page-title">Sam's PostNet Plan</div>
+          <div class="mode-switcher">
+            <button class="mode-switcher-btn">Story</button>
+            <button class="mode-switcher-btn active">Normal</button>
+            <button class="mode-switcher-btn">Expert</button>
+          </div>
+        </div>
+        <div class="workspace" style="overflow-y:auto;">
+          <div class="kpi-row">
+            <div class="kpi-card"><div class="kpi-label">Total Investment</div><div class="kpi-value mono">$142,500</div></div>
+            <div class="kpi-card"><div class="kpi-label">Revenue</div><div class="kpi-value mono">$28,400</div></div>
+            <div class="kpi-card"><div class="kpi-label">Expenses</div><div class="kpi-value mono">$22,100</div></div>
+            <div class="kpi-card"><div class="kpi-label">Break-Even</div><div class="kpi-value mono positive">14 mo</div></div>
+          </div>
+          <div class="section-card">
+            <div class="section-card-header"><span class="section-card-title">Location & Lease</span><span class="scenario-badge good">4/6</span></div>
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px;">
+              <div class="form-group"><label class="form-label">Location</label><input class="form-input" value="Austin, TX" /></div>
+              <div class="form-group"><label class="form-label">Square Footage</label><input class="form-input" value="1,400" /></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- DIRECTION D: DASHBOARD FIRST -->
+<!-- ============================================================ -->
+<div class="direction-container" id="dir-d">
+  <div class="direction-header">
+    <h2>Direction D: Dashboard First</h2>
+    <p class="desc">Financial dashboard is permanently anchored on the right. Modes change the left input panel — conversation in Story, form in Normal, grid in Expert. The dashboard never moves, creating a stable reference point. Best for Maria (consultant running multiple plans).</p>
+    <div class="tags">
+      <span class="tag">Permanent dashboard right panel</span>
+      <span class="tag">Input panel changes per mode</span>
+      <span class="tag">Stable financial reference</span>
+      <span class="tag">Consultant-optimized</span>
+    </div>
+  </div>
+
+  <div class="mockup-frame">
+    <div style="display:flex; height:580px;">
+      <div class="sidebar" style="width:200px;">
+        <div class="sidebar-logo">
+          <div class="logo-circle">P</div>
+          <span>PostNet</span>
+        </div>
+        <div class="sidebar-nav">
+          <div class="sidebar-item active"><div class="icon"></div> Plan</div>
+          <div class="sidebar-item"><div class="icon"></div> Scenarios</div>
+          <div class="sidebar-item"><div class="icon"></div> Reports</div>
+        </div>
+        <div class="sidebar-footer"><span class="kat-badge">K</span> Powered by Katalyst</div>
+      </div>
+
+      <!-- Input panel (left) -->
+      <div style="flex:1; border-right:2px solid var(--kat-gray); display:flex; flex-direction:column;">
+        <div class="top-bar">
+          <div class="mode-switcher">
+            <button class="mode-switcher-btn active">Story</button>
+            <button class="mode-switcher-btn">Normal</button>
+            <button class="mode-switcher-btn">Expert</button>
+          </div>
+        </div>
+        <div style="flex:1; overflow-y:auto; padding:20px;">
+          <div class="chat-area">
+            <div class="chat-bubble ai" style="max-width:95%;">
+              <strong style="font-family:Montserrat;">Let's plan your PostNet!</strong> Where are you thinking of opening?
+            </div>
+            <div class="chat-bubble user">Austin, TX near UT campus. 1,400 sq ft strip mall.</div>
+            <div class="chat-bubble ai" style="max-width:95%;">
+              Great market! Watch the dashboard update as we go. <strong>What's your monthly rent?</strong>
+            </div>
+          </div>
+        </div>
+        <div class="chat-input-bar">
+          <input class="chat-input" placeholder="Type here..." />
+          <button class="chat-send">Send</button>
+        </div>
+      </div>
+
+      <!-- Dashboard (right, permanent) -->
+      <div style="width:360px; background:var(--kat-graylight); overflow-y:auto; padding:20px;">
+        <div style="font-family:Montserrat; font-weight:700; font-size:1rem; color:var(--kat-black); margin-bottom:16px;">Financial Dashboard</div>
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:16px;">
+          <div class="kpi-card" style="padding:14px;">
+            <div class="kpi-label" style="font-size:0.65rem;">Investment</div>
+            <div class="kpi-value mono" style="font-size:1.1rem;">$142K</div>
+          </div>
+          <div class="kpi-card" style="padding:14px;">
+            <div class="kpi-label" style="font-size:0.65rem;">Break-Even</div>
+            <div class="kpi-value mono positive" style="font-size:1.1rem;">14 mo</div>
+          </div>
+          <div class="kpi-card" style="padding:14px;">
+            <div class="kpi-label" style="font-size:0.65rem;">Revenue</div>
+            <div class="kpi-value mono" style="font-size:1.1rem;">$28.4K</div>
+          </div>
+          <div class="kpi-card" style="padding:14px;">
+            <div class="kpi-label" style="font-size:0.65rem;">Cash Flow</div>
+            <div class="kpi-value mono positive" style="font-size:1.1rem;">$6.3K</div>
+          </div>
+        </div>
+        <div class="chart-placeholder" style="height:140px; margin-bottom:12px;">
+          <span class="chart-label" style="font-size:0.7rem;">Break-Even Timeline</span>
+          <div class="chart-line" style="height:80px;"><div class="chart-breakeven"></div></div>
+        </div>
+        <div class="chart-placeholder" style="height:120px;">
+          <span class="chart-label" style="font-size:0.7rem;">Revenue vs Expenses</span>
+          <div class="chart-line" style="height:70px;"><div class="chart-area-fill"></div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- DIRECTION E: CARD WORKSPACE -->
+<!-- ============================================================ -->
+<div class="direction-container" id="dir-e">
+  <div class="direction-header">
+    <h2>Direction E: Card Workspace</h2>
+    <p class="desc">No sidebar. Top navigation bar with plan tabs. Content organized as a card-based workspace. Mode switcher changes card interaction style. Notion-inspired, modern, maximum workspace. Best for users with one plan and simple navigation needs.</p>
+    <div class="tags">
+      <span class="tag">No sidebar</span>
+      <span class="tag">Top nav with plan tabs</span>
+      <span class="tag">Card-based workspace</span>
+      <span class="tag">Notion-inspired</span>
+    </div>
+  </div>
+
+  <div class="mockup-frame">
+    <div style="height:580px; display:flex; flex-direction:column;">
+      <div class="top-nav-bar">
+        <div style="display:flex; align-items:center; gap:16px;">
+          <div style="display:flex; align-items:center; gap:8px;">
+            <div style="width:28px; height:28px; background:var(--kat-green); border-radius:50%; display:flex; align-items:center; justify-content:center; color:white; font-weight:700; font-size:12px;">P</div>
+            <span style="font-family:Montserrat; font-weight:700; font-size:0.9rem;">PostNet</span>
+          </div>
+          <div class="plan-tabs">
+            <div class="plan-tab active">Sam's Plan</div>
+            <div class="plan-tab">+ New Plan</div>
+          </div>
+        </div>
+        <div class="mode-switcher">
+          <button class="mode-switcher-btn">Story</button>
+          <button class="mode-switcher-btn active">Normal</button>
+          <button class="mode-switcher-btn">Expert</button>
+        </div>
+        <div style="display:flex; align-items:center; gap:12px;">
+          <span class="autosave">Saved</span>
+          <div style="width:32px; height:32px; background:var(--kat-graylight); border-radius:50%;"></div>
+        </div>
+      </div>
+
+      <div style="flex:1; overflow-y:auto;">
+        <div style="padding:24px; max-width:1100px; margin:0 auto;">
+          <div class="kpi-row" style="margin-bottom:24px;">
+            <div class="kpi-card"><div class="kpi-label">Total Investment</div><div class="kpi-value mono">$142,500</div></div>
+            <div class="kpi-card"><div class="kpi-label">Monthly Revenue</div><div class="kpi-value mono">$28,400</div></div>
+            <div class="kpi-card"><div class="kpi-label">Monthly Expenses</div><div class="kpi-value mono">$22,100</div></div>
+            <div class="kpi-card"><div class="kpi-label">Break-Even</div><div class="kpi-value mono positive">14 months</div><div class="kpi-sparkline"></div></div>
+          </div>
+
+          <div style="display:grid; grid-template-columns:2fr 1fr; gap:16px;">
+            <div>
+              <div class="section-card">
+                <div class="section-card-header"><span class="section-card-title">Location & Lease</span><span class="scenario-badge good">4/6</span></div>
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px;">
+                  <div class="form-group"><label class="form-label">Location</label><input class="form-input" value="Austin, TX" /></div>
+                  <div class="form-group"><label class="form-label">Sq Ft</label><input class="form-input" value="1,400" /></div>
+                  <div class="form-group"><label class="form-label">Monthly Rent</label><input class="form-input tentative" value="$2,800" /></div>
+                  <div class="form-group"><label class="form-label">Lease Term</label><input class="form-input" placeholder="60 months" /></div>
+                </div>
+              </div>
+              <div class="section-card">
+                <div class="section-card-header"><span class="section-card-title">Startup Costs</span><span class="scenario-badge" style="background:var(--kat-graylight);">0/8</span></div>
+                <p style="color:var(--kat-gauntlet); font-size:0.875rem;">Ready to plan your startup costs? Let's build something great.</p>
+              </div>
+            </div>
+            <div>
+              <div class="chart-placeholder" style="height:180px; margin-bottom:16px;">
+                <span class="chart-label">Break-Even Timeline</span>
+                <div class="chart-line" style="height:100px;"><div class="chart-breakeven"></div></div>
+              </div>
+              <div class="info-panel">
+                <span class="info-icon">i</span>
+                <p style="font-size:0.8rem;">Your plan is 25% complete. Complete the Startup Costs section next for a more accurate break-even estimate.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div style="padding:8px 24px; border-top:1px solid var(--kat-gray); font-size:0.7rem; color:var(--kat-gauntlet); display:flex; align-items:center; gap:6px;">
+        <span style="width:12px; height:12px; background:var(--kat-green); border-radius:50%; display:inline-flex; align-items:center; justify-content:center; color:white; font-size:7px; font-weight:700;">K</span>
+        Powered by Katalyst
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- DIRECTION F: HYBRID ADAPTIVE -->
+<!-- ============================================================ -->
+<div class="direction-container" id="dir-f">
+  <div class="direction-header">
+    <h2>Direction F: Hybrid Adaptive</h2>
+    <p class="desc">Combines A and C. Sidebar with navigation present in Normal/Expert modes, but Story Mode collapses sidebar and goes immersive with side-by-side conversation + dashboard. Mode transition includes a subtle layout shift. Best overall balance between approachability and power.</p>
+    <div class="tags">
+      <span class="tag">Adaptive sidebar (hides in Story)</span>
+      <span class="tag">Side-by-side Story Mode</span>
+      <span class="tag">Full sidebar in Normal/Expert</span>
+      <span class="tag">Best of both worlds</span>
+    </div>
+  </div>
+
+  <div class="mode-tabs-row">
+    <button class="mode-tab active" data-mode="story" data-dir="f">Story Mode</button>
+    <button class="mode-tab" data-mode="normal" data-dir="f">Normal Mode</button>
+  </div>
+
+  <div class="mockup-frame" id="f-story">
+    <div style="display:flex; height:580px;">
+      <!-- Collapsed sidebar - just logo -->
+      <div style="width:56px; background:var(--kat-white); border-right:2px solid var(--kat-gray); display:flex; flex-direction:column; align-items:center; padding-top:16px;">
+        <div style="width:32px; height:32px; background:var(--kat-green); border-radius:50%; display:flex; align-items:center; justify-content:center; color:white; font-weight:700; font-size:14px;">P</div>
+        <div style="flex:1;"></div>
+        <div style="width:14px; height:14px; background:var(--kat-green); border-radius:50%; margin-bottom:16px;"></div>
+      </div>
+      <div class="main-content">
+        <div class="top-bar">
+          <div class="page-title">Sam's PostNet Plan</div>
+          <div class="mode-switcher">
+            <button class="mode-switcher-btn active">Story</button>
+            <button class="mode-switcher-btn">Normal</button>
+            <button class="mode-switcher-btn">Expert</button>
+          </div>
+          <span class="autosave">All changes saved</span>
+        </div>
+        <div class="split-panel" style="height:calc(100% - 49px);">
+          <div class="split-left" style="flex:1.2;">
+            <div class="workspace" style="flex:1; overflow-y:auto; padding:24px;">
+              <div class="chat-area">
+                <div class="chat-bubble ai" style="max-width:90%;">
+                  <strong style="font-family:Montserrat;">Hi Sam!</strong> Let's build your PostNet financial plan. I'll ask you questions and the dashboard will update in real time as we go.<br><br><strong>Where are you thinking of opening?</strong>
+                </div>
+                <div class="chat-bubble user">Austin, TX — near UT. 1,400 sq ft strip mall space.</div>
+                <div class="chat-bubble ai" style="max-width:90%;">
+                  Great choice! College areas drive consistent demand. I've captured your location and space size.<br><br><strong>What's the monthly rent?</strong> For this area, I'd expect $2,100-$3,300/month.
+                </div>
+                <div class="chat-bubble user">The landlord quoted $2,800/month.</div>
+                <div class="chat-bubble ai" style="max-width:90%;">
+                  $2,800/month — that's $24/sq ft annually, right in the sweet spot for that area. Good deal.
+                  <div style="margin:12px 0; padding:10px; background:rgba(169,162,170,0.1); border:1px solid rgba(169,162,170,0.2); border-radius:8px; font-size:0.8rem;">
+                    <span style="color:var(--kat-mystical); font-weight:500;">Advisor note:</span> PostNet locations in university markets typically see 15-20% higher foot traffic. Your revenue projections reflect this premium.
+                  </div>
+                  Next up — <strong>do you know your build-out costs?</strong>
+                </div>
+              </div>
+            </div>
+            <div class="chat-input-bar">
+              <input class="chat-input" placeholder="Tell me about your plans..." />
+              <button class="chat-send">Send</button>
+            </div>
+          </div>
+          <div class="split-right" style="flex:0.8;">
+            <div class="workspace" style="padding:20px;">
+              <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:16px;">
+                <div class="kpi-card" style="padding:14px;">
+                  <div class="kpi-label" style="font-size:0.65rem;">Investment</div>
+                  <div class="kpi-value mono" style="font-size:1.1rem;">$142.5K</div>
+                </div>
+                <div class="kpi-card" style="padding:14px;">
+                  <div class="kpi-label" style="font-size:0.65rem;">Break-Even</div>
+                  <div class="kpi-value mono positive" style="font-size:1.1rem;">14 mo</div>
+                </div>
+              </div>
+              <div class="chart-placeholder" style="height:140px; margin-bottom:12px;">
+                <span class="chart-label" style="font-size:0.7rem;">Break-Even Timeline</span>
+                <div class="chart-line" style="height:80px;"><div class="chart-breakeven"></div></div>
+              </div>
+              <div class="chart-placeholder" style="height:100px; margin-bottom:12px;">
+                <span class="chart-label" style="font-size:0.7rem;">Revenue vs Expenses</span>
+                <div class="chart-line" style="height:60px;"><div class="chart-area-fill"></div></div>
+              </div>
+              <div class="info-panel" style="margin-bottom:0;">
+                <span class="info-icon">i</span>
+                <p style="font-size:0.75rem;">3 of 12 sections complete. Keep going — each answer makes the plan more accurate.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="mockup-frame" style="display:none;" id="f-normal">
+    <div style="display:flex; height:580px;">
+      <div class="sidebar">
+        <div class="sidebar-logo">
+          <div class="logo-circle">P</div>
+          <span>PostNet</span>
+        </div>
+        <div class="sidebar-nav">
+          <div class="sidebar-item active"><div class="icon"></div> My Plan</div>
+          <div class="sidebar-item"><div class="icon"></div> Scenarios</div>
+          <div class="sidebar-item"><div class="icon"></div> Reports</div>
+          <div class="sidebar-item"><div class="icon"></div> Settings</div>
+        </div>
+        <div class="sidebar-footer"><span class="kat-badge">K</span> Powered by Katalyst</div>
+      </div>
+      <div class="main-content">
+        <div class="top-bar">
+          <div class="page-title">Sam's PostNet Plan</div>
+          <div class="mode-switcher">
+            <button class="mode-switcher-btn">Story</button>
+            <button class="mode-switcher-btn active">Normal</button>
+            <button class="mode-switcher-btn">Expert</button>
+          </div>
+          <span class="autosave">All changes saved</span>
+        </div>
+        <div class="workspace" style="overflow-y:auto;">
+          <div class="kpi-row">
+            <div class="kpi-card"><div class="kpi-label">Investment</div><div class="kpi-value mono">$142,500</div></div>
+            <div class="kpi-card"><div class="kpi-label">Revenue</div><div class="kpi-value mono">$28,400</div></div>
+            <div class="kpi-card"><div class="kpi-label">Expenses</div><div class="kpi-value mono">$22,100</div></div>
+            <div class="kpi-card"><div class="kpi-label">Break-Even</div><div class="kpi-value mono positive">14 months</div></div>
+          </div>
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px;">
+            <div class="section-card">
+              <div class="section-card-header"><span class="section-card-title">Location & Lease</span><span class="scenario-badge good">4/6</span></div>
+              <div class="form-group"><label class="form-label">Location</label><input class="form-input" value="Austin, TX" /></div>
+              <div class="form-group"><label class="form-label">Monthly Rent</label><input class="form-input" value="$2,800" /></div>
+            </div>
+            <div class="section-card">
+              <div class="section-card-header"><span class="section-card-title">Startup Costs</span><span class="scenario-badge" style="background:var(--kat-graylight);">2/8</span></div>
+              <div class="form-group"><label class="form-label">Franchise Fee</label><input class="form-input" value="$34,900" style="background:var(--kat-graylight);" disabled /></div>
+              <div class="form-group"><label class="form-label">Build-Out</label><input class="form-input" placeholder="$85K - $120K" /></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div style="padding:32px; max-width:800px; margin:0 auto;">
+  <div class="comparison-note" style="border-top:none; padding-top:0;">
+    <h3 style="font-family:Montserrat; font-size:1.1rem; font-weight:700; color:var(--kat-black); margin-bottom:16px;">Direction Comparison Matrix</h3>
+    <table style="width:100%; font-size:0.8rem; border-collapse:collapse;">
+      <thead>
+        <tr style="border-bottom:2px solid var(--kat-gray);">
+          <th style="text-align:left; padding:8px; font-family:Montserrat; font-weight:600;">Criteria</th>
+          <th style="padding:8px; font-family:Montserrat; font-weight:600;">A</th>
+          <th style="padding:8px; font-family:Montserrat; font-weight:600;">B</th>
+          <th style="padding:8px; font-family:Montserrat; font-weight:600;">C</th>
+          <th style="padding:8px; font-family:Montserrat; font-weight:600;">D</th>
+          <th style="padding:8px; font-family:Montserrat; font-weight:600;">E</th>
+          <th style="padding:8px; font-family:Montserrat; font-weight:600;">F</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr style="border-bottom:1px solid rgba(208,209,219,0.3);">
+          <td style="padding:8px;">Sam (first-timer) friendliness</td>
+          <td style="padding:8px; text-align:center;">Good</td>
+          <td style="padding:8px; text-align:center; color:var(--kat-green); font-weight:600;">Best</td>
+          <td style="padding:8px; text-align:center; color:var(--kat-green); font-weight:600;">Best</td>
+          <td style="padding:8px; text-align:center;">Fair</td>
+          <td style="padding:8px; text-align:center;">Good</td>
+          <td style="padding:8px; text-align:center; color:var(--kat-green); font-weight:600;">Best</td>
+        </tr>
+        <tr style="border-bottom:1px solid rgba(208,209,219,0.3);">
+          <td style="padding:8px;">Maria (expert) power</td>
+          <td style="padding:8px; text-align:center; color:var(--kat-green); font-weight:600;">Best</td>
+          <td style="padding:8px; text-align:center;">Fair</td>
+          <td style="padding:8px; text-align:center;">Good</td>
+          <td style="padding:8px; text-align:center; color:var(--kat-green); font-weight:600;">Best</td>
+          <td style="padding:8px; text-align:center;">Good</td>
+          <td style="padding:8px; text-align:center; color:var(--kat-green); font-weight:600;">Best</td>
+        </tr>
+        <tr style="border-bottom:1px solid rgba(208,209,219,0.3);">
+          <td style="padding:8px;">Story Mode immersion</td>
+          <td style="padding:8px; text-align:center;">Good</td>
+          <td style="padding:8px; text-align:center;">Good</td>
+          <td style="padding:8px; text-align:center; color:var(--kat-green); font-weight:600;">Best</td>
+          <td style="padding:8px; text-align:center;">Fair</td>
+          <td style="padding:8px; text-align:center;">Fair</td>
+          <td style="padding:8px; text-align:center; color:var(--kat-green); font-weight:600;">Best</td>
+        </tr>
+        <tr style="border-bottom:1px solid rgba(208,209,219,0.3);">
+          <td style="padding:8px;">Multi-plan navigation</td>
+          <td style="padding:8px; text-align:center; color:var(--kat-green); font-weight:600;">Best</td>
+          <td style="padding:8px; text-align:center;">Good</td>
+          <td style="padding:8px; text-align:center;">Good</td>
+          <td style="padding:8px; text-align:center;">Good</td>
+          <td style="padding:8px; text-align:center;">Fair</td>
+          <td style="padding:8px; text-align:center; color:var(--kat-green); font-weight:600;">Best</td>
+        </tr>
+        <tr style="border-bottom:1px solid rgba(208,209,219,0.3);">
+          <td style="padding:8px;">Dashboard visibility</td>
+          <td style="padding:8px; text-align:center;">Good</td>
+          <td style="padding:8px; text-align:center;">Fair</td>
+          <td style="padding:8px; text-align:center;">Fair</td>
+          <td style="padding:8px; text-align:center; color:var(--kat-green); font-weight:600;">Best</td>
+          <td style="padding:8px; text-align:center;">Good</td>
+          <td style="padding:8px; text-align:center;">Good</td>
+        </tr>
+        <tr>
+          <td style="padding:8px;">Implementation complexity</td>
+          <td style="padding:8px; text-align:center;">Low</td>
+          <td style="padding:8px; text-align:center;">Low</td>
+          <td style="padding:8px; text-align:center;">Medium</td>
+          <td style="padding:8px; text-align:center;">Medium</td>
+          <td style="padding:8px; text-align:center;">Low</td>
+          <td style="padding:8px; text-align:center;">Medium</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<script>
+  // Direction tab switching
+  document.querySelectorAll('.direction-tab').forEach(tab => {
+    tab.addEventListener('click', () => {
+      document.querySelectorAll('.direction-tab').forEach(t => t.classList.remove('active'));
+      tab.classList.add('active');
+      document.querySelectorAll('.direction-container').forEach(c => c.classList.remove('active'));
+      document.getElementById('dir-' + tab.dataset.dir).classList.add('active');
+    });
+  });
+
+  // Mode tab switching within directions
+  document.querySelectorAll('.mode-tab').forEach(tab => {
+    tab.addEventListener('click', () => {
+      const dir = tab.dataset.dir;
+      const mode = tab.dataset.mode;
+      // Deactivate siblings
+      document.querySelectorAll(`.mode-tab[data-dir="${dir}"]`).forEach(t => t.classList.remove('active'));
+      tab.classList.add('active');
+      // Show/hide mockup frames
+      const container = document.getElementById('dir-' + dir);
+      if (container) {
+        const frames = container.querySelectorAll('.mockup-frame');
+        frames.forEach(f => f.style.display = 'none');
+        const target = document.getElementById(dir + '-' + mode);
+        if (target) target.style.display = 'block';
+      }
+    });
+  });
+</script>
+</body>
+</html>
