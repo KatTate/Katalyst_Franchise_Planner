@@ -1,6 +1,6 @@
 # Story 2.4: Account Manager Assignment
 
-Status: review
+Status: done
 
 ## Story
 

@@ -53,13 +53,13 @@ development_status:
   # Epic 2: Brand Configuration & Administration
   # Note: Story 2.5 (Brand Configuration Validation) relocated to Epic 3 as Story 3.7
   # due to dependency on financial engine. Epic 2 closes with 4/4 stories.
-  epic-2: in-progress
+  epic-2: done
   2-1-brand-entity-financial-parameter-configuration: done
   2-2-startup-cost-template-management: done
   2-3-brand-identity-dynamic-theming: done
-  2-4-account-manager-assignment: review
+  2-4-account-manager-assignment: done
   # 2-5: moved to 3-7-brand-configuration-validation (depends on financial engine)
-  epic-2-retrospective: optional
+  epic-2-retrospective: done
 
   # Epic 3: Financial Planning Engine
   epic-3: backlog
