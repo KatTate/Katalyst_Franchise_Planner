@@ -20,6 +20,7 @@ export type Brand = typeof brands.$inferSelect;
 export const users = pgTable("users", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   email: text("email").notNull().unique(),
+  passwordHash: text("password_hash"),
   profileImageUrl: text("profile_image_url"),
   role: text("role").notNull().$type<"franchisee" | "franchisor" | "katalyst_admin">(),
   brandId: varchar("brand_id").references(() => brands.id),
