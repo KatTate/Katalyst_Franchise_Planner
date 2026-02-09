@@ -225,7 +225,7 @@ This document provides the complete epic and story breakdown for the Katalyst Gr
 | FR38 | Epic 8 | Data sharing enforced at API level |
 | FR39 | Epic 2 | Create and configure new franchise brand |
 | FR40 | Epic 2 | Define startup cost template for a brand |
-| FR41 | Epic 2 | Validate brand config against known-good spreadsheets |
+| FR41 | Epic 3 | Validate brand config against known-good spreadsheets (Story 3.7, relocated from Epic 2) |
 | FR42 | Epic 2 | Assign account manager to each franchisee |
 | FR43 | Epic 2 | Reassign account managers |
 | FR44 | Epic 2 | Configure brand-level settings (identity, colors, etc.) |
@@ -255,12 +255,12 @@ Katalyst admins can invite franchisees and franchisor admins. Users can create a
 
 ### Epic 2: Brand Configuration & Administration
 Katalyst admins can create franchise brands with financial parameter sets, startup cost templates, brand identity (logo, colors), and account manager assignments. Brand theming applies throughout the franchisee experience.
-**FRs covered:** FR39, FR40, FR41, FR42, FR43, FR44, FR49
+**FRs covered:** FR39, FR40, FR42, FR43, FR44, FR49 *(FR41 relocated to Epic 3 as Story 3.7)*
 **NFRs addressed:** NFR17 (non-disruptive config updates), NFR19-21 (multi-brand scalability)
 
 ### Epic 3: Financial Planning Engine
-The core calculation engine computes 5-year monthly financial projections from brand parameters and franchisee inputs. Supports live-updating metrics, deterministic outputs, accounting identity validation, custom startup cost line items, and per-field metadata (source, defaults, Item 7 ranges).
-**FRs covered:** FR1, FR2, FR3, FR4, FR5, FR6, FR7, FR8, FR9, FR10
+The core calculation engine computes 5-year monthly financial projections from brand parameters and franchisee inputs. Supports live-updating metrics, deterministic outputs, accounting identity validation, custom startup cost line items, and per-field metadata (source, defaults, Item 7 ranges). Includes brand configuration validation against known-good spreadsheet outputs.
+**FRs covered:** FR1, FR2, FR3, FR4, FR5, FR6, FR7, FR8, FR9, FR10, FR41
 **NFRs addressed:** NFR1 (< 2s recalculation), NFR15 (deterministic), NFR20 (linear scaling)
 
 ### Epic 4: Forms & Quick Entry Experience
@@ -612,20 +612,9 @@ So that each franchisee has a dedicated point of contact with a booking link (FR
 **And** I can reassign the account manager to a different user
 **And** the booking link updates immediately for the franchisee
 
-### Story 2.5: Brand Configuration Validation
+### ~~Story 2.5: Brand Configuration Validation~~ *(Moved to Story 3.7)*
 
-As a Katalyst admin,
-I want to validate a brand configuration by running the financial model against known-good spreadsheet outputs,
-So that I can confirm the financial engine produces correct results for this brand (FR41).
-
-**Acceptance Criteria:**
-
-**Given** a brand has complete financial parameters and startup cost template
-**When** I trigger brand validation with a set of known input values and expected outputs
-**Then** the system runs the financial engine with those inputs and the brand's parameters
-**And** a comparison report shows the calculated vs. expected values for key outputs
-**And** differences exceeding a configurable tolerance are highlighted
-**And** validation results are saved for audit purposes
+> **Relocated:** This story depends on the financial engine (`shared/financial-engine.ts`) which is built in Epic 3, Stories 3.1–3.6. Validation cannot run until the engine exists. Moved to Epic 3 as Story 3.7 per Party Mode discussion (2026-02-09).
 
 ---
 
@@ -731,6 +720,23 @@ So that I feel engaged and hopeful within 90 seconds of starting — the convers
 **And** the experience feels rewarding — the franchisee sees meaningful output from minimal effort
 **And** I can dismiss the Quick Start at any time to access full Forms/Quick Entry/Planning Assistant
 **And** the Quick Start is shown only on first plan creation — returning users go directly to the planning workspace
+
+### Story 3.7: Brand Configuration Validation
+
+As a Katalyst admin,
+I want to validate a brand configuration by running the financial model against known-good spreadsheet outputs,
+So that I can confirm the financial engine produces correct results for this brand (FR41).
+
+**Acceptance Criteria:**
+
+**Given** a brand has complete financial parameters and startup cost template
+**When** I trigger brand validation with a set of known input values and expected outputs
+**Then** the system runs the financial engine with those inputs and the brand's parameters
+**And** a comparison report shows the calculated vs. expected values for key outputs
+**And** differences exceeding a configurable tolerance are highlighted
+**And** validation results are saved for audit purposes
+
+> **Note:** Relocated from Epic 2 (formerly Story 2.5). This story requires the complete financial engine (Stories 3.1–3.6) to be implemented before validation can execute.
 
 ---
 
