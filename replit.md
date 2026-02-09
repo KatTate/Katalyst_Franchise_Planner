@@ -10,19 +10,6 @@
 4. Always adopt the correct agent persona for the task. Retrospective
 5. For any workflow execution, you MUST first load and follow `_bmad/core/tasks/workflow.xml` — this is the core execution engine. Read the COMPLETE file. Execute ALL steps IN EXACT ORDER. NEVER skip a step.
 
-## BMad Project Configuration
-
-These values are from `_bmad/bmm/config.yaml` and used by all agent activations:
-
-- **project_name:** workspace
-- **user_name:** User
-- **user_skill_level:** intermediate
-- **communication_language:** English
-- **document_output_language:** English
-- **output_folder:** _bmad-output
-- **planning_artifacts:** `_bmad-output/planning-artifacts`
-- **implementation_artifacts:** `_bmad-output/implementation-artifacts`
-
 ## BMad Agent Routing Table
 
 When the user's message matches trigger phrases below, load the corresponding file and adopt that persona or execute that workflow.
