@@ -1,5 +1,5 @@
 name: create-story
-description: "Create the next user story from epics+stories with enhanced context analysis and direct ready-for-dev marking"
+description: "Create a story context document from epics and artifacts — an intent-and-constraint guide for the dev agent, not an implementation script"
 author: "BMad"
 
 # Critical variables from config

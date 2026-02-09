@@ -2,8 +2,6 @@
 
 Status: ready-for-dev
 
-<!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
-
 ## Story
 
 As a {{role}},
@@ -12,29 +10,37 @@ so that {{benefit}}.
 
 ## Acceptance Criteria
 
-1. [Add acceptance criteria from epics/PRD]
-
-## Tasks / Subtasks
-
-- [ ] Task 1 (AC: #)
-  - [ ] Subtask 1.1
-- [ ] Task 2 (AC: #)
-  - [ ] Subtask 2.1
+1. [Specific, testable acceptance criteria from epics/PRD]
 
 ## Dev Notes
 
-- Relevant architecture patterns and constraints
-- Source tree components to touch
-- Testing standards summary
+### Architecture Patterns to Follow
 
-### Project Structure Notes
+- [Key patterns and conventions the implementation must follow]
 
-- Alignment with unified project structure (paths, modules, naming)
-- Detected conflicts or variances (with rationale)
+### Anti-Patterns & Hard Constraints
+
+- [Things the developer MUST NOT do — wrong libraries, wrong files, wrong approaches]
+- [Files that must not be modified]
+
+### Gotchas & Integration Warnings
+
+- [Non-obvious interactions, edge cases, or traps]
+- [Dependencies on other stories or system state]
+
+### File Change Summary
+
+| File | Action | Notes |
+|------|--------|-------|
+| path/to/file | CREATE/MODIFY/REPLACE | Brief context |
+
+### Dependencies & Environment Variables
+
+- [Packages to install, env vars needed, external services]
 
 ### References
 
-- Cite all technical details with source paths and sections, e.g. [Source: docs/<file>.md#Section]
+- [Source: docs/<file>.md#Section] — cite all technical details with source paths
 
 ## Dev Agent Record
 
@@ -42,8 +48,6 @@ so that {{benefit}}.
 
 {{agent_model_name_version}}
 
-### Debug Log References
-
-### Completion Notes List
+### Completion Notes
 
 ### File List
