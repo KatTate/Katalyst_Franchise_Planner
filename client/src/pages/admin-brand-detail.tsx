@@ -1261,8 +1261,8 @@ export default function AdminBrandDetailPage() {
         <TabsList data-testid="tabs-brand-sections">
           <TabsTrigger value="parameters" data-testid="tab-parameters">Financial Parameters</TabsTrigger>
           <TabsTrigger value="startup-costs" data-testid="tab-startup-costs">Startup Costs</TabsTrigger>
-          <TabsTrigger value="identity" data-testid="tab-identity">Brand Identity</TabsTrigger>
-          <TabsTrigger value="account-manager" data-testid="tab-account-manager">Account Managers</TabsTrigger>
+          <TabsTrigger value="identity" data-testid="tab-identity">Settings</TabsTrigger>
+          <TabsTrigger value="account-manager" data-testid="tab-account-manager">Franchisees</TabsTrigger>
         </TabsList>
 
         <TabsContent value="parameters" className="mt-4">
