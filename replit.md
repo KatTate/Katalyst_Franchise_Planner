@@ -78,6 +78,10 @@ When the user's message matches a BMAD trigger phrase, agent name, or workflow c
 - **Layout:** Direction F (Hybrid Adaptive) — sidebar collapses in Planning Assistant for immersion, restores in Forms/Quick Entry for power navigation
 - **"Gurple" (Mystical #A9A2AA):** Signature advisory color for ROI Guardian, AI confidence, info panels (never errors)
 - **White-label approach:** Branded shell with prominent Katalyst identity — brands apply accent colors/logos, Katalyst owns design system
+- **Dual auth model:** Google OAuth for Katalyst admins (@katgroupinc.com domain only, passport-google-oauth20); invitation-based for franchisees/franchisors (auth mechanism TBD in Stories 1.2-1.4)
+  - No seed script — admin users self-register via first Google OAuth login with `katalyst_admin` role
+  - Double domain enforcement: Google `hd` parameter + server-side email suffix check
+  - Stories 1.3 and 1.4 have TBD markers for franchisee auth mechanism
 
 ## BMad File Structure
 
@@ -128,4 +132,7 @@ _bmad-output/             # Generated artifacts go here
 - 2026-02-08: UX Design Specification Steps 1-9 complete — Direction F (Hybrid Adaptive) selected, visual foundation documented (color system, typography, spacing, charts), HTML mockups created
 - 2026-02-08: Party Mode naming decision — user-facing labels changed from Story/Normal/Expert to Planning Assistant/Forms/Quick Entry. Labels describe input method, not skill level. All three always visible to all users.
 - 2026-02-08: UX spec and HTML mockups updated with new naming throughout
+- 2026-02-09: Epics & Stories completed — 36 stories across 8 MVP epics, 58/58 FRs covered
+- 2026-02-09: Story 1.1 contexted with Google OAuth approach for Katalyst admin auth
+- 2026-02-09: Correct Course workflow executed — Sprint Change Proposal created and applied. 23 edits across architecture.md (14), epics.md (6), prd.md (3). Auth model updated from universal email/password to dual model: Google OAuth for Katalyst admins + invitation-based for franchisees
 <!-- BMAD-METHOD-END -->
