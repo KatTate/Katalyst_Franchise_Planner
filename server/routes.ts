@@ -6,6 +6,7 @@ import passport from "./auth";
 import { storage } from "./storage";
 import { z } from "zod";
 import crypto from "crypto";
+import bcrypt from "bcrypt";
 import type { Invitation } from "@shared/schema";
 
 export async function registerRoutes(
@@ -231,6 +232,103 @@ export async function registerRoutes(
       return res.json(result);
     }
   );
+
+  app.get("/api/invitations/validate/:token", async (req: Request, res: Response) => {
+    const { token } = req.params;
+
+    const invitation = await storage.getInvitationByToken(token);
+    if (!invitation) {
+      return res.status(404).json({ message: "Invitation not found", code: "INVALID_TOKEN" });
+    }
+
+    if (invitation.acceptedAt) {
+      return res.status(410).json({ message: "This invitation has already been accepted. Please log in instead.", code: "ALREADY_ACCEPTED" });
+    }
+
+    if (new Date(invitation.expiresAt) < new Date()) {
+      return res.status(410).json({ message: "This invitation has expired. Please contact your administrator for a new invitation.", code: "EXPIRED" });
+    }
+
+    let brandName: string | null = null;
+    if (invitation.brandId) {
+      const brand = await storage.getBrand(invitation.brandId);
+      brandName = brand?.name || null;
+    }
+
+    return res.json({
+      email: invitation.email,
+      role: invitation.role,
+      brandId: invitation.brandId,
+      brandName,
+    });
+  });
+
+  const acceptInvitationSchema = z.object({
+    token: z.string().min(1, "Token is required"),
+    display_name: z.string().min(1, "Display name is required").max(100, "Display name too long"),
+    password: z.string().min(8, "Password must be at least 8 characters"),
+  });
+
+  app.post("/api/invitations/accept", async (req: Request, res: Response) => {
+    const parsed = acceptInvitationSchema.safeParse(req.body);
+    if (!parsed.success) {
+      return res.status(400).json({
+        message: "Validation failed",
+        errors: parsed.error.errors.map((e) => ({ path: e.path.map(String), message: e.message })),
+      });
+    }
+
+    const { token, display_name, password } = parsed.data;
+
+    const invitation = await storage.getInvitationByToken(token);
+    if (!invitation) {
+      return res.status(404).json({ message: "Invitation not found", code: "INVALID_TOKEN" });
+    }
+
+    if (invitation.acceptedAt) {
+      return res.status(410).json({ message: "This invitation has already been accepted. Please log in instead.", code: "ALREADY_ACCEPTED" });
+    }
+
+    if (new Date(invitation.expiresAt) < new Date()) {
+      return res.status(410).json({ message: "This invitation has expired. Please contact your administrator for a new invitation.", code: "EXPIRED" });
+    }
+
+    const existingUser = await storage.getUserByEmail(invitation.email);
+    if (existingUser) {
+      return res.status(409).json({ message: "An account with this email already exists. Please log in instead.", code: "USER_EXISTS" });
+    }
+
+    const passwordHash = await bcrypt.hash(password, 12);
+
+    const user = await storage.createUser({
+      email: invitation.email,
+      passwordHash,
+      displayName: display_name,
+      role: invitation.role,
+      brandId: invitation.brandId,
+      onboardingCompleted: false,
+    });
+
+    await storage.markInvitationAccepted(invitation.id);
+
+    const sessionUser: Express.User = {
+      id: user.id,
+      email: user.email,
+      role: user.role,
+      brandId: user.brandId,
+      displayName: user.displayName,
+      profileImageUrl: user.profileImageUrl,
+      onboardingCompleted: user.onboardingCompleted,
+      preferredTier: user.preferredTier,
+    };
+
+    req.login(sessionUser, (err) => {
+      if (err) {
+        return res.status(500).json({ message: "Account created but auto-login failed. Please log in manually." });
+      }
+      return res.status(201).json(sessionUser);
+    });
+  });
 
   return httpServer;
 }
