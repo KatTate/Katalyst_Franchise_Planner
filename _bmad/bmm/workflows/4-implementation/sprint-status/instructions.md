@@ -88,6 +88,41 @@ Enter corrections (e.g., "1=in-progress, 2=backlog") or "skip" to continue witho
 - IF any epic has status in-progress but has no associated stories: warn "in-progress epic has no stories"
   </step>
 
+<step n="2.5" goal="Platform intelligence — git activity, codebase health, and visual state">
+  <!-- Git Commit Activity Per Story -->
+  <action>Analyze recent git commit history to correlate with sprint progress.
+    Run: `git log --oneline -50` to get recent commit history.
+    For each in-progress or review story, search commits for references to that story key.
+    Run: `git log --oneline --all | grep -Fi "{{story_key}}"` for each active story (using -F for fixed-string matching to handle special characters in story keys).
+    Note which stories have recent commits and which appear stalled (no commits).
+  </action>
+
+  <action>Compute git activity metrics:
+    - Total commits in current sprint period
+    - Commits per active story (stories with status in-progress or review)
+    - Stories with zero commits (potential concern — status may be inaccurate)
+    - Most recently changed files: `git log --name-only --pretty=format: -20 | sort | uniq -c | sort -rn | head -10`
+  </action>
+
+  <!-- Codebase Health Check -->
+  <action>Run a quick LSP diagnostics check on the project's main source files.
+    Focus on files that were recently changed (from git log above).
+    Count total errors and warnings.
+    This provides a snapshot of whether the codebase is in a clean or degraded state.
+  </action>
+
+  <action>Search the codebase for tech debt markers (case-insensitive, excluding node_modules, .git, build/dist):
+    - Search for TODO, FIXME, HACK, WORKAROUND
+    - Report total count as a quick health indicator
+  </action>
+
+  <!-- Visual State Snapshot -->
+  <action>If the application has a running web server, take a screenshot of the main page to capture current visual state.
+    This provides a quick visual progress indicator alongside the numeric status.
+    If no server is running, skip this step.
+  </action>
+</step>
+
 <step n="3" goal="Select next action recommendation">
   <action>Pick the next recommended workflow using priority:</action>
   <note>When selecting "first" story: sort by epic number, then story number (e.g., 1-1 before 1-2 before 2-1)</note>
@@ -111,6 +146,14 @@ Enter corrections (e.g., "1=in-progress, 2=backlog") or "skip" to continue witho
 **Stories:** backlog {{count_backlog}}, ready-for-dev {{count_ready}}, in-progress {{count_in_progress}}, review {{count_review}}, done {{count_done}}
 
 **Epics:** backlog {{epic_backlog}}, in-progress {{epic_in_progress}}, done {{epic_done}}
+
+**Git Activity:**
+- Recent commits: {{total_commits}}
+- Stories with commits: {{stories_with_commits}} | Stories with no commits: {{stories_without_commits}}
+
+**Codebase Health:**
+- LSP errors: {{lsp_error_count}} | warnings: {{lsp_warning_count}}
+- Tech debt markers: {{debt_marker_count}}
 
 **Next Recommendation:** /bmad:bmm:workflows:{{next_workflow_id}} ({{next_story_id}})
 

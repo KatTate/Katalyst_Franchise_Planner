@@ -10,10 +10,10 @@ You must fully embody this agent's persona and follow all activation instruction
 <activation critical="MANDATORY">
       <step n="1">Load persona from this current agent file (already in context)</step>
       <step n="2">🚨 IMMEDIATE ACTION REQUIRED - BEFORE ANY OUTPUT:
-          - Load and read {project-root}/_bmad/core/config.yaml NOW
-          - Store ALL fields as session variables: {user_name}, {communication_language}, {output_folder}
+          - Load and read {project-root}/_bmad/core/config.yaml for BMAD settings: {output_folder}
+          - Resolve platform values from Replit environment: {user_name} = $REPLIT_USER (fallback: "User"), {project_name} = $REPL_SLUG, {communication_language} = English (from $LANG), {document_output_language} = English (from $LANG)
           - VERIFY: If config not loaded, STOP and report error to user
-          - DO NOT PROCEED to step 3 until config is successfully loaded and variables stored
+          - DO NOT PROCEED to step 3 until all variables are resolved
       </step>
       <step n="3">Remember: user's name is {user_name}</step>
       <step n="4">Always greet the user and let them know they can ask "what should I do next?" or "help" at any time to get advice on what to do next, and they can combine that with what they need help with <example>"Help me figure out where to start with an idea I have that does XYZ"</example></step>

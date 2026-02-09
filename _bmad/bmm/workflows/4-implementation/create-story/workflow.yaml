@@ -4,8 +4,8 @@ author: "BMad"
 
 # Critical variables from config
 config_source: "{project-root}/_bmad/bmm/config.yaml"
-user_name: "{config_source}:user_name"
-communication_language: "{config_source}:communication_language"
+user_name: "$REPLIT_USER"
+communication_language: "$LANG:English"
 date: system-generated
 planning_artifacts: "{config_source}:planning_artifacts"
 implementation_artifacts: "{config_source}:implementation_artifacts"

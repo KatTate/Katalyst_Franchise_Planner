@@ -256,6 +256,178 @@ Bob (Scrum Master): "We'll get to all of it. But first, let me load the previous
 
 </step>
 
+<step n="2.5" goal="Git Commit History Analysis - Replit Platform Intelligence">
+
+<output>
+Bob (Scrum Master): "Now let me do something we couldn't do on other platforms - I'm going to dig into the actual git commit history for this epic. Story files capture what developers wrote down, but commits capture what actually happened."
+
+Charlie (Senior Dev): "Nice. Commit history doesn't lie."
+</output>
+
+<action>Analyze git commit history for Epic {{epic_number}} using shell commands to extract commit data</action>
+
+<action>Run git log commands to gather commit data for this epic's implementation period:
+
+**Primary approach — search by story references in commit messages:**
+Run: `git log --oneline --all | grep -i "epic.{{epic_number}}\|story.{{epic_number}}"` to find commits mentioning this epic.
+
+**Fallback — examine recent history if commit messages don't reference epics:**
+Run: `git log --oneline -50` to get the recent commit history, then manually identify commits related to this epic based on dates and content.
+
+**File churn analysis:**
+Run: `git log --name-only --pretty=format: -50 | sort | uniq -c | sort -rn | head -20` to find most-frequently-changed files.
+
+**Fix/correction pattern detection:**
+Run: `git log --oneline -50 | grep -i -c "fix\|bug\|revert\|workaround\|hack"` to count correction commits.
+
+**Detailed commit analysis for specific stories:**
+For each story, run: `git log --oneline --all | grep -i "{{epic_number}}-{{story_num}}"` to find per-story commits.
+</action>
+
+<action>Extract the following from git history:</action>
+
+**Commit Volume and Patterns:**
+
+- Total commits during this epic
+- Commits per story (which stories generated the most commits?)
+- Commit frequency patterns (steady cadence vs. bursts of activity)
+- Ratio of feature commits vs. fix/correction commits
+
+**File Churn Analysis:**
+
+- Which files were changed most frequently across the epic?
+- Files that were touched by multiple stories (shared hotspots)
+- Files with high churn (changed, reverted, changed again) — suggests design instability
+- New files created vs. existing files modified
+
+**Commit Message Intelligence:**
+
+- Commit messages mentioning "fix", "bug", "revert", "workaround", "hack", "temporary" — indicators of struggle
+- Commit messages mentioning "refactor", "cleanup", "improve" — indicators of proactive quality work
+- Patterns in commit message quality (descriptive vs. vague)
+
+**Iteration Patterns:**
+
+- Stories with many small fix commits after the main implementation (suggests incomplete first pass)
+- Stories completed in few clean commits (suggests well-understood work)
+- Late-stage commits that touch many files (risky large changes near completion)
+
+**Cross-Story Dependencies Revealed:**
+
+- Stories that touched the same files (coupling not visible in story documents)
+- Shared utility or infrastructure files that multiple stories modified
+- Merge conflicts or overlapping changes between stories
+
+<action>Synthesize git insights into retrospective discussion material:</action>
+
+**Development Health Indicators from Git:**
+
+- **Healthy patterns**: Steady commit cadence, clean feature commits, few reverts
+- **Warning patterns**: Burst commits late in stories, many fix-after-fix commits, high file churn
+- **Red flags**: Reverts, force-pushes, large late commits, files changed 10+ times
+
+<action>Cross-reference git findings with story analysis from Step 2:</action>
+
+- Do stories that developers flagged as difficult also show high commit counts?
+- Are there stories that seemed simple in dev notes but show heavy iteration in git?
+- Do git commit patterns confirm or contradict the velocity patterns from story analysis?
+
+<output>
+Bob (Scrum Master): "The git history tells an interesting story. Let me share what I found..."
+
+Bob (Scrum Master): "**Commit Analysis for Epic {{epic_number}}:**"
+
+- Total commits: {{total_commits}}
+- Average per story: {{avg_commits_per_story}}
+- Most-touched file: {{most_changed_file}} ({{change_count}} changes)
+- Fix/correction commits: {{fix_commit_count}} ({{fix_commit_percentage}}% of total)
+
+Charlie (Senior Dev): "{{most_changed_file}} being changed {{change_count}} times is {{#if change_count > 10}}a red flag - that file might need a refactor{{else}}reasonable{{/if}}."
+
+Bob (Scrum Master): "I also found {{high_churn_files_count}} files with high churn - files that were changed, then changed again across multiple stories. That usually means the design wasn't stable."
+
+Dana (QA Engineer): "High churn files are where bugs hide. We should pay extra attention to those in testing."
+
+Bob (Scrum Master): "Good instinct, Dana. I'll make sure we flag those for Epic {{next_epic_num}}."
+</output>
+
+<action>Store git analysis findings - these enrich the retrospective discussion and readiness assessment</action>
+
+</step>
+
+<step n="2.75" goal="Codebase Health Scan - Live Technical Intelligence">
+
+<output>
+Bob (Scrum Master): "While we're using platform capabilities, let me also run a live health check on the codebase."
+
+Charlie (Senior Dev): "What kind of health check?"
+
+Bob (Scrum Master): "Two things: first, I'll scan for code quality issues the language server can detect. Second, I'll search for debt markers developers left in the code - TODOs, FIXMEs, HACKs, workarounds."
+</output>
+
+<action>Run LSP diagnostics to scan for code quality issues in files changed during this epic</action>
+
+<action>For each key source file changed during Epic {{epic_number}} (identified from git analysis in Step 2.5), check LSP diagnostics. Focus on:
+- Files with high churn (from git analysis)
+- New files created during this epic
+- Files flagged in story reviews
+
+LSP will report type errors, unresolved references, unused imports, syntax warnings, and deprecated usage. Collect counts of errors vs. warnings.</action>
+
+<action>Search the codebase for tech debt markers using grep/search tools:</action>
+
+**Run these searches (case-insensitive) across source code files, excluding node_modules, .git, build/dist folders:**
+
+- Search for `TODO` — planned but unfinished work
+- Search for `FIXME` — known broken behavior
+- Search for `HACK` or `WORKAROUND` — deliberate shortcuts
+- Search for `XXX` — dangerous or attention-needed code
+- Search for `TEMP` or `TEMPORARY` — code meant to be replaced
+
+Count total matches for each pattern and note which files contain them.
+
+<action>For each marker found, note:</action>
+
+- Which file and approximate location
+- Whether it was added during this epic (cross-reference with git analysis)
+- Whether it's in a critical path or peripheral code
+- Severity assessment (blocking, concerning, or minor)
+
+<action>Quantify the debt landscape:</action>
+
+- Total debt markers in codebase
+- New markers added during Epic {{epic_number}}
+- Markers resolved during Epic {{epic_number}} (if trackable from git)
+- Net debt change: did this epic increase or decrease tech debt?
+
+<output>
+Bob (Scrum Master): "Here's what the codebase scan revealed..."
+
+**LSP Health Check:**
+
+- Errors found: {{lsp_error_count}}
+- Warnings found: {{lsp_warning_count}}
+- Files with issues: {{files_with_issues}}
+
+**Tech Debt Markers in Codebase:**
+
+- TODOs: {{todo_count}}
+- FIXMEs: {{fixme_count}}
+- HACKs/Workarounds: {{hack_count}}
+- Other markers: {{other_marker_count}}
+- **New this epic**: {{new_markers_count}} markers added
+
+Charlie (Senior Dev): "{{lsp_error_count}} errors is {{#if lsp_error_count == 0}}clean - nice work{{else}}something we need to address before Epic {{next_epic_num}}{{/if}}."
+
+Dana (QA Engineer): "{{fixme_count}} FIXMEs is concerning. Those are known bugs we haven't fixed yet."
+
+Bob (Scrum Master): "And we added {{new_markers_count}} new debt markers this epic. That's {{#if new_markers_count > 5}}a significant amount of deferred work{{else}}manageable{{/if}}. We'll factor this into our readiness assessment."
+</output>
+
+<action>Store codebase health findings for use in readiness assessment (Step 9) and action items</action>
+
+</step>
+
 <step n="3" goal="Load and Integrate Previous Epic Retrospective">
 
 <action>Calculate previous epic number: {{prev_epic_num}} = {{epic_number}} - 1</action>
@@ -1187,10 +1359,77 @@ Bob (Scrum Master): "Who owns that work?"
 <action>Add to critical path with priority and deadline</action>
 </check>
 
+<action>Integrate platform intelligence from earlier scans (Steps 2.5 and 2.75)</action>
+
+<output>
+Bob (Scrum Master): "Now let me bring in the hard data from our earlier scans. This is the stuff the codebase tells us directly — no opinions, just facts."
+</output>
+
+<action>Reference git analysis findings from Step 2.5 and codebase health findings from Step 2.75</action>
+
+<output>
+Bob (Scrum Master): "From the git analysis and codebase scan earlier:"
+
+**Code Health (from LSP scan):**
+
+- Errors: {{lsp_error_count}} | Warnings: {{lsp_warning_count}}
+- {{#if lsp_error_count > 0}}⚠️ These errors should be resolved before Epic {{next_epic_num}}{{/if}}
+
+**Tech Debt Markers (from codebase grep):**
+
+- TODOs: {{todo_count}} | FIXMEs: {{fixme_count}} | HACKs: {{hack_count}}
+- New this epic: {{new_markers_count}}
+- {{#if fixme_count > 0}}⚠️ FIXMEs represent known broken behavior that should be prioritized{{/if}}
+
+**Git Health (from commit analysis):**
+
+- High-churn files: {{high_churn_files_count}} files changed 5+ times
+- Fix-ratio: {{fix_commit_percentage}}% of commits were corrections
+- {{#if fix_commit_percentage > 30}}⚠️ High fix ratio suggests incomplete implementations — consider more thorough story acceptance criteria{{/if}}
+
+Charlie (Senior Dev): "This objective data is incredibly useful. It tells us exactly where to focus our cleanup."
+
+Dana (QA Engineer): "Those high-churn files from the git analysis? That's my testing priority list for Epic {{next_epic_num}}."
+</output>
+
+<action>Visual Verification for UI-facing epics (Replit platform capability)</action>
+
+<check if="epic included user-facing stories with UI components">
+  <output>
+Bob (Scrum Master): "Since this epic included user-facing features, let me do a quick visual verification. I'll take screenshots of the running app to make sure things look right."
+
+Sally (UX Designer): "Great idea. Sometimes things pass code review but look wrong visually."
+  </output>
+
+  <action>If the application has a running web server, take screenshots of key pages/views that were built or modified during Epic {{epic_number}}. Navigate to the main routes affected by this epic's stories and capture what users would see.</action>
+
+  <action>For each screenshot captured, assess:</action>
+  - Does the UI match the acceptance criteria from the stories?
+  - Are there any visual regressions or broken layouts?
+  - Does the overall UX flow feel coherent?
+  - Are there obvious issues (broken images, misaligned elements, missing content)?
+
+  <output>
+Bob (Scrum Master): "Here's what the app looks like right now..."
+
+[Present screenshot observations]
+
+Sally (UX Designer): [Provides UX assessment of the visual state]
+
+Bob (Scrum Master): "{user_name}, does the current state of the UI match your expectations for Epic {{epic_number}}?"
+  </output>
+
+  <action>WAIT for {user_name} to assess visual state</action>
+
+  <check if="{user_name} identifies visual issues">
+    <action>Add UI fixes to preparation tasks with appropriate priority</action>
+  </check>
+</check>
+
 <action>Synthesize the readiness assessment</action>
 
 <output>
-Bob (Scrum Master): "Okay {user_name}, let me synthesize what we just uncovered..."
+Bob (Scrum Master): "Okay {user_name}, let me synthesize everything — your input, the team's assessment, AND the platform data..."
 
 **EPIC {{epic_number}} READINESS ASSESSMENT:**
 
@@ -1208,6 +1447,17 @@ Technical Health: {{stability_status}}
 
 Unresolved Blockers: {{blocker_status}}
 {{#if blockers_exist}}⚠️ Must resolve: {{blocker_list}}{{/if}}
+
+Code Quality (Platform Scan): {{code_quality_status}}
+{{#if lsp_error_count > 0}}⚠️ {{lsp_error_count}} code errors detected — resolve before next epic{{/if}}
+
+Tech Debt Trend: {{debt_trend_status}}
+{{#if new_markers_count > 5}}⚠️ {{new_markers_count}} new debt markers added this epic — review and prioritize{{/if}}
+
+Git Health: {{git_health_status}}
+{{#if high_churn_files_count > 3}}⚠️ {{high_churn_files_count}} high-churn files — consider refactoring before next epic{{/if}}
+
+{{#if ui_issues_found}}Visual State: ⚠️ UI issues identified — {{ui_issue_summary}}{{/if}}
 
 Bob (Scrum Master): "{user_name}, does this assessment match your understanding?"
 </output>
@@ -1313,12 +1563,15 @@ Bob (Scrum Master): "See you all when prep work is done. Meeting adjourned!"
 - Challenges and growth areas
 - Key insights and learnings
 - Previous retro follow-through analysis (if applicable)
+- **Git commit history analysis** (commit patterns, file churn, fix ratios, cross-story coupling)
+- **Codebase health scan results** (LSP errors/warnings, tech debt markers with counts)
+- **Visual verification results** (if UI-facing epic — screenshot observations and UX assessment)
 - Next epic preview and dependencies
 - Action items with owners and timelines
 - Preparation tasks for next epic
 - Critical path items
 - Significant discoveries and epic update recommendations (if any)
-- Readiness assessment
+- Readiness assessment (including platform scan data)
 - Commitments and next steps
 
 <action>Format retrospective document as readable markdown with clear sections</action>

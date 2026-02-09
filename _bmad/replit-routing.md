@@ -100,4 +100,4 @@ When a route is matched:
 2. For agents: adopt the persona and present their menu
 3. For workflows: execute following `_bmad/core/tasks/workflow.xml` execution engine
 4. For tasks: execute the task directly
-5. Load relevant config from `_bmad/bmm/config.yaml` and `_bmad/core/config.yaml`
+5. Load BMAD settings from `_bmad/bmm/config.yaml`; resolve user/project/language from Replit environment ($REPLIT_USER, $REPL_SLUG, $LANG)

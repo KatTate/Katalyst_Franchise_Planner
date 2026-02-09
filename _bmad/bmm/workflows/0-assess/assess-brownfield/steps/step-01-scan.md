@@ -103,6 +103,43 @@ Determine the health and completeness of the project:
 - Code comments quality
 - API documentation
 
+### 4.5. Platform Intelligence — Deep Code and History Analysis
+
+**LSP Diagnostics — Code Health Assessment:**
+- Run LSP diagnostics on the project's main source files (focus on files in src/, app/, lib/, or equivalent directories)
+- Count total errors and warnings across the codebase
+- Note files with the most issues — these may indicate areas of technical debt or incomplete work
+- This provides an objective code health baseline beyond what visual scanning reveals
+
+**Git History Analysis — Development Patterns:**
+- Run: `git log --oneline -50` to see recent development activity
+- Run: `git log --name-only --pretty=format: -50 | sort | uniq -c | sort -rn | head -20` to find most-frequently-changed files (high churn = potential instability)
+- Run: `git log --oneline -50 | grep -i -c "fix\|bug\|revert\|workaround\|hack"` to count correction commits (high ratio = potential quality concerns)
+- Note the development velocity pattern: frequent small commits vs. rare large ones
+- Look for abandoned branches or stalled work patterns
+
+**Tech Debt Marker Scan:**
+- Search the codebase for debt markers (case-insensitive, excluding node_modules, .git, build/dist):
+  - TODO — planned but unfinished work
+  - FIXME — known broken behavior
+  - HACK or WORKAROUND — deliberate shortcuts
+  - XXX — dangerous or attention-needed code
+- Count each type and note which files contain them
+- High debt marker count may indicate a project that moved fast and accumulated shortcuts
+
+**Database Schema Scan (if database exists):**
+- If a PostgreSQL database is provisioned, scan the actual schema
+- List all tables, their columns, and relationships
+- Compare database schema against what the code appears to expect
+- Note any empty tables (created but never populated), orphaned tables, or missing indexes
+- This reveals the actual data model, which may differ from what the code suggests
+
+**Visual State Capture:**
+- If the application has a running web server, take screenshots of the main pages
+- Capture the home/landing page and any key routes discovered during the architecture scan
+- This documents what users currently see and provides a visual baseline for the assessment
+- If no server is running, attempt to start one and capture; if that fails, note it
+
 ### 5. Present Discovery Summary
 
 Report all findings to the user in a clear format:
@@ -125,6 +162,15 @@ Report all findings to the user in a clear format:
 - Working features: {{working_features_count}}
 - Partial features: {{partial_features_count}}
 - Code quality: {{quality_assessment}}
+
+**Platform Intelligence:**
+- LSP errors: {{lsp_error_count}} | warnings: {{lsp_warning_count}}
+- Git history: {{total_recent_commits}} recent commits, {{fix_ratio}}% correction commits
+- High-churn files: {{high_churn_files}}
+- Tech debt markers: {{debt_marker_count}} (TODO: {{todo_count}}, FIXME: {{fixme_count}}, HACK: {{hack_count}})
+{{#if database_exists}}
+- Database tables: {{table_count}} tables found
+{{/if}}
 
 **Key Findings:**
 {{top_findings}}
@@ -169,6 +215,11 @@ Save the initial assessment document.
 - Technology stack accurately identified with versions
 - Architecture patterns discovered and documented
 - Current state honestly and critically assessed — not assumed to be complete
+- LSP diagnostics run to establish objective code health baseline
+- Git history analyzed for development patterns and code churn
+- Tech debt markers scanned and quantified
+- Database schema scanned (if database exists)
+- Visual state captured via screenshots (if web server running)
 - Assumptions explicitly presented as questions and validated by user
 - User's actual intent and goals for the project are understood (not inferred)
 - Assessment document initialized with real findings AND user's validated answers
@@ -178,6 +229,8 @@ Save the initial assessment document.
 - Assuming technology choices without scanning files
 - Missing critical dependencies or configuration
 - Not checking Replit-specific resources (database, env vars)
+- Skipping platform intelligence scans (LSP, git, debt markers)
+- Not scanning database schema when a database exists
 - Skipping the assumption validation step
 - Treating existing code as "complete" or "working" without user confirmation
 - Assuming the project is what it appears to be without asking the user
