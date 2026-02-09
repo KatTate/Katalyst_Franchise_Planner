@@ -29,10 +29,10 @@ This uses **micro-file architecture** with **sequential conversation orchestrati
 
 ### Configuration Loading
 
-Load config from `{project-root}/_bmad/core/config.yaml` and resolve:
+Load config from `{project-root}/_bmad/core/config.yaml` for BMAD settings: `output_folder`
 
-- `project_name`, `output_folder`, `user_name`
-- `communication_language`, `document_output_language`, `user_skill_level`
+Resolve platform values from Replit environment: `user_name` = $REPLIT_USER, `project_name` = $REPL_SLUG, `communication_language` = English (from $LANG), `document_output_language` = English (from $LANG)
+
 - `date` as a system-generated value
 - Agent manifest path: `{project-root}/_bmad/_config/agent-manifest.csv`
 

@@ -39,6 +39,15 @@ Validate that a code review was thorough and that the story implementation meets
 - [ ] Code quality assessed (naming, structure, duplication)
 - [ ] Test quality assessed (meaningful assertions, appropriate coverage)
 
+## Platform Intelligence
+
+- [ ] LSP diagnostics run on all changed files
+- [ ] LSP errors and warnings documented as findings
+- [ ] Architect sub-agent deep analysis requested with story context and git diff
+- [ ] Architect findings incorporated into review
+- [ ] Visual verification performed (if user-facing story with running server)
+- [ ] Screenshot results compared against acceptance criteria (if applicable)
+
 ## Review Outcome
 
 - [ ] Findings categorized by severity (HIGH/MEDIUM/LOW)

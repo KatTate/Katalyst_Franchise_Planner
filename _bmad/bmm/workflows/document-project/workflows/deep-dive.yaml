@@ -9,7 +9,7 @@ parent_workflow: "{project-root}/_bmad/bmm/workflows/document-project/workflow.y
 # Critical variables inherited from parent
 config_source: "{project-root}/_bmad/bmb/config.yaml"
 output_folder: "{config_source}:output_folder"
-user_name: "{config_source}:user_name"
+user_name: "$REPLIT_USER"
 date: system-generated
 
 # Module path and component files

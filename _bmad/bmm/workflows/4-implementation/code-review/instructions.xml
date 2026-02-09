@@ -90,6 +90,42 @@
     </action>
   </step>
 
+  <step n="3.5" goal="Platform intelligence scan — LSP, architect analysis, and visual verification">
+    <!-- LSP Diagnostics — Automated Code Quality Check -->
+    <action>Run LSP diagnostics on each file in the comprehensive review list.
+      For each file, check for:
+      - Type errors or unresolved references
+      - Unused imports or variables
+      - Syntax warnings or deprecated usage
+      Collect total error count and warning count across all reviewed files.
+      Any LSP errors in changed files are automatic MEDIUM findings (code quality).
+    </action>
+
+    <!-- Architect Sub-Agent Deep Analysis -->
+    <action>Use the platform's architect/review capability to perform a deep structural analysis of the implementation.
+      Provide it with:
+      - The story's acceptance criteria and dev notes
+      - The list of all changed files
+      - The git diff of the changes
+      Ask it to evaluate: architectural alignment, edge cases, security concerns, and implementation completeness.
+      Incorporate its findings into the review as additional evidence.
+    </action>
+
+    <!-- Visual Verification for UI Stories -->
+    <check if="story's 'As a...' role is an end user (not a developer/system) OR story has UI/UX Deliverables section">
+      <action>If the application has a running web server, take screenshots of the pages/views affected by this story.
+        Navigate to each route or page that the story's acceptance criteria reference.
+        For each screenshot captured, verify:
+        - Does the UI match the acceptance criteria descriptions?
+        - Are interactive elements (buttons, forms, tables) present and properly laid out?
+        - Are there any visual regressions or broken layouts?
+        Any visual gaps are HIGH findings if they prevent AC satisfaction, MEDIUM otherwise.
+      </action>
+    </check>
+
+    <action>Merge all platform intelligence findings (LSP errors, architect analysis, visual verification) into the review findings from Step 3, preserving the same HIGH/MEDIUM/LOW severity categories.</action>
+  </step>
+
   <step n="4" goal="Present findings and resolve">
     <action>Categorize findings: HIGH (must fix), MEDIUM (should fix), LOW (nice to fix)</action>
 

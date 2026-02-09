@@ -216,12 +216,11 @@ _bmad-output/             # Your generated artifacts (preserved on update)
 
 ## Configuration
 
-Two config files control BMad behavior:
+BMad uses a single config file for its own settings:
 
-- **`_bmad/core/config.yaml`** — Your name and preferred language
-- **`_bmad/bmm/config.yaml`** — Project name, skill level, output paths
+- **`_bmad/bmm/config.yaml`** — Skill level and output paths (BMAD-specific settings only)
 
-These are preserved when you update BMad.
+Your name, project name, and language are pulled automatically from the Replit environment — no need to configure them manually. The config file is preserved when you update BMad.
 
 ---
 

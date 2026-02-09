@@ -69,6 +69,59 @@ Check the {outputFile} for sections added by previous steps:
 - UX Alignment issues
 - Epic Quality violations
 
+### 2.5. Environment Readiness Verification
+
+Before assessing document readiness, verify the Replit environment is prepared for implementation:
+
+**Database Readiness:**
+- Check if a PostgreSQL database exists (look for DATABASE_URL environment variable)
+- If the architecture document specifies database usage and no database exists, flag as CRITICAL — "Architecture requires a database but none is provisioned"
+- If a database exists, verify it's accessible
+
+**Secrets and Environment Variables:**
+- Check which environment variables and secrets are configured (names only, never values)
+- Cross-reference against the architecture document's external service dependencies
+- If the architecture references services (e.g., email, payment, AI, auth) but corresponding API keys/secrets are not configured, flag as WARNING — "Architecture references {{service}} but no credentials are configured"
+
+**Deployment Configuration:**
+- Check if deployment/publishing is configured
+- If deployment config exists, note the deployment type (static, autoscale, vm, scheduled)
+- If no deployment config and the project is a web application, flag as INFO — "No deployment configuration found"
+
+**Codebase Health (for brownfield projects):**
+- If source code already exists, run LSP diagnostics on the main source files
+- Count errors and warnings as a baseline health indicator
+- Search the codebase for tech debt markers (TODO, FIXME, HACK, WORKAROUND) — case-insensitive, excluding node_modules, .git, build/dist
+- Report the baseline debt count so it can be tracked through implementation
+
+**Integration Readiness:**
+- Check if any Replit integrations are already configured
+- Cross-reference against architecture document's integration requirements
+- Flag any gaps between required and configured integrations
+
+Append findings to {outputFile} under a new section:
+
+```markdown
+## Environment Readiness
+
+### Database: [READY / NOT PROVISIONED / NOT REQUIRED]
+[Details]
+
+### Secrets & Configuration: [READY / GAPS FOUND / NOT REQUIRED]
+[Details — list gaps if any]
+
+### Deployment: [CONFIGURED / NOT CONFIGURED]
+[Details]
+
+### Codebase Health: [CLEAN / ISSUES FOUND / N/A (greenfield)]
+- LSP errors: [count]
+- LSP warnings: [count]
+- Tech debt markers: [count]
+
+### Integrations: [READY / GAPS FOUND / NOT REQUIRED]
+[Details]
+```
+
 ### 3. Add Final Assessment Section
 
 Append to {outputFile}:
@@ -124,6 +177,8 @@ Implementation Readiness complete. Read fully and follow: `_bmad/core/tasks/help
 ### ✅ SUCCESS:
 
 - All findings compiled and summarized
+- Environment readiness verified (database, secrets, deployment, integrations)
+- Codebase health baseline established (if brownfield)
 - Clear recommendations provided
 - Readiness status determined
 - Final report saved
@@ -131,5 +186,7 @@ Implementation Readiness complete. Read fully and follow: `_bmad/core/tasks/help
 ### ❌ SYSTEM FAILURE:
 
 - Not reviewing previous findings
+- Skipping environment readiness verification
+- Not checking database/secrets against architecture requirements
 - Incomplete summary
 - No clear recommendations

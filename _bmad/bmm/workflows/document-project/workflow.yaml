@@ -7,9 +7,9 @@ author: "BMad"
 # Critical variables
 config_source: "{project-root}/_bmad/bmm/config.yaml"
 output_folder: "{config_source}:project_knowledge"
-user_name: "{config_source}:user_name"
-communication_language: "{config_source}:communication_language"
-document_output_language: "{config_source}:document_output_language"
+user_name: "$REPLIT_USER"
+communication_language: "$LANG:English"
+document_output_language: "$LANG:English"
 user_skill_level: "{config_source}:user_skill_level"
 date: system-generated
 

@@ -48,9 +48,9 @@ This uses **step-file architecture** for disciplined execution:
 
 ### 1. Configuration Loading
 
-Load and read full config from {project-root}/_bmad/bmm/config.yaml and resolve:
+Load config from `{project-root}/_bmad/bmm/config.yaml` for BMAD settings: `output_folder`, `planning_artifacts`, `user_skill_level`
 
-- `project_name`, `output_folder`, `planning_artifacts`, `user_name`, `communication_language`, `document_output_language`, `user_skill_level`
+Resolve platform values from Replit environment: `user_name` = $REPLIT_USER, `project_name` = $REPL_SLUG, `communication_language` = English (from $LANG), `document_output_language` = English (from $LANG)
 
 ### 2. First Step EXECUTION
 

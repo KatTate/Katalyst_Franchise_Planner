@@ -9,6 +9,11 @@
 
 <workflow>
 
+<step n="0.5" goal="Discover and load project documents">
+  <invoke-protocol name="discover_inputs" />
+  <note>After discovery, these content variables are available: {prd_content}, {epics_content}, {architecture_content}, {ux_design_content}, {tech_spec_content}, {document_project_content}</note>
+</step>
+
 <step n="1" goal="Initialize Change Navigation">
   <action>Confirm change trigger and gather user description of the issue</action>
   <action>Ask: "What specific issue or change has been identified that requires navigation?"</action>
@@ -27,12 +32,46 @@
 <action if="core documents are unavailable">HALT: "Need access to project documents (PRD, Epics, Architecture, UI/UX) to assess change impact. Please ensure these documents are accessible."</action>
 </step>
 
-<step n="0.5" goal="Discover and load project documents">
-  <invoke-protocol name="discover_inputs" />
-  <note>After discovery, these content variables are available: {prd_content}, {epics_content}, {architecture_content}, {ux_design_content}, {tech_spec_content}, {document_project_content}</note>
+<step n="2" goal="Platform intelligence — understand what's actually been built">
+  <!-- Git History Analysis — What's Actually Been Implemented -->
+  <action>Analyze git commit history to understand the current state of implementation.
+    Run: `git log --oneline -50` to see recent development activity.
+    Run: `git log --name-only --pretty=format: -50 | sort | uniq -c | sort -rn | head -20` to find most-changed files.
+    This reveals what code areas the course correction will likely affect.
+  </action>
+
+  <action>Identify natural rollback points in the git history.
+    Look for commits that represent completed, stable states (e.g., story completions, passing reviews).
+    If the course correction involves reverting work, these stable points are candidates for rollback.
+    Note these commit hashes and what state they represent.
+  </action>
+
+  <!-- Codebase Health Assessment -->
+  <action>Assess current codebase health before proposing changes.
+    Run LSP diagnostics on the project's main source files.
+    Count errors and warnings to understand if the codebase is stable or already degraded.
+    Search for tech debt markers: grep -ri "TODO\|FIXME\|HACK\|WORKAROUND" --include="*.ts" --include="*.js" --include="*.py" --exclude-dir=node_modules --exclude-dir=.git --exclude-dir=dist | wc -l
+    A degraded codebase may influence whether to patch forward or roll back.
+  </action>
+
+  <!-- Sprint Status Cross-Reference -->
+  <action>If sprint-status.yaml exists, load it to understand:
+    - Which stories are done, in-progress, or blocked
+    - Which epics are affected by the proposed change
+    - How much completed work might be impacted
+    This helps size the impact of the course correction.
+  </action>
+
+  <action>Summarize platform intelligence findings:
+    - Git activity: {{commit_count}} recent commits, most-changed areas: {{top_files}}
+    - Codebase health: {{lsp_error_count}} errors, {{lsp_warning_count}} warnings, {{debt_count}} debt markers
+    - Stable rollback points: {{rollback_candidates}}
+    - Sprint progress: {{done_count}} done, {{in_progress_count}} in-progress
+    Present these findings to inform the change analysis in subsequent steps.
+  </action>
 </step>
 
-<step n="2" goal="Execute Change Analysis Checklist">
+<step n="3" goal="Execute Change Analysis Checklist">
   <action>Read fully and follow the systematic analysis from: {checklist}</action>
   <action>Work through each checklist section interactively with the user</action>
   <action>Record status for each checklist item:</action>
@@ -45,7 +84,7 @@
 <action if="checklist cannot be completed">Identify blocking issues and work with user to resolve before continuing</action>
 </step>
 
-<step n="3" goal="Draft Specific Change Proposals">
+<step n="4" goal="Draft Specific Change Proposals">
 <action>Based on checklist findings, create explicit edit proposals for each identified artifact</action>
 
 <action>For Story changes:</action>
@@ -97,7 +136,7 @@
 
 </step>
 
-<step n="4" goal="Generate Sprint Change Proposal">
+<step n="5" goal="Generate Sprint Change Proposal">
 <action>Compile comprehensive Sprint Change Proposal document with following sections:</action>
 
 <action>Section 1: Issue Summary</action>
@@ -117,10 +156,11 @@
 
 - Present chosen path forward from checklist evaluation:
   - Direct Adjustment: Modify/add stories within existing plan
-  - Potential Rollback: Revert completed work to simplify resolution
+  - Potential Rollback: Revert completed work to simplify resolution (include specific rollback points identified in Step 2)
   - MVP Review: Reduce scope or modify goals
 - Provide clear rationale for recommendation
-- Include effort estimate, risk assessment, and timeline impact
+- Include risk assessment and scope impact
+- If rollback is recommended, reference the specific stable commit points identified during git analysis
 
 <action>Section 4: Detailed Change Proposals</action>
 
@@ -142,15 +182,15 @@
 <ask>Review complete proposal. Continue [c] or Edit [e]?</ask>
 </step>
 
-<step n="5" goal="Finalize and Route for Implementation">
+<step n="6" goal="Finalize and Route for Implementation">
 <action>Get explicit user approval for complete proposal</action>
 <ask>Do you approve this Sprint Change Proposal for implementation? (yes/no/revise)</ask>
 
 <check if="no or revise">
   <action>Gather specific feedback on what needs adjustment</action>
   <action>Return to appropriate step to address concerns</action>
-  <goto step="3">If changes needed to edit proposals</goto>
-  <goto step="4">If changes needed to overall proposal structure</goto>
+  <goto step="4">If changes needed to edit proposals</goto>
+  <goto step="5">If changes needed to overall proposal structure</goto>
 
 </check>
 
@@ -186,7 +226,7 @@
 
 </step>
 
-<step n="6" goal="Workflow Completion">
+<step n="7" goal="Workflow Completion">
 <action>Summarize workflow execution:</action>
   - Issue addressed: {{change_trigger}}
   - Change scope: {{scope_classification}}

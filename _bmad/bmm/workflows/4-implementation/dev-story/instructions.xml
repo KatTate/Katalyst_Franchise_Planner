@@ -141,6 +141,38 @@
     </check>
   </step>
 
+  <step n="4.5" goal="Post-implementation platform verification">
+    <!-- LSP Diagnostics — Verify No New Errors -->
+    <action>Run LSP diagnostics on all files that were created or modified during this story.
+      Check for:
+      - Type errors or unresolved references introduced by the implementation
+      - Unused imports or variables
+      - Syntax warnings or deprecated usage
+      If LSP reports errors in files changed during this story, fix them before proceeding.
+      Warnings should be noted but do not block completion.
+    </action>
+
+    <!-- Git Status Verification -->
+    <action>Run `git status --porcelain` to verify all implementation changes are tracked.
+      Check that:
+      - No untracked files that should be committed are missing
+      - No unexpected files were modified outside the story's scope
+      - The working directory state is clean and documented
+    </action>
+
+    <!-- Visual Verification for UI Stories -->
+    <check if="story's 'As a...' role is an end user OR story has UI/UX Deliverables section">
+      <action>If the application has a running web server, take screenshots of the pages/views that were built or modified by this story.
+        Navigate to the routes referenced in the acceptance criteria.
+        Verify that:
+        - The UI elements described in the ACs are visible and properly rendered
+        - No visual regressions or broken layouts are apparent
+        - The page looks like what a user would expect from the story description
+        If screenshots reveal missing or broken UI elements, fix them before proceeding.
+      </action>
+    </check>
+  </step>
+
   <step n="5" goal="Update story file and sprint status">
     <action>Update story file Status to "review"</action>
 
@@ -148,6 +180,8 @@
       - Agent Model Used
       - Completion Notes: brief summary of what was implemented and key decisions
       - File List: all files created, modified, or deleted (paths relative to repo root)
+      - LSP Status: clean / [N] errors found and fixed / [N] warnings remaining
+      - Visual Verification: screenshots taken and verified (if user-facing story) / N/A
     </action>
 
     <!-- Update sprint status -->
