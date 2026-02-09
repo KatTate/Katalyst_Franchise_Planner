@@ -133,6 +133,27 @@ Classic Mode review by 5 agents (Bob/SM, Winston/Architect, Amelia/Dev, Sally/UX
 
 ### Agent Model Used
 
+Claude 4.6 Opus (Replit Agent)
+
 ### Completion Notes
 
+Implemented all 10 acceptance criteria across 3 files. Key implementation decisions:
+
+- **WCAG luminance-based contrast:** `hexToForegroundHSL()` computes relative luminance (`L = 0.2126*R + 0.7152*G + 0.0722*B`), threshold 0.5. Dark foreground: `210 6% 12%`, light foreground: `210 10% 98%` — matching existing token values.
+- **3-digit hex normalization:** `expandShortHex()` converts 3-digit hex (#abc) to 6-digit (#aabbcc) before HSL conversion, ensuring both formats apply theming correctly.
+- **CSS custom properties set:** `--primary`, `--primary-foreground`, `--ring`, `--sidebar-primary`, `--sidebar-primary-foreground`, `--sidebar-ring` — all cleaned up on unmount via `BRAND_CSS_PROPERTIES` array.
+- **Brand logo:** `<img>` with `max-h-10 object-contain` in `SidebarHeader`; `onError` fallback hides logo and shows text-only label. Not using Avatar (reserved for profile pictures).
+- **"Powered by Katalyst" badge:** `text-xs` with `hsl(var(--katalyst-brand))` inline style, positioned above user info in `SidebarFooter` with `Separator`.
+- **Hex validation:** `isValidHex()` accepts both 3-digit and 6-digit hex. Invalid input shows destructive error text, disables Save button, and `handleSave` double-checks before mutation.
+- **Color picker sync:** Native `<input type="color">` receives `normalizeHexForPicker()` output (always valid 6-digit hex); text input and picker are bidirectionally synced.
+- **Default fetcher:** Replaced custom `queryFn` with `getQueryFn({ on401: "returnNull" })` to follow codebase conventions.
+
+Code review: 0 HIGH, 0 MEDIUM, 0 LOW findings remaining after fixes.
+
 ### File List
+
+| File | Action | Notes |
+|------|--------|-------|
+| `client/src/hooks/use-brand-theme.ts` | MODIFIED | Added `expandShortHex()`, `hexToForegroundHSL()`, `BRAND_CSS_PROPERTIES` cleanup array, `--primary-foreground` and `--sidebar-primary-foreground` setting, replaced custom queryFn with default fetcher |
+| `client/src/components/app-sidebar.tsx` | MODIFIED | Added `SidebarHeader` with brand logo (onError fallback), dynamic `brandLabel` in `SidebarGroupLabel`, "Powered by Katalyst" badge in `SidebarFooter`, `useBrandTheme` hook consumption |
+| `client/src/pages/admin-brand-detail.tsx` | MODIFIED | Added `isValidHex()`, `normalizeHexForPicker()`, hex validation with error state, live swatch with valid/invalid rendering, bidirectional color picker sync, save blocking on invalid hex |
