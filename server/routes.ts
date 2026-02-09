@@ -3,10 +3,6 @@ import { type Server } from "http";
 import session from "express-session";
 import connectPgSimple from "connect-pg-simple";
 import passport from "./auth";
-import { storage } from "./storage";
-import { seedAdminUser } from "./seed";
-import path from "path";
-import express from "express";
 
 export async function registerRoutes(
   httpServer: Server,
@@ -35,9 +31,45 @@ export async function registerRoutes(
   app.use(passport.initialize());
   app.use(passport.session());
 
-  await seedAdminUser();
+  app.get(
+    "/api/auth/google",
+    passport.authenticate("google", {
+      scope: ["profile", "email"],
+      hd: "katgroupinc.com",
+    } as any)
+  );
 
-  app.use("/design", express.static(path.resolve("_bmad-output/planning-artifacts")));
+  app.get(
+    "/api/auth/google/callback",
+    passport.authenticate("google", {
+      failureRedirect: "/login?error=domain_restricted",
+    }),
+    (_req, res) => {
+      res.redirect("/");
+    }
+  );
+
+  app.post("/api/auth/logout", (req, res) => {
+    req.logout((err) => {
+      if (err) {
+        return res.status(500).json({ message: "Logout failed" });
+      }
+      req.session.destroy((sessionErr) => {
+        if (sessionErr) {
+          return res.status(500).json({ message: "Session destruction failed" });
+        }
+        res.clearCookie("connect.sid");
+        return res.json({ message: "Logged out" });
+      });
+    });
+  });
+
+  app.get("/api/auth/me", (req, res) => {
+    if (!req.isAuthenticated() || !req.user) {
+      return res.status(401).json({ message: "Not authenticated" });
+    }
+    return res.json(req.user);
+  });
 
   return httpServer;
 }
