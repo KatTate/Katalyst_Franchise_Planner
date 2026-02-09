@@ -1,6 +1,6 @@
 # Story 2.2: Startup Cost Template Management
 
-Status: review
+Status: done
 
 ## Story
 
@@ -168,6 +168,7 @@ Claude 4.6 Opus (Replit Agent)
 - Party Mode improvements applied: aria-labels on all icon buttons (Edit, Delete, Move Up, Move Down), help text on Item 7 Low/High and Line Item Name fields, Epic 3 handoff dependency documented
 - Removed unused GripVertical import
 - E2E test passed: full CRUD flow + reorder + persistence verification + cleanup
+- Code review (adversarial): PASS — 0 High, 0 Medium, 0 Low findings. All 9 ACs verified as satisfied. All Dev Notes constraints compliant. Protected files unmodified. LSP 0 errors. Visual verification passed (4 buttons fit, boundary disable visible, help text present).
 
 ### File List
 
