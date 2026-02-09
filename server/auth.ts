@@ -1,5 +1,7 @@
 import passport from "passport";
 import { Strategy as GoogleStrategy } from "passport-google-oauth20";
+import { Strategy as LocalStrategy } from "passport-local";
+import bcrypt from "bcrypt";
 import { storage } from "./storage";
 
 declare global {
@@ -68,6 +70,36 @@ if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
     )
   );
 }
+
+passport.use(
+  new LocalStrategy(
+    { usernameField: "email" },
+    async (email, password, done) => {
+      try {
+        const user = await storage.getUserByEmail(email);
+        if (!user || !user.passwordHash) {
+          return done(null, false, { message: "Invalid email or password" });
+        }
+        const valid = await bcrypt.compare(password, user.passwordHash);
+        if (!valid) {
+          return done(null, false, { message: "Invalid email or password" });
+        }
+        return done(null, {
+          id: user.id,
+          email: user.email,
+          role: user.role,
+          brandId: user.brandId,
+          displayName: user.displayName,
+          profileImageUrl: user.profileImageUrl,
+          onboardingCompleted: user.onboardingCompleted,
+          preferredTier: user.preferredTier,
+        });
+      } catch (err) {
+        return done(err as Error);
+      }
+    }
+  )
+);
 
 passport.serializeUser((user: Express.User, done) => {
   done(null, user.id);
