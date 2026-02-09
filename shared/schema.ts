@@ -1,5 +1,5 @@
 import { sql } from "drizzle-orm";
-import { pgTable, text, varchar, boolean, timestamp, index, jsonb, integer } from "drizzle-orm/pg-core";
+import { pgTable, text, varchar, boolean, timestamp, index, jsonb, integer, uniqueIndex } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -76,6 +76,7 @@ export const brands = pgTable("brands", {
   logoUrl: text("logo_url"),
   primaryColor: text("primary_color"),
   defaultBookingUrl: text("default_booking_url"),
+  defaultAccountManagerId: varchar("default_account_manager_id"),
   franchisorAcknowledgmentEnabled: boolean("franchisor_acknowledgment_enabled").default(false).notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
@@ -134,3 +135,21 @@ export const insertInvitationSchema = createInsertSchema(invitations).omit({
 });
 export type InsertInvitation = z.infer<typeof insertInvitationSchema>;
 export type Invitation = typeof invitations.$inferSelect;
+
+export const brandAccountManagers = pgTable("brand_account_managers", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  brandId: varchar("brand_id").notNull().references(() => brands.id),
+  accountManagerId: varchar("account_manager_id").notNull().references(() => users.id),
+  bookingUrl: text("booking_url"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+}, (table) => [
+  uniqueIndex("idx_brand_account_managers_unique").on(table.brandId, table.accountManagerId),
+  index("idx_brand_account_managers_brand").on(table.brandId),
+]);
+
+export const insertBrandAccountManagerSchema = createInsertSchema(brandAccountManagers).omit({
+  id: true,
+  createdAt: true,
+});
+export type InsertBrandAccountManager = z.infer<typeof insertBrandAccountManagerSchema>;
+export type BrandAccountManager = typeof brandAccountManagers.$inferSelect;

@@ -9,9 +9,12 @@ import {
   type InsertBrand,
   type BrandParameters,
   type StartupCostTemplate,
+  type BrandAccountManager,
+  type InsertBrandAccountManager,
   users,
   invitations,
   brands,
+  brandAccountManagers,
 } from "@shared/schema";
 
 export interface IStorage {
@@ -56,6 +59,12 @@ export interface IStorage {
   getUsersByBrand(brandId: string): Promise<User[]>;
   getFranchiseesByBrand(brandId: string): Promise<User[]>;
   getKatalystAdmins(): Promise<Array<{ id: string; email: string; displayName: string | null; profileImageUrl: string | null }>>;
+
+  getBrandAccountManagers(brandId: string): Promise<BrandAccountManager[]>;
+  getBrandAccountManager(brandId: string, accountManagerId: string): Promise<BrandAccountManager | undefined>;
+  upsertBrandAccountManager(brandId: string, accountManagerId: string, bookingUrl: string | null): Promise<BrandAccountManager>;
+  removeBrandAccountManager(brandId: string, accountManagerId: string): Promise<void>;
+  setDefaultAccountManager(brandId: string, accountManagerId: string | null): Promise<Brand>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -255,6 +264,64 @@ export class DatabaseStorage implements IStorage {
       .from(users)
       .where(eq(users.role, "katalyst_admin"));
     return admins;
+  }
+
+  async getBrandAccountManagers(brandId: string): Promise<BrandAccountManager[]> {
+    return db
+      .select()
+      .from(brandAccountManagers)
+      .where(eq(brandAccountManagers.brandId, brandId));
+  }
+
+  async getBrandAccountManager(brandId: string, accountManagerId: string): Promise<BrandAccountManager | undefined> {
+    const [row] = await db
+      .select()
+      .from(brandAccountManagers)
+      .where(
+        and(
+          eq(brandAccountManagers.brandId, brandId),
+          eq(brandAccountManagers.accountManagerId, accountManagerId)
+        )
+      )
+      .limit(1);
+    return row;
+  }
+
+  async upsertBrandAccountManager(brandId: string, accountManagerId: string, bookingUrl: string | null): Promise<BrandAccountManager> {
+    const existing = await this.getBrandAccountManager(brandId, accountManagerId);
+    if (existing) {
+      const [updated] = await db
+        .update(brandAccountManagers)
+        .set({ bookingUrl })
+        .where(eq(brandAccountManagers.id, existing.id))
+        .returning();
+      return updated;
+    }
+    const [created] = await db
+      .insert(brandAccountManagers)
+      .values({ brandId, accountManagerId, bookingUrl } as any)
+      .returning();
+    return created;
+  }
+
+  async removeBrandAccountManager(brandId: string, accountManagerId: string): Promise<void> {
+    await db
+      .delete(brandAccountManagers)
+      .where(
+        and(
+          eq(brandAccountManagers.brandId, brandId),
+          eq(brandAccountManagers.accountManagerId, accountManagerId)
+        )
+      );
+  }
+
+  async setDefaultAccountManager(brandId: string, accountManagerId: string | null): Promise<Brand> {
+    const [updated] = await db
+      .update(brands)
+      .set({ defaultAccountManagerId: accountManagerId })
+      .where(eq(brands.id, brandId))
+      .returning();
+    return updated;
   }
 }
 

@@ -318,14 +318,32 @@ export async function registerRoutes(
 
     const passwordHash = await bcrypt.hash(password, 12);
 
-    const user = await storage.createUser({
+    const createData: Record<string, any> = {
       email: invitation.email,
       passwordHash,
       displayName: display_name,
       role: invitation.role,
       brandId: invitation.brandId,
       onboardingCompleted: false,
-    } as any);
+    };
+
+    if (invitation.brandId && (invitation.role === "franchisee")) {
+      const brand = await storage.getBrand(invitation.brandId);
+      if (brand?.defaultAccountManagerId) {
+        createData.accountManagerId = brand.defaultAccountManagerId;
+        const brandManager = await storage.getBrandAccountManager(
+          invitation.brandId,
+          brand.defaultAccountManagerId
+        );
+        if (brandManager?.bookingUrl) {
+          createData.bookingUrl = brandManager.bookingUrl;
+        } else if (brand.defaultBookingUrl) {
+          createData.bookingUrl = brand.defaultBookingUrl;
+        }
+      }
+    }
+
+    const user = await storage.createUser(createData as any);
 
     await storage.markInvitationAccepted(invitation.id);
 
@@ -678,6 +696,116 @@ export async function registerRoutes(
     async (_req: Request, res: Response) => {
       const admins = await storage.getKatalystAdmins();
       return res.json(admins);
+    }
+  );
+
+  app.get(
+    "/api/brands/:brandId/account-managers",
+    requireAuth,
+    requireRole("katalyst_admin"),
+    async (req: Request, res: Response) => {
+      const brandId = req.params.brandId as string;
+      const brand = await storage.getBrand(brandId);
+      if (!brand) {
+        return res.status(404).json({ message: "Brand not found" });
+      }
+      const brandManagers = await storage.getBrandAccountManagers(brandId);
+      return res.json(brandManagers);
+    }
+  );
+
+  const upsertBrandAccountManagerSchema = z.object({
+    account_manager_id: z.string().min(1, "Account manager is required"),
+    booking_url: z.string().url("Must be a valid URL").nullable().optional(),
+  });
+
+  app.put(
+    "/api/brands/:brandId/account-managers",
+    requireAuth,
+    requireRole("katalyst_admin"),
+    async (req: Request, res: Response) => {
+      const brandId = req.params.brandId as string;
+      const brand = await storage.getBrand(brandId);
+      if (!brand) {
+        return res.status(404).json({ message: "Brand not found" });
+      }
+
+      const parsed = upsertBrandAccountManagerSchema.safeParse(req.body);
+      if (!parsed.success) {
+        return res.status(400).json({
+          message: "Validation failed",
+          errors: parsed.error.errors.map((e) => ({ path: e.path.map(String), message: e.message })),
+        });
+      }
+
+      const manager = await storage.getUser(parsed.data.account_manager_id);
+      if (!manager || manager.role !== "katalyst_admin") {
+        return res.status(404).json({ message: "Account manager not found or not a Katalyst admin" });
+      }
+
+      const result = await storage.upsertBrandAccountManager(
+        brandId,
+        parsed.data.account_manager_id,
+        parsed.data.booking_url ?? null,
+      );
+      return res.json(result);
+    }
+  );
+
+  app.delete(
+    "/api/brands/:brandId/account-managers/:managerId",
+    requireAuth,
+    requireRole("katalyst_admin"),
+    async (req: Request, res: Response) => {
+      const brandId = req.params.brandId as string;
+      const managerId = req.params.managerId as string;
+
+      const brand = await storage.getBrand(brandId);
+      if (!brand) {
+        return res.status(404).json({ message: "Brand not found" });
+      }
+
+      if (brand.defaultAccountManagerId === managerId) {
+        await storage.setDefaultAccountManager(brandId, null);
+      }
+
+      await storage.removeBrandAccountManager(brandId, managerId);
+      return res.json({ success: true });
+    }
+  );
+
+  const setDefaultManagerSchema = z.object({
+    account_manager_id: z.string().min(1).nullable(),
+  });
+
+  app.put(
+    "/api/brands/:brandId/default-account-manager",
+    requireAuth,
+    requireRole("katalyst_admin"),
+    async (req: Request, res: Response) => {
+      const brandId = req.params.brandId as string;
+      const brand = await storage.getBrand(brandId);
+      if (!brand) {
+        return res.status(404).json({ message: "Brand not found" });
+      }
+
+      const parsed = setDefaultManagerSchema.safeParse(req.body);
+      if (!parsed.success) {
+        return res.status(400).json({
+          message: "Validation failed",
+          errors: parsed.error.errors.map((e) => ({ path: e.path.map(String), message: e.message })),
+        });
+      }
+
+      if (parsed.data.account_manager_id) {
+        const existing = await storage.getBrandAccountManager(brandId, parsed.data.account_manager_id);
+        if (!existing) {
+          return res.status(400).json({ message: "This account manager is not associated with this brand. Add them first." });
+        }
+      }
+
+      const updated = await storage.setDefaultAccountManager(brandId, parsed.data.account_manager_id);
+      return res.json(updated);
     }
   );
 
