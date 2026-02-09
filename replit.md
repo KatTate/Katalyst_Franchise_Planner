@@ -143,9 +143,10 @@ _bmad-output/             # Generated artifacts go here
   - Session: PostgreSQL-backed via connect-pg-simple with 24h expiry
   - Removed: bcrypt, passport-local, seed.ts — replaced with Google OAuth self-registration
   - Env vars needed: GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET (from Google Cloud Console)
+  - **Dev login bypass:** When Google OAuth creds are absent, login page shows "Dev Login (Admin)" button instead of Google sign-in. Creates dev@katgroupinc.com user with katalyst_admin role. Auto-disables when real OAuth creds are set.
 
 ## Current Phase: Implementation — Sprint 1
 
-- **Story 1.1:** IMPLEMENTED (pending Google OAuth credentials for live testing)
+- **Story 1.1:** IMPLEMENTED (dev login bypass active — Google OAuth ready when creds are added)
 - **Story 1.2-1.8:** Pending
 <!-- BMAD-METHOD-END -->

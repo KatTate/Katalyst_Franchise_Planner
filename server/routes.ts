@@ -64,6 +64,45 @@ export async function registerRoutes(
     });
   });
 
+  app.get("/api/auth/dev-enabled", (_req, res) => {
+    const devMode = !process.env.GOOGLE_CLIENT_ID || !process.env.GOOGLE_CLIENT_SECRET;
+    return res.json({ devMode });
+  });
+
+  app.post("/api/auth/dev-login", async (req, res) => {
+    if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
+      return res.status(403).json({ message: "Dev login disabled when Google OAuth is configured" });
+    }
+
+    try {
+      const user = await (await import("./storage")).storage.upsertUserFromGoogle({
+        email: "dev@katgroupinc.com",
+        displayName: "Dev Admin",
+        profileImageUrl: null,
+      });
+
+      const sessionUser: Express.User = {
+        id: user.id,
+        email: user.email,
+        role: user.role,
+        brandId: user.brandId,
+        displayName: user.displayName,
+        profileImageUrl: user.profileImageUrl,
+        onboardingCompleted: user.onboardingCompleted,
+        preferredTier: user.preferredTier,
+      };
+
+      req.login(sessionUser, (err) => {
+        if (err) {
+          return res.status(500).json({ message: "Login failed" });
+        }
+        return res.json(sessionUser);
+      });
+    } catch (err) {
+      return res.status(500).json({ message: "Dev login failed" });
+    }
+  });
+
   app.get("/api/auth/me", (req, res) => {
     if (!req.isAuthenticated() || !req.user) {
       return res.status(401).json({ message: "Not authenticated" });
