@@ -16,6 +16,11 @@ export interface IStorage {
   getUser(id: string): Promise<User | undefined>;
   getUserByEmail(email: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
+  upsertUserFromGoogle(profile: {
+    email: string;
+    displayName: string;
+    profileImageUrl: string | null;
+  }): Promise<User>;
 
   getInvitationByToken(token: string): Promise<Invitation | undefined>;
   createInvitation(invitation: InsertInvitation): Promise<Invitation>;
@@ -39,6 +44,36 @@ export class DatabaseStorage implements IStorage {
   async createUser(insertUser: InsertUser): Promise<User> {
     const [user] = await db.insert(users).values(insertUser).returning();
     return user;
+  }
+
+  async upsertUserFromGoogle(profile: {
+    email: string;
+    displayName: string;
+    profileImageUrl: string | null;
+  }): Promise<User> {
+    const existing = await this.getUserByEmail(profile.email);
+    if (existing) {
+      const [updated] = await db
+        .update(users)
+        .set({
+          displayName: profile.displayName,
+          profileImageUrl: profile.profileImageUrl,
+        })
+        .where(eq(users.id, existing.id))
+        .returning();
+      return updated;
+    }
+    const [created] = await db
+      .insert(users)
+      .values({
+        email: profile.email,
+        displayName: profile.displayName,
+        profileImageUrl: profile.profileImageUrl,
+        role: "katalyst_admin",
+        onboardingCompleted: false,
+      })
+      .returning();
+    return created;
   }
 
   async getInvitationByToken(token: string): Promise<Invitation | undefined> {

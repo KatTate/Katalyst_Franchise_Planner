@@ -20,12 +20,12 @@ export type Brand = typeof brands.$inferSelect;
 export const users = pgTable("users", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   email: text("email").notNull().unique(),
-  passwordHash: text("password_hash").notNull(),
+  profileImageUrl: text("profile_image_url"),
   role: text("role").notNull().$type<"franchisee" | "franchisor" | "katalyst_admin">(),
   brandId: varchar("brand_id").references(() => brands.id),
   displayName: text("display_name"),
   onboardingCompleted: boolean("onboarding_completed").default(false).notNull(),
-  preferredTier: text("preferred_tier").$type<"story" | "normal" | "expert">(),
+  preferredTier: text("preferred_tier").$type<"planning_assistant" | "forms" | "quick_entry">(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 }, (table) => [
   index("idx_users_email").on(table.email),
