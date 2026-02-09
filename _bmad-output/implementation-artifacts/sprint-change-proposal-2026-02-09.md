@@ -566,4 +566,10 @@ This simplifies authentication significantly — Katalyst admins use existing Go
 
 ## Approval
 
-**Status:** Pending user approval
+**Status:** APPROVED — Applied 2026-02-09
+
+**Additional changes applied during review sweep:**
+- FR31 text updated in epics.md (line 58) and prd.md (line 696) — was still referencing "email and password"
+- FR29 in prd.md — removed "(password creation)" parenthetical from account setup
+- Story 1.3 AC — "submit my password" changed to "complete account setup"
+- Total edits: 23 (original) + 3 (review sweep) = 26 edits across 3 artifacts

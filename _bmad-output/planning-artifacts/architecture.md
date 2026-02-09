@@ -45,7 +45,7 @@ _This document builds collaboratively through step-by-step discovery. Sections a
 | Category | Key Constraints |
 |----------|----------------|
 | Performance | Financial recalc < 2s, page transition < 1s, PDF generation < 30s, dashboard load < 3s for 200 franchisees |
-| Security | HTTPS, bcrypt passwords, session expiry, API-level RBAC, single-use invitation tokens, no financial data in logs |
+| Security | HTTPS, Google OAuth for Katalyst admins, bcrypt passwords for franchisee accounts, session expiry, API-level RBAC, single-use invitation tokens, no financial data in logs |
 | Reliability & Data Integrity | Auto-save every 2 min, deterministic calculations, concurrent edit handling, immutable generated documents |
 | Scalability | 10 brands, 500 franchisees, brand_id partitioning from day one |
 | AI Integration | LLM API timeouts < 30s, graceful degradation to form-based mode, AI-populated values validated against field schemas, conversation context < 32K tokens |
@@ -107,7 +107,7 @@ The AI layer is designed as an enhancement, not a foundation. The product works 
 3. **CapEx classification data flow:** Startup cost line item classification (CapEx/non-CapEx/working capital) drives different downstream financial calculations — depreciation, P&L impact, balance sheet placement.
 4. **Lender-grade document accuracy:** No $1 discrepancies between summary and detail in generated PDFs. Financial formatting must be consistent.
 5. **FTC Franchise Rule:** Content positioning constraint — all projections labeled as franchisee-created. The AI Planning Advisor framing naturally reinforces this: the advisor asks questions and helps the franchisee think through their numbers, but the franchisee is always the author.
-6. **Invitation-only auth model:** Simplifies auth architecture significantly — no self-registration, no email verification flows, no public endpoints for account creation.
+6. **Dual auth model:** Katalyst admin users authenticate via Google OAuth (restricted to @katgroupinc.com domain) — no invitation needed, no password management. Franchisees and franchisor admins use invitation-only auth — no self-registration, no email verification flows, no public endpoints for account creation.
 7. **brand_id partitioning:** Every relevant table must include brand_id from day one. This is the foundation for multi-brand support via configuration rather than code changes.
 8. **AI accuracy guardrails:** When AI populates financial inputs from conversation, values must be verifiable and correctable by the franchisee. The detail view (expandable sections showing every field) serves as the verification layer.
 
@@ -201,7 +201,8 @@ Full-stack web application (B2B2C vertical SaaS) based on project requirements a
 **Backend Framework & Libraries:**
 - Express 5.0 (latest major version)
 - express-session + connect-pg-simple for session management
-- Passport + passport-local for authentication
+- Passport + passport-google-oauth20 for Katalyst admin authentication (Google OAuth)
+- Passport local strategy may be added in Stories 1.2-1.4 for franchisee invitation-based auth (TBD)
 - ws 8.18 for WebSocket support (useful for real-time auto-save or AI streaming)
 
 **Database & ORM:**
@@ -249,7 +250,7 @@ These capabilities are required by the PRD but not included in the starter templ
 | **PDF Generation** | Lender-grade financial documents (FR24-FR27) | pdfkit, @react-pdf/renderer (server-side), or puppeteer (heavier) |
 | **Immutable Document Storage** | Generated documents must be stored immutably with version history (FR24-FR27) | PostgreSQL bytea/JSONB, Replit Object Storage, or filesystem with hash-based naming |
 | **LLM SDK** | AI Planning Advisor conversation (FR50-FR54) | OpenAI SDK, Anthropic SDK, or Vercel AI SDK (provider-agnostic) |
-| **Email/Invitations** | Invitation-only auth flow (FR28) | Resend, SendGrid, or Nodemailer |
+| **Email/Invitations** | Invitation auth flow for franchisees/franchisors (FR28) | Resend, SendGrid, or Nodemailer |
 | **Financial Number Formatting** | Consistent currency/percentage display (NFR usability) | Intl.NumberFormat (built-in), or dinero.js for money math |
 | **Decimal Precision** | Deterministic financial calculations without floating-point drift | decimal.js or big.js for arbitrary-precision arithmetic |
 | **Streaming Response Handling** | AI conversation streaming UX (FR51) | Server-Sent Events (built-in) or WebSocket (ws already included) |
@@ -445,16 +446,26 @@ Every table that contains brand-specific data includes `brand_id` as a column. A
 
 #### Decision 3: Authentication Model
 
-**Decision:** Invitation-only, session-based authentication using Passport.js (already in starter) with custom invitation flow.
+**Decision:** Dual authentication model — Google OAuth for Katalyst admin users, invitation-based auth for franchisees and franchisor admins. Session-based with PostgreSQL session store.
 
-**Architecture:**
+**Architecture — Katalyst Admin Auth (Google OAuth):**
+- Katalyst team members authenticate via Google OAuth restricted to @katgroupinc.com domain
+- Uses `passport-google-oauth20` strategy with domain enforcement:
+  - Google OAuth `hd` parameter hints account chooser to show only @katgroupinc.com accounts
+  - Server-side callback validates both the `hd` claim AND email suffix — `hd` hint alone is advisory and bypassable
+- No seed script — admin users self-register on first Google OAuth login with `katalyst_admin` role
+- User profile (display_name, profile_image_url) populated from Google profile data
+- Google OAuth tokens (access_token, refresh_token) are NOT stored — only user profile data
+- Google Cloud Console setup: OAuth 2.0 credentials with Internal app type (Workspace-only consent screen)
+
+**Architecture — Franchisee/Franchisor Auth (Invitation-based):**
 - No self-registration. Users are created by Katalyst admins or franchisor users with appropriate permissions.
 - Invitation tokens are single-use, time-limited (configurable, default 7 days).
-- Invitation email contains a link with the token. First visit sets password.
+- Invitation email contains a link with the token. Auth mechanism for invitation acceptance TBD in Stories 1.2-1.4 (options: password-based with bcrypt, or Google OAuth for all users).
 - Sessions stored in PostgreSQL via connect-pg-simple (already in starter).
 - Session expiry: configurable per role (longer for franchisees, shorter for admins).
 
-**Password Security:** bcrypt with cost factor 12.
+**Password Security (if used for franchisee accounts):** bcrypt with cost factor 12.
 
 #### Decision 4: Authorization (RBAC) Pattern
 
@@ -496,11 +507,12 @@ Layer 3: Response-level projection (field filtering)
 
 ```
 Auth:
-  POST   /api/auth/login
+  GET    /api/auth/google              (Initiate Google OAuth for Katalyst admins)
+  GET    /api/auth/google/callback     (Google OAuth callback — domain validation)
   POST   /api/auth/logout
   GET    /api/auth/me
   POST   /api/invitations              (Katalyst/Franchisor creates invitation)
-  POST   /api/invitations/:token/accept (Franchisee accepts, sets password)
+  POST   /api/invitations/:token/accept (Franchisee accepts — auth mechanism TBD)
 
 Plans:
   GET    /api/plans                     (user's plans, scoped by role)
@@ -1138,10 +1150,11 @@ Every user-facing error message for data operations must communicate:
 
 **Authentication Flow:**
 - Session-based (express-session + connect-pg-simple)
-- Login: `POST /api/auth/login` → sets session cookie → redirect to plans list
+- Katalyst admin login: `GET /api/auth/google` → Google OAuth consent → `GET /api/auth/google/callback` → domain validation → session cookie → redirect to app
+- Franchisee login: Invitation-based — auth mechanism TBD in Stories 1.2-1.4
 - Protected routes: `requireRole()` middleware checks session, returns 401/403
 - Frontend: `useQuery({ queryKey: ['/api/auth/me'] })` for current user — redirects to login on 401
-- Invitation flow: Token in URL → registration form → `POST /api/auth/register` with token → auto-login
+- Login page: "Sign in with Google" button navigates to `/api/auth/google`; domain rejection shows error message
 
 **Validation Pattern:**
 - Single source of truth: Zod schemas in `shared/schema.ts`
@@ -1291,7 +1304,7 @@ katalyst-growth-planner/
 │   ├── [C] storage.ts                    # IStorage interface + DatabaseStorage
 │   │
 │   ├── [C] routes/                       # Route modules (Party Mode: Amelia — keep each under 100 lines)
-│   │   ├── auth.ts                       # POST login, POST register, GET me, POST logout
+│   │   ├── auth.ts                       # GET google, GET google/callback, GET me, POST logout
 │   │   ├── plans.ts                      # Plan CRUD + PATCH auto-save
 │   │   ├── startup-costs.ts              # Startup cost line items CRUD
 │   │   ├── documents.ts                  # POST generate + GET retrieve (immutable)
@@ -1369,8 +1382,8 @@ katalyst-growth-planner/
 │       │   └── [C] app-sidebar.tsx       # Application sidebar navigation
 │       │
 │       ├── [C] pages/                    # One file per route
-│       │   ├── login.tsx                  # Login page [PUBLIC]
-│       │   ├── register.tsx               # Invitation-based registration [PUBLIC — token required]
+│       │   ├── login.tsx                  # Login page — "Sign in with Google" for Katalyst admins [PUBLIC]
+│       │   ├── register.tsx               # Invitation-based registration for franchisees [PUBLIC — token required]
 │       │   ├── plans.tsx                  # Plans list / franchisee home [PROTECTED — franchisee]
 │       │   ├── plan.tsx                   # Plan workspace — renders story/normal/expert layout [PROTECTED — franchisee]
 │       │   ├── quick-roi.tsx             # Lightweight ROI calculator [PUBLIC — lead capture]
@@ -1380,7 +1393,7 @@ katalyst-growth-planner/
 │       │   └── [T] not-found.tsx         # 404 page (exists in template)
 │       │
 │       ├── hooks/
-│       │   ├── [C] use-auth.ts           # Current user, login/logout, role checks
+│       │   ├── [C] use-auth.ts           # Current user, Google OAuth redirect, logout, role checks
 │       │   ├── [C] use-financial-engine.ts # Client-side engine invocation for live preview
 │       │   ├── [C] use-plan-auto-save.ts  # Debounced auto-save with conflict detection
 │       │   └── [T] use-toast.ts          # Toast notifications (exists in template)
@@ -1406,7 +1419,7 @@ katalyst-growth-planner/
 
 | Boundary | Route Module | Inbound | Auth Required |
 |----------|-------------|---------|---------------|
-| `/api/auth/*` | `routes/auth.ts` | Client login/register | No (public) |
+| `/api/auth/*` | `routes/auth.ts` | Google OAuth + session management | Mixed (OAuth routes public, /me protected) |
 | `/api/plans/*` | `routes/plans.ts` | Plan CRUD + auto-save | Yes — franchisee owns, franchisor reads (projected) |
 | `/api/plans/:id/startup-costs/*` | `routes/startup-costs.ts` | Startup cost CRUD | Yes — franchisee only |
 | `/api/plans/:id/documents/*` | `routes/documents.ts` | Create + retrieve (immutable) | Yes — franchisee creates, franchisor reads (with consent) |
@@ -1541,7 +1554,7 @@ Brand Theming (client/src/lib/brand-theme.ts)
 | **Guided Experience (FR11-19)** | `client/pages/plan.tsx`, `client/components/planning/{story\|normal\|expert}-layout.tsx`, `client/components/planning/{story\|normal\|expert}-mode/*` | `client/components/common/plan-header.tsx` (includes booking link — Party Mode: John), `client/hooks/use-plan-auto-save.ts` |
 | **Advisory & Guardrails (FR20-23)** | `shared/financial-engine.ts` (identity checks), `client/components/common/detail-panel.tsx` (range warnings) | `server/services/financial-service.ts` |
 | **Documents (FR24-27)** | `server/services/document-service.ts`, `server/routes/documents.ts` | `server/storage.ts` (createDocument, getDocument, listDocuments — immutable only) |
-| **Auth & Access (FR28-32)** | `server/middleware/auth.ts`, `server/routes/auth.ts`, `client/pages/login.tsx`, `client/pages/register.tsx` | `client/hooks/use-auth.ts`, `client/lib/protected-route.tsx` |
+| **Auth & Access (FR28-32)** | `server/middleware/auth.ts`, `server/routes/auth.ts`, `client/pages/login.tsx`, `client/pages/register.tsx` | `client/hooks/use-auth.ts`, `client/lib/protected-route.tsx` (Katalyst admin: Google OAuth; franchisee: invitation-based, TBD) |
 | **Data Sharing (FR33-38)** | `server/middleware/rbac.ts`, `server/routes/consent.ts`, `client/components/common/consent-dialog.tsx` | `server/storage.ts` (consent CRUD) |
 | **Brand Admin (FR39-44)** | `client/pages/admin-brands.tsx`, `client/pages/admin-brand.tsx`, `client/components/admin/*`, `server/routes/admin.ts` | `server/storage.ts` (brand CRUD), `shared/brand-seed-data/postnet.ts` |
 | **Pipeline (FR45-48)** | `client/pages/pipeline.tsx`, `client/components/pipeline/*`, `server/routes/pipeline.ts` | `server/middleware/rbac.ts` (projectForRole) |
@@ -1568,7 +1581,7 @@ Brand Theming (client/src/lib/brand-theme.ts)
 
 | Page | Path | Access Level | Role(s) |
 |------|------|-------------|---------|
-| Login | `/login` | PUBLIC | — |
+| Login | `/login` | PUBLIC | — (Google OAuth for Katalyst admins) |
 | Register | `/register` | PUBLIC (token required) | — |
 | Quick ROI | `/quick-roi` | PUBLIC | — (lead capture entry) |
 | Plans List | `/plans` | PROTECTED | franchisee |
@@ -1674,7 +1687,7 @@ All 15 architectural decisions are compatible. React + Express + PostgreSQL + Dr
 | FR11-19 | Guided Experience | `plan.tsx` → 3 layout components, `plan-header.tsx` (booking link, tier selector, save indicator), `use-plan-auto-save.ts` | COVERED |
 | FR20-23 | Advisory & Guardrails | Engine identity checks (never throws), `detail-panel.tsx` (range warnings, source attribution) | COVERED |
 | FR24-27 | Documents | `document-service.ts` (PDF + immutable storage), `storage.ts` (createDocument/getDocument only) | COVERED |
-| FR28-32 | Auth & Access | `auth.ts` middleware (session + requireRole), `use-auth.ts` hook, `protected-route.tsx`, invitation token flow | COVERED |
+| FR28-32 | Auth & Access | `auth.ts` middleware (session + requireRole), `use-auth.ts` hook, `protected-route.tsx`, Google OAuth for Katalyst admins + invitation token flow for franchisees | COVERED |
 | FR33-38 | Data Sharing & Consent | `rbac.ts` (scopeToUser + projectForRole), `consent-dialog.tsx` (human-readable field lists), `routes/consent.ts` | COVERED |
 | FR39-44 | Brand Admin | `routes/admin.ts`, admin pages, `brand-defaults-editor.tsx`, `startup-cost-template.tsx`, `brand-seed-data/postnet.ts` | COVERED |
 | FR45-48 | Pipeline | `routes/pipeline.ts`, `pipeline.tsx` page, `pipeline-board.tsx`, RBAC projection | COVERED |

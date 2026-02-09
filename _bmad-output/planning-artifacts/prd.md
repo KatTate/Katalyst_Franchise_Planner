@@ -471,17 +471,22 @@ Three roles with distinct access patterns:
 
 ### Authentication & Invitation Model
 
-**Invitation-only — no self-registration.**
+**Dual auth model — Google OAuth for Katalyst admins, invitation-only for franchisees/franchisors.**
 
-Franchisee onboarding flow:
+**Katalyst admin auth:**
+- Katalyst team members authenticate via Google OAuth, restricted to @katgroupinc.com Google Workspace domain
+- No invitation needed — first Google OAuth login auto-creates the admin account
+- Domain restriction enforced server-side (hosted domain claim + email suffix validation)
+
+**Franchisee onboarding flow (invitation-only — no self-registration):**
 1. Katalyst account manager creates a franchisee record in the admin dashboard
 2. System sends invitation email with a secure link
-3. Franchisee clicks link, sets password, completes onboarding questions (experience tier detection)
+3. Franchisee clicks link, completes account setup and onboarding questions (experience tier detection)
 4. Franchisee is now active with their recommended experience tier
 
-Franchisor admins are also invited by Katalyst. Only Katalyst super-admins provision other Katalyst admins.
+Franchisor admins are also invited by Katalyst.
 
-This simplifies authentication significantly — no spam accounts, no "which email did I use" problem, no email verification flows needed. The invitation IS the verification. It also reinforces FTC compliance: the tool is only available to post-agreement franchisees, and access is explicitly granted.
+This simplifies authentication significantly — Katalyst admins use existing Google Workspace accounts (no password management), and franchisees are invitation-only (no spam accounts, no "which email did I use" problem). The invitation IS the verification for franchisees. It also reinforces FTC compliance: the tool is only available to post-agreement franchisees, and access is explicitly granted.
 
 ### Experience Tier Persistence
 
@@ -513,7 +518,7 @@ The ever-present booking link is configurable at the **franchisee-to-account-man
 **MVP — minimal integrations:**
 - Consultant booking: Configurable external URL per account manager (no API integration)
 - PDF generation: Server-side document rendering for lender-grade output
-- Authentication: Invitation-based with secure link + password setup
+- Authentication: Google OAuth for Katalyst admins (passport-google-oauth20); invitation-based for franchisees/franchisors
 
 **Post-MVP candidates:**
 - Accounting software (QuickBooks, Xero) for actuals import
@@ -686,9 +691,9 @@ This section defines THE CAPABILITY CONTRACT for the entire product. UX designer
 ### 5. User Access & Authentication
 
 - **FR28:** Katalyst admin can create franchisee invitations that send a secure link for account setup
-- **FR29:** Invited franchisee can complete a guided onboarding experience that includes account setup (password creation) and experience assessment questions that inform their initial tier recommendation
+- **FR29:** Invited franchisee can complete a guided onboarding experience that includes account setup and experience assessment questions that inform their initial tier recommendation
 - **FR30:** Katalyst admin can create franchisor admin invitations for a specific brand
-- **FR31:** Users can authenticate with email and password to access the system
+- **FR31:** Users can authenticate to access the system (Katalyst admins via Google OAuth restricted to @katgroupinc.com domain; franchisees/franchisors via invitation-based auth — mechanism TBD)
 - **FR32:** System enforces role-based data isolation — franchisees see only their own data, franchisor admins see only their brand's data, Katalyst admins see all data
 
 ### 6. Data Sharing & Privacy
@@ -748,7 +753,7 @@ This section defines THE CAPABILITY CONTRACT for the entire product. UX designer
 ### Security
 
 - **NFR6:** All data transmitted over HTTPS/TLS — no unencrypted connections
-- **NFR7:** Passwords hashed using industry-standard algorithms (bcrypt or equivalent) — never stored in plaintext
+- **NFR7:** Passwords hashed using industry-standard algorithms (bcrypt or equivalent) — never stored in plaintext (applies to franchisee accounts if password-based auth is used; Katalyst admins authenticate via Google OAuth)
 - **NFR8:** Session tokens expire after a reasonable inactivity period, with configurable timeout
 - **NFR9:** Every API endpoint enforces role-based access control — no endpoint returns data the requesting user's role should not see
 - **NFR10:** Franchisee data isolation enforced at the database query level — queries always scoped to the authenticated user's permissions, not filtered after retrieval

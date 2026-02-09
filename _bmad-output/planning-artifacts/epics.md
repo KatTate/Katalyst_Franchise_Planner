@@ -55,7 +55,7 @@ This document provides the complete epic and story breakdown for the Katalyst Gr
 - FR28: Katalyst admin can create franchisee invitations that send a secure link for account setup
 - FR29: Invited franchisee can complete a guided onboarding experience that includes account setup and experience assessment questions
 - FR30: Katalyst admin can create franchisor admin invitations for a specific brand
-- FR31: Users can authenticate with email and password to access the system
+- FR31: Users can authenticate to access the system (Google OAuth for Katalyst admins; auth mechanism TBD for franchisees)
 - FR32: System enforces role-based data isolation — franchisees see only their own data, franchisor admins see only their brand's data, Katalyst admins see all data
 
 **6. Data Sharing & Privacy**
@@ -107,7 +107,7 @@ This document provides the complete epic and story breakdown for the Katalyst Gr
 
 **Security**
 - NFR6: All data transmitted over HTTPS/TLS
-- NFR7: Passwords hashed using bcrypt — never stored in plaintext
+- NFR7: Passwords hashed using bcrypt — never stored in plaintext (applies to franchisee accounts; Katalyst admins use Google OAuth)
 - NFR8: Session tokens expire after a reasonable inactivity period, with configurable timeout
 - NFR9: Every API endpoint enforces role-based access control
 - NFR10: Franchisee data isolation enforced at the database query level
@@ -144,7 +144,7 @@ This document provides the complete epic and story breakdown for the Katalyst Gr
 - Starter template: Replit Full-Stack JS Template (TypeScript, React 18, Vite, Express 5, PostgreSQL, Drizzle ORM, shadcn/ui, TanStack React Query)
 - JSONB storage for financial_inputs with per-field metadata pattern (value, source, last_modified_at, is_custom)
 - Controlled rounding strategy: currency to 2 decimal places, percentages stored as decimals with 1 decimal display
-- Invitation-only auth via Passport.js with session stored in PostgreSQL (connect-pg-simple)
+- Dual auth: Google OAuth (passport-google-oauth20) for Katalyst admins (@katgroupinc.com domain); invitation-based auth for franchisees/franchisors. Sessions stored in PostgreSQL (connect-pg-simple)
 - Three-layer RBAC: route-level middleware, query-level scoping, response-level projection
 - RESTful API with standardized error responses and Zod validation
 - Client-side debounced auto-save (2-second debounce) with PATCH partial updates
@@ -215,7 +215,7 @@ This document provides the complete epic and story breakdown for the Katalyst Gr
 | FR28 | Epic 1 | Katalyst admin creates franchisee invitations |
 | FR29 | Epic 1 | Guided onboarding with account setup and assessment |
 | FR30 | Epic 1 | Katalyst admin creates franchisor admin invitations |
-| FR31 | Epic 1 | Email/password authentication |
+| FR31 | Epic 1 | Authentication (Google OAuth for Katalyst admins; method TBD for franchisees) |
 | FR32 | Epic 1 | Role-based data isolation |
 | FR33 | Epic 8 | View description of data shared with franchisor |
 | FR34 | Epic 8 | Opt in to share financial details with franchisor |
@@ -309,11 +309,11 @@ So that all authentication and user management features have the data layer they
 
 **Given** the Replit full-stack JS template is in place
 **When** the database schema is pushed
-**Then** the following tables exist: `users` (id, email, password_hash, role, brand_id, display_name, onboarding_completed, preferred_tier, created_at), `sessions` (connect-pg-simple session store), `invitations` (id, email, role, brand_id, token, expires_at, accepted_at, created_by)
+**Then** the following tables exist: `users` (id, email, display_name, profile_image_url, role, brand_id, onboarding_completed, preferred_tier, created_at), `sessions` (connect-pg-simple session store), `brands` (id, name, slug, created_at), `invitations` (id, email, role, brand_id, token, expires_at, accepted_at, created_by, created_at)
 **And** Drizzle insert schemas and types are exported from `shared/schema.ts`
-**And** Passport.js is configured with local strategy and session serialization
+**And** Passport.js is configured with Google OAuth strategy (passport-google-oauth20) restricted to @katgroupinc.com domain, with session serialization
 **And** the Express app uses session middleware backed by PostgreSQL
-**And** a seed script creates the initial Katalyst admin account (email from environment variable) for platform bootstrap — this is the entry point for the entire invitation chain
+**And** Katalyst admin users can authenticate via Google OAuth — first login auto-creates their account with `katalyst_admin` role
 
 ### Story 1.2: Invitation Creation by Admin
 
@@ -340,9 +340,9 @@ So that I can access the Katalyst Growth Planner.
 **Acceptance Criteria:**
 
 **Given** I have a valid, unexpired invitation link
-**When** I visit the invitation URL and submit my password
+**When** I visit the invitation URL and complete account setup
 **Then** my user account is created with the role and brand specified in the invitation
-**And** my password is hashed with bcrypt (cost factor 12)
+**And** my password is hashed with bcrypt (cost factor 12) _(if password-based auth is chosen for franchisee accounts — auth mechanism TBD)_
 **And** the invitation token is marked as accepted and cannot be reused
 **And** I am automatically logged in after account creation
 **And** expired invitation tokens display a clear error message
@@ -351,19 +351,20 @@ So that I can access the Katalyst Growth Planner.
 ### Story 1.4: Login, Logout & Session Management
 
 As a registered user,
-I want to log in with my email and password and maintain my session,
+I want to log in and maintain my session,
 So that I can securely access the platform across visits.
 
 **Acceptance Criteria:**
 
-**Given** I have a registered account
-**When** I submit valid credentials to POST `/api/auth/login`
+**Given** I am a Katalyst admin with a @katgroupinc.com Google account
+**When** I click "Sign in with Google" and complete Google OAuth
 **Then** a session is created and a session cookie is set
-**And** GET `/api/auth/me` returns my user profile (id, email, role, brand_id, display_name)
-**And** invalid credentials return 401 with a plain-language error message
+**And** GET `/api/auth/me` returns my user profile (id, email, role, brand_id, display_name, profile_image_url)
+**And** non-@katgroupinc.com accounts are rejected with a clear error message
 **And** POST `/api/auth/logout` destroys the session
 **And** sessions expire after configurable inactivity period (NFR8)
 **And** the login page is styled with brand theming if a brand context is available
+**And** franchisee/franchisor login flow is defined in Stories 1.2-1.3 (auth mechanism TBD)
 
 ### Story 1.5: Role-Based Access Control Middleware
 
