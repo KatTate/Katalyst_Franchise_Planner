@@ -1,6 +1,6 @@
 # Story 2.3: Brand Identity & Dynamic Theming
 
-Status: in-progress
+Status: done
 
 ## Story
 
