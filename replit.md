@@ -136,7 +136,7 @@ _bmad-output/             # Generated artifacts go here
 - 2026-02-09: Story 1.1 contexted with Google OAuth approach for Katalyst admin auth
 - 2026-02-09: Correct Course workflow executed — Sprint Change Proposal created and applied. 23 edits across architecture.md (14), epics.md (6), prd.md (3). Auth model updated from universal email/password to dual model: Google OAuth for Katalyst admins + invitation-based for franchisees
 - 2026-02-09: **Story 1.3 IMPLEMENTED** — Invitation acceptance & account creation with password-based auth (bcrypt cost 12) for franchisees/franchisors. Added password_hash column, validate/accept API endpoints, frontend /invite/:token page
-- 2026-02-09: **Story 1.2 IMPLEMENTED** — Invitation creation API (POST/GET /api/invitations), inline RBAC middleware, cryptographic tokens, duplicate prevention, franchisor scoping
+- 2026-02-09: **Story 1.2 REMEDIATED** — ACs rewritten from API-style to UI-interaction-style. Full Invitation Management UI built: sidebar navigation, create form (email, role, brand selector), invitation table (email, role, brand, status, expiry), copy link action, empty/loading/error states, role-based visibility. Backend API unchanged (POST/GET /api/invitations, GET /api/brands added).
 - 2026-02-09: **Story 1.1 IMPLEMENTED** — Project initialization & auth database schema
   - Database: `brands`, `users` (no password_hash, has profile_image_url), `invitations` tables created
   - Auth: Google OAuth via passport-google-oauth20 with @katgroupinc.com domain restriction (hd param + email suffix check)
@@ -150,7 +150,7 @@ _bmad-output/             # Generated artifacts go here
 ## Current Phase: Implementation — Sprint 1
 
 - **Story 1.1:** IMPLEMENTED (dev login bypass active — Google OAuth ready when creds are added)
-- **Story 1.2:** IMPLEMENTED — Invitation creation API (POST/GET /api/invitations) with RBAC, token generation, duplicate prevention
+- **Story 1.2:** IMPLEMENTED — Full UI + API. Invitation Management page at /admin/invitations with create form, table, copy link. Sidebar navigation with role-based visibility. Backend: POST/GET /api/invitations, GET /api/brands
 - **Story 1.3:** IMPLEMENTED — Invitation acceptance & account creation
   - Schema: Added nullable `password_hash` to users table (Katalyst admins use Google OAuth, franchisees/franchisors use passwords)
   - **Auth mechanism decided:** Password-based with bcrypt (cost 12) for franchisee/franchisor accounts
