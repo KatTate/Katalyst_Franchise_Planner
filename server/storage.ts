@@ -42,7 +42,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createUser(insertUser: InsertUser): Promise<User> {
-    const [user] = await db.insert(users).values(insertUser).returning();
+    const [user] = await db.insert(users).values(insertUser as any).returning();
     return user;
   }
 
@@ -69,7 +69,7 @@ export class DatabaseStorage implements IStorage {
         email: profile.email,
         displayName: profile.displayName,
         profileImageUrl: profile.profileImageUrl,
-        role: "katalyst_admin",
+        role: "katalyst_admin" as const,
         onboardingCompleted: false,
       })
       .returning();
@@ -82,7 +82,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createInvitation(invitation: InsertInvitation): Promise<Invitation> {
-    const [created] = await db.insert(invitations).values(invitation).returning();
+    const [created] = await db.insert(invitations).values(invitation as any).returning();
     return created;
   }
 

@@ -135,4 +135,17 @@ _bmad-output/             # Generated artifacts go here
 - 2026-02-09: Epics & Stories completed — 36 stories across 8 MVP epics, 58/58 FRs covered
 - 2026-02-09: Story 1.1 contexted with Google OAuth approach for Katalyst admin auth
 - 2026-02-09: Correct Course workflow executed — Sprint Change Proposal created and applied. 23 edits across architecture.md (14), epics.md (6), prd.md (3). Auth model updated from universal email/password to dual model: Google OAuth for Katalyst admins + invitation-based for franchisees
+- 2026-02-09: **Story 1.1 IMPLEMENTED** — Project initialization & auth database schema
+  - Database: `brands`, `users` (no password_hash, has profile_image_url), `invitations` tables created
+  - Auth: Google OAuth via passport-google-oauth20 with @katgroupinc.com domain restriction (hd param + email suffix check)
+  - Backend routes: `/api/auth/google`, `/api/auth/google/callback`, `POST /api/auth/logout`, `GET /api/auth/me`
+  - Frontend: Login page with Google sign-in button, protected dashboard, `useAuth()` hook
+  - Session: PostgreSQL-backed via connect-pg-simple with 24h expiry
+  - Removed: bcrypt, passport-local, seed.ts — replaced with Google OAuth self-registration
+  - Env vars needed: GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET (from Google Cloud Console)
+
+## Current Phase: Implementation — Sprint 1
+
+- **Story 1.1:** IMPLEMENTED (pending Google OAuth credentials for live testing)
+- **Story 1.2-1.8:** Pending
 <!-- BMAD-METHOD-END -->
