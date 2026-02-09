@@ -48,7 +48,7 @@ development_status:
   1-4-login-logout-session-management: done
   1-5-role-based-access-control-middleware: done
   1-6-franchisee-onboarding-tier-recommendation: done
-  epic-1-retrospective: optional
+  epic-1-retrospective: done
 
   # Epic 2: Brand Configuration & Administration
   epic-2: backlog
