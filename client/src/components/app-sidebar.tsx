@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useLocation } from "wouter";
 import { useAuth } from "@/hooks/use-auth";
+import { useBrandTheme } from "@/hooks/use-brand-theme";
 import { Home, Mail, Building2, LogOut } from "lucide-react";
 import {
   Sidebar,
@@ -11,8 +12,10 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
+  SidebarHeader,
   SidebarFooter,
 } from "@/components/ui/sidebar";
+import { Separator } from "@/components/ui/separator";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import {
@@ -28,14 +31,20 @@ import {
 
 export function AppSidebar() {
   const { user, logout } = useAuth();
+  const { brand } = useBrandTheme();
   const [location, setLocation] = useLocation();
   const [showLogoutDialog, setShowLogoutDialog] = useState(false);
+  const [logoError, setLogoError] = useState(false);
 
   if (!user) return null;
 
   const isAdmin = user.role === "katalyst_admin" || user.role === "franchisor";
-
   const isKatalystAdmin = user.role === "katalyst_admin";
+  const hasBrandContext = !!brand && !isKatalystAdmin;
+  const brandLabel = hasBrandContext
+    ? (brand.displayName || brand.name)
+    : "Katalyst Growth Planner";
+  const showBrandLogo = hasBrandContext && brand.logoUrl && !logoError;
 
   const navItems = [
     { title: "Dashboard", url: "/", icon: Home, visible: true },
@@ -55,9 +64,20 @@ export function AppSidebar() {
   return (
     <>
       <Sidebar>
+        {showBrandLogo && (
+          <SidebarHeader className="p-4">
+            <img
+              src={brand.logoUrl!}
+              alt={brandLabel}
+              className="max-h-10 object-contain"
+              onError={() => setLogoError(true)}
+              data-testid="img-brand-logo"
+            />
+          </SidebarHeader>
+        )}
         <SidebarContent>
           <SidebarGroup>
-            <SidebarGroupLabel>Katalyst Growth Planner</SidebarGroupLabel>
+            <SidebarGroupLabel data-testid="text-sidebar-label">{brandLabel}</SidebarGroupLabel>
             <SidebarGroupContent>
               <SidebarMenu>
                 {navItems.map((item) => (
@@ -77,6 +97,18 @@ export function AppSidebar() {
           </SidebarGroup>
         </SidebarContent>
         <SidebarFooter>
+          {hasBrandContext && (
+            <div className="px-3 pb-2">
+              <Separator className="mb-2" />
+              <p
+                className="text-xs"
+                style={{ color: "hsl(var(--katalyst-brand))" }}
+                data-testid="text-powered-by-katalyst"
+              >
+                Powered by Katalyst
+              </p>
+            </div>
+          )}
           <div className="flex items-center gap-2 p-2">
             <Avatar className="h-8 w-8">
               {user.profileImageUrl && (
