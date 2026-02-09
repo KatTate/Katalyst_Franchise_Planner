@@ -30,6 +30,15 @@ Validate that a story implementation is complete and ready for code review. This
 - [ ] **No regressions**: All existing tests still pass
 - [ ] **Code quality**: Implementation follows project coding standards and conventions
 
+## User-Facing Delivery
+
+_Skip this section ONLY if the story's "As a..." role is explicitly a developer or the story is purely infrastructure/backend with no user interaction._
+
+- [ ] **UI exists for user actions**: Every acceptance criterion that describes a user action (filling a form, clicking a button, viewing a list) has a corresponding UI component that a user can interact with
+- [ ] **Not API-only**: The story was NOT implemented as API endpoints alone — if ACs describe user behavior, a usable interface was built
+- [ ] **UI visually verified**: The UI components were loaded in a browser and visually confirmed to work (not just tested via API calls or curl)
+- [ ] **UI states handled**: Error states, loading states, empty states, and success feedback are implemented in the UI
+
 ## Documentation & Traceability
 
 - [ ] **Dev Agent Record updated**: Completion Notes summarize what was built and key decisions

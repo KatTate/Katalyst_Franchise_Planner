@@ -8,7 +8,7 @@ thisStepFile: './step-06-resolve-findings.md'
 
 # Step 6: Resolve Findings
 
-**Goal:** Handle adversarial review findings interactively, apply fixes, finalize tech-spec.
+**Goal:** Handle review findings interactively, apply fixes, finalize tech-spec.
 
 ---
 
@@ -19,7 +19,7 @@ From previous steps:
 - `{baseline_commit}` - Git HEAD at workflow start
 - `{execution_mode}` - "tech-spec" or "direct"
 - `{tech_spec_path}` - Tech-spec file (if Mode A)
-- Findings table from step-05
+- Findings from step-05 review
 
 ---
 
@@ -95,7 +95,7 @@ If `{execution_mode}` is "tech-spec":
 3. Add review notes:
    ```
    ## Review Notes
-   - Adversarial review completed
+   - Code review completed
    - Findings: {count} total, {fixed} fixed, {skipped} skipped
    - Resolution approach: {walk-through/auto-fix/skip}
    ```

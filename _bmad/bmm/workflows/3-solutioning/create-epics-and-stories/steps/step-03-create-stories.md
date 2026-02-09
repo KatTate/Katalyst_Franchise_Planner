@@ -134,6 +134,16 @@ _Epic 2: Content Creation_
 - Story: "Login UI (depends on Story 1.3 API endpoint)" (future dependency!)
 - Story: "Edit post (requires Story 1.4 to be implemented first)" (wrong order!)
 
+**🖥️ USER-FACING STORY PRINCIPLE:**
+If the story's "As a..." role is an end user (not a developer), the story MUST deliver a usable interface. API endpoints alone are NOT a complete story for end users.
+
+- ❌ WRONG AC: "Given I am logged in When I submit POST /api/invitations with email, role, and brand_id Then a new invitation is created" (this describes an API call, not a user action)
+- ✅ RIGHT AC: "Given I am logged in and on the Invitation Management page When I fill out the invitation form with email, role, and brand and click Send Then a new invitation is created and appears in my invitation list"
+- ❌ WRONG AC: "Given I submit GET /api/invitations Then I receive a list of all invitations" (API spec, not user behavior)
+- ✅ RIGHT AC: "Given I am on the Invitation Management page Then I can see a table of all invitations with their status, email, role, and expiry date"
+
+**Rule: ACs for end-user stories must describe what the user SEES and DOES on screen — form fields, buttons, pages, tables, messages — never HTTP methods or endpoint paths.**
+
 ### 3. Process Epics Sequentially
 
 For each epic in the approved epics_list:
@@ -169,6 +179,7 @@ For each story in the epic:
 - Each AC should be independently testable
 - Include edge cases and error conditions
 - Reference specific requirements when applicable
+- **CRITICAL: If the story's "As a..." role is an end user (not a developer), ACs MUST describe user interactions with the UI (screens, forms, buttons, messages) — NEVER reference HTTP methods, endpoint paths, or API request/response formats. API details belong in Dev Notes, not in ACs.**
 
 #### D. Collaborative Review
 

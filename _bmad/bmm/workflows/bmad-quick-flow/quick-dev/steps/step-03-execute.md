@@ -1,6 +1,6 @@
 ---
 name: 'step-03-execute'
-description: 'Execute implementation - iterate through tasks, write code, run tests'
+description: 'Execute implementation — work from acceptance criteria and context, not a checkbox sequence'
 
 workflow_path: '{project-root}/_bmad/bmm/workflows/bmad-quick-flow/quick-dev'
 thisStepFile: './step-03-execute.md'
@@ -9,9 +9,9 @@ nextStepFile: './step-04-self-check.md'
 
 # Step 3: Execute Implementation
 
-**Goal:** Implement all tasks, write tests, follow patterns, handle errors.
+**Goal:** Implement the solution using acceptance criteria as the definition of done and technical context as guidance.
 
-**Critical:** Continue through ALL tasks without stopping for milestones.
+**Critical:** Work continuously without stopping for approval between logical units of work.
 
 ---
 
@@ -26,38 +26,39 @@ From previous steps:
 
 From context:
 
-- Mode A: Tasks and AC extracted from tech-spec
-- Mode B: Tasks and AC from step-02 mental plan
+- Mode A: Acceptance criteria and implementation guidance from tech-spec
+- Mode B: Acceptance criteria and context from step-02 planning
 
 ---
 
-## EXECUTION LOOP
+## IMPLEMENTATION APPROACH
 
-For each task:
+### 1. Plan Your Approach
 
-### 1. Load Context
-
-- Read files relevant to this task
-- Review patterns from project-context or observed code
-- Understand dependencies
+- Review acceptance criteria — these are the definition of done
+- Review implementation guidance and architectural constraints from spec or context
+- Identify logical groupings and dependencies
+- Decide sequencing based on your understanding of the codebase
 
 ### 2. Implement
 
-- Write code following existing patterns
+- Write code following existing patterns in the codebase
+- Follow architectural constraints from the spec or context
 - Handle errors appropriately
-- Follow conventions observed in codebase
 - Add appropriate comments where non-obvious
 
-### 3. Test
+### 3. Test Appropriately
 
-- Write tests if appropriate for the change
+- Schema, config, and infrastructure changes: verify by running them
+- Business logic and API endpoints: write tests
+- UI components: verify visually and functionally
 - Run existing tests to catch regressions
-- Verify the specific AC for this task
+- The agent decides the testing approach based on what makes sense for the change
 
-### 4. Mark Complete
+### 4. Track Progress
 
-- Check off task: `- [x] Task N`
-- Continue to next task immediately
+- Keep mental track of which acceptance criteria are satisfied
+- Continue to next logical unit of work immediately
 
 ---
 
@@ -65,10 +66,11 @@ For each task:
 
 **HALT and request guidance if:**
 
-- 3 consecutive failures on same task
+- 3 consecutive failures on same issue
 - Tests fail and fix is not obvious
 - Blocking dependency discovered
-- Ambiguity that requires user decision
+- Ambiguity in acceptance criteria that requires user decision
+- Implementation conflicts with stated architectural constraints
 
 **Do NOT halt for:**
 
@@ -80,34 +82,36 @@ For each task:
 
 ## CONTINUOUS EXECUTION
 
-**Critical:** Do not stop between tasks for approval.
+**Critical:** Do not stop between logical units of work for approval.
 
-- Execute all tasks in sequence
+- Work through the implementation continuously
 - Only halt for blocking issues
 - Tests failing = fix before continuing
-- Track all completed work for self-check
+- Track which acceptance criteria have been satisfied
 
 ---
 
 ## NEXT STEP
 
-When ALL tasks are complete (or halted on blocker), read fully and follow: `step-04-self-check.md`.
+When implementation is complete (all ACs addressed) or halted on a blocker, read fully and follow: `step-04-self-check.md`.
 
 ---
 
 ## SUCCESS METRICS
 
-- All tasks attempted
+- All acceptance criteria addressed
 - Code follows existing patterns
+- Architectural constraints from spec/context respected
 - Error handling appropriate
-- Tests written where appropriate
+- Tests written where appropriate for the task type
 - Tests passing
 - No unnecessary halts
 
 ## FAILURE MODES
 
-- Stopping for approval between tasks
-- Ignoring existing patterns
+- Stopping for approval between logical units of work
+- Ignoring existing code patterns
 - Not running tests after changes
 - Giving up after first failure
 - Not following project-context rules (if exists)
+- Ignoring architectural constraints from spec

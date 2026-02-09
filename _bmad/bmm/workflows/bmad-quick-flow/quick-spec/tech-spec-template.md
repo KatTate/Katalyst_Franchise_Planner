@@ -49,25 +49,31 @@ test_patterns: []
 
 {technical_decisions}
 
-## Implementation Plan
-
-### Tasks
-
-{tasks}
-
-### Acceptance Criteria
+## Acceptance Criteria
 
 {acceptance_criteria}
 
-## Additional Context
+## Implementation Guidance
+
+### Architecture Patterns to Follow
+
+{architecture_patterns}
+
+### Anti-Patterns and Constraints
+
+{anti_patterns}
+
+### File Change Summary
+
+{file_change_summary}
 
 ### Dependencies
 
 {dependencies}
 
-### Testing Strategy
+### Testing Guidance
 
-{testing_strategy}
+{testing_guidance}
 
 ### Notes
 

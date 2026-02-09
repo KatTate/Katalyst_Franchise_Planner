@@ -93,6 +93,13 @@
       - "Dependencies" — install what's listed, do not reinstall what's already present
     </critical>
 
+    <critical>USER-FACING STORY CHECK: Before planning, determine if this story is user-facing.
+      If the story's "As a..." role is an end user (not a developer), the implementation plan
+      MUST include UI work — pages, forms, tables, components. An end-user story implemented
+      as API-only (without a usable interface) is INCOMPLETE regardless of whether all API
+      acceptance criteria pass. If the story's Dev Notes include a "UI/UX Deliverables" section,
+      those deliverables are REQUIRED outputs.</critical>
+
     <action>Create an implementation plan based on acceptance criteria and dev notes</action>
     <action>Implement the plan, following all Dev Notes constraints</action>
 
@@ -100,6 +107,8 @@
       - Schema, config, and infrastructure tasks: verify by running them
       - Business logic and API endpoints: write tests
       - UI components: verify visually and functionally
+      - User-facing stories: MUST verify that a real user can perform the actions described
+        in the acceptance criteria through the UI — not just via API calls or curl commands
       - The agent decides the testing approach based on what makes sense
     </action>
 
@@ -112,6 +121,13 @@
     <critical>Every acceptance criterion must be verified. This is the definition of done.</critical>
 
     <action>Walk through each acceptance criterion and verify it is satisfied</action>
+
+    <critical>USER-FACING DELIVERY CHECK: If the story's "As a..." role is an end user,
+      verify that every AC can be satisfied by a user interacting with the UI — not just by
+      calling the API directly. If ACs describe user actions (filling forms, clicking buttons,
+      viewing tables) but no UI exists for those actions, the story is NOT done. Build the UI
+      before marking complete.</critical>
+
     <action>Run all existing tests to ensure no regressions</action>
     <action>Run any new tests to verify implementation correctness</action>
 

@@ -129,6 +129,18 @@
       - Any story-specific architectural decisions
     </action>
 
+    <!-- UX/UI requirements extraction for user-facing stories -->
+    <check if="story's 'As a...' role is an end user (not a developer) AND {ux_content} is available">
+      <action>From {ux_content}, extract UI/UX requirements relevant to this story:
+        - Screens, pages, or components the user interacts with
+        - Form fields, validation rules, and error states
+        - Navigation flows and how the user reaches this feature
+        - Loading states, empty states, and error displays
+        - Role-based UI visibility rules
+        - Any wireframes, mockups, or design specifications
+      </action>
+    </check>
+
     <!-- Previous story intelligence -->
     <check if="story_num > 1">
       <action>Load previous story file: {{story_dir}}/{{epic_num}}-{{previous_story_num}}-*.md</action>
@@ -166,6 +178,12 @@
     <action>Write acceptance criteria that are specific and testable.
       - File paths ARE allowed in AC when they represent verifiable outcomes (e.g., "types are exported from shared/schema.ts")
       - Do NOT use AC to dictate implementation sequence
+      - CRITICAL: If the story's "As a..." role is an END USER (not a developer), ACs MUST describe
+        what the user SEES and DOES on screen — pages, forms, buttons, tables, messages, navigation.
+        NEVER use HTTP methods (GET, POST, PUT, DELETE) or endpoint paths (/api/...) in ACs for
+        end-user stories. API details belong ONLY in Dev Notes, not in acceptance criteria.
+        Example BAD AC: "When I submit POST /api/invitations with email and role..."
+        Example GOOD AC: "When I fill out the invitation form and click Send..."
     </action>
 
     <!-- Dev Notes — the guardrails section -->
@@ -191,6 +209,17 @@
     <action>Write "File Change Summary" table — directional guidance:
       - Which files will be created, modified, or replaced
       - Brief context for each (not step-by-step instructions)
+      - CRITICAL: If the story's "As a..." role is an end user, the File Change Summary MUST include
+        frontend/UI files (pages, components, forms). A user-facing story without frontend files in
+        the change summary is INCOMPLETE. The dev agent treats this table as scope — if UI files are
+        missing, the UI will not be built.
+    </action>
+
+    <action>Write "UI/UX Deliverables" section (REQUIRED for end-user stories, skip for developer stories):
+      - List the screens, pages, or components the user will interact with
+      - Describe key UI elements: forms, tables, buttons, navigation, error states, success states
+      - Reference UX/design documents if they exist
+      - This section ensures the dev agent knows a UI is expected and what it should contain
     </action>
 
     <action>Write "Dependencies and Environment Variables":
