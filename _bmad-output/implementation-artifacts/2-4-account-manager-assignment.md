@@ -1,6 +1,6 @@
 # Story 2.4: Account Manager Assignment
 
-Status: ready-for-dev
+Status: review
 
 ## Story
 
@@ -97,7 +97,19 @@ so that each franchisee has a dedicated point of contact with a booking link.
 ## Dev Agent Record
 
 ### Agent Model Used
+Claude 4.6 Opus (Replit Agent)
 
 ### Completion Notes
+All 8 ACs verified via e2e Playwright test. Key implementation decisions:
+- Added `getKatalystAdmins()` to IStorage/DatabaseStorage with safe field projection (no passwordHash)
+- Added `GET /api/admin/account-managers` endpoint protected by requireAuth + requireRole("katalyst_admin")
+- Replaced raw ID input with Select dropdown populated from account managers endpoint
+- Client-side name resolution via Map cross-referencing admin list with franchisee accountManagerId
+- Migrated franchisees query to default fetcher pattern (getQueryFn)
+- URL validation with real-time error feedback (using URL constructor)
+- Brand defaultBookingUrl fallback when franchisee has no booking URL
 
 ### File List
+- `server/storage.ts` — Added getKatalystAdmins() to IStorage interface and DatabaseStorage
+- `server/routes.ts` — Added GET /api/admin/account-managers route
+- `client/src/pages/admin-brand-detail.tsx` — Rewrote AccountManagerTab component

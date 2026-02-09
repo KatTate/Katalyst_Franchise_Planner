@@ -4,7 +4,7 @@ import { useParams, useLocation } from "wouter";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { queryClient, apiRequest } from "@/lib/queryClient";
+import { queryClient, apiRequest, getQueryFn } from "@/lib/queryClient";
 import type { Brand, BrandParameters, StartupCostTemplate, StartupCostItem } from "@shared/schema";
 import { brandParameterSchema } from "@shared/schema";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -750,41 +750,74 @@ function BrandIdentityTab({ brand }: { brand: Brand }) {
   );
 }
 
+type AccountManager = {
+  id: string;
+  email: string;
+  displayName: string | null;
+  profileImageUrl: string | null;
+};
+
+type FranchiseeRow = {
+  id: string;
+  email: string;
+  displayName: string | null;
+  accountManagerId: string | null;
+  bookingUrl: string | null;
+};
+
 function AccountManagerTab({ brand }: { brand: Brand }) {
   const { toast } = useToast();
 
-  const { data: franchisees, isLoading: franchiseesLoading } = useQuery<Array<{
-    id: string;
-    email: string;
-    displayName: string | null;
-    accountManagerId: string | null;
-    bookingUrl: string | null;
-  }>>({
+  const { data: franchisees, isLoading: franchiseesLoading } = useQuery<FranchiseeRow[]>({
     queryKey: ["/api/brands", brand.id, "franchisees"],
-    queryFn: async () => {
-      const res = await fetch(`/api/brands/${brand.id}/franchisees`, { credentials: "include" });
-      if (!res.ok) throw new Error("Failed to load franchisees");
-      return res.json();
-    },
+    queryFn: getQueryFn({ on401: "returnNull" }),
   });
 
-  const { data: allUsers } = useQuery<Array<{
-    id: string;
-    email: string;
-    displayName: string | null;
-    role: string;
-  }>>({
-    queryKey: ["/api/brands", brand.id, "users"],
-    queryFn: async () => {
-      const res = await fetch(`/api/brands/${brand.id}/franchisees`, { credentials: "include" });
-      return res.json();
-    },
-    enabled: false,
+  const { data: accountManagers, isLoading: managersLoading } = useQuery<AccountManager[]>({
+    queryKey: ["/api/admin/account-managers"],
   });
 
   const [editingUser, setEditingUser] = useState<string | null>(null);
   const [bookingUrl, setBookingUrl] = useState("");
   const [managerId, setManagerId] = useState("");
+  const [bookingUrlError, setBookingUrlError] = useState("");
+
+  const managerMap = new Map(
+    (accountManagers || []).map((m) => [m.id, m])
+  );
+
+  function resolveManagerName(id: string | null): string {
+    if (!id) return "Unassigned";
+    const manager = managerMap.get(id);
+    if (!manager) return "Unknown";
+    return manager.displayName || manager.email;
+  }
+
+  function validateBookingUrl(url: string): boolean {
+    if (!url) return false;
+    try {
+      new URL(url);
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
+  function handleBookingUrlChange(value: string) {
+    setBookingUrl(value);
+    if (value && !validateBookingUrl(value)) {
+      setBookingUrlError("Must be a valid URL (e.g. https://calendly.com/manager)");
+    } else {
+      setBookingUrlError("");
+    }
+  }
+
+  function openEditDialog(f: FranchiseeRow) {
+    setEditingUser(f.id);
+    setBookingUrl(f.bookingUrl || brand.defaultBookingUrl || "");
+    setManagerId(f.accountManagerId || "");
+    setBookingUrlError("");
+  }
 
   const assignManager = useMutation({
     mutationFn: async ({ userId, account_manager_id, booking_url }: { userId: string; account_manager_id: string; booking_url: string }) => {
@@ -801,17 +834,19 @@ function AccountManagerTab({ brand }: { brand: Brand }) {
     },
   });
 
+  const isLoading = franchiseesLoading || managersLoading;
+
   return (
     <div className="space-y-4">
       <div>
-        <h2 className="text-lg font-semibold">Account Manager Assignment</h2>
+        <h2 className="text-lg font-semibold" data-testid="text-account-manager-heading">Account Manager Assignment</h2>
         <p className="text-sm text-muted-foreground">Assign account managers and booking URLs to franchisees</p>
       </div>
 
-      {franchiseesLoading ? (
+      {isLoading ? (
         <Card>
           <CardContent className="p-4 space-y-3">
-            {[1, 2].map((i) => (
+            {[1, 2, 3].map((i) => (
               <Skeleton key={i} className="h-12 w-full" />
             ))}
           </CardContent>
@@ -830,6 +865,7 @@ function AccountManagerTab({ brand }: { brand: Brand }) {
               <TableRow>
                 <TableHead>Franchisee</TableHead>
                 <TableHead>Email</TableHead>
+                <TableHead>Account Manager</TableHead>
                 <TableHead>Booking URL</TableHead>
                 <TableHead className="w-[100px]">Actions</TableHead>
               </TableRow>
@@ -839,16 +875,28 @@ function AccountManagerTab({ brand }: { brand: Brand }) {
                 <TableRow key={f.id} data-testid={`row-franchisee-${f.id}`}>
                   <TableCell className="font-medium">{f.displayName || "—"}</TableCell>
                   <TableCell>{f.email}</TableCell>
-                  <TableCell className="truncate max-w-[200px]">{f.bookingUrl || "—"}</TableCell>
+                  <TableCell data-testid={`text-manager-name-${f.id}`}>
+                    {f.accountManagerId ? (
+                      <span>{resolveManagerName(f.accountManagerId)}</span>
+                    ) : (
+                      <span className="text-muted-foreground">Unassigned</span>
+                    )}
+                  </TableCell>
+                  <TableCell className="truncate max-w-[200px]">
+                    {f.bookingUrl ? (
+                      <a href={f.bookingUrl} target="_blank" rel="noopener noreferrer" className="text-sm underline" data-testid={`link-booking-url-${f.id}`}>
+                        {f.bookingUrl}
+                      </a>
+                    ) : (
+                      <span className="text-muted-foreground">—</span>
+                    )}
+                  </TableCell>
                   <TableCell>
                     <Button
                       size="icon"
                       variant="ghost"
-                      onClick={() => {
-                        setEditingUser(f.id);
-                        setBookingUrl(f.bookingUrl || brand.defaultBookingUrl || "");
-                        setManagerId(f.accountManagerId || "");
-                      }}
+                      aria-label="Edit account manager"
+                      onClick={() => openEditDialog(f)}
                       data-testid={`button-assign-manager-${f.id}`}
                     >
                       <Pencil className="h-4 w-4" />
@@ -869,29 +917,38 @@ function AccountManagerTab({ brand }: { brand: Brand }) {
           </DialogHeader>
           <div className="space-y-4">
             <div className="space-y-2">
-              <Label>Account Manager ID</Label>
-              <Input
-                value={managerId}
-                onChange={(e) => setManagerId(e.target.value)}
-                placeholder="Enter account manager user ID"
-                data-testid="input-manager-id"
-              />
+              <Label>Account Manager</Label>
+              <Select value={managerId} onValueChange={setManagerId} data-testid="select-manager">
+                <SelectTrigger data-testid="select-manager-trigger">
+                  <SelectValue placeholder="Select an account manager" />
+                </SelectTrigger>
+                <SelectContent>
+                  {(accountManagers || []).map((m) => (
+                    <SelectItem key={m.id} value={m.id} data-testid={`select-manager-option-${m.id}`}>
+                      {m.displayName ? `${m.displayName} (${m.email})` : m.email}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
             <div className="space-y-2">
               <Label>Booking URL</Label>
               <Input
                 value={bookingUrl}
-                onChange={(e) => setBookingUrl(e.target.value)}
+                onChange={(e) => handleBookingUrlChange(e.target.value)}
                 placeholder="https://calendly.com/manager"
                 data-testid="input-manager-booking-url"
               />
+              {bookingUrlError && (
+                <p className="text-sm text-destructive" data-testid="text-booking-url-error">{bookingUrlError}</p>
+              )}
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setEditingUser(null)}>Cancel</Button>
+            <Button variant="outline" onClick={() => setEditingUser(null)} data-testid="button-cancel-manager">Cancel</Button>
             <Button
               onClick={() => editingUser && assignManager.mutate({ userId: editingUser, account_manager_id: managerId, booking_url: bookingUrl })}
-              disabled={!managerId || !bookingUrl || assignManager.isPending}
+              disabled={!managerId || !bookingUrl || !!bookingUrlError || assignManager.isPending}
               data-testid="button-save-manager"
             >
               {assignManager.isPending ? "Saving..." : "Assign Manager"}

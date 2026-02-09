@@ -55,6 +55,7 @@ export interface IStorage {
   assignAccountManager(franchiseeId: string, accountManagerId: string, bookingUrl: string): Promise<User>;
   getUsersByBrand(brandId: string): Promise<User[]>;
   getFranchiseesByBrand(brandId: string): Promise<User[]>;
+  getKatalystAdmins(): Promise<Array<{ id: string; email: string; displayName: string | null; profileImageUrl: string | null }>>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -241,6 +242,19 @@ export class DatabaseStorage implements IStorage {
       .select()
       .from(users)
       .where(and(eq(users.brandId, brandId), eq(users.role, "franchisee")));
+  }
+
+  async getKatalystAdmins(): Promise<Array<{ id: string; email: string; displayName: string | null; profileImageUrl: string | null }>> {
+    const admins = await db
+      .select({
+        id: users.id,
+        email: users.email,
+        displayName: users.displayName,
+        profileImageUrl: users.profileImageUrl,
+      })
+      .from(users)
+      .where(eq(users.role, "katalyst_admin"));
+    return admins;
   }
 }
 

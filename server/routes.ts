@@ -671,6 +671,16 @@ export async function registerRoutes(
     }
   );
 
+  app.get(
+    "/api/admin/account-managers",
+    requireAuth,
+    requireRole("katalyst_admin"),
+    async (_req: Request, res: Response) => {
+      const admins = await storage.getKatalystAdmins();
+      return res.json(admins);
+    }
+  );
+
   const assignAccountManagerSchema = z.object({
     account_manager_id: z.string().min(1, "Account manager is required"),
     booking_url: z.string().url("Must be a valid URL"),
