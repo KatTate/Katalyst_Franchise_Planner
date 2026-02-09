@@ -109,6 +109,8 @@ All 4 stories were verified via Playwright-based e2e tests:
 
 5. **`as any` and `as string` casts in routes/storage.** Story 2.1 introduced `as string` casts for `req.params` and `as any` for createUser calls to work around type mismatches. While pragmatic, these reduce type safety and should be addressed.
 
+6. **Inconsistent save patterns across brand detail tabs.** Story 2.1 uses 'Save All' for financial parameters, Story 2.2 uses per-item save via dialogs, Story 2.3 has 'Save Identity', and Story 2.4 uses per-franchisee assignment dialogs. While each pattern is appropriate for its content, the overall mental model for admin users isn't unified. Tab extraction should address UX consistency alongside code organization.
+
 ---
 
 ## Part 4: Action Items
@@ -118,17 +120,17 @@ All 4 stories were verified via Playwright-based e2e tests:
 1. **Execute route modularization before Epic 3**
    Owner: Charlie (Senior Dev)
    Deadline: Before Epic 3 Story 3.1 begins
-   Success criteria: `server/routes.ts` split into domain-specific route files (auth, brands, users, invitations); main routes.ts imports and registers sub-routers
+   Success criteria: `server/routes.ts` split into domain-specific route files (auth, brands, users, invitations); main routes.ts imports and registers sub-routers. **Financial engine routes must get their own dedicated router from day one in Epic 3** — do not add them to the brands router.
 
 2. **Extract brand detail tab components**
    Owner: Elena (Junior Dev)
    Deadline: Before Epic 3 Story 3.1 begins
-   Success criteria: Each tab (FinancialParametersTab, StartupCostTemplateTab, BrandIdentityTab, AccountManagerTab) lives in its own file under `client/src/components/brand/`
+   Success criteria: Each tab (FinancialParametersTab, StartupCostTemplateTab, BrandIdentityTab, AccountManagerTab) lives in its own file under `client/src/components/brand/`. **Pass the brand object as a prop to each tab** — do not create redundant `useQuery` calls in each extracted component. **Ensure UX consistency across tabs:** consistent save patterns, layout structure, and visual hierarchy so the tabbed experience feels unified despite varying interaction models (bulk save vs. per-item dialogs).
 
 3. **Validate story dependencies during epic planning**
-   Owner: Bob (Scrum Master)
+   Owner: Entire team (team agreement, facilitated by Bob)
    Deadline: Epic 3 planning phase
-   Success criteria: Each story's dependencies are explicitly listed and verified against the epic's story ordering; no mid-epic relocations
+   Success criteria: Each story's dependencies are explicitly listed and verified against the epic's story ordering; no mid-epic relocations. **Dependency mapping happens during story creation, not just AC review** — every story must declare upstream dependencies before being accepted into the sprint.
 
 ### Technical Debt
 
@@ -136,7 +138,7 @@ All 4 stories were verified via Playwright-based e2e tests:
    Owner: Charlie (Senior Dev)
    Priority: Medium
    Estimated effort: 1 hour
-   Notes: Use proper Express route typing or a typed params middleware
+   Notes: Use Express route typing with generics (`Request<{ brandId: string }>`) — this is the specific fix pattern, not a generic "remove casts" task
 
 2. **Remove `as any` cast from createUser call**
    Owner: Charlie (Senior Dev)
@@ -159,8 +161,10 @@ All 4 stories were verified via Playwright-based e2e tests:
 ### Team Agreements
 
 - Route modularization is now a blocking prerequisite for Epic 3, not an optional improvement
+- Financial engine routes get their own dedicated router — separate from brands router — from day one in Epic 3
 - All story statuses must be updated to "done" immediately after passing code review — no stories left in "review"
 - Any mid-epic story relocation must trigger an immediate sprint status update with relocation notes
+- Explicit dependency mapping is a team responsibility during story creation — every story declares upstream dependencies before sprint acceptance
 
 ---
 
@@ -168,7 +172,7 @@ All 4 stories were verified via Playwright-based e2e tests:
 
 ### Technical Setup
 
-- [ ] Modularize server/routes.ts into domain-specific routers
+- [ ] Modularize server/routes.ts into domain-specific routers (auth, brands, users, invitations) + financial-engine router scaffold
   Owner: Charlie
   Estimated: 2-3 hours
 
