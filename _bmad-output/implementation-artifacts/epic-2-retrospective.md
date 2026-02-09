@@ -165,6 +165,7 @@ All 4 stories were verified via Playwright-based e2e tests:
 - All story statuses must be updated to "done" immediately after passing code review — no stories left in "review"
 - Any mid-epic story relocation must trigger an immediate sprint status update with relocation notes
 - Explicit dependency mapping is a team responsibility during story creation — every story declares upstream dependencies before sprint acceptance
+- Tab UX consistency audit is a validation gate after tab extraction — quick visual audit of button placement, success feedback, and unsaved-changes handling across all four tabs
 
 ---
 
