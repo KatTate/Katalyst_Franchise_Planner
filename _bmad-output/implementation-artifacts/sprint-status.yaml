@@ -55,7 +55,7 @@ development_status:
   2-1-brand-entity-financial-parameter-configuration: done
   2-2-startup-cost-template-management: done
   2-3-brand-identity-dynamic-theming: done
-  2-4-account-manager-assignment: backlog
+  2-4-account-manager-assignment: ready-for-dev
   2-5-brand-configuration-validation: backlog
   epic-2-retrospective: optional
 
