@@ -3,33 +3,40 @@ import { pgTable, text, varchar, boolean, timestamp, index, jsonb, integer } fro
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
+const pctParam = (label: string) =>
+  z.object({ value: z.number().min(0, `${label} must be 0 or greater`).max(1, `${label} must be at most 100%`), label: z.string(), description: z.string() });
+const currencyParam = (label: string) =>
+  z.object({ value: z.number().min(0, `${label} must be 0 or greater`), label: z.string(), description: z.string() });
+const intParam = (label: string, min = 0) =>
+  z.object({ value: z.number().min(min, `${label} must be at least ${min}`).int(`${label} must be a whole number`), label: z.string(), description: z.string() });
+
 export const brandParameterSchema = z.object({
   revenue: z.object({
-    monthly_auv: z.object({ value: z.number(), label: z.string(), description: z.string() }),
-    year1_growth_rate: z.object({ value: z.number(), label: z.string(), description: z.string() }),
-    year2_growth_rate: z.object({ value: z.number(), label: z.string(), description: z.string() }),
-    starting_month_auv_pct: z.object({ value: z.number(), label: z.string(), description: z.string() }),
+    monthly_auv: currencyParam("Monthly AUV"),
+    year1_growth_rate: pctParam("Year 1 Growth Rate"),
+    year2_growth_rate: pctParam("Year 2 Growth Rate"),
+    starting_month_auv_pct: pctParam("Starting Month AUV %"),
   }),
   operating_costs: z.object({
-    cogs_pct: z.object({ value: z.number(), label: z.string(), description: z.string() }),
-    labor_pct: z.object({ value: z.number(), label: z.string(), description: z.string() }),
-    rent_monthly: z.object({ value: z.number(), label: z.string(), description: z.string() }),
-    utilities_monthly: z.object({ value: z.number(), label: z.string(), description: z.string() }),
-    insurance_monthly: z.object({ value: z.number(), label: z.string(), description: z.string() }),
-    marketing_pct: z.object({ value: z.number(), label: z.string(), description: z.string() }),
-    royalty_pct: z.object({ value: z.number(), label: z.string(), description: z.string() }),
-    ad_fund_pct: z.object({ value: z.number(), label: z.string(), description: z.string() }),
-    other_monthly: z.object({ value: z.number(), label: z.string(), description: z.string() }),
+    cogs_pct: pctParam("COGS %"),
+    labor_pct: pctParam("Labor %"),
+    rent_monthly: currencyParam("Monthly Rent"),
+    utilities_monthly: currencyParam("Monthly Utilities"),
+    insurance_monthly: currencyParam("Monthly Insurance"),
+    marketing_pct: pctParam("Marketing %"),
+    royalty_pct: pctParam("Royalty %"),
+    ad_fund_pct: pctParam("Ad Fund %"),
+    other_monthly: currencyParam("Other Monthly"),
   }),
   financing: z.object({
-    loan_amount: z.object({ value: z.number(), label: z.string(), description: z.string() }),
-    interest_rate: z.object({ value: z.number(), label: z.string(), description: z.string() }),
-    loan_term_months: z.object({ value: z.number(), label: z.string(), description: z.string() }),
-    down_payment_pct: z.object({ value: z.number(), label: z.string(), description: z.string() }),
+    loan_amount: currencyParam("Loan Amount"),
+    interest_rate: pctParam("Interest Rate"),
+    loan_term_months: intParam("Loan Term", 0),
+    down_payment_pct: pctParam("Down Payment %"),
   }),
   startup_capital: z.object({
-    working_capital_months: z.object({ value: z.number(), label: z.string(), description: z.string() }),
-    depreciation_years: z.object({ value: z.number(), label: z.string(), description: z.string() }),
+    working_capital_months: intParam("Working Capital Months", 0),
+    depreciation_years: intParam("Depreciation Years", 0),
   }),
 });
 
