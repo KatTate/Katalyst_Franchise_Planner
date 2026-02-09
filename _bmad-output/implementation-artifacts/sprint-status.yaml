@@ -51,9 +51,9 @@ development_status:
   epic-1-retrospective: done
 
   # Epic 2: Brand Configuration & Administration
-  epic-2: backlog
-  2-1-brand-entity-financial-parameter-configuration: backlog
-  2-2-startup-cost-template-management: backlog
+  epic-2: in-progress
+  2-1-brand-entity-financial-parameter-configuration: done
+  2-2-startup-cost-template-management: ready-for-dev
   2-3-brand-identity-dynamic-theming: backlog
   2-4-account-manager-assignment: backlog
   2-5-brand-configuration-validation: backlog
