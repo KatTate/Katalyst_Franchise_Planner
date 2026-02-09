@@ -3,18 +3,58 @@ import { useLocation } from "wouter";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { AlertCircle, Monitor } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Separator } from "@/components/ui/separator";
+import { AlertCircle, Monitor, LogIn } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { apiRequest, queryClient } from "@/lib/queryClient";
+import { useForm } from "react-hook-form";
+import { z } from "zod";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+
+const loginSchema = z.object({
+  email: z.string().email("Please enter a valid email address"),
+  password: z.string().min(1, "Password is required"),
+});
+
+type LoginFormValues = z.infer<typeof loginSchema>;
 
 export default function LoginPage() {
   const { isAuthenticated, isLoading } = useAuth();
   const [, setLocation] = useLocation();
   const params = new URLSearchParams(window.location.search);
   const error = params.get("error");
+  const expired = params.get("expired");
+  const [loginError, setLoginError] = useState<string | null>(null);
 
   const { data: devStatus } = useQuery<{ devMode: boolean }>({
     queryKey: ["/api/auth/dev-enabled"],
+  });
+
+  const form = useForm<LoginFormValues>({
+    resolver: zodResolver(loginSchema),
+    defaultValues: { email: "", password: "" },
+  });
+
+  const loginMutation = useMutation({
+    mutationFn: async (values: LoginFormValues) => {
+      const res = await apiRequest("POST", "/api/auth/login", values);
+      return res.json();
+    },
+    onSuccess: () => {
+      setLoginError(null);
+      queryClient.invalidateQueries({ queryKey: ["/api/auth/me"] });
+    },
+    onError: (err: Error) => {
+      const msg = err.message;
+      if (msg.includes("Invalid email or password")) {
+        setLoginError("Invalid email or password");
+      } else {
+        setLoginError("Something went wrong. Please try again.");
+      }
+    },
   });
 
   const devLoginMutation = useMutation({
@@ -53,16 +93,28 @@ export default function LoginPage() {
           </p>
         </CardHeader>
         <CardContent className="flex flex-col gap-4">
+          {expired === "true" && (
+            <div className="flex items-start gap-2 p-3 rounded-md bg-muted text-muted-foreground text-sm" data-testid="text-session-expired">
+              <AlertCircle className="h-4 w-4 mt-0.5 shrink-0" />
+              <span>Your session has expired. Please sign in again.</span>
+            </div>
+          )}
           {error === "domain_restricted" && (
             <div className="flex items-start gap-2 p-3 rounded-md bg-destructive/10 text-destructive text-sm" data-testid="text-error-domain">
               <AlertCircle className="h-4 w-4 mt-0.5 shrink-0" />
-              <span>Access is restricted to @katgroupinc.com accounts.</span>
+              <span>Only @katgroupinc.com accounts are authorized.</span>
             </div>
           )}
           {error === "auth_failed" && (
             <div className="flex items-start gap-2 p-3 rounded-md bg-destructive/10 text-destructive text-sm" data-testid="text-error-auth">
               <AlertCircle className="h-4 w-4 mt-0.5 shrink-0" />
               <span>Authentication failed. Please try again.</span>
+            </div>
+          )}
+          {loginError && (
+            <div className="flex items-start gap-2 p-3 rounded-md bg-destructive/10 text-destructive text-sm" data-testid="text-error-login">
+              <AlertCircle className="h-4 w-4 mt-0.5 shrink-0" />
+              <span>{loginError}</span>
             </div>
           )}
 
@@ -97,10 +149,75 @@ export default function LoginPage() {
                 </a>
               </Button>
               <p className="text-xs text-center text-muted-foreground">
-                Katalyst team members only (@katgroupinc.com)
+                Katalyst team members (@katgroupinc.com)
               </p>
             </>
           )}
+
+          <div className="flex items-center gap-3">
+            <Separator className="flex-1" />
+            <span className="text-xs text-muted-foreground">or</span>
+            <Separator className="flex-1" />
+          </div>
+
+          <Form {...form}>
+            <form
+              onSubmit={form.handleSubmit((values) => {
+                setLoginError(null);
+                loginMutation.mutate(values);
+              })}
+              className="flex flex-col gap-3"
+              data-testid="form-login"
+            >
+              <FormField
+                control={form.control}
+                name="email"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Email</FormLabel>
+                    <FormControl>
+                      <Input
+                        type="email"
+                        placeholder="you@example.com"
+                        data-testid="input-email"
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="password"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Password</FormLabel>
+                    <FormControl>
+                      <Input
+                        type="password"
+                        placeholder="Your password"
+                        data-testid="input-password"
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <Button
+                type="submit"
+                disabled={loginMutation.isPending}
+                data-testid="button-login"
+              >
+                <LogIn className="h-4 w-4 mr-2" />
+                {loginMutation.isPending ? "Signing in..." : "Sign In"}
+              </Button>
+              <p className="text-xs text-center text-muted-foreground">
+                Franchisee and franchisor accounts
+              </p>
+            </form>
+          </Form>
         </CardContent>
       </Card>
     </div>

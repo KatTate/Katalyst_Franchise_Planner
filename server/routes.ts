@@ -8,6 +8,7 @@ import { z } from "zod";
 import crypto from "crypto";
 import bcrypt from "bcrypt";
 import type { Invitation } from "@shared/schema";
+import { requireAuth, requireRole } from "./middleware/auth";
 
 export async function registerRoutes(
   httpServer: Server,
@@ -108,28 +109,29 @@ export async function registerRoutes(
     }
   });
 
+  app.post("/api/auth/login", (req: Request, res: Response, next: NextFunction) => {
+    passport.authenticate("local", (err: any, user: Express.User | false, info: { message: string } | undefined) => {
+      if (err) {
+        return res.status(500).json({ message: "Login failed" });
+      }
+      if (!user) {
+        return res.status(401).json({ message: info?.message || "Invalid email or password" });
+      }
+      req.login(user, (loginErr) => {
+        if (loginErr) {
+          return res.status(500).json({ message: "Login failed" });
+        }
+        return res.json(user);
+      });
+    })(req, res, next);
+  });
+
   app.get("/api/auth/me", (req, res) => {
     if (!req.isAuthenticated() || !req.user) {
       return res.status(401).json({ message: "Not authenticated" });
     }
     return res.json(req.user);
   });
-
-  function requireAuth(req: Request, res: Response, next: NextFunction) {
-    if (!req.isAuthenticated() || !req.user) {
-      return res.status(401).json({ message: "Authentication required" });
-    }
-    next();
-  }
-
-  function requireRole(...roles: Array<"franchisee" | "franchisor" | "katalyst_admin">) {
-    return (req: Request, res: Response, next: NextFunction) => {
-      if (!req.user || !roles.includes(req.user.role)) {
-        return res.status(403).json({ message: "Insufficient permissions" });
-      }
-      next();
-    };
-  }
 
   function generateSecureToken(): string {
     return crypto.randomBytes(32).toString("base64url");
@@ -344,6 +346,106 @@ export async function registerRoutes(
       return res.status(201).json(sessionUser);
     });
   });
+
+  const TIER_DESCRIPTIONS: Record<string, string> = {
+    planning_assistant: "We'll guide you through your plan with a conversational advisor. Perfect for first-time planners.",
+    forms: "Build your plan section by section with structured input forms. Great for people who know their numbers.",
+    quick_entry: "Jump right into a spreadsheet-style view for maximum speed. Ideal for experienced planners.",
+  };
+
+  const onboardingCompleteSchema = z.object({
+    franchise_experience: z.enum(["none", "some", "experienced"]),
+    financial_literacy: z.enum(["basic", "comfortable", "advanced"]),
+    planning_experience: z.enum(["first_time", "done_before", "frequent"]),
+  });
+
+  app.post(
+    "/api/onboarding/complete",
+    requireAuth,
+    async (req: Request, res: Response) => {
+      if (req.user!.role !== "franchisee") {
+        return res.status(403).json({ message: "Onboarding is only for franchisees" });
+      }
+
+      const parsed = onboardingCompleteSchema.safeParse(req.body);
+      if (!parsed.success) {
+        return res.status(400).json({
+          message: "Validation failed",
+          errors: parsed.error.errors.map((e) => ({ path: e.path.map(String), message: e.message })),
+        });
+      }
+
+      const { franchise_experience, financial_literacy, planning_experience } = parsed.data;
+
+      const experienceScores: Record<string, number> = { none: 0, some: 1, experienced: 3 };
+      const literacyScores: Record<string, number> = { basic: 0, comfortable: 1, advanced: 3 };
+      const planningScores: Record<string, number> = { first_time: 0, done_before: 1, frequent: 3 };
+
+      const totalScore =
+        experienceScores[franchise_experience] +
+        literacyScores[financial_literacy] +
+        planningScores[planning_experience];
+
+      let recommendedTier: "planning_assistant" | "forms" | "quick_entry";
+      if (totalScore <= 3) {
+        recommendedTier = "planning_assistant";
+      } else if (totalScore <= 6) {
+        recommendedTier = "forms";
+      } else {
+        recommendedTier = "quick_entry";
+      }
+
+      return res.json({
+        recommendedTier,
+        tierDescription: TIER_DESCRIPTIONS[recommendedTier],
+      });
+    }
+  );
+
+  const selectTierSchema = z.object({
+    preferred_tier: z.enum(["planning_assistant", "forms", "quick_entry"]),
+  });
+
+  app.post(
+    "/api/onboarding/select-tier",
+    requireAuth,
+    async (req: Request, res: Response) => {
+      if (req.user!.role !== "franchisee") {
+        return res.status(403).json({ message: "Onboarding is only for franchisees" });
+      }
+
+      const parsed = selectTierSchema.safeParse(req.body);
+      if (!parsed.success) {
+        return res.status(400).json({
+          message: "Validation failed",
+          errors: parsed.error.errors.map((e) => ({ path: e.path.map(String), message: e.message })),
+        });
+      }
+
+      await storage.updateUserOnboarding(req.user!.id, {
+        onboardingCompleted: true,
+        preferredTier: parsed.data.preferred_tier,
+      });
+
+      return res.json({ success: true });
+    }
+  );
+
+  app.post(
+    "/api/onboarding/skip",
+    requireAuth,
+    async (req: Request, res: Response) => {
+      if (req.user!.role !== "franchisee") {
+        return res.status(403).json({ message: "Onboarding is only for franchisees" });
+      }
+
+      await storage.updateUserOnboarding(req.user!.id, {
+        onboardingCompleted: true,
+      });
+
+      return res.json({ success: true });
+    }
+  );
 
   return httpServer;
 }

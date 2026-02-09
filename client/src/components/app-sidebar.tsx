@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { useLocation } from "wouter";
 import { useAuth } from "@/hooks/use-auth";
 import { Home, Mail, LogOut } from "lucide-react";
@@ -14,10 +15,21 @@ import {
 } from "@/components/ui/sidebar";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 export function AppSidebar() {
   const { user, logout } = useAuth();
   const [location, setLocation] = useLocation();
+  const [showLogoutDialog, setShowLogoutDialog] = useState(false);
 
   if (!user) return null;
 
@@ -38,55 +50,81 @@ export function AppSidebar() {
     : user.email[0].toUpperCase();
 
   return (
-    <Sidebar>
-      <SidebarContent>
-        <SidebarGroup>
-          <SidebarGroupLabel>Katalyst Growth Planner</SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              {navItems.map((item) => (
-                <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton
-                    isActive={location === item.url}
-                    onClick={() => setLocation(item.url)}
-                    data-testid={`nav-${item.title.toLowerCase()}`}
-                  >
-                    <item.icon />
-                    <span>{item.title}</span>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
-      </SidebarContent>
-      <SidebarFooter>
-        <div className="flex items-center gap-2 p-2">
-          <Avatar className="h-8 w-8">
-            {user.profileImageUrl && (
-              <AvatarImage src={user.profileImageUrl} alt={user.displayName || user.email} />
-            )}
-            <AvatarFallback data-testid="text-sidebar-avatar">{initials}</AvatarFallback>
-          </Avatar>
-          <div className="flex-1 min-w-0">
-            <p className="text-sm font-medium truncate" data-testid="text-sidebar-user-name">
-              {user.displayName || user.email}
-            </p>
-            <p className="text-xs text-muted-foreground truncate" data-testid="text-sidebar-user-role">
-              {user.role.replace(/_/g, " ")}
-            </p>
+    <>
+      <Sidebar>
+        <SidebarContent>
+          <SidebarGroup>
+            <SidebarGroupLabel>Katalyst Growth Planner</SidebarGroupLabel>
+            <SidebarGroupContent>
+              <SidebarMenu>
+                {navItems.map((item) => (
+                  <SidebarMenuItem key={item.title}>
+                    <SidebarMenuButton
+                      isActive={location === item.url}
+                      onClick={() => setLocation(item.url)}
+                      data-testid={`nav-${item.title.toLowerCase()}`}
+                    >
+                      <item.icon />
+                      <span>{item.title}</span>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                ))}
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        </SidebarContent>
+        <SidebarFooter>
+          <div className="flex items-center gap-2 p-2">
+            <Avatar className="h-8 w-8">
+              {user.profileImageUrl && (
+                <AvatarImage src={user.profileImageUrl} alt={user.displayName || user.email} />
+              )}
+              <AvatarFallback data-testid="text-sidebar-avatar">{initials}</AvatarFallback>
+            </Avatar>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-medium truncate" data-testid="text-sidebar-user-name">
+                {user.displayName || user.email}
+              </p>
+              <p className="text-xs text-muted-foreground truncate" data-testid="text-sidebar-user-role">
+                {user.role.replace(/_/g, " ")}
+              </p>
+            </div>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setShowLogoutDialog(true)}
+              title="Sign out"
+              data-testid="button-sidebar-logout"
+            >
+              <LogOut className="h-4 w-4" />
+            </Button>
           </div>
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={logout}
-            title="Sign out"
-            data-testid="button-sidebar-logout"
-          >
-            <LogOut className="h-4 w-4" />
-          </Button>
-        </div>
-      </SidebarFooter>
-    </Sidebar>
+        </SidebarFooter>
+      </Sidebar>
+
+      <AlertDialog open={showLogoutDialog} onOpenChange={setShowLogoutDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle data-testid="text-logout-title">Sign Out</AlertDialogTitle>
+            <AlertDialogDescription data-testid="text-logout-description">
+              You'll be signed out. Your plan is always saved.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel data-testid="button-logout-cancel">Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                setShowLogoutDialog(false);
+                logout();
+              }}
+              className="bg-destructive text-destructive-foreground hover-elevate"
+              data-testid="button-logout-confirm"
+            >
+              Sign Out
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
   );
 }
