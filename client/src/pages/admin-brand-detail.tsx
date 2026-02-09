@@ -59,7 +59,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { useToast } from "@/hooks/use-toast";
-import { ArrowLeft, Save, Plus, Pencil, Trash2, GripVertical } from "lucide-react";
+import { ArrowLeft, Save, Plus, Pencil, Trash2, ArrowUp, ArrowDown } from "lucide-react";
 
 function getDefaultBrandParameters(): BrandParameters {
   return {
@@ -299,6 +299,24 @@ function StartupCostTemplateTab({ brand }: { brand: Brand }) {
     setDeleteItemId(null);
   };
 
+  const handleMoveUp = (index: number) => {
+    if (index <= 0) return;
+    const updated = [...items];
+    [updated[index - 1], updated[index]] = [updated[index], updated[index - 1]];
+    const reindexed = updated.map((item, i) => ({ ...item, sort_order: i }));
+    setItems(reindexed);
+    saveTemplate.mutate(reindexed);
+  };
+
+  const handleMoveDown = (index: number) => {
+    if (index >= items.length - 1) return;
+    const updated = [...items];
+    [updated[index], updated[index + 1]] = [updated[index + 1], updated[index]];
+    const reindexed = updated.map((item, i) => ({ ...item, sort_order: i }));
+    setItems(reindexed);
+    saveTemplate.mutate(reindexed);
+  };
+
   const openEditDialog = (item: StartupCostItem) => {
     setEditingItem(item);
     form.reset({
@@ -352,11 +370,11 @@ function StartupCostTemplateTab({ brand }: { brand: Brand }) {
                 <TableHead>Classification</TableHead>
                 <TableHead className="text-right">Item 7 Low</TableHead>
                 <TableHead className="text-right">Item 7 High</TableHead>
-                <TableHead className="w-[100px]">Actions</TableHead>
+                <TableHead className="w-[160px]">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {items.map((item) => (
+              {items.map((item, index) => (
                 <TableRow key={item.id} data-testid={`row-startup-cost-${item.id}`}>
                   <TableCell className="font-medium" data-testid={`text-cost-name-${item.id}`}>{item.name}</TableCell>
                   <TableCell className="text-right" data-testid={`text-cost-amount-${item.id}`}>{formatCurrency(item.default_amount)}</TableCell>
@@ -369,10 +387,42 @@ function StartupCostTemplateTab({ brand }: { brand: Brand }) {
                   <TableCell className="text-right">{formatCurrency(item.item7_range_high)}</TableCell>
                   <TableCell>
                     <div className="flex items-center gap-1">
-                      <Button size="icon" variant="ghost" onClick={() => openEditDialog(item)} data-testid={`button-edit-cost-${item.id}`}>
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        onClick={() => handleMoveUp(index)}
+                        disabled={index === 0}
+                        aria-label={`Move ${item.name} up`}
+                        data-testid={`button-move-up-cost-${item.id}`}
+                      >
+                        <ArrowUp className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        onClick={() => handleMoveDown(index)}
+                        disabled={index === items.length - 1}
+                        aria-label={`Move ${item.name} down`}
+                        data-testid={`button-move-down-cost-${item.id}`}
+                      >
+                        <ArrowDown className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        onClick={() => openEditDialog(item)}
+                        aria-label={`Edit ${item.name}`}
+                        data-testid={`button-edit-cost-${item.id}`}
+                      >
                         <Pencil className="h-4 w-4" />
                       </Button>
-                      <Button size="icon" variant="ghost" onClick={() => setDeleteItemId(item.id)} data-testid={`button-delete-cost-${item.id}`}>
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        onClick={() => setDeleteItemId(item.id)}
+                        aria-label={`Delete ${item.name}`}
+                        data-testid={`button-delete-cost-${item.id}`}
+                      >
                         <Trash2 className="h-4 w-4" />
                       </Button>
                     </div>
@@ -403,6 +453,7 @@ function StartupCostTemplateTab({ brand }: { brand: Brand }) {
                     <FormControl>
                       <Input {...field} placeholder="e.g., Leasehold Improvements" data-testid="input-cost-name" />
                     </FormControl>
+                    <FormDescription>Use the Item 7 description from the FDD if applicable</FormDescription>
                     <FormMessage />
                   </FormItem>
                 )}
@@ -468,6 +519,7 @@ function StartupCostTemplateTab({ brand }: { brand: Brand }) {
                           data-testid="input-cost-item7-low"
                         />
                       </FormControl>
+                      <FormDescription>Leave blank if not in Item 7 of the FDD</FormDescription>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -489,6 +541,7 @@ function StartupCostTemplateTab({ brand }: { brand: Brand }) {
                           data-testid="input-cost-item7-high"
                         />
                       </FormControl>
+                      <FormDescription>Leave blank if not in Item 7 of the FDD</FormDescription>
                       <FormMessage />
                     </FormItem>
                   )}
