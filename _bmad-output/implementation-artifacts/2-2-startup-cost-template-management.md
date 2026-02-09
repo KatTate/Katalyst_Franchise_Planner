@@ -1,6 +1,6 @@
 # Story 2.2: Startup Cost Template Management
 
-Status: ready-for-dev
+Status: review
 
 ## Story
 
@@ -61,6 +61,8 @@ so that franchisees see accurate default cost categories with FDD Item 7 ranges 
 
 - **Existing implementation**: The Startup Cost Template feature is substantially pre-built. The schema (`startupCostItemSchema`, `startupCostTemplateSchema`), storage method (`updateStartupCostTemplate`), API endpoints (`GET/PUT /api/brands/:brandId/startup-cost-template`), and the full UI tab (`StartupCostTemplateTab` in `admin-brand-detail.tsx`) all exist and are functional for add, edit, and delete operations.
 - **Primary development work**: The main gap is **reorder functionality** (AC7). The `GripVertical` icon is already imported but unused. Implement move up/down button controls for reordering (preferred over drag-and-drop for simplicity and accessibility).
+- **Accessibility (Party Mode accepted)**: All icon-only buttons (Edit, Delete, Move Up, Move Down) MUST have `aria-label` attributes (e.g., `aria-label="Edit Equipment & Signage"`). Disable Move Up button on first row and Move Down button on last row.
+- **Help text (Party Mode accepted)**: Add help text to Item 7 Low/High fields: "Leave blank if this cost category is not included in Item 7 of the FDD." Add naming guidance to Line Item Name field.
 - **JSONB storage pattern**: The startup cost template is stored as a JSONB array on the `brands` table. Each item add/edit/delete/reorder saves the entire template array via `PUT /api/brands/:brandId/startup-cost-template`. This is the correct pattern — keep it.
 - **Schema validation**: The `startupCostItemSchema` enforces `.min(0)` on `default_amount` and includes `capex_classification` enum (`capex`, `non_capex`, `working_capital`). The client-side `startupCostFormSchema` adds the Item 7 range cross-field validation (low <= high).
 - **Route protection**: Endpoints already use `requireAuth` + `requireRole("katalyst_admin")` middleware.
@@ -74,10 +76,11 @@ so that franchisees see accurate default cost categories with FDD Item 7 ranges 
 - Table list of template line items showing: name, default amount ($), CapEx classification badge, Item 7 Low ($), Item 7 High ($), and action buttons
 - "Add Line Item" button in header area
 - Empty state card with prompt to add first item
-- **NEW: Reorder controls** — up/down arrow buttons (or use of the existing `GripVertical` icon concept) per row to move items in sort order
+- **NEW: Reorder controls** — up/down arrow buttons per row to move items in sort order; disable Move Up on first row, Move Down on last row; `aria-label` on each button
 
 **Dialog: Add/Edit Line Item (existing)**
-- Fields: Line Item Name, Default Value ($), CapEx Classification (select dropdown with tooltip description), Item 7 Low ($, optional), Item 7 High ($, optional)
+- Fields: Line Item Name (with naming guidance description), Default Value ($), CapEx Classification (select dropdown with tooltip description), Item 7 Low ($, optional, with help text), Item 7 High ($, optional, with help text)
+- Help text on Item 7 fields: "Leave blank if this cost category is not included in Item 7 of the FDD."
 - Validation: name required, amounts non-negative, Item 7 Low <= High when both provided
 - Success: toast notification on save
 
@@ -108,6 +111,7 @@ so that franchisees see accurate default cost categories with FDD Item 7 ranges 
 - **Session table**: The `session` table for `connect-pg-simple` has been dropped by drizzle-kit push in the past. If it's missing, recreate it with the SQL from Story 2.1 dev notes.
 - **sort_order management**: When reordering items, all `sort_order` values in the array must be re-indexed (0, 1, 2, ...) to maintain consistency. The existing delete handler already does this (`items.map((item, i) => ({ ...item, sort_order: i }))`). Apply the same pattern after reorder.
 - **ACs 8 and 9 (plan pre-population and immutability)**: These are satisfied by the copy-at-creation architecture pattern in Epic 3. No implementation is needed in this story — just verify the template is correctly stored and retrievable.
+- **Epic 3 handoff (Party Mode accepted)**: Epic 3 Story 3.2/3.3 MUST explicitly verify that template copy-at-creation works correctly. Sort order, Item 7 ranges, and CapEx classification must all survive the copy. Document this as a CRITICAL DEPENDENCY in Epic 3 stories.
 - **Existing `GripVertical` import**: The `GripVertical` icon is already imported in `admin-brand-detail.tsx` but unused. It can be used as a visual indicator alongside move buttons, or replaced with `ChevronUp`/`ChevronDown` arrows from lucide-react.
 - **Dev login bypass**: When `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET` are not set, the system uses a dev login bypass for testing.
 - **Item 7 range nullable**: Both `item7_range_low` and `item7_range_high` are nullable in the schema. The form handles this by converting empty strings to null. Cross-validation (low <= high) only applies when both are provided.
@@ -159,4 +163,14 @@ Claude 4.6 Opus (Replit Agent)
 
 ### Completion Notes
 
+- ACs 1-6 verified as pre-built and functional (schema, storage, routes, UI all correct)
+- AC7 (reorder): Implemented move up/down buttons with ArrowUp/ArrowDown icons, boundary disable (first/last), aria-labels, and sort_order normalization after every swap
+- Party Mode improvements applied: aria-labels on all icon buttons (Edit, Delete, Move Up, Move Down), help text on Item 7 Low/High and Line Item Name fields, Epic 3 handoff dependency documented
+- Removed unused GripVertical import
+- E2E test passed: full CRUD flow + reorder + persistence verification + cleanup
+
 ### File List
+
+- `client/src/pages/admin-brand-detail.tsx` — MODIFIED: Added reorder handlers (handleMoveUp, handleMoveDown), Move Up/Down buttons with boundary disable and aria-labels, aria-labels on Edit/Delete buttons, FormDescription help text on Line Item Name and Item 7 fields, removed unused GripVertical import
+- `_bmad-output/implementation-artifacts/2-2-startup-cost-template-management.md` — MODIFIED: Status transitions, Party Mode improvements documented, completion notes
+- `_bmad-output/implementation-artifacts/sprint-status.yaml` — MODIFIED: Story 2.2 status updated
