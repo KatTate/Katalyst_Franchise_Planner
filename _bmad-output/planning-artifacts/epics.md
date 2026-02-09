@@ -386,33 +386,76 @@ So that I can securely access the platform across visits.
 
 **Acceptance Criteria:**
 
-**Given** I am a Katalyst admin with a @katgroupinc.com Google account
-**When** I click "Sign in with Google" and complete Google OAuth
-**Then** a session is created and a session cookie is set
-**And** GET `/api/auth/me` returns my user profile (id, email, role, brand_id, display_name, profile_image_url)
-**And** non-@katgroupinc.com accounts are rejected with a clear error message
-**And** POST `/api/auth/logout` destroys the session
-**And** sessions expire after configurable inactivity period (NFR8)
-**And** the login page is styled with brand theming if a brand context is available
-**And** franchisee/franchisor login flow is defined in Stories 1.2-1.3 (auth mechanism TBD)
+**Given** I am a Katalyst admin on the login page
+**When** I click the "Sign in with Google" button and complete the Google OAuth flow with a @katgroupinc.com account
+**Then** I am redirected to the dashboard
+**And** I see my display name and profile picture in the sidebar header area
 
-### Story 1.5: Role-Based Access Control Middleware
+**Given** I am on the login page
+**When** I complete Google OAuth with a non-@katgroupinc.com account (e.g., a personal Gmail)
+**Then** I see a clear error message on the login page: "Only @katgroupinc.com accounts are authorized"
+**And** I remain on the login page, not logged in
+
+**Given** I am a franchisee or franchisor admin who has already created my account (via invitation acceptance in Story 1.3)
+**When** I visit the login page
+**Then** I see an email and password login form
+**And** I can enter my email and password and click "Sign In" to access the platform
+
+**Given** I am on the login page with the email/password form
+**When** I enter incorrect credentials and click "Sign In"
+**Then** I see an error message: "Invalid email or password"
+**And** I remain on the login page
+
+**Given** I am logged in
+**When** I click "Sign Out" in the sidebar
+**Then** I see a confirmation dialog: "You'll be signed out. Your plan is always saved."
+**And** upon confirming, I am redirected to the login page
+**And** I can no longer access any authenticated pages — navigating to a protected URL returns me to the login page
+
+**Given** I have been inactive for the configured session timeout period (NFR8)
+**When** I attempt any action or page navigation
+**Then** I see a message explaining that my session has expired for security
+**And** I am redirected to the login page where I can sign in again
+**And** after signing in, my previously saved plan data is intact (auto-save ensures no data loss)
+
+### Story 1.5: Role-Based Access Control
 
 As a platform operator,
-I want every API endpoint to enforce role-based access control,
-So that users can only see and modify data they are authorized to access (FR32).
+I want the system to enforce role-based access so users only see and modify data they are authorized for (FR32).
 
 **Acceptance Criteria:**
 
-**Given** the RBAC middleware is implemented
-**When** a request hits any protected API endpoint
-**Then** Layer 1 (route-level) checks the user's role against allowed roles and returns 403 if unauthorized
-**And** Layer 2 (query-level) automatically scopes database queries: franchisee sees only own data, franchisor sees only their brand's data, Katalyst admin sees all data
-**And** Layer 3 (response-level) filters fields based on role and data sharing status
-**And** unauthenticated requests to protected endpoints return 401
-**And** no endpoint returns data the requesting user's role should not see (NFR9, NFR10)
-**And** a franchisee cannot access another franchisee's plan data even by manipulating API parameters (direct URL, ID guessing, sequential ID enumeration)
-**And** a franchisor admin cannot access data for brands they are not assigned to
+**Given** I am logged in as a franchisee
+**When** I navigate directly to an admin-only page (e.g., /admin/invitations or /admin/brands)
+**Then** I am redirected to my dashboard
+**And** I do not see admin navigation items (such as "Invitations" or "Brands") in the sidebar
+
+**Given** I am logged in as a franchisee
+**When** I navigate to the URL of another franchisee's plan (e.g., by guessing or modifying the plan ID in the URL)
+**Then** I see a "Plan not found" message
+**And** I cannot view, edit, or infer the existence of another franchisee's data
+
+**Given** I am logged in as a franchisor admin for Brand A
+**When** I try to access data belonging to Brand B (e.g., franchisees, plans, or invitations for another brand)
+**Then** I see an "Access denied" or "Not found" message
+**And** I cannot view or modify any data outside my assigned brand
+
+**Given** I am logged in as a franchisor admin
+**When** I view the sidebar navigation
+**Then** I see only navigation items relevant to my role and brand (e.g., my brand's franchisee list, invitations for my brand)
+**And** I do not see cross-brand admin features reserved for Katalyst admins
+
+**Given** I am logged in as a Katalyst admin
+**When** I navigate to any page or data in the system
+**Then** I can view and manage data across all brands without restriction
+
+**Given** I am not logged in
+**When** I try to visit any authenticated page
+**Then** I am redirected to the login page
+
+**Given** RBAC is enforced at the API level (NFR9, NFR10)
+**When** any user attempts to access data outside their role scope — whether through the UI or by manipulating API parameters (direct URLs, ID guessing, sequential enumeration)
+**Then** the system returns no data and reveals no information about resources the user is not authorized to see
 
 ### Story 1.6: Franchisee Onboarding & Tier Recommendation
 
@@ -440,33 +483,101 @@ Katalyst admins can create franchise brands with financial parameter sets, start
 ### Story 2.1: Brand Entity & Financial Parameter Configuration
 
 As a Katalyst admin,
-I want to create a franchise brand with its financial parameter set,
+I want to create and configure a franchise brand with its financial parameter set,
 So that franchisees of that brand can plan with accurate default values (FR39).
 
 **Acceptance Criteria:**
 
-**Given** I am logged in as a Katalyst admin
-**When** I create a new brand via the admin interface
-**Then** a brand record is created with JSONB `brand_parameters` containing ~15-20 financial seed values (revenue defaults, cost percentages, growth rates, etc.)
-**And** the `brands` table includes: id, name, display_name, brand_parameters (JSONB), created_at, updated_at
-**And** I can edit existing brand financial parameters
-**And** parameter changes do not disrupt active franchisee sessions (NFR17)
-**And** the brand supports multi-brand partitioning via brand_id on all relevant tables (NFR21)
+**Given** I am logged in as a Katalyst admin and on the Brand Management page
+**When** I view the page
+**Then** I see a list of all existing brands showing name, display name, and creation date
+**And** I see a "Create New Brand" button
+
+**Given** I am on the Brand Management page
+**When** I click "Create New Brand"
+**Then** I see a brand creation form with fields for: Brand Name, Display Name, and Slug (auto-generated from name, editable)
+
+**Given** I am filling out the brand creation form
+**When** I submit the form with valid values
+**Then** the new brand appears in my brand list
+**And** I see a success confirmation message
+**And** I am taken to the brand detail page where I can configure financial parameters
+
+**Given** I submit the brand creation form with a name that already exists
+**When** I click Save
+**Then** I see a validation error indicating the brand name must be unique
+
+**Given** I am on the brand detail page
+**When** I navigate to the Financial Parameters section
+**Then** I see editable fields for the brand's financial seed values (~15-20 parameters), organized into logical categories (e.g., Revenue, Operating Costs, Startup & Capital, Financing)
+**And** each parameter has a clear label and description explaining what it controls
+**And** the specific parameter names and categories are defined in the Brand Financial Parameters Reference (see Architecture doc)
+
+**Given** I am editing financial parameters for an existing brand
+**When** I change a parameter value (e.g., update "Labor Cost %" from 28% to 30%) and click Save
+**Then** I see a success message confirming the parameters were updated
+**And** the updated values are displayed in the form
+
+**Given** I submit a parameter form with missing required values or invalid entries (e.g., a negative percentage)
+**When** I click Save
+**Then** I see inline validation errors next to the affected fields
+**And** the form is not submitted until errors are corrected
+
+**Given** franchisees are actively planning with the brand's current parameters
+**When** I update a financial parameter value
+**Then** the change applies to new plans created after the update
+**And** existing plans in progress continue using the parameters they were initialized with — no disruption to active sessions (NFR17)
 
 ### Story 2.2: Startup Cost Template Management
 
 As a Katalyst admin,
-I want to define the startup cost template for a brand,
-So that franchisees see accurate default line items with proper classifications (FR40).
+I want to define and manage the startup cost line items for a brand,
+So that franchisees see accurate default cost categories with FDD Item 7 ranges when planning (FR40).
 
 **Acceptance Criteria:**
 
-**Given** a brand exists in the system
-**When** I configure the startup cost template
-**Then** I can add default line items with: name, default value, CapEx/non-CapEx classification, Item 7 low range, Item 7 high range
-**And** I can reorder, edit, and remove template line items
-**And** changes to the template affect new plans but do not alter existing plans in progress
-**And** each line item's Item 7 range is stored for display alongside the franchisee's estimate (FR4)
+**Given** I am viewing a brand's detail page
+**When** I navigate to the Startup Cost Template section
+**Then** I see a list of all template line items showing: name, default value, CapEx/non-CapEx classification, Item 7 low range, and Item 7 high range
+**And** I see an "Add Line Item" button
+**And** if no line items exist, I see an empty state prompting me to add the first item
+
+**Given** I am on the Startup Cost Template section
+**When** I click "Add Line Item"
+**Then** I see a form with fields for: Line Item Name, Default Value (currency), CapEx toggle (with tooltip: "CapEx costs are depreciated over time; non-CapEx costs are expensed in Year 1"), Item 7 Low Range (currency), and Item 7 High Range (currency)
+
+**Given** I have filled out the Add Line Item form with valid values
+**When** I click Save
+**Then** the new line item appears in the template list
+**And** I see a success message confirming the item was added
+
+**Given** I submit the Add Line Item form with invalid data (e.g., blank name, Item 7 Low Range greater than High Range)
+**When** I click Save
+**Then** I see inline validation errors explaining what needs to be corrected
+
+**Given** I have an existing line item in the template
+**When** I click Edit on that line item
+**Then** the form reopens with the current values pre-filled
+**And** I can modify any field and save the changes
+
+**Given** I have an existing line item in the template
+**When** I click Delete on that line item
+**Then** I see a confirmation dialog: "Remove '[Line Item Name]' from the template? This will not affect existing plans."
+**And** upon confirming, the line item is removed from the list
+
+**Given** I have multiple line items in the template
+**When** I reorder the items (e.g., by dragging or using move controls)
+**Then** the new order is reflected immediately in the list
+**And** the order is persisted
+
+**Given** the startup cost template is complete for a brand
+**When** a new franchisee creates a plan with this brand
+**Then** the franchisee's startup cost section is pre-populated with all template line items in the configured order
+**And** each line item shows the FDD Item 7 range alongside the brand default and the franchisee's own estimate (FR4)
+
+**Given** I update the template after franchisees have already started plans
+**When** an existing franchisee views their plan
+**Then** their existing startup cost entries remain unchanged — template changes only affect newly created plans
 
 ### Story 2.3: Brand Identity & Dynamic Theming
 

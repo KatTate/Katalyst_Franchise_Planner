@@ -137,6 +137,7 @@ _bmad-output/             # Generated artifacts go here
 - 2026-02-09: Correct Course workflow executed — Sprint Change Proposal created and applied. 23 edits across architecture.md (14), epics.md (6), prd.md (3). Auth model updated from universal email/password to dual model: Google OAuth for Katalyst admins + invitation-based for franchisees
 - 2026-02-09: **Story 1.3 IMPLEMENTED** — Invitation acceptance & account creation with password-based auth (bcrypt cost 12) for franchisees/franchisors. Added password_hash column, validate/accept API endpoints, frontend /invite/:token page
 - 2026-02-09: **Story 1.2 REMEDIATED** — ACs rewritten from API-style to UI-interaction-style. Full Invitation Management UI built: sidebar navigation, create form (email, role, brand selector), invitation table (email, role, brand, status, expiry), copy link action, empty/loading/error states, role-based visibility. Backend API unchanged (POST/GET /api/invitations, GET /api/brands added).
+- 2026-02-09: **Stories 1.4, 1.5, 2.1, 2.2 AC REMEDIATION** — Party Mode consensus rewrote all ACs from API-spec to UI-interaction style. Key decisions: franchisee re-login added to 1.4, live summary deferred to post-Epic 3, Preview as Franchisee deferred post-MVP, financial parameters reference separate doc
 - 2026-02-09: **Story 1.1 IMPLEMENTED** — Project initialization & auth database schema
   - Database: `brands`, `users` (no password_hash, has profile_image_url), `invitations` tables created
   - Auth: Google OAuth via passport-google-oauth20 with @katgroupinc.com domain restriction (hd param + email suffix check)
@@ -158,5 +159,10 @@ _bmad-output/             # Generated artifacts go here
   - Frontend: /invite/:token page with form validation, error states, success redirect
   - Auto-login after account creation via Passport session
   - Dependencies added: bcrypt, @types/bcrypt
-- **Story 1.4-1.8:** Pending
+- **Stories 1.4, 1.5, 2.1, 2.2:** ACs REMEDIATED — rewritten from API-spec style to UI-interaction style via Party Mode consensus
+  - 1.4: Now includes franchisee/franchisor password login (filling re-login gap), Google OAuth, logout confirmation dialog, session timeout messaging
+  - 1.5: Shifted from middleware layers to user-visible outcomes (redirects, hidden nav, access denied messages, API-level enforcement)
+  - 2.1: Brand creation form, financial parameter editing by category (references Brand Financial Parameters Reference), deferred live summary to post-Epic 3
+  - 2.2: Line item CRUD with add/edit/delete/reorder, confirmation dialogs, template-to-plan flow, deferred "Preview as Franchisee" to post-MVP
+- **Story 1.6-1.8:** Pending
 <!-- BMAD-METHOD-END -->
