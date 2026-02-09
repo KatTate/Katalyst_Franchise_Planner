@@ -29,6 +29,7 @@ export interface IStorage {
   createInvitation(invitation: InsertInvitation): Promise<Invitation>;
   markInvitationAccepted(id: string): Promise<void>;
 
+  getBrands(): Promise<Brand[]>;
   getBrand(id: string): Promise<Brand | undefined>;
   createBrand(brand: InsertBrand): Promise<Brand>;
 }
@@ -119,6 +120,10 @@ export class DatabaseStorage implements IStorage {
 
   async markInvitationAccepted(id: string): Promise<void> {
     await db.update(invitations).set({ acceptedAt: new Date() }).where(eq(invitations.id, id));
+  }
+
+  async getBrands(): Promise<Brand[]> {
+    return db.select().from(brands);
   }
 
   async getBrand(id: string): Promise<Brand | undefined> {

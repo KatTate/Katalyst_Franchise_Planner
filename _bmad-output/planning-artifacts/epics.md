@@ -323,13 +323,27 @@ So that I can onboard new users to the platform in a controlled way.
 
 **Acceptance Criteria:**
 
-**Given** I am logged in as a Katalyst admin
-**When** I submit POST `/api/invitations` with email, role, and brand_id
-**Then** a new invitation is created with a cryptographically secure token, expiring in 7 days
-**And** the invitation is single-use (cannot be accepted twice)
-**And** the API returns the invitation details including the acceptance URL
-**And** non-admin users receive 403 Forbidden when attempting to create invitations
-**And** franchisor admin users can create franchisee invitations for their own brand only (FR30)
+**Given** I am logged in as a Katalyst admin and on the dashboard
+**When** I navigate to the Invitation Management page
+**Then** I see a table of all invitations showing email, role, brand, status (pending/accepted/expired), and expiry date
+
+**Given** I am on the Invitation Management page
+**When** I fill out the new invitation form with email, role, and brand and click Send
+**Then** a new invitation is created and appears in my invitation list with a "pending" status
+**And** I can copy the invitation acceptance link to share with the invitee
+
+**Given** I am logged in as a franchisor admin
+**When** I access the Invitation Management page
+**Then** I can only create franchisee invitations for my own brand
+**And** I can only see invitations for my own brand
+
+**Given** I am logged in as a franchisee
+**When** I try to access the Invitation Management page
+**Then** I am not able to see or access invitation management features
+
+**Given** I fill out the invitation form with an invalid email or missing fields
+**When** I click Send
+**Then** I see clear validation error messages explaining what needs to be corrected
 
 ### Story 1.3: Invitation Acceptance & Account Creation
 
@@ -340,13 +354,29 @@ So that I can access the Katalyst Growth Planner.
 **Acceptance Criteria:**
 
 **Given** I have a valid, unexpired invitation link
-**When** I visit the invitation URL and complete account setup
+**When** I visit the invitation URL
+**Then** I see the Invitation Acceptance page showing the brand name and my invited email address
+
+**Given** I am on the Invitation Acceptance page with a valid invitation
+**When** I fill in my display name, password, and password confirmation and click Create Account
 **Then** my user account is created with the role and brand specified in the invitation
-**And** my password is hashed with bcrypt (cost factor 12) _(if password-based auth is chosen for franchisee accounts — auth mechanism TBD)_
-**And** the invitation token is marked as accepted and cannot be reused
-**And** I am automatically logged in after account creation
-**And** expired invitation tokens display a clear error message
-**And** already-accepted tokens display a message directing to login
+**And** I am automatically logged in and redirected to the dashboard
+
+**Given** I visit an invitation link with an expired token
+**When** the page loads
+**Then** I see a clear message that the invitation has expired and should contact their admin for a new one
+
+**Given** I visit an invitation link that has already been accepted
+**When** the page loads
+**Then** I see a message that this invitation was already used, with a link to log in instead
+
+**Given** I visit an invitation link with an invalid or nonexistent token
+**When** the page loads
+**Then** I see a clear error message that the invitation is invalid
+
+**Given** I submit the account creation form with a password shorter than 8 characters or mismatched confirmation
+**When** I click Create Account
+**Then** I see inline validation errors and my account is not created
 
 ### Story 1.4: Login, Logout & Session Management
 

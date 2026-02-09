@@ -1,6 +1,6 @@
 # Story 1.2: Invitation Creation by Admin
 
-Status: review
+Status: ready-for-dev
 
 ## Story
 
@@ -10,17 +10,11 @@ So that I can onboard new users to the platform in a controlled way.
 
 ## Acceptance Criteria
 
-1. **Given** I am logged in as a Katalyst admin **When** I submit POST `/api/invitations` with email, role, and brand_id **Then** a new invitation is created with a cryptographically secure token, expiring in 7 days **And** the API returns the invitation details including the acceptance URL
-2. **Given** the invitation is created **When** I inspect the token **Then** it is cryptographically secure (generated via `crypto.randomBytes`) and URL-safe (base64url-encoded)
-3. **Given** the invitation is created **When** another request tries to accept the same token after it has already been accepted **Then** the token cannot be reused (single-use enforcement via `accepted_at` column)
-4. **Given** I am not authenticated **When** I submit POST `/api/invitations` **Then** I receive 401 Unauthorized
-5. **Given** I am logged in as a franchisee **When** I submit POST `/api/invitations` **Then** I receive 403 Forbidden
-6. **Given** I am logged in as a franchisor admin **When** I submit POST `/api/invitations` with role `franchisee` and my own brand_id **Then** the invitation is created successfully (franchisor admins can invite franchisees to their own brand only)
-7. **Given** I am logged in as a franchisor admin **When** I submit POST `/api/invitations` with a brand_id that is NOT my own brand **Then** I receive 403 Forbidden
-8. **Given** I am logged in as a franchisor admin **When** I submit POST `/api/invitations` with role `franchisor` or `katalyst_admin` **Then** I receive 403 Forbidden (franchisor admins can only invite franchisees)
-9. **Given** I submit POST `/api/invitations` with an invalid email format or missing required fields **Then** I receive 400 Bad Request with a clear validation error message
-10. **Given** I am logged in as a Katalyst admin **When** I submit POST `/api/invitations` with role `franchisee` or `franchisor` **Then** the `brand_id` field is required and validated to reference an existing brand
-11. **Given** I am logged in as a Katalyst admin **When** I submit GET `/api/invitations` **Then** I receive a list of all invitations with their status (pending, accepted, expired)
+1. **Given** I am logged in as a Katalyst admin and on the dashboard **When** I navigate to the Invitation Management page **Then** I see a table of all invitations showing email, role, brand, status (pending/accepted/expired), and expiry date
+2. **Given** I am on the Invitation Management page **When** I fill out the new invitation form with email, role, and brand and click Send **Then** a new invitation is created and appears in my invitation list with a "pending" status **And** I can copy the invitation acceptance link to share with the invitee
+3. **Given** I am logged in as a franchisor admin **When** I access the Invitation Management page **Then** I can only create franchisee invitations for my own brand **And** I can only see invitations for my own brand
+4. **Given** I am logged in as a franchisee **When** I try to access the Invitation Management page **Then** I am not able to see or access invitation management features
+5. **Given** I fill out the invitation form with an invalid email or missing fields **When** I click Send **Then** I see clear validation error messages explaining what needs to be corrected
 
 ## Dev Notes
 
@@ -151,6 +145,20 @@ const createInvitationSchema = z.object({
 }
 ```
 
+### UI/UX Deliverables
+
+- **Invitation Management Page** (`/admin/invitations` route):
+  - Table showing all invitations: email, role, brand name, status badge (pending/accepted/expired), expiry date
+  - "New Invitation" form: email input, role selector (franchisee/franchisor/katalyst_admin), brand selector (populated from brands table), Send button
+  - "Copy Link" action button on each pending invitation row
+  - Toast notification on successful invitation creation
+  - Toast notification on successful link copy
+- **Navigation**: Sidebar menu item "Invitations" visible to katalyst_admin and franchisor roles only
+- **Empty state**: Message when no invitations exist yet ("No invitations yet. Create one to get started.")
+- **Loading state**: Skeleton/spinner while invitation list loads
+- **Error state**: Error message if invitation list fails to load
+- **Role-based visibility**: Franchisor admins see only their brand's invitations; brand selector is hidden/pre-filled for franchisor admins; role selector limited to "franchisee" for franchisor admins
+
 ### Anti-Patterns & Hard Constraints
 
 - Do NOT send emails in this story — just create the invitation record and return the acceptance URL. Email delivery is a future concern
@@ -179,9 +187,12 @@ const createInvitationSchema = z.object({
 
 | File | Action | Notes |
 |------|--------|-------|
-| `server/routes.ts` | MODIFY | Add POST `/api/invitations` and GET `/api/invitations` routes with requireAuth/requireRole middleware, validation, token generation, and franchisor scoping logic |
-| `server/storage.ts` | MODIFY | Add `getInvitations()` and `getInvitationsByBrand(brandId)` to IStorage interface and DatabaseStorage implementation |
+| `server/routes.ts` | ALREADY DONE | POST/GET invitation routes already implemented |
+| `server/storage.ts` | ALREADY DONE | Listing methods already implemented |
 | `shared/schema.ts` | NO CHANGE | Schema already has invitations table and types from Story 1.1 |
+| `client/src/pages/invitations.tsx` | CREATE | Invitation Management page with create form and invitation table |
+| `client/src/App.tsx` | MODIFY | Add /admin/invitations route |
+| `client/src/components/app-sidebar.tsx` | MODIFY | Add Invitations nav item for admin/franchisor roles |
 
 ### Dependencies & Environment Variables
 
