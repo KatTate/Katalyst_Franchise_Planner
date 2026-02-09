@@ -19,7 +19,7 @@ When the user triggers an agent or workflow, the AI MUST load the referenced fil
 **Technical Implementations & System Design:**
 - **Authentication:** Dual model with Google OAuth for Katalyst administrators (`@katgroupinc.com` domain) and invitation-based password authentication for franchisees/franchisors.
 - **Backend Stack:** Full-stack JavaScript using React (frontend), Express (backend), and PostgreSQL (database).
-- **Database Schema:** Includes `brands`, `users` (with `password_hash` and `profile_image_url`), and `invitations` tables.
+- **Database Schema:** Includes `brands` (with `default_account_manager_id`), `users` (with `password_hash`, `profile_image_url`, `account_manager_id`, `booking_url`), `invitations`, and `brand_account_managers` (join table linking managers to brands with per-brand booking URLs) tables.
 - **Session Management:** PostgreSQL-backed sessions with a 24-hour expiry using `connect-pg-simple`.
 - **Role-Based Access Control (RBAC):** Middleware (`requireAuth()`, `requireRole()`, `scopeToUser()`, `projectForRole()`) controls access based on user roles.
 - **Onboarding:** A 3-question flow recommends a tier (Planning Assistant, Forms, Quick Entry) for franchisees.
@@ -32,6 +32,7 @@ When the user triggers an agent or workflow, the AI MUST load the referenced fil
 
 ## Recent Changes
 
+- **2026-02-09:** Story 2.4 (Account Manager Assignment) enhanced — Added brand-level default account manager and per-brand booking URLs via `brand_account_managers` join table. Brand Account Managers section in admin with add/remove/edit/set-default controls. Auto-assignment of default manager + booking URL on franchisee invitation acceptance. Per-franchisee override dialog with auto-populated booking URL from manager's brand config. Booking URL fallback chain: franchisee override > manager's brand URL > brand defaultBookingUrl.
 - **2026-02-09:** Story 2.3 (Brand Identity & Dynamic Theming) completed — Enhanced useBrandTheme hook with WCAG luminance-based --primary-foreground calculation, sidebar brand logo display with onError fallback, dynamic brand name label, "Powered by Katalyst" badge using --katalyst-brand escape hatch, hex color validation with live preview swatch in admin identity form, bidirectional color picker sync. Code review passed with 0 findings.
 - **2026-02-09:** Story 2.2 (Startup Cost Template Management) completed — Reorder controls (move up/down buttons with boundary disable), aria-labels on all icon buttons (Move Up, Move Down, Edit, Delete), help text on Item 7 Low/High and Line Item Name form fields, sort_order normalization after every mutation. Code review passed with 0 findings.
 - **2026-02-09:** Story 2.1 (Brand Entity & Financial Parameter Configuration) completed — Brand management list page, create brand dialog with auto-slug generation, brand detail page with financial parameters editor (tabbed: Revenue, Operating Costs, Financing, Startup Capital), sidebar navigation for katalyst_admin, role-based access control on brand admin endpoints, brand name uniqueness enforcement (DB constraint + application validation).

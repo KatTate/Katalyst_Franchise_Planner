@@ -100,16 +100,18 @@ so that each franchisee has a dedicated point of contact with a booking link.
 Claude 4.6 Opus (Replit Agent)
 
 ### Completion Notes
-All 8 ACs verified via e2e Playwright test. Key implementation decisions:
-- Added `getKatalystAdmins()` to IStorage/DatabaseStorage with safe field projection (no passwordHash)
-- Added `GET /api/admin/account-managers` endpoint protected by requireAuth + requireRole("katalyst_admin")
-- Replaced raw ID input with Select dropdown populated from account managers endpoint
-- Client-side name resolution via Map cross-referencing admin list with franchisee accountManagerId
-- Migrated franchisees query to default fetcher pattern (getQueryFn)
-- URL validation with real-time error feedback (using URL constructor)
-- Brand defaultBookingUrl fallback when franchisee has no booking URL
+All ACs verified via e2e Playwright tests (two rounds). Key implementation decisions:
+- Added `brand_account_managers` join table (brandId, accountManagerId, bookingUrl) with composite unique index
+- Added `defaultAccountManagerId` column to brands table for brand-level default manager
+- Brand Account Managers UI section: add/remove managers, edit per-brand booking URLs inline, set/unset default
+- Auto-assignment on invitation acceptance: when franchisee accepts invitation, auto-populates accountManagerId from brand default + bookingUrl from manager's brand config (fallback chain: manager's brand URL > brand defaultBookingUrl)
+- Per-franchisee override dialog: selecting a manager auto-populates booking URL from their brand config
+- Client-side name resolution via Map cross-referencing admin list
+- All new routes protected by requireAuth + requireRole("katalyst_admin")
+- Safe field projections on all user-listing endpoints (no passwordHash)
 
 ### File List
-- `server/storage.ts` — Added getKatalystAdmins() to IStorage interface and DatabaseStorage
-- `server/routes.ts` — Added GET /api/admin/account-managers route
-- `client/src/pages/admin-brand-detail.tsx` — Rewrote AccountManagerTab component
+- `shared/schema.ts` — Added defaultAccountManagerId to brands, created brand_account_managers table + types
+- `server/storage.ts` — Added getBrandAccountManagers, getBrandAccountManager, upsertBrandAccountManager, removeBrandAccountManager, setDefaultAccountManager
+- `server/routes.ts` — Added GET/PUT/DELETE /api/brands/:brandId/account-managers, PUT /api/brands/:brandId/default-account-manager, updated invitation acceptance flow
+- `client/src/pages/admin-brand-detail.tsx` — Full AccountManagerTab redesign with brand-level config + franchisee overrides
