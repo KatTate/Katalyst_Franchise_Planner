@@ -1,118 +1,136 @@
 # Story 1.1: Project Initialization & Auth Database Schema
 
-Status: in-progress
+Status: ready-for-dev
 
 ## Story
 
 As a developer,
-I want the project foundation set up with database tables for users, sessions, and invitations,
-So that all authentication and user management features have the data layer they need.
+I want the project foundation set up with database tables for users, sessions, brands, and invitations, and authentication powered by Replit Auth (supporting Google, GitHub, and other OAuth providers),
+So that Katalyst admin users can log in immediately via OAuth and the data layer is ready for all user management features.
 
 ## Acceptance Criteria
 
 1. **Given** the Replit full-stack JS template is in place **When** the database schema is pushed **Then** the following tables exist:
-   - `users` (id, email, password_hash, role, brand_id, display_name, onboarding_completed, preferred_tier, created_at)
-   - `sessions` (connect-pg-simple session store — auto-managed, not defined in Drizzle)
-   - `invitations` (id, email, role, brand_id, token, expires_at, accepted_at, created_by, created_at)
-2. **Given** the schema is defined **When** Drizzle insert schemas are created **Then** `insertUserSchema`, `InsertUser`, `User`, `insertInvitationSchema`, `InsertInvitation`, `Invitation`, `insertBrandSchema`, `InsertBrand`, and `Brand` types are all exported from `shared/schema.ts`
-3. **Given** the auth layer is configured **When** a user submits email and password **Then** Passport.js authenticates via LocalStrategy (email lookup + bcrypt compare) with session serialization by user.id
-4. **Given** the Express app is running **When** session middleware initializes **Then** sessions are stored in PostgreSQL via connect-pg-simple with `createTableIfMissing: true`, httpOnly cookies, secure in production, sameSite 'lax'
-5. **Given** the environment variables `ADMIN_EMAIL` and `ADMIN_PASSWORD` are set **When** the server starts **Then** a seed script creates the initial Katalyst admin account (role `katalyst_admin`, bcrypt cost factor 12) idempotently — skipping if the user already exists or env vars are not set
+   - `users` — Replit Auth managed table extended with app columns: `role` ('franchisee' | 'franchisor' | 'katalyst_admin'), `brand_id` (nullable FK to brands), `onboarding_completed` (boolean), `preferred_tier` (nullable)
+   - `sessions` — Replit Auth managed session store (auto-created, not defined manually)
+   - `brands` (id, name, slug, created_at) — minimal stub for FK reference; full brand config comes in Epic 2
+   - `invitations` (id, email, role, brand_id, token, expires_at, accepted_at, created_by, created_at) — for future invitation-based franchisee/franchisor onboarding
+2. **Given** the schema is defined **When** Drizzle schemas are created **Then** all insert schemas, insert types, and select types for users, brands, and invitations are exported from `shared/schema.ts`
+3. **Given** Replit Auth is installed **When** a Katalyst admin visits the app **Then** they can authenticate via Google OAuth (or other supported providers) without any custom login form — authentication is handled entirely by Replit Auth's OpenID Connect flow
+4. **Given** the auth module is wired up **When** the Express app starts **Then** session middleware and auth routes (`/api/login`, `/api/logout`, `/api/auth/user`) are registered, and sessions are stored in PostgreSQL
+5. **Given** a user logs in via Replit Auth for the first time **When** they have no existing role **Then** they are assigned the `katalyst_admin` role by default (first users are platform admins; invitation-based role assignment comes in later stories)
 
 ## Dev Notes
 
 ### Architecture Patterns to Follow
 
+**Authentication Model Change (deviation from original architecture.md — Decision 3):**
+- Original plan: Custom Passport.js LocalStrategy with email/password and bcrypt
+- New approach: Replit Auth (OpenID Connect) for Katalyst admin users — no custom auth system needed
+- Replit Auth provides: Google, GitHub, X, Apple, and email/password login via OIDC
+- The Replit Auth module manages its own users and sessions tables via `server/replit_integrations/auth/`
+- Franchisee/franchisor invitation-based onboarding will be built in Stories 1.2-1.4, potentially as a separate flow layered on top
+
 **Database Naming (from architecture.md — Naming Patterns):**
 - Tables: lowercase plural — `users`, `brands`, `invitations`
-- Columns: snake_case — `password_hash`, `brand_id`, `created_at`
+- Columns: snake_case — `brand_id`, `created_at`
 - Foreign keys: `{referenced_table_singular}_id` — `brand_id`, `user_id`
-- Indexes: `idx_{table}_{column}` — `idx_users_email`, `idx_users_brand_id`, `idx_invitations_token`, `idx_invitations_email`
+- Indexes: `idx_{table}_{column}` — `idx_invitations_token`, `idx_invitations_email`
 
 **Schema Pattern (from architecture.md — Schema Patterns):**
 ```typescript
-export const users = pgTable("users", { ... });
-export const insertUserSchema = createInsertSchema(users).omit({ id: true, createdAt: true });
-export type InsertUser = z.infer<typeof insertUserSchema>;
-export type User = typeof users.$inferSelect;
+export const brands = pgTable("brands", { ... });
+export const insertBrandSchema = createInsertSchema(brands).omit({ id: true, createdAt: true });
+export type InsertBrand = z.infer<typeof insertBrandSchema>;
+export type Brand = typeof brands.$inferSelect;
 ```
 
 **Storage Pattern (from architecture.md — Decision 1):**
 - All DB operations go through `IStorage` interface — never raw Drizzle in route handlers
 - `DatabaseStorage` class implements `IStorage` using Drizzle ORM queries
-- Storage methods: `getUser(id)`, `getUserByEmail(email)`, `createUser(user)`, `getInvitationByToken(token)`, `createInvitation(invitation)`, `markInvitationAccepted(id)`, `getBrand(id)`, `createBrand(brand)`
+- Replit Auth has its own `authStorage` for user upsert — app storage handles app-specific operations (brands, invitations, user role lookups)
 
-**Session Configuration (from architecture.md — Decision 3):**
-- connect-pg-simple auto-creates its own `session` table — do NOT define it in Drizzle schema
-- Session secret from `SESSION_SECRET` env var
-- Cookie config: httpOnly, secure in production, sameSite 'lax', maxAge 24 hours
-
-**Password Hashing (from architecture.md — Decision 3):**
-- bcrypt with cost factor 12
-- Never store plaintext passwords
-- Never log passwords or password hashes
+**Replit Auth Integration Pattern:**
+- Auth module lives at `server/replit_integrations/auth/` — do NOT modify these files
+- Auth schema exported from `shared/models/auth.ts` — must be re-exported from `shared/schema.ts`
+- Wire up in routes: `setupAuth(app)` then `registerAuthRoutes(app)` BEFORE other routes
+- Protected routes use `isAuthenticated` middleware from the auth module
+- Frontend uses `useAuth()` hook for auth state — no custom login forms
+- User claims available: `sub` (stable user ID), `email`, `first_name`, `last_name`, `profile_image_url`
 
 ### Anti-Patterns & Hard Constraints
 
-- Do NOT define the session table in Drizzle schema — connect-pg-simple manages it
-- Do NOT use `username` field — the app uses `email` for authentication
-- Do NOT store passwords as plaintext — always bcrypt hash
+- Do NOT build custom login/signup forms — Replit Auth handles all authentication UI
+- Do NOT modify files in `server/replit_integrations/auth/` — managed by the integration
+- Do NOT define the session table in Drizzle schema — Replit Auth manages it
+- Do NOT use bcrypt or password hashing — OAuth handles authentication
+- Do NOT create a seed script for admin users — first users self-register via OAuth and get assigned katalyst_admin role
 - Do NOT put business logic in route handlers — use storage interface
 - Do NOT use MemStorage — must use DatabaseStorage with real PostgreSQL
 - Do NOT modify `server/index.ts`, `server/vite.ts`, `server/static.ts` — template files
 - Do NOT modify `vite.config.ts` or `drizzle.config.ts` — template files
-- Do NOT create a separate `shared/types.ts` — all types stay in `shared/schema.ts`
+- Do NOT create a separate `shared/types.ts` — app types stay in `shared/schema.ts`
 
 ### Gotchas & Integration Warnings
 
-- The template `shared/schema.ts` originally has a basic `users` table with `username` and `password` columns — this must be entirely replaced with `email` and `password_hash`
-- The template `server/storage.ts` originally uses MemStorage (in-memory Map) — this must be replaced with DatabaseStorage using Drizzle ORM
-- `brands` table is a minimal stub in this story (id, name, slug, created_at) — full brand configuration comes in Epic 2
-- `server/db.ts` creates the Drizzle client instance — imported by storage.ts, must check for `DATABASE_URL` env var
-- Seed script imports `log` from `server/index.ts` for consistent logging — check that this export exists
-- The seed function must be called at server startup (in `registerRoutes`) to run after database is ready
+- **Replit Auth users table**: The auth module creates its own `users` table with columns for OIDC claims. App-specific columns (role, brand_id, onboarding_completed, preferred_tier) need to be added to this table schema in `shared/models/auth.ts` or the app needs to extend the user record after auth
+- **User ID format**: Replit Auth uses the OIDC `sub` claim as the user ID — this is a string, not a UUID. Ensure FK references to users use the correct type
+- **First user bootstrapping**: Without a seed script, the first user who logs in via Replit Auth should be auto-assigned `katalyst_admin` role. Consider: if no users exist yet, the first login creates an admin
+- **Schema re-export required**: `shared/schema.ts` MUST include `export * from "./models/auth"` for Replit Auth tables to be included in database migrations
+- **Auth route order**: `setupAuth(app)` and `registerAuthRoutes(app)` must be called BEFORE any other route registration in `server/routes.ts`
+- `brands` table is a minimal stub in this story — full brand configuration comes in Epic 2
+- `invitations` table is defined here for schema completeness but not actively used until Stories 1.2-1.3
+- The existing custom `server/auth.ts`, `server/seed.ts`, and `server/db.ts` files from the previous implementation attempt should be replaced/removed in favor of the Replit Auth module
 
 ### File Change Summary
 
 | File | Action | Notes |
 |------|--------|-------|
-| `shared/schema.ts` | REPLACE | users, brands, invitations tables with indexes + all insert schemas and types |
-| `server/storage.ts` | REPLACE | IStorage interface + DatabaseStorage implementation |
-| `server/db.ts` | CREATE | Drizzle client initialization using DATABASE_URL with pg.Pool |
-| `server/auth.ts` | CREATE | Passport LocalStrategy config, bcrypt helpers, serialize/deserialize, Express.User type augmentation |
-| `server/seed.ts` | CREATE | Idempotent admin seed script using ADMIN_EMAIL/ADMIN_PASSWORD env vars |
-| `server/routes.ts` | MODIFY | Add express-session with connect-pg-simple, passport.initialize(), passport.session(), call seedAdminUser() |
+| `shared/schema.ts` | MODIFY | Re-export auth models, add brands + invitations tables with types |
+| `shared/models/auth.ts` | CREATED BY INTEGRATION | Replit Auth users + sessions schema — may need app column extensions |
+| `server/replit_integrations/auth/*` | CREATED BY INTEGRATION | Auth module (do not modify) |
+| `server/storage.ts` | REPLACE | IStorage interface + DatabaseStorage for brands, invitations, user role operations |
+| `server/db.ts` | KEEP or REPLACE | Drizzle client — may be superseded by auth module's DB setup |
+| `server/routes.ts` | MODIFY | Wire up Replit Auth (setupAuth + registerAuthRoutes), remove old Passport/session setup |
+| `server/auth.ts` | REMOVE | Replaced by Replit Auth module |
+| `server/seed.ts` | REMOVE | No longer needed — admin bootstraps via OAuth login |
+| `client/src/hooks/use-auth.ts` | CREATED BY INTEGRATION | React hook for auth state |
+| `client/src/lib/auth-utils.ts` | CREATED BY INTEGRATION | Auth error handling utilities |
 
 ### Dependencies & Environment Variables
 
 **Packages to install:**
-- `bcrypt` — password hashing
-- `@types/bcrypt` — TypeScript types for bcrypt
+- None — Replit Auth integration handles its own dependencies
+
+**Packages no longer needed (can be removed):**
+- `bcrypt`, `@types/bcrypt` — no password hashing needed
+- `passport-local`, `@types/passport-local` — no LocalStrategy needed
 
 **Packages already in template (DO NOT reinstall):**
-- `express-session`, `@types/express-session` — session middleware
-- `connect-pg-simple`, `@types/connect-pg-simple` — PostgreSQL session store
-- `passport`, `@types/passport` — authentication framework
-- `passport-local`, `@types/passport-local` — local strategy
+- `express-session`, `@types/express-session` — session middleware (used by Replit Auth)
+- `passport`, `@types/passport` — authentication framework (used by Replit Auth internally)
+- `connect-pg-simple`, `@types/connect-pg-simple` — PostgreSQL session store (used by Replit Auth)
 - `drizzle-orm`, `drizzle-kit`, `drizzle-zod` — ORM
 - `pg`, `@types/pg` — PostgreSQL client
 - `zod` — validation
 
 **Environment variables:**
 - `DATABASE_URL` — auto-provided by Replit when PostgreSQL is created
-- `SESSION_SECRET` — for session signing (set as secret)
-- `ADMIN_EMAIL` — for seed script (set as env var)
-- `ADMIN_PASSWORD` — for seed script (set as secret)
+- `SESSION_SECRET` — for session signing (auto-provided by Replit Auth, available in dev and prod)
+- `REPLIT_DOMAINS` — auto-provided, used by Replit Auth for OIDC callback URLs
+- ~~`ADMIN_EMAIL`~~ — no longer needed (removed)
+- ~~`ADMIN_PASSWORD`~~ — no longer needed (removed)
 
 ### References
 
-- [Source: _bmad-output/planning-artifacts/architecture.md#Decision 1: Data Model Design] — Table definitions, entity model, JSONB patterns
-- [Source: _bmad-output/planning-artifacts/architecture.md#Decision 3: Authentication Model] — Invitation-only, session-based auth, bcrypt cost factor
+- [Source: _bmad-output/planning-artifacts/architecture.md#Decision 1: Data Model Design] — Table definitions, entity model
+- [Source: _bmad-output/planning-artifacts/architecture.md#Decision 3: Authentication Model] — Original auth design (now modified to use Replit Auth for admin users)
 - [Source: _bmad-output/planning-artifacts/architecture.md#Decision 4: Authorization (RBAC) Pattern] — Three-layer RBAC (context for later stories)
 - [Source: _bmad-output/planning-artifacts/architecture.md#Schema Patterns] — Insert/update schema conventions
 - [Source: _bmad-output/planning-artifacts/architecture.md#Naming Patterns] — Database and code naming conventions
 - [Source: _bmad-output/planning-artifacts/architecture.md#Structure Patterns] — Project file organization
-- [Source: _bmad-output/planning-artifacts/epics.md#Story 1.1] — Acceptance criteria and epic context
+- [Source: _bmad-output/planning-artifacts/epics.md#Story 1.1] — Original acceptance criteria and epic context
+- [Source: Replit Auth Blueprint] — OpenID Connect auth module, session management, user claims
 
 ## Dev Agent Record
 
