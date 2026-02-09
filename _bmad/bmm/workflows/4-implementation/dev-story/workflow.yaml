@@ -1,5 +1,5 @@
 name: dev-story
-description: "Execute a story by implementing tasks/subtasks, writing tests, validating, and updating the story file per acceptance criteria"
+description: "Implement a story using its acceptance criteria and dev notes as authoritative context, with the agent planning its own approach"
 author: "BMad"
 
 # Critical variables from config
