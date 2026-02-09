@@ -7,6 +7,8 @@ import {
   type InsertInvitation,
   type Brand,
   type InsertBrand,
+  type BrandParameters,
+  type StartupCostTemplate,
   users,
   invitations,
   brands,
@@ -36,7 +38,22 @@ export interface IStorage {
 
   getBrands(): Promise<Brand[]>;
   getBrand(id: string): Promise<Brand | undefined>;
+  getBrandBySlug(slug: string): Promise<Brand | undefined>;
   createBrand(brand: InsertBrand): Promise<Brand>;
+  updateBrand(id: string, data: Partial<InsertBrand>): Promise<Brand>;
+  updateBrandParameters(id: string, parameters: BrandParameters): Promise<Brand>;
+  updateStartupCostTemplate(id: string, template: StartupCostTemplate): Promise<Brand>;
+  updateBrandIdentity(id: string, data: {
+    displayName?: string | null;
+    logoUrl?: string | null;
+    primaryColor?: string | null;
+    defaultBookingUrl?: string | null;
+    franchisorAcknowledgmentEnabled?: boolean;
+  }): Promise<Brand>;
+
+  assignAccountManager(franchiseeId: string, accountManagerId: string, bookingUrl: string): Promise<User>;
+  getUsersByBrand(brandId: string): Promise<User[]>;
+  getFranchiseesByBrand(brandId: string): Promise<User[]>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -152,9 +169,72 @@ export class DatabaseStorage implements IStorage {
     return brand;
   }
 
+  async getBrandBySlug(slug: string): Promise<Brand | undefined> {
+    const [brand] = await db.select().from(brands).where(eq(brands.slug, slug)).limit(1);
+    return brand;
+  }
+
   async createBrand(brand: InsertBrand): Promise<Brand> {
     const [created] = await db.insert(brands).values(brand).returning();
     return created;
+  }
+
+  async updateBrand(id: string, data: Partial<InsertBrand>): Promise<Brand> {
+    const [updated] = await db.update(brands).set(data).where(eq(brands.id, id)).returning();
+    return updated;
+  }
+
+  async updateBrandParameters(id: string, parameters: BrandParameters): Promise<Brand> {
+    const [updated] = await db
+      .update(brands)
+      .set({ brandParameters: parameters })
+      .where(eq(brands.id, id))
+      .returning();
+    return updated;
+  }
+
+  async updateStartupCostTemplate(id: string, template: StartupCostTemplate): Promise<Brand> {
+    const [updated] = await db
+      .update(brands)
+      .set({ startupCostTemplate: template })
+      .where(eq(brands.id, id))
+      .returning();
+    return updated;
+  }
+
+  async updateBrandIdentity(id: string, data: {
+    displayName?: string | null;
+    logoUrl?: string | null;
+    primaryColor?: string | null;
+    defaultBookingUrl?: string | null;
+    franchisorAcknowledgmentEnabled?: boolean;
+  }): Promise<Brand> {
+    const [updated] = await db
+      .update(brands)
+      .set(data)
+      .where(eq(brands.id, id))
+      .returning();
+    return updated;
+  }
+
+  async assignAccountManager(franchiseeId: string, accountManagerId: string, bookingUrl: string): Promise<User> {
+    const [updated] = await db
+      .update(users)
+      .set({ accountManagerId, bookingUrl })
+      .where(eq(users.id, franchiseeId))
+      .returning();
+    return updated;
+  }
+
+  async getUsersByBrand(brandId: string): Promise<User[]> {
+    return db.select().from(users).where(eq(users.brandId, brandId));
+  }
+
+  async getFranchiseesByBrand(brandId: string): Promise<User[]> {
+    return db
+      .select()
+      .from(users)
+      .where(and(eq(users.brandId, brandId), eq(users.role, "franchisee")));
   }
 }
 

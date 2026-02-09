@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useLocation } from "wouter";
 import { useAuth } from "@/hooks/use-auth";
-import { Home, Mail, LogOut } from "lucide-react";
+import { Home, Mail, Building2, LogOut } from "lucide-react";
 import {
   Sidebar,
   SidebarContent,
@@ -35,8 +35,11 @@ export function AppSidebar() {
 
   const isAdmin = user.role === "katalyst_admin" || user.role === "franchisor";
 
+  const isKatalystAdmin = user.role === "katalyst_admin";
+
   const navItems = [
     { title: "Dashboard", url: "/", icon: Home, visible: true },
+    { title: "Brands", url: "/admin/brands", icon: Building2, visible: isKatalystAdmin },
     { title: "Invitations", url: "/admin/invitations", icon: Mail, visible: isAdmin },
   ].filter((item) => item.visible);
 
