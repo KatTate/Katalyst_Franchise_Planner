@@ -22,7 +22,7 @@ so that franchisees see their franchise brand throughout the planning experience
 
 6. **Given** any brand context is active, **then** a "Powered by Katalyst" badge is visible in the sidebar footer using `--katalyst-brand` (Katalyst Green), and this badge does NOT change color when the brand accent color changes.
 
-7. **Given** a brand has a display name configured, **when** the display name is available, **then** it is used in contextual references throughout the UI (sidebar label, page headings) instead of the raw brand `name`.
+7. **Given** a brand has a display name configured, **when** the display name is available, **then** it is used in the sidebar label instead of the default "Katalyst Growth Planner" text. (Page headings with brand context are deferred to Epic 3+ when plan workspaces exist.)
 
 8. **Given** I toggle the franchisor acknowledgment switch, **when** I save, **then** the boolean value persists and is retrievable via the brand API.
 
@@ -80,11 +80,13 @@ so that franchisees see their franchise brand throughout the planning experience
 
 ### Gotchas & Integration Warnings
 
-- **`--primary-foreground` calculation:** When overriding `--primary`, the hook should also set `--primary-foreground` to ensure text on primary-colored surfaces has adequate contrast. A simple luminance check (if primary is dark, use white foreground; if light, use dark foreground) is sufficient. The current `useBrandTheme` hook does NOT set `--primary-foreground` — this needs to be added.
-- **Sidebar property overrides:** The hook already sets `--sidebar-primary` and `--sidebar-ring` to match the brand color. Verify that `--sidebar-primary-foreground` also gets appropriate contrast.
-- **Cleanup on unmount:** The hook's `useEffect` cleanup already removes the overridden properties — verify it removes ALL properties that were set (including any newly added `--primary-foreground`).
-- **Color picker + text input sync:** The native `<input type="color">` always produces a valid hex. The text input needs validation before applying. Keep both in sync bidirectionally.
-- **Logo URL loading:** The sidebar should gracefully handle broken image URLs (use `<img>` with `onError` fallback or an `<Avatar>` with `AvatarFallback`).
+- **`--primary-foreground` calculation:** When overriding `--primary`, the hook should also set `--primary-foreground` to ensure text on primary-colored surfaces has adequate contrast. Use the WCAG relative luminance formula: `L = 0.2126*R + 0.7152*G + 0.0722*B` (where R, G, B are 0-1 normalized). If `L > 0.5`, use dark foreground; otherwise, use light foreground. **Critical:** The foreground values must use HSL format matching existing tokens — dark foreground: `210 6% 12%` (matches `--foreground`), light foreground: `210 10% 98%` (matches existing `--primary-foreground` default). Do NOT use raw color names like `white` or `black`.
+- **Sidebar property overrides:** The hook already sets `--sidebar-primary` and `--sidebar-ring` to match the brand color. It must ALSO set `--sidebar-primary-foreground` with the same contrast-aware HSL value to prevent unreadable text on sidebar active states.
+- **Cleanup on unmount:** The hook's `useEffect` cleanup already removes the overridden properties — verify it removes ALL properties that were set (including any newly added `--primary-foreground`, `--sidebar-primary-foreground`).
+- **Color picker + text input sync:** The native `<input type="color">` always produces a valid hex. The text input allows freeform typing. Keep both in sync bidirectionally.
+- **Logo image constraints:** The brand logo in the sidebar header should use `max-h-10 object-contain` to prevent oversized images. Use an `<img>` tag with an `onError` handler that sets a local state flag to fall back to text-only display name. Do NOT use the `Avatar` component for brand logos — `Avatar` is for user profile pictures.
+- **"Powered by Katalyst" badge placement:** Position above the user info section in `SidebarFooter`, with a subtle thin separator (e.g., `border-t` or `Separator`). Use `hsl(var(--katalyst-brand))` for the Katalyst Green color. Keep text small (`text-xs`) and non-intrusive — it should NOT compete with the user avatar/logout area.
+- **Franchisor theming behavior:** Franchisors with a `brandId` receive brand theming. This is by design — they are brand-scoped users. The hook condition `user.role !== "katalyst_admin"` correctly includes franchisors. No special handling needed.
 - **Existing admin UI:** The `BrandIdentityTab` component with all form fields and the `updateIdentity` mutation already exists in `admin-brand-detail.tsx`. The backend PUT route and `updateBrandIdentity` storage method also exist. Do NOT recreate them — enhance the existing implementation.
 - **Brand data availability for sidebar:** The `useBrandTheme` hook already fetches and returns the `brand` object. This can be consumed by the sidebar to display the logo and display name.
 
@@ -113,6 +115,19 @@ so that franchisees see their franchise brand throughout the planning experience
 - `_bmad-output/planning-artifacts/architecture.md` lines 1539-1542 — `brand-theme.ts` architecture
 - `_bmad-output/planning-artifacts/architecture.md` lines 321 — Brand theme entity model
 - `_bmad-output/planning-artifacts/epics.md` lines 582-598 — Story 2.3 acceptance criteria and FR references (FR44, FR49)
+
+### Party Mode Review Notes
+
+Classic Mode review by 5 agents (Bob/SM, Winston/Architect, Amelia/Dev, Sally/UX, John/PM). All improvements accepted and applied:
+
+| # | Improvement | Source | Rationale |
+|---|------------|--------|-----------|
+| 1 | AC7 scoped to sidebar only — page headings deferred to Epic 3+ | Bob, Winston | Prevents scope creep; franchisee page headings don't exist yet |
+| 2 | Dev Notes: franchisor users with `brandId` receive brand theming by design | John, Bob | Clarifies expected behavior for brand-scoped franchisor users |
+| 3 | Dev Notes: `--primary-foreground` HSL values must match existing tokens (dark: `210 6% 12%`, light: `210 10% 98%`) | Sally, Winston | Token system consistency; no raw color names |
+| 4 | Dev Notes: WCAG luminance formula (`L = 0.2126*R + 0.7152*G + 0.0722*B`, threshold 0.5) | Winston | Implementable contrast guidance |
+| 5 | Dev Notes: logo constraints `max-h-10 object-contain`, `onError` fallback to text-only (not Avatar) | Sally, Amelia | Prevents oversized logos and handles broken URLs |
+| 6 | Dev Notes: "Powered by Katalyst" badge above user info, thin separator, `text-xs`, `hsl(var(--katalyst-brand))` | Sally | Layout guidance for non-intrusive badge placement |
 
 ## Dev Agent Record
 
