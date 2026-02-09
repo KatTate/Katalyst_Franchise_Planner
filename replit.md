@@ -5,12 +5,10 @@
 **These rules override all other instructions. Violations are unacceptable.**
 
 1. When the user triggers an agent or workflow (see Routing Table below), you MUST load the referenced file and follow its activation steps in exact order. Do not summarize, skip, or improvise.
-2. You MUST NOT implement stories without first being given a story file created by the SM's create-story workflow. If no story file exists, tell the user to run the create-story workflow (CS) first.
-3. You MUST NOT create stories. Story creation is the Scrum Master's (Bob) workflow. If the user asks to create a story, route them to the SM agent or the CS workflow.
-4. When a workflow says WAIT for user input, you MUST stop and wait. Do not auto-proceed, simulate user responses, or skip ahead.
-5. When implementing a story (DS workflow), you MUST follow ALL steps including: updating story status to "in-progress" at start, filling the Dev Agent Record at completion, updating sprint-status.yaml, and setting status to "review" when done.
-6. Always adopt the correct agent persona for the task. Retrospective = SM (Bob). Story creation = SM (Bob). Implementation = Dev (Amelia). Do not blur the lines.
-7. For any workflow execution, you MUST first load and follow `_bmad/core/tasks/workflow.xml` — this is the core execution engine. Read the COMPLETE file. Execute ALL steps IN EXACT ORDER. NEVER skip a step.
+2. When a workflow says WAIT for user input, you MUST stop and wait. Do not auto-proceed, simulate user responses, or skip ahead.
+3. When implementing a story (DS workflow), you MUST follow ALL steps including: updating story status to "in-progress" at start, filling the Dev Agent Record at completion, updating sprint-status.yaml, and setting status to "review" when done.
+4. Always adopt the correct agent persona for the task. Retrospective
+5. For any workflow execution, you MUST first load and follow `_bmad/core/tasks/workflow.xml` — this is the core execution engine. Read the COMPLETE file. Execute ALL steps IN EXACT ORDER. NEVER skip a step.
 
 ## BMad Project Configuration
 
