@@ -8,6 +8,7 @@ import { z } from "zod";
 import crypto from "crypto";
 import bcrypt from "bcrypt";
 import type { Invitation } from "@shared/schema";
+import { brandParameterSchema, startupCostTemplateSchema } from "@shared/schema";
 import { requireAuth, requireRole } from "./middleware/auth";
 
 export async function registerRoutes(
@@ -444,6 +445,263 @@ export async function registerRoutes(
       });
 
       return res.json({ success: true });
+    }
+  );
+
+  const createBrandSchema = z.object({
+    name: z.string().min(1, "Brand name is required").max(100),
+    slug: z.string().min(1, "Slug is required").max(50).regex(/^[a-z0-9-]+$/, "Slug must be lowercase alphanumeric with hyphens"),
+    display_name: z.string().max(100).optional(),
+  });
+
+  app.post(
+    "/api/brands",
+    requireAuth,
+    requireRole("katalyst_admin"),
+    async (req: Request, res: Response) => {
+      const parsed = createBrandSchema.safeParse(req.body);
+      if (!parsed.success) {
+        return res.status(400).json({
+          message: "Validation failed",
+          errors: parsed.error.errors.map((e) => ({ path: e.path.map(String), message: e.message })),
+        });
+      }
+
+      const existing = await storage.getBrandBySlug(parsed.data.slug);
+      if (existing) {
+        return res.status(409).json({ message: "A brand with this slug already exists" });
+      }
+
+      const brand = await storage.createBrand({
+        name: parsed.data.name,
+        slug: parsed.data.slug,
+        displayName: parsed.data.display_name || parsed.data.name,
+      });
+
+      return res.status(201).json(brand);
+    }
+  );
+
+  app.get(
+    "/api/brands/:brandId",
+    requireAuth,
+    requireRole("katalyst_admin"),
+    async (req: Request, res: Response) => {
+      const brand = await storage.getBrand(req.params.brandId);
+      if (!brand) {
+        return res.status(404).json({ message: "Brand not found" });
+      }
+      return res.json(brand);
+    }
+  );
+
+  app.put(
+    "/api/brands/:brandId",
+    requireAuth,
+    requireRole("katalyst_admin"),
+    async (req: Request, res: Response) => {
+      const brand = await storage.getBrand(req.params.brandId);
+      if (!brand) {
+        return res.status(404).json({ message: "Brand not found" });
+      }
+
+      const updateSchema = z.object({
+        name: z.string().min(1).max(100).optional(),
+        display_name: z.string().max(100).optional(),
+      });
+
+      const parsed = updateSchema.safeParse(req.body);
+      if (!parsed.success) {
+        return res.status(400).json({
+          message: "Validation failed",
+          errors: parsed.error.errors.map((e) => ({ path: e.path.map(String), message: e.message })),
+        });
+      }
+
+      const updateData: Record<string, any> = {};
+      if (parsed.data.name) updateData.name = parsed.data.name;
+      if (parsed.data.display_name !== undefined) updateData.displayName = parsed.data.display_name;
+
+      const updated = await storage.updateBrand(req.params.brandId, updateData);
+      return res.json(updated);
+    }
+  );
+
+  app.get(
+    "/api/brands/:brandId/parameters",
+    requireAuth,
+    requireRole("katalyst_admin"),
+    async (req: Request, res: Response) => {
+      const brand = await storage.getBrand(req.params.brandId);
+      if (!brand) {
+        return res.status(404).json({ message: "Brand not found" });
+      }
+      return res.json(brand.brandParameters || null);
+    }
+  );
+
+  app.put(
+    "/api/brands/:brandId/parameters",
+    requireAuth,
+    requireRole("katalyst_admin"),
+    async (req: Request, res: Response) => {
+      const brand = await storage.getBrand(req.params.brandId);
+      if (!brand) {
+        return res.status(404).json({ message: "Brand not found" });
+      }
+
+      const parsed = brandParameterSchema.safeParse(req.body);
+      if (!parsed.success) {
+        return res.status(400).json({
+          message: "Validation failed",
+          errors: parsed.error.errors.map((e) => ({ path: e.path.map(String), message: e.message })),
+        });
+      }
+
+      const updated = await storage.updateBrandParameters(req.params.brandId, parsed.data);
+      return res.json(updated.brandParameters);
+    }
+  );
+
+  app.get(
+    "/api/brands/:brandId/startup-cost-template",
+    requireAuth,
+    requireRole("katalyst_admin"),
+    async (req: Request, res: Response) => {
+      const brand = await storage.getBrand(req.params.brandId);
+      if (!brand) {
+        return res.status(404).json({ message: "Brand not found" });
+      }
+      return res.json(brand.startupCostTemplate || []);
+    }
+  );
+
+  app.put(
+    "/api/brands/:brandId/startup-cost-template",
+    requireAuth,
+    requireRole("katalyst_admin"),
+    async (req: Request, res: Response) => {
+      const brand = await storage.getBrand(req.params.brandId);
+      if (!brand) {
+        return res.status(404).json({ message: "Brand not found" });
+      }
+
+      const parsed = startupCostTemplateSchema.safeParse(req.body);
+      if (!parsed.success) {
+        return res.status(400).json({
+          message: "Validation failed",
+          errors: parsed.error.errors.map((e) => ({ path: e.path.map(String), message: e.message })),
+        });
+      }
+
+      const updated = await storage.updateStartupCostTemplate(req.params.brandId, parsed.data);
+      return res.json(updated.startupCostTemplate);
+    }
+  );
+
+  const brandIdentitySchema = z.object({
+    display_name: z.string().max(100).nullable().optional(),
+    logo_url: z.string().url().nullable().optional(),
+    primary_color: z.string().regex(/^#[0-9a-fA-F]{6}$/, "Must be a valid hex color").nullable().optional(),
+    default_booking_url: z.string().url().nullable().optional(),
+    franchisor_acknowledgment_enabled: z.boolean().optional(),
+  });
+
+  app.put(
+    "/api/brands/:brandId/identity",
+    requireAuth,
+    requireRole("katalyst_admin"),
+    async (req: Request, res: Response) => {
+      const brand = await storage.getBrand(req.params.brandId);
+      if (!brand) {
+        return res.status(404).json({ message: "Brand not found" });
+      }
+
+      const parsed = brandIdentitySchema.safeParse(req.body);
+      if (!parsed.success) {
+        return res.status(400).json({
+          message: "Validation failed",
+          errors: parsed.error.errors.map((e) => ({ path: e.path.map(String), message: e.message })),
+        });
+      }
+
+      const updateData: Record<string, any> = {};
+      if (parsed.data.display_name !== undefined) updateData.displayName = parsed.data.display_name;
+      if (parsed.data.logo_url !== undefined) updateData.logoUrl = parsed.data.logo_url;
+      if (parsed.data.primary_color !== undefined) updateData.primaryColor = parsed.data.primary_color;
+      if (parsed.data.default_booking_url !== undefined) updateData.defaultBookingUrl = parsed.data.default_booking_url;
+      if (parsed.data.franchisor_acknowledgment_enabled !== undefined) updateData.franchisorAcknowledgmentEnabled = parsed.data.franchisor_acknowledgment_enabled;
+
+      const updated = await storage.updateBrandIdentity(req.params.brandId, updateData);
+      return res.json(updated);
+    }
+  );
+
+  app.get(
+    "/api/brands/:brandId/franchisees",
+    requireAuth,
+    requireRole("katalyst_admin"),
+    async (req: Request, res: Response) => {
+      const brand = await storage.getBrand(req.params.brandId);
+      if (!brand) {
+        return res.status(404).json({ message: "Brand not found" });
+      }
+
+      const franchisees = await storage.getFranchiseesByBrand(req.params.brandId);
+      return res.json(franchisees.map((f) => ({
+        id: f.id,
+        email: f.email,
+        displayName: f.displayName,
+        accountManagerId: f.accountManagerId,
+        bookingUrl: f.bookingUrl,
+      })));
+    }
+  );
+
+  const assignAccountManagerSchema = z.object({
+    account_manager_id: z.string().min(1, "Account manager is required"),
+    booking_url: z.string().url("Must be a valid URL"),
+  });
+
+  app.put(
+    "/api/users/:userId/account-manager",
+    requireAuth,
+    requireRole("katalyst_admin"),
+    async (req: Request, res: Response) => {
+      const user = await storage.getUser(req.params.userId);
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      if (user.role !== "franchisee") {
+        return res.status(400).json({ message: "Account managers can only be assigned to franchisees" });
+      }
+
+      const parsed = assignAccountManagerSchema.safeParse(req.body);
+      if (!parsed.success) {
+        return res.status(400).json({
+          message: "Validation failed",
+          errors: parsed.error.errors.map((e) => ({ path: e.path.map(String), message: e.message })),
+        });
+      }
+
+      const manager = await storage.getUser(parsed.data.account_manager_id);
+      if (!manager) {
+        return res.status(404).json({ message: "Account manager not found" });
+      }
+
+      const updated = await storage.assignAccountManager(
+        req.params.userId,
+        parsed.data.account_manager_id,
+        parsed.data.booking_url,
+      );
+
+      return res.json({
+        id: updated.id,
+        email: updated.email,
+        displayName: updated.displayName,
+        accountManagerId: updated.accountManagerId,
+        bookingUrl: updated.bookingUrl,
+      });
     }
   );
 

@@ -12,7 +12,10 @@ import DashboardPage from "@/pages/dashboard";
 import InvitationsPage from "@/pages/invitations";
 import AcceptInvitationPage from "@/pages/accept-invitation";
 import OnboardingPage from "@/pages/onboarding";
+import AdminBrandsPage from "@/pages/admin-brands";
+import AdminBrandDetailPage from "@/pages/admin-brand-detail";
 import NotFound from "@/pages/not-found";
+import { useBrandTheme } from "@/hooks/use-brand-theme";
 
 function ProtectedRoute({ component: Component }: { component: () => JSX.Element | null }) {
   const { isAuthenticated, isLoading } = useAuth();
@@ -100,12 +103,20 @@ function AppRouter() {
       <Route path="/admin/invitations">
         <AdminRoute component={InvitationsPage} />
       </Route>
+      <Route path="/admin/brands">
+        <AdminRoute component={AdminBrandsPage} />
+      </Route>
+      <Route path="/admin/brands/:brandId">
+        <AdminRoute component={AdminBrandDetailPage} />
+      </Route>
       <Route component={NotFound} />
     </Switch>
   );
 }
 
 function AuthenticatedLayout() {
+  useBrandTheme();
+
   return (
     <SidebarProvider>
       <div className="flex h-screen w-full">
