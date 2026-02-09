@@ -1,6 +1,6 @@
 # Story 1.2: Invitation Creation by Admin
 
-Status: ready-for-dev
+Status: review
 
 ## Story
 
@@ -207,6 +207,22 @@ const createInvitationSchema = z.object({
 
 ### Agent Model Used
 
+Claude 4.6 Opus (Replit Agent)
+
 ### Completion Notes
 
+Implemented invitation creation and listing API endpoints for Story 1.2:
+
+- **POST /api/invitations**: Creates invitations with cryptographically secure tokens (crypto.randomBytes, base64url), 7-day expiry, Zod validation, brand existence check, and duplicate prevention (returns existing pending invitation for same email+role+brand_id)
+- **GET /api/invitations**: Lists invitations with computed status (pending/accepted/expired). Katalyst admins see all; franchisor admins see only their brand's invitations
+- **RBAC**: Inline `requireAuth` and `requireRole` middleware. Katalyst admins can invite any role; franchisor admins can only invite franchisees to their own brand; franchisees get 403
+- **Storage**: Added `getInvitations()`, `getInvitationsByBrand(brandId)`, and `getPendingInvitation(email, role, brandId)` to IStorage/DatabaseStorage
+- No schema changes needed — existing invitations table from Story 1.1 was sufficient
+- No new dependencies or environment variables required
+
 ### File List
+
+| File | Action |
+|------|--------|
+| `server/routes.ts` | MODIFIED — added invitation routes, requireAuth/requireRole middleware, Zod validation, token generation |
+| `server/storage.ts` | MODIFIED — added getInvitations(), getInvitationsByBrand(), getPendingInvitation() to interface and implementation |

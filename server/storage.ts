@@ -1,4 +1,4 @@
-import { eq } from "drizzle-orm";
+import { eq, and, isNull, gt } from "drizzle-orm";
 import { db } from "./db";
 import {
   type User,
@@ -22,7 +22,10 @@ export interface IStorage {
     profileImageUrl: string | null;
   }): Promise<User>;
 
+  getInvitations(): Promise<Invitation[]>;
+  getInvitationsByBrand(brandId: string): Promise<Invitation[]>;
   getInvitationByToken(token: string): Promise<Invitation | undefined>;
+  getPendingInvitation(email: string, role: string, brandId: string | null): Promise<Invitation | undefined>;
   createInvitation(invitation: InsertInvitation): Promise<Invitation>;
   markInvitationAccepted(id: string): Promise<void>;
 
@@ -76,8 +79,36 @@ export class DatabaseStorage implements IStorage {
     return created;
   }
 
+  async getInvitations(): Promise<Invitation[]> {
+    return db.select().from(invitations);
+  }
+
+  async getInvitationsByBrand(brandId: string): Promise<Invitation[]> {
+    return db.select().from(invitations).where(eq(invitations.brandId, brandId));
+  }
+
   async getInvitationByToken(token: string): Promise<Invitation | undefined> {
     const [invitation] = await db.select().from(invitations).where(eq(invitations.token, token)).limit(1);
+    return invitation;
+  }
+
+  async getPendingInvitation(email: string, role: string, brandId: string | null): Promise<Invitation | undefined> {
+    const conditions = [
+      eq(invitations.email, email),
+      eq(invitations.role, role),
+      isNull(invitations.acceptedAt),
+      gt(invitations.expiresAt, new Date()),
+    ];
+    if (brandId) {
+      conditions.push(eq(invitations.brandId, brandId));
+    } else {
+      conditions.push(isNull(invitations.brandId));
+    }
+    const [invitation] = await db
+      .select()
+      .from(invitations)
+      .where(and(...conditions))
+      .limit(1);
     return invitation;
   }
 
