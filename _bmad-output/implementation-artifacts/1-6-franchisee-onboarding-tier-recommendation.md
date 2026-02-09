@@ -1,6 +1,6 @@
 # Story 1.6: Franchisee Onboarding & Tier Recommendation
 
-Status: ready-for-dev
+Status: review
 
 ## Story
 
@@ -176,6 +176,27 @@ updateUserOnboarding(userId: string, data: {
 
 ### Agent Model Used
 
+Claude 4.6 Opus (Replit Agent)
+
 ### Completion Notes
 
+Implemented franchisee onboarding and tier recommendation for Story 1.6:
+
+- **Onboarding API**: Added three endpoints in `server/routes.ts`:
+  - `POST /api/onboarding/complete` — accepts 3 answers (franchise_experience, financial_literacy, planning_experience), computes tier recommendation using scoring algorithm (0-9 scale → Planning Assistant 0-3, Forms 4-6, Quick Entry 7-9), returns recommended tier + description. Role-guarded to franchisees only (403 for others).
+  - `POST /api/onboarding/select-tier` — saves preferred tier and marks onboarding complete. Validates tier enum via Zod.
+  - `POST /api/onboarding/skip` — marks onboarding complete without setting a tier preference.
+- **Storage**: Added `updateUserOnboarding(userId, { onboardingCompleted, preferredTier? })` method to IStorage interface and DatabaseStorage implementation.
+- **Onboarding UI**: Created `client/src/pages/onboarding.tsx` with 3-step questionnaire (radio group per question), progress bar, back/next navigation, skip button on every step. After final question, shows tier recommendation screen with all 3 tiers selectable (recommended one highlighted), "Get Started" button to confirm selection.
+- **Onboarding Guard**: Added `FranchiseeOnboardingGuard` component in `App.tsx` — wraps dashboard route, redirects franchisees with `onboardingCompleted: false` to `/onboarding`. Non-franchisees pass through without onboarding.
+- **Role Guard on Onboarding Page**: OnboardingPage checks user role and redirects non-franchisees to `/` via `useEffect` (no render-time side effects). Also redirects if `onboardingCompleted` is already true.
+- **Key Decision**: Scoring uses 0/1/3 weights per answer (not 0/1/2) to create meaningful tier separation. Skip bypasses all questions and tier selection.
+
 ### File List
+
+| File | Action |
+|------|--------|
+| `server/routes.ts` | MODIFIED — Added /api/onboarding/complete, /select-tier, /skip endpoints |
+| `server/storage.ts` | MODIFIED — Added updateUserOnboarding method to IStorage and DatabaseStorage |
+| `client/src/pages/onboarding.tsx` | CREATED — 3-step onboarding questionnaire with tier recommendation |
+| `client/src/App.tsx` | MODIFIED — Added FranchiseeOnboardingGuard, /onboarding route |

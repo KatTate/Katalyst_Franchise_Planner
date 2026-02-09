@@ -1,6 +1,6 @@
 # Story 1.2: Invitation Creation by Admin
 
-Status: ready-for-dev
+Status: review
 
 ## Story
 
