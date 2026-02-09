@@ -233,6 +233,21 @@ export async function registerRoutes(
     }
   );
 
+  app.get(
+    "/api/brands",
+    requireAuth,
+    requireRole("katalyst_admin", "franchisor"),
+    async (req: Request, res: Response) => {
+      const user = req.user!;
+      if (user.role === "franchisor" && user.brandId) {
+        const brand = await storage.getBrand(user.brandId);
+        return res.json(brand ? [brand] : []);
+      }
+      const allBrands = await storage.getBrands();
+      return res.json(allBrands);
+    }
+  );
+
   app.get("/api/invitations/validate/:token", async (req: Request, res: Response) => {
     const { token } = req.params;
 
