@@ -1,6 +1,6 @@
 # Story 1.3: Invitation Acceptance & Account Creation
 
-Status: complete
+Status: done
 
 ## Story
 
