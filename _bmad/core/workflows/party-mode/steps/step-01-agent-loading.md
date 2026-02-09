@@ -12,10 +12,10 @@
 ## EXECUTION PROTOCOLS:
 
 - 🎯 Show agent loading process before presenting party activation
-- ⚠️ Present [C] continue option after agent roster is loaded
-- 💾 ONLY save when user chooses C (Continue)
-- 📖 Update frontmatter `stepsCompleted: [1]` before loading next step
-- 🚫 FORBIDDEN to start conversation until C is selected
+- ⚠️ Present mode selection (Classic vs Sub-Agent) after agent roster is loaded
+- 💾 ONLY proceed when user selects a mode (1, 2, or states a topic to default to Classic)
+- 📖 Update frontmatter `stepsCompleted: [1]` and `party_mode_variant` before loading next step
+- 🚫 FORBIDDEN to start conversation until mode is selected or user provides a topic
 
 ## CONTEXT BOUNDARIES:
 
@@ -88,22 +88,40 @@ Welcome {{user_name}}! I'm excited to facilitate an incredible multi-agent discu
 
 **What would you like to discuss with the team today?**"
 
-### 5. Present Continue Option
+### 5. Present Mode Selection
 
-After agent loading and introduction:
+After agent loading and introduction, present the conversation mode choice:
 
 "**Agent roster loaded successfully!** All our BMAD experts are excited to collaborate with you.
 
-**Ready to start the discussion?**
-[C] Continue - Begin multi-agent conversation
+**Choose your conversation mode:**
 
-### 6. Handle Continue Selection
+[1] **Classic Mode** — All agents respond together in a single flowing conversation. Fast, fluid, and great for quick discussions. _(This is the original Party Mode experience.)_
 
-#### If 'C' (Continue):
+[2] **Sub-Agent Mode** ⚡ — Each agent thinks independently in its own process, then they react to each other's ideas. Produces more genuine disagreements and deeper insights, but takes a bit longer per round.
+
+**Which mode would you like? (1 or 2)**"
+
+### 6. Handle Mode Selection
+
+#### If '1' (Classic Mode):
 
 - Update frontmatter: `stepsCompleted: [1]`
-- Set `agents_loaded: true` and `party_active: true`
+- Set `agents_loaded: true`, `party_active: true`, `party_mode_variant: 'classic'`
 - Load: `./step-02-discussion-orchestration.md`
+
+#### If '2' (Sub-Agent Mode):
+
+- Update frontmatter: `stepsCompleted: [1]`
+- Set `agents_loaded: true`, `party_active: true`, `party_mode_variant: 'subagent'`
+- Load: `./step-02-subagent-orchestration.md`
+
+#### If user skips mode selection and just states a topic:
+
+- Default to **Classic Mode** (preserves backward compatibility)
+- Update frontmatter as above with `party_mode_variant: 'classic'`
+- Load: `./step-02-discussion-orchestration.md`
+- Begin discussion with the user's topic immediately
 
 ## SUCCESS METRICS:
 
@@ -111,9 +129,9 @@ After agent loading and introduction:
 ✅ Complete agent roster built with merged personalities
 ✅ Engaging party mode introduction created
 ✅ Diverse agent sample showcased for user
-✅ [C] continue option presented and handled correctly
-✅ Frontmatter updated with agent loading status
-✅ Proper routing to discussion orchestration step
+✅ Mode selection (Classic vs Sub-Agent) presented and handled correctly
+✅ Frontmatter updated with agent loading status and selected mode variant
+✅ Proper routing to correct discussion orchestration step based on mode choice
 
 ## FAILURE MODES:
 
@@ -121,8 +139,9 @@ After agent loading and introduction:
 ❌ Incomplete agent data extraction or roster building
 ❌ Generic or unengaging party mode introduction
 ❌ Not showcasing diverse agent capabilities
-❌ Not presenting [C] continue option after loading
+❌ Not presenting mode selection after loading
 ❌ Starting conversation without user selection
+❌ Routing to wrong orchestration step for selected mode
 
 ## AGENT LOADING PROTOCOLS:
 
@@ -133,6 +152,9 @@ After agent loading and introduction:
 
 ## NEXT STEP:
 
-After user selects 'C', load `./step-02-discussion-orchestration.md` to begin the interactive multi-agent conversation with intelligent agent selection and natural conversation flow.
+After user selects their mode:
+- **Classic Mode (1):** Load `./step-02-discussion-orchestration.md` for single-agent role-play orchestration
+- **Sub-Agent Mode (2):** Load `./step-02-subagent-orchestration.md` for independent persona reasoning via Replit sub-agents
+- **Topic without mode selection:** Default to Classic Mode and begin immediately
 
 Remember: Create an engaging, party-like atmosphere while maintaining professional expertise and intelligent conversation orchestration!

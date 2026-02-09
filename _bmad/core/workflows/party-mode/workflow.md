@@ -15,10 +15,12 @@ description: Orchestrates group discussions between all installed BMAD agents, e
 
 This uses **micro-file architecture** with **sequential conversation orchestration**:
 
-- Step 01 loads agent manifest and initializes party mode
-- Step 02 orchestrates the ongoing multi-agent discussion
-- Step 03 handles graceful party mode exit
-- Conversation state tracked in frontmatter
+- Step 01 loads agent manifest, initializes party mode, and offers mode selection
+- Step 02 orchestrates the ongoing multi-agent discussion (two variants):
+  - **Classic Mode** (`step-02-discussion-orchestration.md`): Single-agent role-play — the orchestrator voices all personas in one response. Fast and fluid.
+  - **Sub-Agent Mode** (`step-02-subagent-orchestration.md`): Each persona runs as an independent Replit sub-agent with separate reasoning. Produces genuine disagreements and deeper cross-talk. Uses two rounds per message: independent perspectives → cross-talk reactions.
+- Step 03 handles graceful party mode exit (shared by both modes)
+- Conversation state tracked in frontmatter (includes `party_mode_variant`)
 - Agent personalities maintained through merged manifest data
 
 ---
@@ -104,7 +106,10 @@ For each user message or topic:
 
 ### Conversation Orchestration
 
-Load step: `./steps/step-02-discussion-orchestration.md`
+Route to the appropriate step based on mode selection from Step 01:
+
+- If `party_mode_variant` is `'classic'`: Load `./steps/step-02-discussion-orchestration.md`
+- If `party_mode_variant` is `'subagent'`: Load `./steps/step-02-subagent-orchestration.md`
 
 ---
 
@@ -116,6 +121,7 @@ Load step: `./steps/step-02-discussion-orchestration.md`
 ---
 stepsCompleted: [1]
 workflowType: 'party-mode'
+party_mode_variant: 'classic'  # or 'subagent' — set during Step 01 mode selection
 user_name: '{{user_name}}'
 date: '{{date}}'
 agents_loaded: true
