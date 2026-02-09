@@ -18,7 +18,7 @@ When the user triggers an agent or workflow, the AI MUST load the referenced fil
 
 **Technical Implementations & System Design:**
 - **Authentication:** Dual model with Google OAuth for Katalyst administrators (`@katgroupinc.com` domain) and invitation-based password authentication for franchisees/franchisors.
-- **Backend Stack:** Full-stack JavaScript using React (frontend), Express (backend), and PostgreSQL (database).
+- **Backend Stack:** Full-stack JavaScript using React (frontend), Express (backend), and PostgreSQL (database). Server routes are modularized into `server/routes/` with domain-specific routers (auth, invitations, brands, onboarding, admin, users, financial-engine). Main `server/routes.ts` handles session/passport setup and mounts routers.
 - **Database Schema:** Includes `brands` (with `default_account_manager_id`), `users` (with `password_hash`, `profile_image_url`, `account_manager_id`, `booking_url`), `invitations`, and `brand_account_managers` (join table linking managers to brands with per-brand booking URLs) tables.
 - **Session Management:** PostgreSQL-backed sessions with a 24-hour expiry using `connect-pg-simple`.
 - **Role-Based Access Control (RBAC):** Middleware (`requireAuth()`, `requireRole()`, `scopeToUser()`, `projectForRole()`) controls access based on user roles.
@@ -32,6 +32,7 @@ When the user triggers an agent or workflow, the AI MUST load the referenced fil
 
 ## Recent Changes
 
+- **2026-02-09:** Pre-Epic-3 preparation completed — Route modularization (server/routes.ts split into 7 domain routers in server/routes/), tab component extraction (admin-brand-detail.tsx reduced from 1284 to ~95 lines, 4 components extracted to client/src/components/brand/), financial-engine.ts scaffolded as empty router. 0 LSP errors, e2e tests pass.
 - **2026-02-09:** Epic 2 Retrospective completed — 4/4 stories done, 0 LSP errors, 0 tech debt markers, 2.6% fix ratio (2/78 commits). Key action items: modularize server/routes.ts before Epic 3, extract admin-brand-detail.tsx tab components. Story 2.5 relocated to Epic 3 as Story 3.7. Sprint status updated (epic-2: done, all stories: done, retrospective: done).
 - **2026-02-09:** Story 2.5 (Brand Configuration Validation) relocated to Epic 3 as Story 3.7 — depends on financial engine (shared/financial-engine.ts) from Stories 3.1–3.6. Epic 2 closes with 4 completed stories. Decision made via Party Mode discussion.
 - **2026-02-09:** Story 2.4 (Account Manager Assignment) enhanced — Added brand-level default account manager and per-brand booking URLs via `brand_account_managers` join table. Brand Account Managers section in admin with add/remove/edit/set-default controls. Auto-assignment of default manager + booking URL on franchisee invitation acceptance. Per-franchisee override dialog with auto-populated booking URL from manager's brand config. Booking URL fallback chain: franchisee override > manager's brand URL > brand defaultBookingUrl.
