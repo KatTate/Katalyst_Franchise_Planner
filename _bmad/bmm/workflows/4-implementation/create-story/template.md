@@ -18,6 +18,14 @@ so that {{benefit}}.
 
 - [Key patterns and conventions the implementation must follow]
 
+### UI/UX Deliverables
+
+<!-- REQUIRED for end-user stories. DELETE this section ONLY if the story's "As a..." role is a developer or the story is purely infrastructure with no user interaction. -->
+
+- [Screens/pages the user will interact with]
+- [Key UI elements: forms, tables, buttons, navigation]
+- [UI states: loading, empty, error, success]
+
 ### Anti-Patterns & Hard Constraints
 
 - [Things the developer MUST NOT do — wrong libraries, wrong files, wrong approaches]

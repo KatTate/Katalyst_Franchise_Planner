@@ -1,15 +1,15 @@
 ---
 name: 'step-04-self-check'
-description: 'Self-audit implementation against tasks, tests, AC, and patterns'
+description: 'Self-audit implementation against acceptance criteria, tests, and patterns'
 
 workflow_path: '{project-root}/_bmad/bmm/workflows/bmad-quick-flow/quick-dev'
 thisStepFile: './step-04-self-check.md'
-nextStepFile: './step-05-adversarial-review.md'
+nextStepFile: './step-05-review.md'
 ---
 
 # Step 4: Self-Check
 
-**Goal:** Audit completed work against tasks, tests, AC, and patterns before external review.
+**Goal:** Audit completed work against acceptance criteria, tests, and patterns before review.
 
 ---
 
@@ -26,31 +26,31 @@ From previous steps:
 
 ## SELF-CHECK AUDIT
 
-### 1. Tasks Complete
+### 1. Acceptance Criteria Satisfied
 
-Verify all tasks are marked complete:
+For each acceptance criterion from the spec or context:
 
-- [ ] All tasks from tech-spec or mental plan marked `[x]`
-- [ ] No tasks skipped without documented reason
-- [ ] Any blocked tasks have clear explanation
+- [ ] AC is demonstrably satisfied in the implementation
+- [ ] Can point to specific code that delivers the AC
+- [ ] Edge cases considered where relevant
 
 ### 2. Tests Passing
 
 Verify test status:
 
-- [ ] All existing tests still pass
-- [ ] New tests written for new functionality
+- [ ] All existing tests still pass (no regressions)
+- [ ] New tests written where appropriate for the task type
 - [ ] No test warnings or skipped tests without reason
 
-### 3. Acceptance Criteria Satisfied
+### 3. Architectural Constraints Followed
 
-For each AC:
+Verify spec/context compliance:
 
-- [ ] AC is demonstrably met
-- [ ] Can explain how implementation satisfies AC
-- [ ] Edge cases considered
+- [ ] Implementation guidance and patterns from spec were followed
+- [ ] Anti-patterns or constraints from spec were respected
+- [ ] Dependencies match what was specified
 
-### 4. Patterns Followed
+### 4. Code Quality
 
 Verify code quality:
 
@@ -66,9 +66,8 @@ Verify code quality:
 If `{execution_mode}` is "tech-spec":
 
 1. Load `{tech_spec_path}`
-2. Mark all tasks as `[x]` complete
-3. Update status to "Implementation Complete"
-4. Save changes
+2. Update status to "Implementation Complete"
+3. Save changes
 
 ---
 
@@ -84,29 +83,29 @@ Present summary to transition to review:
 **Tests:** {test summary - passed/added/etc}
 **AC Status:** {all satisfied / issues noted}
 
-Proceeding to adversarial code review...
+Proceeding to code review...
 ```
 
 ---
 
 ## NEXT STEP
 
-Proceed immediately to `step-05-adversarial-review.md`.
+Proceed immediately to `step-05-review.md`.
 
 ---
 
 ## SUCCESS METRICS
 
-- All tasks verified complete
+- All acceptance criteria verified as satisfied
 - All tests passing
-- All AC satisfied
+- Architectural constraints followed
 - Patterns followed
 - Tech-spec updated (if Mode A)
 - Summary presented
 
 ## FAILURE MODES
 
-- Claiming tasks complete when they're not
+- Claiming ACs satisfied when they're not
 - Not running tests before proceeding
 - Missing AC verification
 - Ignoring pattern violations

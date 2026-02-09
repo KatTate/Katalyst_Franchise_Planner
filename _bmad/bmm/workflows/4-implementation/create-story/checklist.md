@@ -48,6 +48,17 @@ Validate that a story file provides sufficient context for a dev agent to implem
 - [ ] **Source citations present**: Technical details cite source document paths and sections
 - [ ] **Traceability**: Reader can verify any claim by following the reference
 
+## User-Facing Story — UI Deliverables
+
+_Skip this section ONLY if the story's "As a..." role is explicitly a developer or the story is purely infrastructure/backend with no user interaction._
+
+- [ ] **ACs describe user interactions**: Acceptance criteria reference what the user sees and does (screens, forms, buttons, tables, messages) — NOT HTTP methods or API endpoint paths
+- [ ] **No API specs in ACs**: ACs do not contain GET, POST, PUT, DELETE, or /api/... paths (these belong in Dev Notes only)
+- [ ] **UI/UX Deliverables section present**: Dev Notes include a "UI/UX Deliverables" section listing the screens, pages, or components the user will interact with
+- [ ] **Frontend files in File Change Summary**: The File Change Summary includes frontend/UI files (pages, components, forms) — not just server files
+- [ ] **UI states covered**: Error states, loading states, empty states, and success states are described in ACs or Dev Notes
+- [ ] **Navigation documented**: How the user reaches this feature (menu item, link, route) is specified in ACs or Dev Notes
+
 ## Overall Quality Bar
 
 - [ ] **Self-sufficient**: A dev agent could implement this story correctly from the AC and Dev Notes alone

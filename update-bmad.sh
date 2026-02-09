@@ -127,6 +127,11 @@ if [ -f "$EXTRACTED_DIR/verify-bmad.sh" ]; then
   echo "       Updated verify script"
 fi
 
+if [ -f "_bmad/README.md" ]; then
+  cp "_bmad/README.md" "BMAD-README.md"
+  echo "       Updated BMAD-README.md"
+fi
+
 # ─── Cleanup ─────────────────────────────────────────────────────────────
 rm -rf "$TEMP_DIR" "$BACKUP_DIR"
 

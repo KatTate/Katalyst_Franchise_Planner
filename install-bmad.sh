@@ -33,36 +33,64 @@ if [ ! -d "_bmad" ]; then
   exit 1
 fi
 
-echo "[1/5] Found _bmad/ toolkit directory"
+echo "[1/6] Found _bmad/ toolkit directory"
 
 # ─── Step 2: Create output directories ─────────────────────────────────────
 mkdir -p _bmad-output/planning-artifacts
 mkdir -p _bmad-output/implementation-artifacts
-echo "[2/5] Created _bmad-output/ directories"
+echo "[2/6] Created _bmad-output/ directories"
 
 # ─── Step 3: Detect project type ───────────────────────────────────────────
 IS_BROWNFIELD=false
-EXISTING_FILES=0
+STRONG_INDICATORS=0
+WEAK_INDICATORS=0
 
-# Check for common indicators of an existing project
-for indicator in "package.json" "requirements.txt" "Cargo.toml" "go.mod" "Gemfile" "pyproject.toml" "pom.xml" "build.gradle" "composer.json" "mix.exs"; do
-  if [ -f "$indicator" ]; then
-    EXISTING_FILES=$((EXISTING_FILES + 1))
+has_real_content() {
+  local file="$1"
+  local lines
+  lines=$(wc -l < "$file" 2>/dev/null || echo "0")
+  [ "$lines" -gt 5 ]
+}
+
+dir_has_code() {
+  local dir="$1"
+  local count
+  count=$(find "$dir" -maxdepth 2 -type f \( -name "*.js" -o -name "*.ts" -o -name "*.py" -o -name "*.rb" -o -name "*.go" -o -name "*.rs" -o -name "*.java" -o -name "*.php" -o -name "*.cpp" -o -name "*.c" -o -name "*.cs" -o -name "*.swift" -o -name "*.vue" -o -name "*.svelte" -o -name "*.jsx" -o -name "*.tsx" \) 2>/dev/null | head -3 | wc -l)
+  [ "$count" -gt 0 ]
+}
+
+for indicator in "requirements.txt" "Cargo.toml" "go.mod" "Gemfile" "pyproject.toml" "pom.xml" "build.gradle" "composer.json" "mix.exs"; do
+  if [ -f "$indicator" ] && has_real_content "$indicator"; then
+    STRONG_INDICATORS=$((STRONG_INDICATORS + 1))
   fi
 done
 
-# Check for source directories
+if [ -f "package.json" ] && has_real_content "package.json"; then
+  if grep -q '"dependencies"' package.json 2>/dev/null; then
+    STRONG_INDICATORS=$((STRONG_INDICATORS + 1))
+  else
+    WEAK_INDICATORS=$((WEAK_INDICATORS + 1))
+  fi
+fi
+
 for dir in "src" "app" "lib" "server" "client" "api" "pages" "components"; do
-  if [ -d "$dir" ]; then
-    EXISTING_FILES=$((EXISTING_FILES + 1))
+  if [ -d "$dir" ] && dir_has_code "$dir"; then
+    STRONG_INDICATORS=$((STRONG_INDICATORS + 1))
+  elif [ -d "$dir" ]; then
+    WEAK_INDICATORS=$((WEAK_INDICATORS + 1))
   fi
 done
 
-if [ "$EXISTING_FILES" -gt 0 ]; then
+if [ "$STRONG_INDICATORS" -gt 0 ]; then
   IS_BROWNFIELD=true
-  echo "[3/5] Detected BROWNFIELD project ($EXISTING_FILES existing indicators found)"
+  echo "[3/6] Detected BROWNFIELD project ($STRONG_INDICATORS strong indicators found)"
+elif [ "$WEAK_INDICATORS" -gt 1 ]; then
+  IS_BROWNFIELD=true
+  echo "[3/6] Detected BROWNFIELD project (multiple project indicators found)"
+  echo "       NOTE: If this is actually a new project, tell the agent"
+  echo "       \"this is a greenfield project\" and it will adjust."
 else
-  echo "[3/5] Detected GREENFIELD project (no existing project files found)"
+  echo "[3/6] Detected GREENFIELD project (no existing project code found)"
 fi
 
 # ─── Step 4: Handle replit.md ──────────────────────────────────────────────
@@ -172,7 +200,7 @@ BMAD_SECTION_END
 if [ -f "replit.md" ]; then
   # Check if BMAD is already installed
   if grep -q "$BMAD_MARKER" replit.md 2>/dev/null; then
-    echo "[4/5] Updating existing BMAD section in replit.md..."
+    echo "[4/6] Updating existing BMAD section in replit.md..."
 
     # Remove old BMAD section and replace with new one
     # Create temp file with content before BMAD marker
@@ -199,7 +227,7 @@ if [ -f "replit.md" ]; then
     echo "         Preserved existing project content, updated BMAD section"
 
   else
-    echo "[4/5] Appending BMAD section to existing replit.md..."
+    echo "[4/6] Appending BMAD section to existing replit.md..."
 
     # Preserve existing content and append BMAD section
     echo "" >> replit.md
@@ -211,14 +239,32 @@ if [ -f "replit.md" ]; then
   fi
 
 else
-  echo "[4/5] Creating new replit.md..."
+  echo "[4/6] Creating new replit.md..."
   generate_bmad_section > replit.md
   echo "         Created fresh replit.md with BMAD configuration"
 fi
 
-# ─── Step 5: Summary ──────────────────────────────────────────────────────
+# ─── Step 5: Copy update script ──────────────────────────────────────────
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+if [ -f "$SCRIPT_DIR/update-bmad.sh" ]; then
+  cp "$SCRIPT_DIR/update-bmad.sh" ./update-bmad.sh 2>/dev/null || true
+  echo "[5/6] Copied update script (run 'bash update-bmad.sh' for future updates)"
+else
+  echo "[5/6] Update script not found — you can download it from the BMad repo"
+fi
 
-echo "[5/5] Installation complete!"
+# ─── Step 6: Copy README ──────────────────────────────────────────────────
+if [ -f "_bmad/README.md" ]; then
+  cp "_bmad/README.md" "BMAD-README.md"
+  echo "[6/6] Copied BMAD-README.md (complete guide to using BMad in Replit)"
+else
+  echo "[6/6] README not found in toolkit — skipping"
+fi
+
+# ─── Summary ──────────────────────────────────────────────────────────────
+
+echo ""
+echo "Installation complete!"
 echo ""
 echo "=========================================="
 echo " BMad Method installed successfully!"

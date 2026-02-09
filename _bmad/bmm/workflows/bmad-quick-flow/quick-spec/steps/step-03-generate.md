@@ -1,13 +1,13 @@
 ---
 name: 'step-03-generate'
-description: 'Build the implementation plan based on the technical mapping of constraints'
+description: 'Build the implementation guidance — acceptance criteria and architectural context for the dev agent'
 
 workflow_path: '{project-root}/_bmad/bmm/workflows/bmad-quick-flow/quick-spec'
 nextStepFile: './step-04-review.md'
 wipFile: '{implementation_artifacts}/tech-spec-wip.md'
 ---
 
-# Step 3: Generate Implementation Plan
+# Step 3: Generate Implementation Guidance
 
 **Progress: Step 3 of 4** - Next: Review & Finalize
 
@@ -22,8 +22,8 @@ wipFile: '{implementation_artifacts}/tech-spec-wip.md'
 ## CONTEXT:
 
 - Requires `{wipFile}` with defined "Overview" and "Context for Development" sections.
-- Focus: Create the implementation sequence that addresses the requirement delta using the captured technical context.
-- Output: Implementation-ready tasks with specific files and instructions.
+- Focus: Create acceptance criteria and implementation guidance that tell the dev agent WHAT to build and WHY, not HOW step-by-step.
+- Output: Acceptance criteria (definition of done) plus architectural guidance (constraints and patterns).
 - Target: Meet the **READY FOR DEVELOPMENT** standard defined in `workflow.md`.
 
 ## SEQUENCE OF INSTRUCTIONS
@@ -36,34 +36,14 @@ wipFile: '{implementation_artifacts}/tech-spec-wip.md'
 - Overview section (Problem, Solution, Scope)
 - Context for Development section (Patterns, Files, Decisions)
 
-### 2. Generate Implementation Plan
+### 2. Generate Acceptance Criteria
 
-Generate specific implementation tasks:
+**Create specific, testable acceptance criteria:**
 
-a) **Task Breakdown**
-
-- Each task should be a discrete, completable unit of work
-- Tasks should be ordered logically (dependencies first)
-- Include the specific files to modify in each task
-- Be explicit about what changes to make
-
-b) **Task Format**
+Each AC should describe a verifiable outcome:
 
 ```markdown
-- [ ] Task N: Clear action description
-  - File: `path/to/file.ext`
-  - Action: Specific change to make
-  - Notes: Any implementation details
-```
-
-### 3. Generate Acceptance Criteria
-
-**Create testable acceptance criteria:**
-
-Each AC should follow Given/When/Then format:
-
-```markdown
-- [ ] AC N: Given [precondition], when [action], then [expected result]
+- AC 1: Given [precondition], when [action], then [expected result]
 ```
 
 **Ensure ACs cover:**
@@ -73,29 +53,55 @@ Each AC should follow Given/When/Then format:
 - Edge cases (if relevant)
 - Integration points (if relevant)
 
-### 4. Complete Additional Context
+**Quality bar:** Could a competent developer or AI agent read these ACs and know exactly what "done" looks like? Each AC must be specific enough to verify — no vague language like "should work properly."
+
+### 3. Generate Implementation Guidance
+
+Create directional guidance that helps the dev agent build correctly without scripting every step:
+
+a) **Architecture Patterns to Follow**
+
+- What patterns from the existing codebase should be extended
+- Naming conventions, file organization, component structure to match
+- Reference specific existing files as examples where helpful
+
+b) **Anti-Patterns and Constraints**
+
+- What approaches to avoid (and why)
+- Files or areas that should NOT be modified
+- Performance or security constraints
+
+c) **File Change Summary**
+
+- Which files will likely need modification or creation
+- This is directional guidance, not a rigid prescription
+- The dev agent may discover additional files need changes
+
+d) **Dependencies**
+
+- External libraries or services needed
+- Other features this depends on
+- API or data dependencies
+
+### 4. Generate Testing Guidance
+
+**Describe the testing approach appropriate for this task:**
+
+- What types of tests make sense (unit, integration, E2E, manual verification)
+- Key scenarios to test
+- This is guidance, not a rigid test plan — the dev agent decides the testing approach
+
+### 5. Complete Additional Context
 
 **Fill in remaining sections:**
 
-a) **Dependencies**
-
-- External libraries or services needed
-- Other tasks or features this depends on
-- API or data dependencies
-
-b) **Testing Strategy**
-
-- Unit tests needed
-- Integration tests needed
-- Manual testing steps
-
-c) **Notes**
+a) **Notes**
 
 - High-risk items from pre-mortem analysis
 - Known limitations
 - Future considerations (out of scope but worth noting)
 
-### 5. Write Complete Spec
+### 6. Write Complete Spec
 
 a) **Update `{wipFile}` with all generated content:**
 
@@ -118,8 +124,8 @@ c) **Read fully and follow: `{nextStepFile}` (Step 4)**
 
 ## REQUIRED OUTPUTS:
 
-- Tasks MUST be specific, actionable, ordered logically, with files to modify.
-- ACs MUST be testable, using Given/When/Then format.
+- ACs MUST be specific, testable, and cover the full scope of the change.
+- Implementation guidance MUST include architecture patterns, constraints, and file change summary.
 - Status MUST be updated to 'review'.
 
 ## VERIFICATION CHECKLIST:
