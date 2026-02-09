@@ -39,6 +39,7 @@ export interface IStorage {
   getBrands(): Promise<Brand[]>;
   getBrand(id: string): Promise<Brand | undefined>;
   getBrandBySlug(slug: string): Promise<Brand | undefined>;
+  getBrandByName(name: string): Promise<Brand | undefined>;
   createBrand(brand: InsertBrand): Promise<Brand>;
   updateBrand(id: string, data: Partial<InsertBrand>): Promise<Brand>;
   updateBrandParameters(id: string, parameters: BrandParameters): Promise<Brand>;
@@ -171,6 +172,11 @@ export class DatabaseStorage implements IStorage {
 
   async getBrandBySlug(slug: string): Promise<Brand | undefined> {
     const [brand] = await db.select().from(brands).where(eq(brands.slug, slug)).limit(1);
+    return brand;
+  }
+
+  async getBrandByName(name: string): Promise<Brand | undefined> {
+    const [brand] = await db.select().from(brands).where(eq(brands.name, name)).limit(1);
     return brand;
   }
 

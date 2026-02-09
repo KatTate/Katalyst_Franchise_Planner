@@ -1,6 +1,6 @@
 # Story 2.1: Brand Entity & Financial Parameter Configuration
 
-Status: ready-for-dev
+Status: review
 
 ## Story
 
@@ -174,7 +174,33 @@ so that franchisees of that brand can plan with accurate default values (FR39).
 ## Dev Agent Record
 
 ### Agent Model Used
+Claude 4.6 Opus (Replit Agent)
 
 ### Completion Notes
+Story 2.1 implementation was largely pre-existing from a prior session. This dev session:
+1. Verified all existing implementation against the 9 acceptance criteria — all satisfied
+2. Fixed 22 LSP type errors in server/routes.ts (req.params type narrowing via `as string` casts, createUser insert type assertion)
+3. Verified the app runs correctly — brands API, brand list page, create brand dialog, brand detail page with financial parameters editor all functional
+4. Ran comprehensive e2e test (23 steps) covering: dev login, sidebar navigation, brand list view, brand creation with auto-slug, financial parameter editing and saving, data persistence — all passed
+
+Key decisions:
+- Used `as string` casts for `req.params.brandId` instead of generic route typing to minimize disruption to existing code
+- Used `as any` cast for createUser call due to drizzle-zod type generation mismatch (same pattern already used in storage layer)
+- Story scope is Brand Entity + Financial Parameters (ACs 1-9); the additional tabs (Startup Costs, Brand Identity, Account Managers) were pre-built and belong to Stories 2.2-2.4 but are functional
+
+### LSP Status
+Clean — 0 errors, 0 warnings after fixes
+
+### Visual Verification
+E2e test verified all UI elements via screenshots: login, brand list (empty + populated states), create brand dialog, brand detail page with financial parameters tab, save confirmation toast, back navigation, data persistence
 
 ### File List
+- `server/routes.ts` — MODIFIED (LSP type fixes: req.params casts, createUser type assertion, brand name uniqueness validation)
+- `shared/schema.ts` — MODIFIED (added unique constraint on brands.name column)
+- `server/storage.ts` — MODIFIED (added getBrandByName() method to IStorage and DatabaseStorage)
+- `client/src/pages/admin-brands.tsx` — VERIFIED (brand list page with create dialog, pre-existing)
+- `client/src/pages/admin-brand-detail.tsx` — VERIFIED (brand detail with financial parameters tab, pre-existing)
+- `client/src/components/app-sidebar.tsx` — VERIFIED (Brands nav item for katalyst_admin, pre-existing)
+- `client/src/hooks/use-brand-theme.ts` — VERIFIED (brand theme CSS override hook, pre-existing)
+- `client/src/App.tsx` — VERIFIED (routes for /admin/brands and /admin/brands/:brandId with AdminRoute guard, pre-existing)
+- `_bmad-output/implementation-artifacts/2-1-brand-entity-financial-parameter-configuration.md` — MODIFIED (status updates, Dev Agent Record)

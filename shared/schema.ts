@@ -61,7 +61,7 @@ export type BrandTheme = z.infer<typeof brandThemeSchema>;
 
 export const brands = pgTable("brands", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  name: text("name").notNull(),
+  name: text("name").notNull().unique(),
   slug: text("slug").notNull().unique(),
   displayName: text("display_name"),
   brandParameters: jsonb("brand_parameters").$type<BrandParameters>(),

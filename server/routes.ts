@@ -254,7 +254,7 @@ export async function registerRoutes(
   app.get("/api/invitations/validate/:token", async (req: Request, res: Response) => {
     const { token } = req.params;
 
-    const invitation = await storage.getInvitationByToken(token);
+    const invitation = await storage.getInvitationByToken(token as string);
     if (!invitation) {
       return res.status(404).json({ message: "Invitation not found", code: "INVALID_TOKEN" });
     }
@@ -325,7 +325,7 @@ export async function registerRoutes(
       role: invitation.role,
       brandId: invitation.brandId,
       onboardingCompleted: false,
-    });
+    } as any);
 
     await storage.markInvitationAccepted(invitation.id);
 
@@ -467,9 +467,14 @@ export async function registerRoutes(
         });
       }
 
-      const existing = await storage.getBrandBySlug(parsed.data.slug);
-      if (existing) {
+      const existingSlug = await storage.getBrandBySlug(parsed.data.slug);
+      if (existingSlug) {
         return res.status(409).json({ message: "A brand with this slug already exists" });
+      }
+
+      const existingName = await storage.getBrandByName(parsed.data.name);
+      if (existingName) {
+        return res.status(409).json({ message: "A brand with this name already exists" });
       }
 
       const brand = await storage.createBrand({
@@ -487,7 +492,8 @@ export async function registerRoutes(
     requireAuth,
     requireRole("katalyst_admin"),
     async (req: Request, res: Response) => {
-      const brand = await storage.getBrand(req.params.brandId);
+      const brandId = req.params.brandId as string;
+      const brand = await storage.getBrand(brandId);
       if (!brand) {
         return res.status(404).json({ message: "Brand not found" });
       }
@@ -500,7 +506,8 @@ export async function registerRoutes(
     requireAuth,
     requireRole("katalyst_admin"),
     async (req: Request, res: Response) => {
-      const brand = await storage.getBrand(req.params.brandId);
+      const brandId = req.params.brandId as string;
+      const brand = await storage.getBrand(brandId);
       if (!brand) {
         return res.status(404).json({ message: "Brand not found" });
       }
@@ -522,7 +529,7 @@ export async function registerRoutes(
       if (parsed.data.name) updateData.name = parsed.data.name;
       if (parsed.data.display_name !== undefined) updateData.displayName = parsed.data.display_name;
 
-      const updated = await storage.updateBrand(req.params.brandId, updateData);
+      const updated = await storage.updateBrand(brandId, updateData);
       return res.json(updated);
     }
   );
@@ -532,7 +539,8 @@ export async function registerRoutes(
     requireAuth,
     requireRole("katalyst_admin"),
     async (req: Request, res: Response) => {
-      const brand = await storage.getBrand(req.params.brandId);
+      const brandId = req.params.brandId as string;
+      const brand = await storage.getBrand(brandId);
       if (!brand) {
         return res.status(404).json({ message: "Brand not found" });
       }
@@ -545,7 +553,8 @@ export async function registerRoutes(
     requireAuth,
     requireRole("katalyst_admin"),
     async (req: Request, res: Response) => {
-      const brand = await storage.getBrand(req.params.brandId);
+      const brandId = req.params.brandId as string;
+      const brand = await storage.getBrand(brandId);
       if (!brand) {
         return res.status(404).json({ message: "Brand not found" });
       }
@@ -558,7 +567,7 @@ export async function registerRoutes(
         });
       }
 
-      const updated = await storage.updateBrandParameters(req.params.brandId, parsed.data);
+      const updated = await storage.updateBrandParameters(brandId, parsed.data);
       return res.json(updated.brandParameters);
     }
   );
@@ -568,7 +577,8 @@ export async function registerRoutes(
     requireAuth,
     requireRole("katalyst_admin"),
     async (req: Request, res: Response) => {
-      const brand = await storage.getBrand(req.params.brandId);
+      const brandId = req.params.brandId as string;
+      const brand = await storage.getBrand(brandId);
       if (!brand) {
         return res.status(404).json({ message: "Brand not found" });
       }
@@ -581,7 +591,8 @@ export async function registerRoutes(
     requireAuth,
     requireRole("katalyst_admin"),
     async (req: Request, res: Response) => {
-      const brand = await storage.getBrand(req.params.brandId);
+      const brandId = req.params.brandId as string;
+      const brand = await storage.getBrand(brandId);
       if (!brand) {
         return res.status(404).json({ message: "Brand not found" });
       }
@@ -594,7 +605,7 @@ export async function registerRoutes(
         });
       }
 
-      const updated = await storage.updateStartupCostTemplate(req.params.brandId, parsed.data);
+      const updated = await storage.updateStartupCostTemplate(brandId, parsed.data);
       return res.json(updated.startupCostTemplate);
     }
   );
@@ -612,7 +623,8 @@ export async function registerRoutes(
     requireAuth,
     requireRole("katalyst_admin"),
     async (req: Request, res: Response) => {
-      const brand = await storage.getBrand(req.params.brandId);
+      const brandId = req.params.brandId as string;
+      const brand = await storage.getBrand(brandId);
       if (!brand) {
         return res.status(404).json({ message: "Brand not found" });
       }
@@ -632,7 +644,7 @@ export async function registerRoutes(
       if (parsed.data.default_booking_url !== undefined) updateData.defaultBookingUrl = parsed.data.default_booking_url;
       if (parsed.data.franchisor_acknowledgment_enabled !== undefined) updateData.franchisorAcknowledgmentEnabled = parsed.data.franchisor_acknowledgment_enabled;
 
-      const updated = await storage.updateBrandIdentity(req.params.brandId, updateData);
+      const updated = await storage.updateBrandIdentity(brandId, updateData);
       return res.json(updated);
     }
   );
@@ -642,12 +654,13 @@ export async function registerRoutes(
     requireAuth,
     requireRole("katalyst_admin"),
     async (req: Request, res: Response) => {
-      const brand = await storage.getBrand(req.params.brandId);
+      const brandId = req.params.brandId as string;
+      const brand = await storage.getBrand(brandId);
       if (!brand) {
         return res.status(404).json({ message: "Brand not found" });
       }
 
-      const franchisees = await storage.getFranchiseesByBrand(req.params.brandId);
+      const franchisees = await storage.getFranchiseesByBrand(brandId);
       return res.json(franchisees.map((f) => ({
         id: f.id,
         email: f.email,
@@ -668,7 +681,8 @@ export async function registerRoutes(
     requireAuth,
     requireRole("katalyst_admin"),
     async (req: Request, res: Response) => {
-      const user = await storage.getUser(req.params.userId);
+      const userId = req.params.userId as string;
+      const user = await storage.getUser(userId);
       if (!user) {
         return res.status(404).json({ message: "User not found" });
       }
@@ -690,7 +704,7 @@ export async function registerRoutes(
       }
 
       const updated = await storage.assignAccountManager(
-        req.params.userId,
+        userId,
         parsed.data.account_manager_id,
         parsed.data.booking_url,
       );
