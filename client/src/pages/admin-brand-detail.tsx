@@ -6,6 +6,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import type { Brand, BrandParameters, StartupCostTemplate, StartupCostItem } from "@shared/schema";
+import { brandParameterSchema } from "@shared/schema";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -96,6 +97,7 @@ function FinancialParametersTab({ brand }: { brand: Brand }) {
   const { toast } = useToast();
   const params = brand.brandParameters || getDefaultBrandParameters();
   const [formData, setFormData] = useState<BrandParameters>(params);
+  const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
 
   const updateParams = useMutation({
     mutationFn: async (data: BrandParameters) => {
@@ -111,17 +113,48 @@ function FinancialParametersTab({ brand }: { brand: Brand }) {
     },
   });
 
-  const updateField = (category: keyof BrandParameters, field: string, value: number) => {
+  const updateField = (category: keyof BrandParameters, field: string, rawValue: string) => {
+    const parsed = rawValue === "" ? NaN : parseFloat(rawValue);
     setFormData((prev) => ({
       ...prev,
       [category]: {
         ...prev[category],
         [field]: {
           ...(prev[category] as any)[field],
-          value,
+          value: parsed,
         },
       },
     }));
+    setValidationErrors((prev) => {
+      const key = `${category}.${field}`;
+      if (prev[key]) {
+        const next = { ...prev };
+        delete next[key];
+        return next;
+      }
+      return prev;
+    });
+  };
+
+  const handleSave = () => {
+    const result = brandParameterSchema.safeParse(formData);
+    if (!result.success) {
+      const errors: Record<string, string> = {};
+      result.error.errors.forEach((err) => {
+        if (err.path.length >= 3 && err.path[2] === "value") {
+          const key = `${err.path[0]}.${err.path[1]}`;
+          errors[key] = err.message;
+        } else if (err.path.length >= 2) {
+          const key = `${err.path[0]}.${err.path[1]}`;
+          errors[key] = errors[key] || err.message;
+        }
+      });
+      setValidationErrors(errors);
+      toast({ title: "Validation failed", description: "Please correct the highlighted fields before saving.", variant: "destructive" });
+      return;
+    }
+    setValidationErrors({});
+    updateParams.mutate(result.data);
   };
 
   const renderParameterCategory = (
@@ -134,24 +167,32 @@ function FinancialParametersTab({ brand }: { brand: Brand }) {
         <CardTitle className="text-base">{title}</CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
-        {Object.entries(fields).map(([key, field]) => (
-          <div key={key} className="grid grid-cols-1 sm:grid-cols-3 gap-2 items-start">
-            <div className="sm:col-span-1">
-              <Label htmlFor={`param-${category}-${key}`} className="text-sm font-medium">{field.label}</Label>
-              <p className="text-xs text-muted-foreground mt-0.5">{field.description}</p>
+        {Object.entries(fields).map(([key, field]) => {
+          const errorKey = `${category}.${key}`;
+          const error = validationErrors[errorKey];
+          return (
+            <div key={key} className="grid grid-cols-1 sm:grid-cols-3 gap-2 items-start">
+              <div className="sm:col-span-1">
+                <Label htmlFor={`param-${category}-${key}`} className="text-sm font-medium">{field.label}</Label>
+                <p className="text-xs text-muted-foreground mt-0.5">{field.description}</p>
+              </div>
+              <div className="sm:col-span-2">
+                <Input
+                  id={`param-${category}-${key}`}
+                  type="number"
+                  step="any"
+                  value={isNaN(field.value) ? "" : field.value}
+                  onChange={(e) => updateField(category, key, e.target.value)}
+                  className={error ? "border-destructive" : ""}
+                  data-testid={`input-param-${category}-${key}`}
+                />
+                {error && (
+                  <p className="text-xs text-destructive mt-1" data-testid={`error-param-${category}-${key}`}>{error}</p>
+                )}
+              </div>
             </div>
-            <div className="sm:col-span-2">
-              <Input
-                id={`param-${category}-${key}`}
-                type="number"
-                step="any"
-                value={field.value}
-                onChange={(e) => updateField(category, key, parseFloat(e.target.value) || 0)}
-                data-testid={`input-param-${category}-${key}`}
-              />
-            </div>
-          </div>
-        ))}
+          );
+        })}
       </CardContent>
     </Card>
   );
@@ -163,7 +204,7 @@ function FinancialParametersTab({ brand }: { brand: Brand }) {
           <h2 className="text-lg font-semibold">Financial Parameters</h2>
           <p className="text-sm text-muted-foreground">Configure the default seed values for this brand's financial engine</p>
         </div>
-        <Button onClick={() => updateParams.mutate(formData)} disabled={updateParams.isPending} data-testid="button-save-parameters">
+        <Button onClick={handleSave} disabled={updateParams.isPending} data-testid="button-save-parameters">
           <Save className="h-4 w-4 mr-2" />
           {updateParams.isPending ? "Saving..." : "Save Parameters"}
         </Button>
