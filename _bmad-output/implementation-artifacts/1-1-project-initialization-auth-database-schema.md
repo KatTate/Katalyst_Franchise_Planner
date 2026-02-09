@@ -1,6 +1,6 @@
 # Story 1.1: Project Initialization & Auth Database Schema
 
-Status: review
+Status: done
 
 ## Story
 

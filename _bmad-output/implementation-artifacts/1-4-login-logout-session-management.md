@@ -1,6 +1,6 @@
 # Story 1.4: Login, Logout & Session Management
 
-Status: review
+Status: done
 
 ## Story
 

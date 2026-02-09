@@ -1,6 +1,6 @@
 # Story 1.6: Franchisee Onboarding & Tier Recommendation
 
-Status: review
+Status: done
 
 ## Story
 
