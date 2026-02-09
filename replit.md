@@ -32,6 +32,7 @@ When the user triggers an agent or workflow, the AI MUST load the referenced fil
 
 ## Recent Changes
 
+- **2026-02-09:** Story 2.3 (Brand Identity & Dynamic Theming) completed — Enhanced useBrandTheme hook with WCAG luminance-based --primary-foreground calculation, sidebar brand logo display with onError fallback, dynamic brand name label, "Powered by Katalyst" badge using --katalyst-brand escape hatch, hex color validation with live preview swatch in admin identity form, bidirectional color picker sync. Code review passed with 0 findings.
 - **2026-02-09:** Story 2.2 (Startup Cost Template Management) completed — Reorder controls (move up/down buttons with boundary disable), aria-labels on all icon buttons (Move Up, Move Down, Edit, Delete), help text on Item 7 Low/High and Line Item Name form fields, sort_order normalization after every mutation. Code review passed with 0 findings.
 - **2026-02-09:** Story 2.1 (Brand Entity & Financial Parameter Configuration) completed — Brand management list page, create brand dialog with auto-slug generation, brand detail page with financial parameters editor (tabbed: Revenue, Operating Costs, Financing, Startup Capital), sidebar navigation for katalyst_admin, role-based access control on brand admin endpoints, brand name uniqueness enforcement (DB constraint + application validation).
 - **2026-02-09:** Epic 1 completed (Auth, Onboarding & User Management) — 6/6 stories done with retrospective identifying workflow improvement items.
