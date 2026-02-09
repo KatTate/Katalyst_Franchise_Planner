@@ -1,6 +1,6 @@
 # Story 1.5: Role-Based Access Control
 
-Status: ready-for-dev
+Status: review
 
 ## Story
 
@@ -166,6 +166,24 @@ export function scopeToUser(user: Express.User): { userId?: string; brandId?: st
 
 ### Agent Model Used
 
+Claude 4.6 Opus (Replit Agent)
+
 ### Completion Notes
 
+Implemented role-based access control for Story 1.5:
+
+- **Middleware Extraction**: Created `server/middleware/auth.ts` with `requireAuth()` and `requireRole(...roles)` middleware functions, extracted from inline implementations in routes.ts. `requireAuth` checks `req.isAuthenticated()` and returns 401. `requireRole` checks `req.user.role` against allowed roles and returns 403.
+- **RBAC Helpers**: Created `server/middleware/rbac.ts` with `scopeToUser(req)` (returns user ID for data scoping) and `projectForRole(req)` (returns brand-scoped project context based on role).
+- **Route Guards**: Updated `server/routes.ts` to import middleware from new files. Invitation routes use `requireAuth` + `requireRole("katalyst_admin", "franchisor")`. Brand routes use `requireAuth`.
+- **Frontend RBAC**: Sidebar navigation in `app-sidebar.tsx` conditionally shows "Invitations" nav item only for `katalyst_admin` and `franchisor` roles. `AdminRoute` guard in `App.tsx` redirects franchisees away from `/admin/invitations`.
+- **Key Decision**: Franchisees cannot see or access admin routes. Franchisor admins can see invitations (scoped to their brand). Katalyst admins see everything.
+
 ### File List
+
+| File | Action |
+|------|--------|
+| `server/middleware/auth.ts` | CREATED — requireAuth() and requireRole() middleware |
+| `server/middleware/rbac.ts` | CREATED — scopeToUser() and projectForRole() helpers |
+| `server/routes.ts` | MODIFIED — Imported middleware from new files, removed inline functions |
+| `client/src/components/app-sidebar.tsx` | MODIFIED — Role-based nav item visibility |
+| `client/src/App.tsx` | MODIFIED — Added AdminRoute guard component |

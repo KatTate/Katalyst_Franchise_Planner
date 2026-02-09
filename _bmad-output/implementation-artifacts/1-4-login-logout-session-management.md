@@ -1,6 +1,6 @@
 # Story 1.4: Login, Logout & Session Management
 
-Status: ready-for-dev
+Status: review
 
 ## Story
 
@@ -194,6 +194,24 @@ The route handler must use `passport.authenticate('local')` to invoke the LocalS
 
 ### Agent Model Used
 
+Claude 4.6 Opus (Replit Agent)
+
 ### Completion Notes
 
+Implemented login, logout, and session management for Story 1.4:
+
+- **Passport LocalStrategy**: Added `passport-local` strategy in `server/auth.ts` (registered unconditionally) for franchisee/franchisor email+password authentication. Checks for `passwordHash` existence before comparing — users without passwords (Katalyst admins via Google OAuth) are rejected. Uses bcrypt.compare (timing-safe). Never reveals whether email exists — always returns "Invalid email or password".
+- **POST /api/auth/login**: Added endpoint in `server/routes.ts` using `passport.authenticate('local')` with `req.login()` to establish session. Returns user object matching `Express.User` shape on success, 401 with `{ message: "Invalid email or password" }` on failure.
+- **Login Page**: Updated `client/src/pages/login.tsx` to show dual auth — dev login (or Google OAuth) at top, "or" separator, then email/password form below with react-hook-form + zod validation. Error display for invalid credentials, session expiry message (`?expired=true`), and domain restriction error.
+- **Logout Confirmation**: Added AlertDialog in `client/src/components/app-sidebar.tsx` — triggered by logout icon button, shows "Sign Out" title with "You'll be signed out. Your plan is always saved." description. Cancel and destructive Sign Out buttons.
+- **Session Expiry Detection**: `ProtectedRoute` in `App.tsx` uses `useRef(wasAuthenticated)` to track if user was previously authenticated. When session expires (auth state goes from true → false), redirects to `/login?expired=true` instead of plain `/login`.
+
 ### File List
+
+| File | Action |
+|------|--------|
+| `server/auth.ts` | MODIFIED — Added Passport LocalStrategy for email/password auth |
+| `server/routes.ts` | MODIFIED — Added POST /api/auth/login endpoint |
+| `client/src/pages/login.tsx` | MODIFIED — Added email/password form, "or" divider, session expired message |
+| `client/src/components/app-sidebar.tsx` | MODIFIED — Added AlertDialog logout confirmation |
+| `client/src/App.tsx` | MODIFIED — Added wasAuthenticated ref for session expiry detection |

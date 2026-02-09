@@ -1,6 +1,6 @@
 # Story 1.1: Project Initialization & Auth Database Schema
 
-Status: ready-for-dev
+Status: review
 
 ## Story
 
@@ -176,4 +176,25 @@ Claude 4.6 Opus (Replit Agent)
 
 ### Completion Notes
 
+Implemented project initialization and authentication database schema for Story 1.1:
+
+- **Database Schema**: Created `brands`, `users`, and `invitations` tables using Drizzle ORM with PostgreSQL. Users table includes `profile_image_url`, `onboarding_completed`, and `preferred_tier` columns. No `password_hash` yet (added in Story 1.3).
+- **Google OAuth**: Configured Passport.js with `passport-google-oauth20` strategy. Double domain enforcement: Google `hd` parameter + server-side `@katgroupinc.com` email suffix check. Auto-registers admin users on first login via `upsertUserFromGoogle`.
+- **Session Management**: PostgreSQL-backed sessions via `connect-pg-simple` with 24-hour expiry, httpOnly cookies, secure in production, sameSite 'lax'.
+- **Dev Login Bypass**: When `GOOGLE_CLIENT_ID`/`GOOGLE_CLIENT_SECRET` are not set, login page shows "Dev Login (Admin)" button that creates/signs in `dev@katgroupinc.com` with `katalyst_admin` role. Auto-disables when real OAuth creds are configured.
+- **Frontend**: Login page with Google sign-in button (or dev login), protected dashboard route, `useAuth()` hook with session-aware query, `ProtectedRoute` component for route guarding.
+- **API Routes**: `GET /api/auth/google`, `GET /api/auth/google/callback`, `POST /api/auth/logout`, `GET /api/auth/me`, `POST /api/auth/dev-login`, `GET /api/auth/dev-enabled`.
+
 ### File List
+
+| File | Action |
+|------|--------|
+| `shared/schema.ts` | CREATED — Drizzle schema for brands, users, invitations tables |
+| `server/auth.ts` | CREATED — Passport config with GoogleStrategy, serialize/deserialize |
+| `server/routes.ts` | MODIFIED — Added auth routes, session config, dev-login bypass |
+| `server/storage.ts` | MODIFIED — Added IStorage interface and DatabaseStorage with user/brand CRUD |
+| `client/src/pages/login.tsx` | CREATED — Login page with Google OAuth / dev login button |
+| `client/src/pages/dashboard.tsx` | CREATED — Protected dashboard page |
+| `client/src/hooks/use-auth.ts` | CREATED — useAuth hook with session query |
+| `client/src/App.tsx` | MODIFIED — Added routing with ProtectedRoute |
+| `client/src/components/app-sidebar.tsx` | CREATED — Sidebar with user info and logout |
