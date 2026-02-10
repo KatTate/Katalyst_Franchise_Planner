@@ -5,7 +5,6 @@ import { Button } from "@/components/ui/button";
 import { X, RefreshCw } from "lucide-react";
 import { usePlanOutputs } from "@/hooks/use-plan-outputs";
 import { formatCents } from "@/lib/format-currency";
-import type { EngineOutput } from "../../../../shared/financial-engine";
 
 interface SummaryMetricsProps {
   planId: string;
