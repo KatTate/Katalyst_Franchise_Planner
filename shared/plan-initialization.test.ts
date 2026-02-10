@@ -5,9 +5,16 @@ import {
   unwrapForEngine,
   updateFieldValue,
   resetFieldToDefault,
+  addCustomStartupCost,
+  removeStartupCost,
+  updateStartupCostAmount,
+  resetStartupCostToDefault,
+  reorderStartupCosts,
+  getStartupCostTotals,
+  migrateStartupCosts,
 } from "./plan-initialization";
 import { calculateProjections } from "./financial-engine";
-import type { BrandParameters, StartupCostTemplate } from "./schema";
+import { planStartupCostsSchema, type BrandParameters, type StartupCostTemplate } from "./schema";
 import type { FinancialFieldValue, PlanFinancialInputs } from "./financial-engine";
 
 // ─── Test Brand Parameters (PostNet-like) ────────────────────────────────
@@ -659,6 +666,300 @@ describe("Round-trip: edit then reset", () => {
 
     // Revenue should match original after reset
     expect(resetOutput.annualSummaries[0].revenue).toBe(originalOutput.annualSummaries[0].revenue);
+  });
+});
+
+// ─── buildPlanStartupCosts Enhanced Fields ──────────────────────────────
+
+describe("buildPlanStartupCosts enhanced fields", () => {
+  const result = buildPlanStartupCosts(testStartupTemplate);
+
+  it("generates UUID ids", () => {
+    result.forEach((item) => {
+      expect(item.id).toBeDefined();
+      expect(item.id.length).toBeGreaterThan(0);
+    });
+  });
+
+  it("all items have isCustom: false", () => {
+    result.forEach((item) => expect(item.isCustom).toBe(false));
+  });
+
+  it("all items have source: brand_default", () => {
+    result.forEach((item) => expect(item.source).toBe("brand_default"));
+  });
+
+  it("brandDefaultAmount matches amount", () => {
+    result.forEach((item) => expect(item.brandDefaultAmount).toBe(item.amount));
+  });
+
+  it("converts item7 ranges from dollars to cents", () => {
+    expect(result[0].item7RangeLow).toBe(10000000); // $100,000
+    expect(result[0].item7RangeHigh).toBe(15000000); // $150,000
+  });
+
+  it("preserves sortOrder from template", () => {
+    expect(result[0].sortOrder).toBe(1);
+    expect(result[4].sortOrder).toBe(5);
+  });
+
+  it("handles null item7 ranges", () => {
+    const templateWithNulls: StartupCostTemplate = [
+      { id: "x", name: "Test", default_amount: 100, capex_classification: "capex", item7_range_low: null, item7_range_high: null, sort_order: 0 },
+    ];
+    const result = buildPlanStartupCosts(templateWithNulls);
+    expect(result[0].item7RangeLow).toBeNull();
+    expect(result[0].item7RangeHigh).toBeNull();
+  });
+});
+
+// ─── addCustomStartupCost ───────────────────────────────────────────────
+
+describe("addCustomStartupCost", () => {
+  const base = buildPlanStartupCosts(testStartupTemplate);
+
+  it("appends a new item", () => {
+    const result = addCustomStartupCost(base, "Insurance Deposit", 500000, "non_capex");
+    expect(result).toHaveLength(base.length + 1);
+  });
+
+  it("new item has isCustom: true", () => {
+    const result = addCustomStartupCost(base, "Insurance Deposit", 500000, "non_capex");
+    const added = result[result.length - 1];
+    expect(added.isCustom).toBe(true);
+  });
+
+  it("new item has source: user_entry", () => {
+    const result = addCustomStartupCost(base, "Insurance Deposit", 500000, "non_capex");
+    const added = result[result.length - 1];
+    expect(added.source).toBe("user_entry");
+  });
+
+  it("new item has null brand default and item7 fields", () => {
+    const result = addCustomStartupCost(base, "Insurance Deposit", 500000, "non_capex");
+    const added = result[result.length - 1];
+    expect(added.brandDefaultAmount).toBeNull();
+    expect(added.item7RangeLow).toBeNull();
+    expect(added.item7RangeHigh).toBeNull();
+  });
+
+  it("sortOrder is one more than max existing", () => {
+    const result = addCustomStartupCost(base, "Test", 100, "capex");
+    const added = result[result.length - 1];
+    const maxExisting = Math.max(...base.map((c) => c.sortOrder));
+    expect(added.sortOrder).toBe(maxExisting + 1);
+  });
+
+  it("does not mutate original array", () => {
+    const originalLength = base.length;
+    addCustomStartupCost(base, "Test", 100, "capex");
+    expect(base).toHaveLength(originalLength);
+  });
+});
+
+// ─── removeStartupCost ──────────────────────────────────────────────────
+
+describe("removeStartupCost", () => {
+  it("removes a custom item by id", () => {
+    const base = buildPlanStartupCosts(testStartupTemplate);
+    const withCustom = addCustomStartupCost(base, "Custom", 100, "capex");
+    const customId = withCustom[withCustom.length - 1].id;
+    const result = removeStartupCost(withCustom, customId);
+    expect(result).toHaveLength(withCustom.length - 1);
+    expect(result.find((c) => c.id === customId)).toBeUndefined();
+  });
+
+  it("does NOT remove a template item", () => {
+    const base = buildPlanStartupCosts(testStartupTemplate);
+    const templateId = base[0].id;
+    const result = removeStartupCost(base, templateId);
+    expect(result).toHaveLength(base.length);
+    expect(result).toBe(base); // Same reference
+  });
+
+  it("re-normalizes sort order after removal", () => {
+    const base = buildPlanStartupCosts(testStartupTemplate);
+    const withC1 = addCustomStartupCost(base, "Custom 1", 100, "capex");
+    const withC2 = addCustomStartupCost(withC1, "Custom 2", 200, "capex");
+    const c1Id = withC1[withC1.length - 1].id;
+    const result = removeStartupCost(withC2, c1Id);
+    const orders = result.map((c) => c.sortOrder);
+    for (let i = 0; i < orders.length; i++) {
+      expect(orders[i]).toBe(i);
+    }
+  });
+});
+
+// ─── updateStartupCostAmount ────────────────────────────────────────────
+
+describe("updateStartupCostAmount", () => {
+  const base = buildPlanStartupCosts(testStartupTemplate);
+
+  it("updates the amount for the specified item", () => {
+    const result = updateStartupCostAmount(base, base[0].id, 999999);
+    expect(result[0].amount).toBe(999999);
+  });
+
+  it("sets source to user_entry", () => {
+    const result = updateStartupCostAmount(base, base[0].id, 999999);
+    expect(result[0].source).toBe("user_entry");
+  });
+
+  it("does not change other items", () => {
+    const result = updateStartupCostAmount(base, base[0].id, 999999);
+    expect(result[1].amount).toBe(base[1].amount);
+    expect(result[1].source).toBe("brand_default");
+  });
+
+  it("does not mutate original", () => {
+    updateStartupCostAmount(base, base[0].id, 999999);
+    expect(base[0].source).toBe("brand_default");
+  });
+});
+
+// ─── resetStartupCostToDefault ──────────────────────────────────────────
+
+describe("resetStartupCostToDefault", () => {
+  it("resets a template item to brand default", () => {
+    const base = buildPlanStartupCosts(testStartupTemplate);
+    const edited = updateStartupCostAmount(base, base[0].id, 999999);
+    const result = resetStartupCostToDefault(edited, base[0].id);
+    expect(result[0].amount).toBe(result[0].brandDefaultAmount);
+    expect(result[0].source).toBe("brand_default");
+  });
+
+  it("does not reset a custom item", () => {
+    const base = buildPlanStartupCosts(testStartupTemplate);
+    const withCustom = addCustomStartupCost(base, "Custom", 50000, "capex");
+    const customItem = withCustom[withCustom.length - 1];
+    const result = resetStartupCostToDefault(withCustom, customItem.id);
+    expect(result[result.length - 1].amount).toBe(50000);
+  });
+});
+
+// ─── reorderStartupCosts ────────────────────────────────────────────────
+
+describe("reorderStartupCosts", () => {
+  it("reorders items based on provided IDs", () => {
+    const base = buildPlanStartupCosts(testStartupTemplate);
+    const reversed = [...base].reverse().map((c) => c.id);
+    const result = reorderStartupCosts(base, reversed);
+    expect(result[0].name).toBe(base[base.length - 1].name);
+    expect(result[result.length - 1].name).toBe(base[0].name);
+  });
+
+  it("normalizes sortOrder to be contiguous", () => {
+    const base = buildPlanStartupCosts(testStartupTemplate);
+    const reversed = [...base].reverse().map((c) => c.id);
+    const result = reorderStartupCosts(base, reversed);
+    result.forEach((item, i) => {
+      expect(item.sortOrder).toBe(i);
+    });
+  });
+});
+
+// ─── getStartupCostTotals ───────────────────────────────────────────────
+
+describe("getStartupCostTotals", () => {
+  const base = buildPlanStartupCosts(testStartupTemplate);
+
+  it("computes capex total", () => {
+    const totals = getStartupCostTotals(base);
+    const expectedCapex = base
+      .filter((c) => c.capexClassification === "capex")
+      .reduce((s, c) => s + c.amount, 0);
+    expect(totals.capexTotal).toBe(expectedCapex);
+  });
+
+  it("computes non_capex total", () => {
+    const totals = getStartupCostTotals(base);
+    const expected = base
+      .filter((c) => c.capexClassification === "non_capex")
+      .reduce((s, c) => s + c.amount, 0);
+    expect(totals.nonCapexTotal).toBe(expected);
+  });
+
+  it("computes working_capital total", () => {
+    const totals = getStartupCostTotals(base);
+    const expected = base
+      .filter((c) => c.capexClassification === "working_capital")
+      .reduce((s, c) => s + c.amount, 0);
+    expect(totals.workingCapitalTotal).toBe(expected);
+  });
+
+  it("grand total = sum of all categories", () => {
+    const totals = getStartupCostTotals(base);
+    expect(totals.grandTotal).toBe(totals.capexTotal + totals.nonCapexTotal + totals.workingCapitalTotal);
+  });
+
+  it("handles empty array", () => {
+    const totals = getStartupCostTotals([]);
+    expect(totals.grandTotal).toBe(0);
+  });
+});
+
+// ─── migrateStartupCosts ────────────────────────────────────────────────
+
+describe("migrateStartupCosts", () => {
+  it("populates missing fields with sensible defaults and passes Zod validation", () => {
+    const oldFormat = [
+      { name: "Equipment", amount: 1000000, capexClassification: "capex" as const },
+      { name: "Deposits", amount: 500000, capexClassification: "non_capex" as const },
+    ];
+    const result = migrateStartupCosts(oldFormat);
+    expect(result).toHaveLength(2);
+    result.forEach((item, i) => {
+      expect(item.id).toBeDefined();
+      expect(item.isCustom).toBe(false);
+      expect(item.source).toBe("brand_default");
+      expect(item.brandDefaultAmount).toBe(item.amount);
+      expect(item.item7RangeLow).toBeNull();
+      expect(item.item7RangeHigh).toBeNull();
+      expect(item.sortOrder).toBe(i);
+    });
+    // Story gotcha: migrated result must pass Zod validation
+    expect(planStartupCostsSchema.safeParse(result).success).toBe(true);
+  });
+
+  it("preserves existing enhanced fields", () => {
+    const enhanced = [
+      {
+        id: "existing-id",
+        name: "Equipment",
+        amount: 1000000,
+        capexClassification: "capex" as const,
+        isCustom: true,
+        source: "user_entry" as const,
+        brandDefaultAmount: null,
+        item7RangeLow: null,
+        item7RangeHigh: null,
+        sortOrder: 5,
+      },
+    ];
+    const result = migrateStartupCosts(enhanced);
+    expect(result[0].id).toBe("existing-id");
+    expect(result[0].isCustom).toBe(true);
+    expect(result[0].source).toBe("user_entry");
+    expect(result[0].brandDefaultAmount).toBeNull();
+    expect(result[0].sortOrder).toBe(5);
+  });
+});
+
+// ─── Custom item + engine integration ───────────────────────────────────
+
+describe("Custom item + engine integration", () => {
+  it("engine correctly processes startup costs with a custom CapEx item", () => {
+    const planInputs = buildPlanFinancialInputs(testBrandParams);
+    const baseCosts = buildPlanStartupCosts(testStartupTemplate);
+    const withCustom = addCustomStartupCost(baseCosts, "Custom Equipment", 1000000, "capex");
+
+    const engineInput = unwrapForEngine(planInputs, withCustom);
+    const output = calculateProjections(engineInput);
+
+    // Total investment includes the custom item
+    const expectedTotal = withCustom.reduce((s, c) => s + c.amount, 0);
+    expect(output.roiMetrics.totalStartupInvestment).toBe(expectedTotal);
+    expect(output.monthlyProjections).toHaveLength(60);
   });
 });
 

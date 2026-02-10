@@ -65,7 +65,7 @@ development_status:
   epic-3: in-progress
   3-1-financial-engine-core-plan-schema: done
   3-2-brand-default-integration-per-field-metadata: done
-  3-3-startup-cost-computation-custom-line-items: backlog
+  3-3-startup-cost-computation-custom-line-items: done
   3-4-live-summary-metrics-accounting-validation: backlog
   3-5-financial-input-api-per-field-reset: backlog
   3-6-quick-roi-first-90-second-experience: backlog
