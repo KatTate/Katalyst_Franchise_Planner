@@ -63,6 +63,7 @@ export function StartupCostBuilder({ planId }: StartupCostBuilderProps) {
   const [addingItem, setAddingItem] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editValue, setEditValue] = useState("");
+  const editCanceledRef = useRef(false);
   const addNameRef = useRef<HTMLInputElement>(null);
 
   const sorted = [...costs].sort((a, b) => a.sortOrder - b.sortOrder);
@@ -100,7 +101,10 @@ export function StartupCostBuilder({ planId }: StartupCostBuilderProps) {
   }, []);
 
   const commitEdit = useCallback(() => {
-    if (!editingId) return;
+    if (!editingId || editCanceledRef.current) {
+      editCanceledRef.current = false;
+      return;
+    }
     const cents = parseDollarsToCents(editValue);
     if (!isNaN(cents)) {
       saveCosts(updateStartupCostAmount(sorted, editingId, cents));
@@ -108,6 +112,12 @@ export function StartupCostBuilder({ planId }: StartupCostBuilderProps) {
     setEditingId(null);
     setEditValue("");
   }, [editingId, editValue, sorted, saveCosts]);
+
+  const cancelEdit = useCallback(() => {
+    editCanceledRef.current = true;
+    setEditingId(null);
+    setEditValue("");
+  }, []);
 
   // Remove
   const handleRemove = useCallback(
@@ -212,6 +222,7 @@ export function StartupCostBuilder({ planId }: StartupCostBuilderProps) {
             onEditValueChange={setEditValue}
             onStartEdit={startEdit}
             onCommitEdit={commitEdit}
+            onCancelEdit={cancelEdit}
             onMove={handleMove}
             onRemove={handleRemove}
             onReset={handleReset}
@@ -262,6 +273,7 @@ interface LineItemRowProps {
   onEditValueChange: (v: string) => void;
   onStartEdit: (item: StartupCostLineItem) => void;
   onCommitEdit: () => void;
+  onCancelEdit: () => void;
   onMove: (id: string, dir: "up" | "down") => void;
   onRemove: (id: string) => void;
   onReset: (id: string) => void;
@@ -276,6 +288,7 @@ function LineItemRow({
   onEditValueChange,
   onStartEdit,
   onCommitEdit,
+  onCancelEdit,
   onMove,
   onRemove,
   onReset,
@@ -327,10 +340,7 @@ function LineItemRow({
           onBlur={onCommitEdit}
           onKeyDown={(e) => {
             if (e.key === "Enter") onCommitEdit();
-            if (e.key === "Escape") {
-              onEditValueChange("");
-              onCommitEdit();
-            }
+            if (e.key === "Escape") onCancelEdit();
           }}
           autoFocus
         />
