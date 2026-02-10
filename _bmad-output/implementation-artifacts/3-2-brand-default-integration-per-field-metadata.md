@@ -1,6 +1,6 @@
 # Story 3.2: Brand Default Integration & Per-Field Metadata
 
-Status: review
+Status: done
 
 ## Story
 
