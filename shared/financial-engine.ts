@@ -62,12 +62,6 @@ export interface FinancialInputs {
     termMonths: number;
   };
   startup: {
-    /** Total CapEx investment in cents */
-    capexTotal: number;
-    /** Total non-CapEx investment in cents */
-    nonCapexTotal: number;
-    /** Working capital in cents */
-    workingCapital: number;
     /** Depreciation rate per year (decimal, e.g. 0.25 = 25% / 4 years) */
     depreciationRate: number;
   };
@@ -223,10 +217,16 @@ function daysInMonth(): number {
 export function calculateProjections(input: EngineInput): EngineOutput {
   const { financialInputs: fi } = input;
 
-  // ── Step 1: Startup Investment Totals ─────────────────────────────
-  const capexTotal = fi.startup.capexTotal;
-  const nonCapexTotal = fi.startup.nonCapexTotal;
-  const workingCapital = fi.startup.workingCapital;
+  // ── Step 1: Startup Investment Totals (derived from line items) ────
+  const capexTotal = input.startupCosts
+    .filter((c) => c.capexClassification === "capex")
+    .reduce((sum, c) => sum + c.amount, 0);
+  const nonCapexTotal = input.startupCosts
+    .filter((c) => c.capexClassification === "non_capex")
+    .reduce((sum, c) => sum + c.amount, 0);
+  const workingCapital = input.startupCosts
+    .filter((c) => c.capexClassification === "working_capital")
+    .reduce((sum, c) => sum + c.amount, 0);
   const totalStartupInvestment = capexTotal + nonCapexTotal + workingCapital;
 
   // ── Step 2: Financing ─────────────────────────────────────────────
@@ -460,10 +460,18 @@ export function calculateProjections(input: EngineInput): EngineOutput {
   }
 
   // ── Step 6: ROI Metrics ─────────────────────────────────────────────
-  // Break-even: first month where EBITDA turns positive (operational profitability)
+  // Break-even: first month where cumulative net cash flow (starting from
+  // negative total startup investment) turns non-negative.
   let breakEvenMonth: number | null = null;
+  let cumulativeNetCash = -totalStartupInvestment;
+  // Add back the financing inflows received at startup (equity + debt)
+  cumulativeNetCash += equityAmount + debtAmount;
   for (let m = 0; m < monthly.length; m++) {
-    if (monthly[m].ebitda > 0 && breakEvenMonth === null) {
+    // Net monthly cash = operating cash flow - principal repayment - pro-rata distributions
+    const yearIdx = yearIndex(m + 1);
+    const monthlyDistribution = fi.distributions[yearIdx] / MONTHS_PER_YEAR;
+    cumulativeNetCash += monthly[m].operatingCashFlow - monthly[m].loanPrincipalPayment - monthlyDistribution;
+    if (cumulativeNetCash >= 0 && breakEvenMonth === null) {
       breakEvenMonth = m + 1;
     }
   }
