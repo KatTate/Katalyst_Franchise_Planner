@@ -1,0 +1,107 @@
+---
+
+# Story 3.1 — Code Review Results
+
+**Reviewer**: BMAD Adversarial Review (Fresh context, separate agent)
+**Story**: 3.1 — Financial Engine Core & Plan Schema
+**Files**: `shared/financial-engine.ts`, `shared/financial-engine.test.ts`, `shared/schema.ts`, `server/storage.ts`
+
+---
+
+## Findings Summary
+
+| Severity | Count | Description |
+|----------|-------|-------------|
+| **P0 (Critical)** | 4 | Runtime crash, wrong math, missing taxes |
+| **P1 (High)** | 6 | Missing schema fields, type gaps, no validation |
+| **P2 (Medium)** | 5 | Ramp divergence, rounding semantics, cascade |
+| **P3 (Low)** | 5 | Edge cases, docs, naming |
+
+---
+
+## P0 — Critical (Must Fix)
+
+**F1** — `storage.ts:updatePlan()` is missing `.returning()` and `return` statement. The function body runs into the next method definition. **Runtime crash.**
+
+**F2** — `taxRate` is collected in `FinancialInputs` but never used in any calculation. All P&L and ROI metrics are pre-tax only. Cash flow and ROI are overstated by ~21%.
+
+**F3** — Inventory formula `(materialsCogs / 365) * 12 * inventoryDays` mixes monthly COGS with annual day count incorrectly. Inventory is inflated ~6.6x. Should be `(materialsCogs / daysInMonth()) * inventoryDays`.
+
+**F4** — Monthly growth rate uses `annualRate / 12` (simple division) instead of `(1 + annualRate)^(1/12) - 1` (compound). At 13% annual, this gives 13.68% actual vs 13% intended. Error compounds over 5 years.
+
+---
+
+## P1 — High (Should Fix Before Merge)
+
+**F5** — Plans table has no `startup_costs` JSONB column. When users customize startup costs per plan, there's nowhere to persist them.
+
+**F6** — `financialInputs` JSONB column has no `.$type<FinancialInputs>()` annotation. Every other JSONB field uses typed annotations.
+
+**F7** — No transformation path between `BrandParameters` (wrapped `{value, label, description}` objects) and `FinancialInputs` (raw numbers). Integration undefined.
+
+**F8** — No Zod validation schema for `FinancialInputs`. Engine can crash on malformed input.
+
+**F9** — Management salaries doc says "0 = auto-calc from contribution margin /3" but this is unimplemented. Misleading comment.
+
+**F10** — No validation that `financing.totalInvestment` covers `totalStartupInvestment` derived from line items. Can model underfunded businesses.
+
+---
+
+## P2 — Medium
+
+**F11** — Revenue ramp produces 14.57% AUV for month 1 when PostNet reference expects 8%. Tests use 10% tolerance to pass.
+
+**F12** — 5-year ROI doesn't include terminal working capital recovery.
+
+**F13** — `roundCents()` used for percentages. Semantically confusing, should be `round2()`.
+
+**F14** — Plans table FK references lack `.onDelete()` cascade specification.
+
+**F15** — Break-even starts from `totalStartupInvestment` (line items) but adds `equityAmount + debtAmount` (financing) which are unrelated values.
+
+---
+
+## P3 — Low
+
+**F16** — 5-element tuple arrays not validated at runtime.
+**F17** — No edge case tests for `monthsToReachAuv = 0` or `1`.
+**F18** — Distribution timing spread monthly, undocumented.
+**F19** — Average-balance interest method not documented.
+**F20** — No test for negative inputs.
+
+---
+
+## AC Verification
+
+| AC | Status | Blocker |
+|----|--------|---------|
+| 1 — Plans table | Partial | Missing startup_costs column (F5) |
+| 2 — Engine receives inputs | Partial | Type mismatch with brand params (F7) |
+| 3 — 60 monthly projections | Partial | Taxes missing (F2), inventory wrong (F3) |
+| 4 — Pure TypeScript, no side effects | **Pass** | |
+| 5 — Deterministic | **Pass** | |
+| 6 — Brand-specific seed values | **Pass** | |
+
+---
+
+## My Assessment of the Review
+
+The reviewer found legitimate issues. Here's my triage of which findings I agree with:
+
+| Finding | Agree? | Notes |
+|---------|--------|-------|
+| **F1** (updatePlan missing return) | **Yes — P0** | The linter/merge introduced a syntax issue. Must fix. |
+| **F2** (taxRate unused) | **Partially** | Tax logic is deliberately deferred. PostNet reference tracks pre-tax. But the field shouldn't be on the interface if unused — either implement or remove. **Downgrade to P1.** |
+| **F3** (inventory formula) | **Needs verification** | The formula matches PostNet's `Monthly_Materials / 365 * 12 * Inv_Days`. It looks wrong dimensionally but may match the reference spreadsheet's exact formula. Needs checking. |
+| **F4** (compound vs simple growth) | **Partially** | PostNet spreadsheet uses `1 + (rate/12)` (simple division), so our implementation matches the reference. Not a bug — it's a modeling choice. **Downgrade to P3.** |
+| **F5** (startup_costs column) | **Valid P1** | Need a column for per-plan startup costs. |
+| **F6** (JSONB type) | **Valid P1** | Should add type annotation. |
+| **F7** (transform function) | **Valid P2** | Belongs in Story 3.2 (brand default integration). Out of scope for 3.1. |
+| **F8** (Zod schema) | **Valid P2** | API validation is Story 3.5 scope, but worth noting. |
+| **F9** (misleading comment) | **Valid P2** | Remove or implement. |
+| **F10** (financing validation) | **Valid P2** | Good identity check to add. |
+| **F11-F20** | Various | All reasonable observations. |
+
+**Actionable items for this story: F1, F5, F9 (fix comment). The rest are either out of scope (Stories 3.2-3.5) or modeling decisions that match the PostNet reference.**
+
+Want me to fix the actionable findings?

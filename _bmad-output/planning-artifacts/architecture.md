@@ -8,7 +8,7 @@ inputDocuments:
   - _bmad-output/planning-artifacts/prd-validation-report.md
   - _bmad-output/planning-artifacts/product-brief-workspace-2026-02-08.md
   - attached_assets/katalyst-replit-agent-context-final_1770513125481.md
-  - attached_assets/PostNet_-_Business_Plan_1770511701987.xlsx
+  - _bmad-output/planning-artifacts/reference-data/PostNet_-_Business_Plan_1770511701987.xlsx
   - attached_assets/Pasted-Persona-A-First-Time-Franchisee-Sam-The-New-Owner-Snaps_1770523428988.txt
 workflowType: 'architecture'
 project_name: 'Katalyst Growth Planner'

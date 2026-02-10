@@ -1,6 +1,6 @@
 ---
 stepsCompleted: [1, 2, 3, 4]
-inputDocuments: ['attached_assets/PostNet_-_Business_Plan_1770511701987.xlsx', 'attached_assets/katalyst-replit-agent-context-final_1770513125481.md']
+inputDocuments: ['_bmad-output/planning-artifacts/reference-data/PostNet_-_Business_Plan_1770511701987.xlsx', 'attached_assets/katalyst-replit-agent-context-final_1770513125481.md']
 session_topic: 'Customizable software toolbox for franchise brands to guide franchisee owners through ROI calculation, forecasting, and planning for new location openings'
 session_goals: 'Find the best way to guide franchisees step-by-step through ROI calculation, financial forecasting, and location planning — packaged as a customizable product Katalyst can deploy across franchise brand clients'
 selected_approach: 'ai-recommended'
