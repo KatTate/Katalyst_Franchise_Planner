@@ -14,7 +14,7 @@ import {
   migrateStartupCosts,
 } from "./plan-initialization";
 import { calculateProjections } from "./financial-engine";
-import type { BrandParameters, StartupCostTemplate } from "./schema";
+import { planStartupCostsSchema, type BrandParameters, type StartupCostTemplate } from "./schema";
 import type { FinancialFieldValue, PlanFinancialInputs } from "./financial-engine";
 
 // ─── Test Brand Parameters (PostNet-like) ────────────────────────────────
@@ -901,7 +901,7 @@ describe("getStartupCostTotals", () => {
 // ─── migrateStartupCosts ────────────────────────────────────────────────
 
 describe("migrateStartupCosts", () => {
-  it("populates missing fields with sensible defaults", () => {
+  it("populates missing fields with sensible defaults and passes Zod validation", () => {
     const oldFormat = [
       { name: "Equipment", amount: 1000000, capexClassification: "capex" as const },
       { name: "Deposits", amount: 500000, capexClassification: "non_capex" as const },
@@ -917,6 +917,8 @@ describe("migrateStartupCosts", () => {
       expect(item.item7RangeHigh).toBeNull();
       expect(item.sortOrder).toBe(i);
     });
+    // Story gotcha: migrated result must pass Zod validation
+    expect(planStartupCostsSchema.safeParse(result).success).toBe(true);
   });
 
   it("preserves existing enhanced fields", () => {
