@@ -186,7 +186,7 @@ All 4 stories were verified via Playwright-based e2e tests:
 - [ ] Review PostNet Business Plan spreadsheet for financial engine parameters
   Owner: Alice
   Estimated: 1 hour
-  Notes: `attached_assets/PostNet_-_Business_Plan_1770511701987.xlsx` contains the reference data for Stories 3.1-3.6
+  Notes: `_bmad-output/planning-artifacts/reference-data/PostNet_-_Business_Plan_1770511701987.xlsx` contains the reference data for Stories 3.1-3.6
 
 - [ ] Design shared/financial-engine.ts API surface
   Owner: Charlie
