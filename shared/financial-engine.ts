@@ -17,6 +17,18 @@ export const MAX_PROJECTION_MONTHS = 60;
 const MONTHS_PER_YEAR = 12;
 const CENTS_PRECISION = 100;
 
+// ─── JSONB Field Metadata ────────────────────────────────────────────────
+
+/** Per-field metadata wrapper stored in plan JSONB. The engine operates on
+ *  unwrapped raw values (FinancialInputs below); the FinancialFieldValue
+ *  wrapper is consumed by the UI/plan-initialization layer (Story 3.2+). */
+export interface FinancialFieldValue {
+  currentValue: number;
+  source: "brand_default" | "manual" | "ai_populated";
+  brandDefault: number | null;
+  item7Range: { min: number; max: number } | null;
+}
+
 // ─── Input Interfaces ───────────────────────────────────────────────────
 
 /** Raw numeric financial inputs consumed by the engine (no metadata wrappers). */
@@ -48,7 +60,7 @@ export interface FinancialInputs {
     payrollTaxPct: [number, number, number, number, number];
     /** Annual facilities/rent in cents per year */
     facilitiesAnnual: [number, number, number, number, number];
-    /** Annual management & admin salaries in cents per year (0 = auto-calc from contribution margin /3) */
+    /** Annual management & admin salaries in cents per year */
     managementSalariesAnnual: [number, number, number, number, number];
   };
   financing: {
@@ -75,7 +87,7 @@ export interface FinancialInputs {
   };
   /** Annual owner distributions in cents [Y1..Y5] */
   distributions: [number, number, number, number, number];
-  /** Corporation tax rate (decimal, e.g. 0.21 = 21%) */
+  /** Corporation tax rate (decimal, e.g. 0.21 = 21%) — TODO: apply to compute after-tax net income */
   taxRate: number;
 }
 
@@ -335,7 +347,7 @@ export function calculateProjections(input: EngineInput): EngineOutput {
     // ── Balance Sheet Items ───────────────────────────────────────
     const dim = daysInMonth();
     const accountsReceivable = roundCents((revenue / dim) * fi.workingCapitalAssumptions.arDays);
-    const inventoryVal = roundCents((Math.abs(materialsCogs) / 365) * MONTHS_PER_YEAR * fi.workingCapitalAssumptions.inventoryDays);
+    const inventoryVal = roundCents((Math.abs(materialsCogs) / dim) * fi.workingCapitalAssumptions.inventoryDays);
     const accountsPayable = roundCents((Math.abs(materialsCogs) / dim) * fi.workingCapitalAssumptions.apDays);
     const netFixedAssets = roundCents(capexTotal - accumulatedDepreciation);
 
