@@ -5,7 +5,7 @@ import { planStartupCostsSchema } from "@shared/schema";
 
 const router = Router();
 
-/** Ownership check: franchisee can only access their own plans. */
+/** Ownership check: franchisee can only access own plans; franchisor scoped to own brand. */
 async function requirePlanAccess(req: Request, res: Response): Promise<string | null> {
   const planId = req.params.planId as string;
   const plan = await storage.getPlan(planId);
@@ -14,6 +14,10 @@ async function requirePlanAccess(req: Request, res: Response): Promise<string | 
     return null;
   }
   if (req.user!.role === "franchisee" && plan.userId !== req.user!.id) {
+    res.status(403).json({ message: "Access denied" });
+    return null;
+  }
+  if (req.user!.role === "franchisor" && plan.brandId !== req.user!.brandId) {
     res.status(403).json({ message: "Access denied" });
     return null;
   }
