@@ -1,6 +1,6 @@
 # Story 3.1: Financial Engine Core & Plan Schema
 
-Status: ready-for-dev
+Status: in-progress
 
 ## Story
 
@@ -171,6 +171,64 @@ interface FinancialInputs {
 - Epics: `_bmad-output/planning-artifacts/epics.md` — Epic 3 overview, Story 3.1 AC, FR1/FR9/FR10
 - Existing schema: `shared/schema.ts` — BrandParameters, StartupCostItem types
 - Reference data: `attached_assets/PostNet_-_Business_Plan_1770511701987.xlsx` — PostNet financial model reference (for validation in Story 3.7)
+
+## Code Review Notes
+
+**Review Date:** 2026-02-10
+**Reviewers:** BMAD Adversarial Review (fresh context agent) + Replit Agent Code Review
+**Party Mode Consensus:** Findings cross-referenced and triaged across both reviews
+
+---
+
+### Must Fix in Story 3.1
+
+| ID | Severity | Finding | Source | File | Action |
+|----|----------|---------|--------|------|--------|
+| CR-1 | HIGH | `plans` table not pushed to database — table does not exist in live DB. AC #1 requires it to exist. | Replit Review H1 | `shared/schema.ts` | Run `npm run db:push` after schema finalized |
+| CR-2 | HIGH | `deletePlan(id: string): Promise<void>` missing from `IStorage` interface and `DatabaseStorage` class. Explicitly required by Dev Notes. | Replit Review H2 | `server/storage.ts` | Add method to interface and implementation |
+| CR-3 | HIGH | `startup_costs` JSONB column missing from `plans` table. Per-plan startup cost customization has nowhere to persist. | External Review F5 | `shared/schema.ts` | Add `startupCosts: jsonb("startup_costs").$type<StartupCostLineItem[]>()` column |
+| CR-4 | HIGH | `financialInputs` JSONB column missing `.$type<FinancialInputs>()` annotation. All other JSONB columns use typed annotations. | External Review F6 | `shared/schema.ts` | Add type annotation for consistency |
+| CR-5 | MEDIUM | LSP type error on `updatePlan` (line ~285). Spreading `UpdatePlan` with `updatedAt: new Date()` causes type incompatibility — `status` is `string` in partial schema but column expects `"draft" \| "in_progress" \| "completed"`. | Replit Review M3 | `server/storage.ts` | Cast or narrow the type appropriately |
+| CR-6 | MEDIUM | Comment on `managementSalariesAnnual` says "0 = auto-calc from contribution margin /3" but this logic is not implemented in the engine. Misleading. | External Review F9 | `shared/financial-engine.ts` | Either implement auto-calc or remove/reword the comment to clarify that 0 means no management salary |
+
+### Design Decisions to Document (Not Bugs)
+
+| ID | Finding | Consensus | Action |
+|----|---------|-----------|--------|
+| DD-1 | `FinancialInputs` structure diverges from story spec — uses raw per-year arrays instead of `FinancialFieldValue` wrappers mirroring `BrandParameters`. | **Intentional separation of concerns.** The engine should receive clean numeric inputs. The `FinancialFieldValue` metadata wrapper pattern (with `source`, `brandDefault`, `item7Range`) belongs in the plan initialization layer (Story 3.2), not the computation engine. However, the structural mismatch (`annualGrossSales` vs `monthlyAuv`, 5-element arrays vs single values) creates integration risk for Story 3.2. | Story 3.2 must define the bridge function. The engine's `FinancialInputs` interface is the computation contract; a separate `PlanFinancialInputs` (with `FinancialFieldValue` wrappers) should be defined in Story 3.2 for persistence. |
+| DD-2 | `taxRate` field exists on `FinancialInputs` but is never used in calculations. All P&L metrics are pre-tax. | **Intentionally pre-tax for now.** PostNet reference model tracks pre-tax income. However, the field's presence implies tax calculations that don't exist. | Either remove `taxRate` from the interface or add a TODO comment explaining it's reserved for future tax modeling. Don't leave an unused field with no explanation. |
+| DD-3 | Engine uses simple growth `rate/12` instead of compound `(1+rate)^(1/12)-1`. | **Matches PostNet reference spreadsheet** which uses `1 + (rate/12)`. This is a modeling choice, not a bug. | Document in engine JSDoc that simple monthly division is used to match franchise industry conventions. |
+| DD-4 | Engine defines `StartupCostLineItem` instead of using `StartupCostItem` from `shared/schema.ts`. | **Semantically different types.** Schema's `StartupCostItem` has `default_amount` (template value), `sort_order`, `item7_range_low/high`. Engine's `StartupCostLineItem` has `amount` (runtime actual value) and `capexClassification`. These serve different purposes. | Acceptable divergence. Story 3.2 plan initialization should map `StartupCostItem[]` → `StartupCostLineItem[]`. |
+
+### Verify Against PostNet Spreadsheet
+
+| ID | Finding | Why It Matters |
+|----|---------|----------------|
+| VR-1 | Inventory formula uses `(materialsCogs / 365) * 12 * inventoryDays`. Dimensionally suspect — mixes monthly COGS with annual day count. Alternative: `(materialsCogs / daysInMonth()) * inventoryDays`. | External Review F3. May match PostNet's exact formula despite looking wrong dimensionally. Needs spreadsheet verification in Story 3.7. |
+| VR-2 | Revenue ramp produces 14.57% AUV for month 1 when PostNet reference expects 8%. Tests use 10% tolerance to accommodate. | External Review F11 + Replit observation. The ramp formula diverges from PostNet's approach. May need adjustment after spreadsheet comparison. |
+| VR-3 | `breakEvenMonth` is `null` for PostNet reference data — cumulative cash flow never turns positive within 60 months. | Replit Review M4 + External Review F15. Break-even calculation starts from `-totalStartupInvestment + equity + debt`, then accumulates operating CF minus principal and distributions. Verify whether PostNet model shows a break-even point. |
+
+### Out of Scope for Story 3.1 (Tracked for Later Stories)
+
+| ID | Finding | Target Story |
+|----|---------|-------------|
+| OS-1 | No transformation function between `BrandParameters` (wrapped `{value, label, description}`) and engine `FinancialInputs` (raw numbers). | Story 3.2 — Plan Initialization |
+| OS-2 | No Zod validation schema for `FinancialInputs` at API boundary. | Story 3.5 — API Routes |
+| OS-3 | No validation that `financing.totalInvestment` covers `totalStartupInvestment` from line items. | Story 3.5 or 3.7 — Validation |
+| OS-4 | 5-year ROI doesn't include terminal working capital recovery. | Story 3.6 or future enhancement |
+| OS-5 | FK references on `plans` table lack `.onDelete()` cascade specification. | Story 3.5 or schema hardening pass |
+| OS-6 | 5-element tuple arrays not validated at runtime. | Story 3.5 — API validation |
+| OS-7 | No edge case tests for `monthsToReachAuv = 0` or `1`, negative inputs. | Story 3.7 — Validation story |
+| OS-8 | `vitest` added to `package.json` (technically a forbidden change) but tests cannot run due to missing vitest config. | Resolve: either complete vitest setup or remove dependency |
+
+### Additional Low-Severity Notes
+
+- `roundCents()` function is used for both currency rounding and percentage rounding. Consider renaming to `round2()` or adding a `roundPct()` alias for semantic clarity.
+- Distribution timing is spread monthly (`fi.distributions[yearIdx] / 12`) — this is undocumented. Add JSDoc.
+- Average-balance interest method `(opening + closing) / 2 * rate / 12` is undocumented. Add JSDoc.
+- Missing blank line between `updatePlanSchema` type export and `brandAccountManagers` table definition in `schema.ts` (line 166-167).
+
+---
 
 ## Dev Agent Record
 

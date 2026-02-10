@@ -63,7 +63,7 @@ development_status:
 
   # Epic 3: Financial Planning Engine
   epic-3: in-progress
-  3-1-financial-engine-core-plan-schema: ready-for-dev
+  3-1-financial-engine-core-plan-schema: in-progress  # Code review complete, 6 must-fix findings
   3-2-brand-default-integration-per-field-metadata: backlog
   3-3-startup-cost-computation-custom-line-items: backlog
   3-4-live-summary-metrics-accounting-validation: backlog
