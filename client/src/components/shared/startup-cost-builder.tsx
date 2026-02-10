@@ -33,7 +33,6 @@ import {
   RotateCcw,
   X,
   Plus,
-  GripVertical,
   AlertCircle,
 } from "lucide-react";
 
@@ -435,6 +434,7 @@ function AddItemForm({ nameRef, onSave, onCancel }: AddItemFormProps) {
           placeholder="Item name"
           value={name}
           onChange={(e) => setName(e.target.value)}
+          maxLength={100}
           className="h-8 text-sm"
         />
         <Input
