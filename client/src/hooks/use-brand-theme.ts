@@ -1,10 +1,20 @@
 import { useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/use-auth";
+import { getQueryFn } from "@/lib/queryClient";
 import type { Brand } from "@shared/schema";
 
+function expandShortHex(hex: string): string {
+  const short = /^#?([a-f\d])([a-f\d])([a-f\d])$/i.exec(hex);
+  if (short) {
+    return `#${short[1]}${short[1]}${short[2]}${short[2]}${short[3]}${short[3]}`;
+  }
+  return hex;
+}
+
 function hexToHSL(hex: string): string | null {
-  const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+  const expanded = expandShortHex(hex);
+  const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(expanded);
   if (!result) return null;
 
   let r = parseInt(result[1], 16) / 255;
@@ -30,36 +40,60 @@ function hexToHSL(hex: string): string | null {
   return `${Math.round(h * 360)} ${Math.round(s * 100)}% ${Math.round(l * 100)}%`;
 }
 
+function hexToForegroundHSL(hex: string): string {
+  const expanded = expandShortHex(hex);
+  const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(expanded);
+  if (!result) return "210 10% 98%";
+
+  const r = parseInt(result[1], 16) / 255;
+  const g = parseInt(result[2], 16) / 255;
+  const b = parseInt(result[3], 16) / 255;
+
+  const luminance = 0.2126 * r + 0.7152 * g + 0.0722 * b;
+
+  return luminance > 0.5 ? "210 6% 12%" : "210 10% 98%";
+}
+
+const BRAND_CSS_PROPERTIES = [
+  "--primary",
+  "--primary-foreground",
+  "--ring",
+  "--sidebar-primary",
+  "--sidebar-primary-foreground",
+  "--sidebar-ring",
+] as const;
+
 export function useBrandTheme() {
   const { user } = useAuth();
 
+  const brandId = user?.brandId;
+  const skipTheme = !brandId || user?.role === "katalyst_admin";
+
   const { data: brand } = useQuery<Brand>({
-    queryKey: ["/api/brands", user?.brandId],
-    queryFn: async () => {
-      const res = await fetch(`/api/brands/${user!.brandId}`, { credentials: "include" });
-      if (!res.ok) return null;
-      return res.json();
-    },
-    enabled: !!user?.brandId && user.role !== "katalyst_admin",
+    queryKey: ["/api/brands", brandId],
+    queryFn: getQueryFn({ on401: "returnNull" }),
+    enabled: !skipTheme,
     staleTime: 30 * 60 * 1000,
   });
 
   useEffect(() => {
     if (brand?.primaryColor) {
       const hsl = hexToHSL(brand.primaryColor);
+      const foregroundHsl = hexToForegroundHSL(brand.primaryColor);
       if (hsl) {
         document.documentElement.style.setProperty("--primary", hsl);
+        document.documentElement.style.setProperty("--primary-foreground", foregroundHsl);
         document.documentElement.style.setProperty("--ring", hsl);
         document.documentElement.style.setProperty("--sidebar-primary", hsl);
+        document.documentElement.style.setProperty("--sidebar-primary-foreground", foregroundHsl);
         document.documentElement.style.setProperty("--sidebar-ring", hsl);
       }
     }
 
     return () => {
-      document.documentElement.style.removeProperty("--primary");
-      document.documentElement.style.removeProperty("--ring");
-      document.documentElement.style.removeProperty("--sidebar-primary");
-      document.documentElement.style.removeProperty("--sidebar-ring");
+      BRAND_CSS_PROPERTIES.forEach((prop) => {
+        document.documentElement.style.removeProperty(prop);
+      });
     };
   }, [brand?.primaryColor]);
 
