@@ -198,7 +198,7 @@ Each card shows:
 
 - **Startup costs must be loaded via `storage.getStartupCosts()`:** This method handles legacy format migration (plans created before Story 3.3 have old-format startup costs). Do not read `plan.startupCosts` directly — always go through the storage method.
 
-- **Identity checks use 1-cent tolerance:** The engine's `IdentityCheckResult` uses a tolerance of 1 cent ($0.01 = 100 in cents). Floating-point arithmetic can produce tiny discrepancies that are within tolerance. A "failure" means the discrepancy exceeds this tolerance — which indicates a real accounting bug, not a rounding artifact.
+- **Identity checks use 1-cent tolerance:** The engine's `IdentityCheckResult` uses a tolerance of 1 cent — the literal integer `1` in the cents-based system (i.e. $0.01). Floating-point arithmetic can produce tiny discrepancies that are within tolerance. A "failure" means the discrepancy exceeds this tolerance — which indicates a real accounting bug, not a rounding artifact.
 
 - **`breakEvenMonth` can be null:** If the plan never reaches positive cumulative cash flow within 60 months, `roiMetrics.breakEvenMonth` is `null`. The UI must handle this gracefully (display "N/A" or "> 60 months" rather than showing null/undefined).
 
