@@ -1,6 +1,6 @@
 # Story 3.4: Live Summary Metrics & Accounting Validation
 
-Status: ready-for-dev
+Status: review
 
 ## Story
 
@@ -267,8 +267,33 @@ Each card shows:
 
 ### Agent Model Used
 
-{{agent_model_name_version}}
+Claude Opus 4.6 (claude-opus-4-6)
 
 ### Completion Notes
 
+Wired the existing financial engine into the application via a new API endpoint,
+server-side financial service, and client-side SummaryMetrics UI component.
+
+**Key implementation decisions:**
+- Refactored `requirePlanAccess` in plans.ts to return full `Plan` object (instead of just brandId) so the outputs endpoint can pass it directly to the financial service — this avoids a redundant DB lookup while keeping existing startup-cost endpoints working.
+- Financial service orchestrates engine invocation cleanly: loads startup costs via `storage.getStartupCosts()` (handles legacy migration), calls `unwrapForEngine()` then `calculateProjections()`, logs identity check failures to structured stderr.
+- SummaryMetrics component handles all UI states: loading (skeleton), error (retry button), no-inputs (setup message), identity check advisory (Gurple dismissible banner), and normal display with opacity transition during refetch.
+- Hook `usePlanOutputs` uses `staleTime: 0` and exposes `invalidateOutputs()` for cross-query invalidation when inputs change.
+- Structured logger is a generic utility (not identity-check-specific) for future reuse.
+
+**LSP Status:** Clean — zero new type errors introduced. Pre-existing type errors in `server/storage.ts` and `shared/schema.ts` remain unchanged.
+
+**Visual Verification:** Dev page created at `/plans/:planId/metrics` following the same pattern as startup-costs-dev.
+
 ### File List
+
+- `server/services/structured-logger.ts` — CREATE — Generic structured JSON logging utility
+- `server/services/financial-service.ts` — CREATE — Engine invocation orchestrator with identity check logging
+- `server/services/financial-service.test.ts` — CREATE — 9 tests covering happy path, null inputs, empty costs, determinism, identity checks, ROI metrics
+- `server/routes/plans.ts` — MODIFY — Added `GET /:planId/outputs` endpoint; refactored `requirePlanAccess` to return Plan object
+- `client/src/hooks/use-plan-outputs.ts` — CREATE — TanStack Query hook for fetching engine outputs
+- `client/src/components/shared/summary-metrics.tsx` — CREATE — 4-card summary metrics grid with all UI states
+- `client/src/pages/metrics-dev.tsx` — CREATE — Temporary dev page for testing SummaryMetrics
+- `client/src/App.tsx` — MODIFY — Added /plans/:planId/metrics route
+- `_bmad-output/implementation-artifacts/sprint-status.yaml` — MODIFY — Status updated to review
+- `_bmad-output/implementation-artifacts/3-4-live-summary-metrics-accounting-validation.md` — MODIFY — Status and Dev Agent Record
