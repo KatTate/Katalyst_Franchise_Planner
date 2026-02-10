@@ -41,7 +41,11 @@ export interface FinancialFieldValue {
 ```
 This interface is already exported from Story 3.1. Do not redefine it.
 
+**Terminology note:** The epic AC uses `'user_entry'` for franchisee edits. The implementation uses `'manual'` — these mean the same thing. The three source states are `'brand_default'`, `'manual'`, and `'ai_populated'` (Story 6.3).
+
 **`StoredFinancialInputs` — the JSONB-stored version of `FinancialInputs`:**
+This interface should live in `shared/plan-defaults.ts` (not in `financial-engine.ts`) since it's a persistence/initialization concern, not a computation concern. It imports `FinancialFieldValue` from the engine.
+
 Mirrors the `FinancialInputs` structure exactly, but every leaf `number` is replaced with `FinancialFieldValue`, and every `[number, number, number, number, number]` tuple is replaced with `[FinancialFieldValue, FinancialFieldValue, FinancialFieldValue, FinancialFieldValue, FinancialFieldValue]`.
 
 Example shape:
@@ -83,7 +87,7 @@ This is the core mapping the `initializeFinancialInputs()` function must impleme
 | `operating_costs.royalty_pct.value` | `operatingCosts.royaltyPct[0..4]` | repeat for all 5 years |
 | `operating_costs.ad_fund_pct.value` | `operatingCosts.adFundPct[0..4]` | repeat for all 5 years |
 | `operating_costs.marketing_pct.value` | `operatingCosts.marketingPct[0..4]` | repeat for all 5 years |
-| `operating_costs.rent_monthly.value` + `utilities_monthly.value` + `insurance_monthly.value` | `operatingCosts.facilitiesAnnual[0..4]` | `(rent + utilities + insurance) * 12 * 100` (aggregate monthly dollars → annual cents), repeat for all 5 years |
+| `operating_costs.rent_monthly.value` + `utilities_monthly.value` + `insurance_monthly.value` | `operatingCosts.facilitiesAnnual[0..4]` | `(rent + utilities + insurance) * 12 * 100` (aggregate monthly dollars → annual cents), repeat for all 5 years. **Known limitation:** aggregation loses per-component reset granularity — resetting "facilities" restores the aggregate, not individual rent/utilities/insurance. Acceptable for 3.2; future decomposition possible. |
 | `operating_costs.other_monthly.value` | `operatingCosts.otherOpexPct[0..4]` | `(other_monthly / monthly_auv)` to approximate as % of revenue; repeat for all 5 years. If `monthly_auv` is 0, default to 0. |
 | — | `operatingCosts.payrollTaxPct[0..4]` | default `0` (no brand param; user must configure) |
 | — | `operatingCosts.managementSalariesAnnual[0..4]` | default `0` (no brand param; user must configure) |
@@ -129,22 +133,23 @@ The `item7_range_low` / `item7_range_high` from the template are NOT stored on `
 - **Brand parameter currency values are in dollars, engine expects cents.** The `currencyParam` schema validates `value: z.number().min(0)` — these are raw dollar amounts (e.g., `5000` = $5,000). The engine expects cents (e.g., `500000`). Always multiply by 100 in the transform.
 - **BrandParameters uses snake_case keys** (`monthly_auv`, `cogs_pct`) while `FinancialInputs` uses **camelCase** (`annualGrossSales`, `cogsPct`). The transform is the bridge.
 - **BrandParameters has single values; engine expects 5-year arrays.** Most operating cost percentages in BrandParameters are single values but the engine needs `[Y1, Y2, Y3, Y4, Y5]` tuples. The initialization replicates the single value across all 5 years. Only `growthRates` has distinct year1/year2 values.
-- **`other_monthly` (currency) → `otherOpexPct` (percentage) mismatch.** The brand parameter is a fixed dollar amount but the engine expects a % of revenue. The initialization must approximate: `otherOpexPct ≈ other_monthly / monthly_auv`. Document this approximation clearly in the code.
+- **`other_monthly` (currency) → `otherOpexPct` (percentage) mismatch.** The brand parameter is a fixed dollar amount but the engine expects a % of revenue. The initialization must approximate: `otherOpexPct ≈ other_monthly / monthly_auv`. **This is a known lossy approximation** — the percentage is computed against the brand's base AUV, but during revenue ramp (month 1 at ~8% AUV), the effective dollar amount will be far less than the brand intended. Add a prominent code comment explaining this trade-off.
 - **`financing.totalInvestment` is derived, not mapped.** It equals the sum of all startup cost line item amounts after initialization. Do not map from `loan_amount`.
 - **`startup.depreciationRate` is the inverse of years.** `depreciation_years = 4` → `depreciationRate = 0.25`. Handle `depreciation_years = 0` (no depreciation) → `depreciationRate = 0`.
 - **The `financialInputs` JSONB column type must change** from `.$type<FinancialInputs>()` to `.$type<StoredFinancialInputs>()` since the column stores the wrapped version. This is a schema type annotation change only (no DB migration needed).
 - **Existing Story 3.1 test fixtures use raw `FinancialInputs`.** The engine tests should continue to work unchanged — the engine still accepts raw `FinancialInputs`. New tests for this story validate the transform/unwrap round-trip.
-- **`BrandParameters` may be `null`** on a brand record (column is nullable JSONB). The initialization must handle this — if brand has no parameters configured, the function should return an error or use zero-value defaults. Document the chosen behavior.
-- **`startupCostTemplate` may also be `null`.** Same handling required — empty array default or error.
+- **`BrandParameters` may be `null`** on a brand record (column is nullable JSONB). The initialization must handle this — if brand has no parameters configured, the function should throw an error (plan creation requires brand configuration).
+- **`startupCostTemplate` may be `null` while `brandParameters` is configured (partial case).** If template is null/empty, initialize with empty startup costs array and set `financing.totalInvestment = 0`. This is a valid state — the franchisee adds costs in Story 3.3.
+- **Verify `default_amount` units before applying `× 100` conversion.** The `startupCostItemSchema` validates `default_amount: z.number().min(0)` with no unit annotation. Check existing template seed data to confirm whether values are in dollars or already in cents. Applying `× 100` to values already in cents would inflate by 100x.
 
 ### File Change Summary
 
 | File | Action | Notes |
 |------|--------|-------|
-| `shared/financial-engine.ts` | MODIFY | Add `StoredFinancialInputs` interface (FinancialFieldValue-wrapped mirror of FinancialInputs) |
-| `shared/plan-defaults.ts` | CREATE | Pure transform module: `initializeFinancialInputs(brand, template)`, `unwrapFinancialInputs(stored)`, `initializeStartupCosts(template)`, `updateField()`, `resetField()` |
-| `shared/plan-defaults.test.ts` | CREATE | Tests: round-trip (initialize → unwrap → engine runs), field update changes source, reset restores default, null brand params handling, currency conversion correctness |
-| `shared/schema.ts` | MODIFY | Update `financialInputs` column type from `FinancialInputs` to `StoredFinancialInputs` |
+| `shared/financial-engine.ts` | NO CHANGE | `FinancialFieldValue` already exported — no modifications needed. `StoredFinancialInputs` lives in `plan-defaults.ts` to avoid mixing persistence concerns into the engine. |
+| `shared/plan-defaults.ts` | CREATE | Pure transform module: `StoredFinancialInputs` interface, `initializeFinancialInputs(brand, template)`, `unwrapFinancialInputs(stored)`, `initializeStartupCosts(template)`, `updateField(stored, path, value)`, `resetField(stored, path)`. The `updateField`/`resetField` functions should accept a dot-path string (e.g., `"operatingCosts.cogsPct.0"`) to address deeply nested leaves. |
+| `shared/plan-defaults.test.ts` | CREATE | Tests: round-trip (initialize → unwrap → engine runs), field update changes source, reset restores default, null brand params handling, currency conversion correctness (`monthly_auv=5000` → `annualGrossSales=6000000`), `depreciation_years=0` → `depreciationRate=0`, growth rate split (year1 vs year2+), 5-year array replication |
+| `shared/schema.ts` | MODIFY | Update `financialInputs` column type from `FinancialInputs` to `StoredFinancialInputs` (imported from `shared/plan-defaults.ts`) |
 | `server/routes/financial-engine.ts` | NO CHANGE | Remains empty scaffold — API routes come in Story 3.5 |
 
 ### Dependencies & Environment Variables
