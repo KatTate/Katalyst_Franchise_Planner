@@ -122,11 +122,132 @@ export function buildPlanFinancialInputs(
 export function buildPlanStartupCosts(
   template: StartupCostTemplate
 ): StartupCostLineItem[] {
-  return template.map((item) => ({
+  return template.map((item, index) => ({
+    id: crypto.randomUUID(),
     name: item.name,
     amount: dollarsToCents(item.default_amount),
     capexClassification: item.capex_classification,
+    isCustom: false,
+    source: "brand_default" as const,
+    brandDefaultAmount: dollarsToCents(item.default_amount),
+    item7RangeLow: item.item7_range_low !== null ? dollarsToCents(item.item7_range_low) : null,
+    item7RangeHigh: item.item7_range_high !== null ? dollarsToCents(item.item7_range_high) : null,
+    sortOrder: item.sort_order ?? index,
   }));
+}
+
+// ─── Startup Cost Operations ────────────────────────────────────────────
+
+/** Add a custom startup cost line item. Returns new array (does not mutate). */
+export function addCustomStartupCost(
+  costs: StartupCostLineItem[],
+  name: string,
+  amount: number,
+  classification: StartupCostLineItem["capexClassification"]
+): StartupCostLineItem[] {
+  const maxOrder = costs.length > 0 ? Math.max(...costs.map((c) => c.sortOrder)) : -1;
+  const newItem: StartupCostLineItem = {
+    id: crypto.randomUUID(),
+    name,
+    amount,
+    capexClassification: classification,
+    isCustom: true,
+    source: "user_entry",
+    brandDefaultAmount: null,
+    item7RangeLow: null,
+    item7RangeHigh: null,
+    sortOrder: maxOrder + 1,
+  };
+  return [...costs, newItem];
+}
+
+/** Remove a startup cost by ID. Only custom items can be removed. Returns unchanged array for template items. */
+export function removeStartupCost(
+  costs: StartupCostLineItem[],
+  id: string
+): StartupCostLineItem[] {
+  const item = costs.find((c) => c.id === id);
+  if (!item || !item.isCustom) return costs;
+  return normalizeOrder(costs.filter((c) => c.id !== id));
+}
+
+/** Update a startup cost's amount. Sets source to 'user_entry'. */
+export function updateStartupCostAmount(
+  costs: StartupCostLineItem[],
+  id: string,
+  newAmount: number
+): StartupCostLineItem[] {
+  return costs.map((c) =>
+    c.id === id ? { ...c, amount: newAmount, source: "user_entry" as const } : c
+  );
+}
+
+/** Reset a template item to its brand default. No-op for custom items or items without a brand default. */
+export function resetStartupCostToDefault(
+  costs: StartupCostLineItem[],
+  id: string
+): StartupCostLineItem[] {
+  return costs.map((c) => {
+    if (c.id !== id || c.isCustom || c.brandDefaultAmount === null) return c;
+    return { ...c, amount: c.brandDefaultAmount, source: "brand_default" as const };
+  });
+}
+
+/** Reorder startup costs based on an ordered list of IDs. Re-normalizes sortOrder. */
+export function reorderStartupCosts(
+  costs: StartupCostLineItem[],
+  orderedIds: string[]
+): StartupCostLineItem[] {
+  const idToIndex = new Map(orderedIds.map((id, i) => [id, i]));
+  const sorted = [...costs].sort((a, b) => {
+    const ai = idToIndex.get(a.id) ?? a.sortOrder;
+    const bi = idToIndex.get(b.id) ?? b.sortOrder;
+    return ai - bi;
+  });
+  return sorted.map((c, i) => ({ ...c, sortOrder: i }));
+}
+
+/** Compute startup cost totals by category. */
+export function getStartupCostTotals(costs: StartupCostLineItem[]): {
+  capexTotal: number;
+  nonCapexTotal: number;
+  workingCapitalTotal: number;
+  grandTotal: number;
+} {
+  let capexTotal = 0;
+  let nonCapexTotal = 0;
+  let workingCapitalTotal = 0;
+  for (const c of costs) {
+    if (c.capexClassification === "capex") capexTotal += c.amount;
+    else if (c.capexClassification === "non_capex") nonCapexTotal += c.amount;
+    else workingCapitalTotal += c.amount;
+  }
+  return { capexTotal, nonCapexTotal, workingCapitalTotal, grandTotal: capexTotal + nonCapexTotal + workingCapitalTotal };
+}
+
+/**
+ * Migrate old-format startup costs (3-field) to the enhanced format.
+ * Missing fields are populated with sensible defaults.
+ */
+export function migrateStartupCosts(costs: Array<Partial<StartupCostLineItem> & { name: string; amount: number; capexClassification: StartupCostLineItem["capexClassification"] }>): StartupCostLineItem[] {
+  return costs.map((c, index) => ({
+    id: c.id ?? crypto.randomUUID(),
+    name: c.name,
+    amount: c.amount,
+    capexClassification: c.capexClassification,
+    isCustom: c.isCustom ?? false,
+    source: c.source ?? "brand_default",
+    brandDefaultAmount: c.brandDefaultAmount !== undefined ? c.brandDefaultAmount : c.amount,
+    item7RangeLow: c.item7RangeLow ?? null,
+    item7RangeHigh: c.item7RangeHigh ?? null,
+    sortOrder: c.sortOrder ?? index,
+  }));
+}
+
+/** Re-normalize sort order to be contiguous (0, 1, 2, ...) */
+function normalizeOrder(costs: StartupCostLineItem[]): StartupCostLineItem[] {
+  const sorted = [...costs].sort((a, b) => a.sortOrder - b.sortOrder);
+  return sorted.map((c, i) => (c.sortOrder === i ? c : { ...c, sortOrder: i }));
 }
 
 // ─── Unwrap for Engine ───────────────────────────────────────────────────

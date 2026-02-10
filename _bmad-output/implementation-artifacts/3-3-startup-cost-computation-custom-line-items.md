@@ -1,6 +1,6 @@
 # Story 3.3: Startup Cost Computation & Custom Line Items
 
-Status: ready-for-dev
+Status: review
 
 ## Story
 
@@ -285,7 +285,27 @@ Each row displays:
 ## Dev Agent Record
 
 ### Agent Model Used
+Claude Opus 4.6 (claude-opus-4-6)
 
 ### Completion Notes
+Implemented full-stack startup cost customization: extended `StartupCostLineItem` interface with 7 new metadata fields (id, isCustom, source, brandDefaultAmount, item7RangeLow/High, sortOrder), added 7 pure helper functions for CRUD + reorder + totals + migration, Zod validation with cross-field refinements, 3 API endpoints as plan sub-resources, storage methods with targeted JSONB updates, TanStack Query hook, and `<StartupCostBuilder />` component with inline editing, move controls, classification badges with user-friendly labels, add/remove/reset actions, and responsive layout. Added 32 new tests (131 total, 0 regressions). Routed component to `/plans/:planId/startup-costs` for testing until Story 4.1 builds the Detail Panel shell.
+
+### LSP Status
+Clean — no new TypeScript errors introduced (pre-existing drizzle-orm type issues unchanged)
+
+### Visual Verification
+Component accessible at `/plans/:planId/startup-costs` — requires Story 4.1 for production integration
 
 ### File List
+- `shared/financial-engine.ts` — MODIFIED: Extended StartupCostLineItem interface (+7 fields)
+- `shared/schema.ts` — MODIFIED: Added planStartupCostLineItemSchema and planStartupCostsSchema with cross-field refinements
+- `shared/plan-initialization.ts` — MODIFIED: Updated buildPlanStartupCosts(); added addCustomStartupCost, removeStartupCost, updateStartupCostAmount, resetStartupCostToDefault, reorderStartupCosts, getStartupCostTotals, migrateStartupCosts
+- `shared/plan-initialization.test.ts` — MODIFIED: Added 32 new tests for enhanced fields, CRUD operations, migration, engine integration
+- `server/storage.ts` — MODIFIED: Added getStartupCosts, updateStartupCosts, resetStartupCostsToDefaults to IStorage + DatabaseStorage
+- `server/routes/plans.ts` — CREATED: GET/PUT/POST startup cost API endpoints
+- `server/routes.ts` — MODIFIED: Mounted plansRouter at /api/plans
+- `client/src/lib/format-currency.ts` — CREATED: formatCents and parseDollarsToCents utilities
+- `client/src/hooks/use-startup-costs.ts` — CREATED: TanStack Query hook for startup cost data
+- `client/src/components/shared/startup-cost-builder.tsx` — CREATED: Full StartupCostBuilder UI component
+- `client/src/pages/startup-costs-dev.tsx` — CREATED: Temporary dev page for component testing
+- `client/src/App.tsx` — MODIFIED: Added /plans/:planId/startup-costs route

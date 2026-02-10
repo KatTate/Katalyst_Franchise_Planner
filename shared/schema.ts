@@ -58,6 +58,37 @@ export const startupCostTemplateSchema = z.array(startupCostItemSchema);
 
 export type StartupCostTemplate = z.infer<typeof startupCostTemplateSchema>;
 
+// ─── Plan Startup Cost Line Item (enhanced, for plan JSONB) ──────────────
+
+export const planStartupCostLineItemSchema = z.object({
+  id: z.string().uuid(),
+  name: z.string().min(1).max(100),
+  amount: z.number().int().min(0),
+  capexClassification: z.enum(["capex", "non_capex", "working_capital"]),
+  isCustom: z.boolean(),
+  source: z.enum(["brand_default", "user_entry"]),
+  brandDefaultAmount: z.number().int().min(0).nullable(),
+  item7RangeLow: z.number().int().min(0).nullable(),
+  item7RangeHigh: z.number().int().min(0).nullable(),
+  sortOrder: z.number().int().min(0),
+}).refine(
+  (data) => !(data.isCustom && data.brandDefaultAmount !== null),
+  { message: "Custom items must have null brandDefaultAmount" }
+).refine(
+  (data) => !(!data.isCustom && data.brandDefaultAmount === null),
+  { message: "Template items must have non-null brandDefaultAmount" }
+).refine(
+  (data) => {
+    if (data.item7RangeLow !== null && data.item7RangeHigh !== null) {
+      return data.item7RangeLow <= data.item7RangeHigh;
+    }
+    return true;
+  },
+  { message: "item7RangeLow must be <= item7RangeHigh" }
+);
+
+export const planStartupCostsSchema = z.array(planStartupCostLineItemSchema);
+
 export const brandThemeSchema = z.object({
   logo_url: z.string().nullable(),
   primary_color: z.string().nullable(),
