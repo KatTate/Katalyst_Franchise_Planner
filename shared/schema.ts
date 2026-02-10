@@ -134,3 +134,32 @@ export const insertInvitationSchema = createInsertSchema(invitations).omit({
 });
 export type InsertInvitation = z.infer<typeof insertInvitationSchema>;
 export type Invitation = typeof invitations.$inferSelect;
+
+export const plans = pgTable("plans", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").references(() => users.id).notNull(),
+  brandId: varchar("brand_id").references(() => brands.id).notNull(),
+  name: text("name").notNull(),
+  financialInputs: jsonb("financial_inputs"),
+  status: text("status").notNull().$type<"draft" | "in_progress" | "completed">().default("draft"),
+  pipelineStage: text("pipeline_stage").$type<"planning" | "site_evaluation" | "financing" | "construction" | "open">().default("planning"),
+  targetMarket: text("target_market"),
+  targetOpenQuarter: text("target_open_quarter"),
+  lastAutoSave: timestamp("last_auto_save"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+}, (table) => [
+  index("idx_plans_user_id").on(table.userId),
+  index("idx_plans_brand_id").on(table.brandId),
+]);
+
+export const insertPlanSchema = createInsertSchema(plans).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+  lastAutoSave: true,
+});
+export type InsertPlan = z.infer<typeof insertPlanSchema>;
+export type Plan = typeof plans.$inferSelect;
+export const updatePlanSchema = insertPlanSchema.partial();
+export type UpdatePlan = z.infer<typeof updatePlanSchema>;
