@@ -1,0 +1,181 @@
+# Story 3.1: Financial Engine Core & Plan Schema
+
+Status: ready-for-dev
+
+## Story
+
+As a franchisee,
+I want the system to compute a 5-year monthly financial projection from my inputs,
+so that I can see a complete picture of my business plan.
+
+## Acceptance Criteria
+
+1. **Given** the database schema is pushed, **when** a developer queries the `plans` table, **then** it exists with columns: `id` (varchar UUID PK), `user_id` (FK → users), `brand_id` (FK → brands), `name` (text), `financial_inputs` (JSONB), `status` (text: 'draft' | 'in_progress' | 'completed'), `pipeline_stage` (text: 'planning' | 'site_evaluation' | 'financing' | 'construction' | 'open'), `target_market` (text, nullable), `target_open_quarter` (text, nullable), `last_auto_save` (timestamp, nullable), `created_at` (timestamp), `updated_at` (timestamp). Drizzle insert/select/update schemas and types are exported from `shared/schema.ts`.
+
+2. **Given** the financial engine module exists at `shared/financial-engine.ts`, **when** it receives an `EngineInput` (financial inputs, startup costs, brand parameters), **then** it returns an `EngineOutput` containing 60 monthly projections covering revenue, operating expenses, net income (P&L), cash flow, and balance sheet snapshots.
+
+3. **Given** the engine receives identical inputs on two separate invocations, **when** both invocations complete, **then** both outputs are byte-for-byte identical (deterministic — FR9, NFR15).
+
+4. **Given** the engine receives inputs derived from any brand's parameter set, **when** it computes projections, **then** it produces valid results without structural changes — the engine is brand-agnostic and parameterized (FR10).
+
+5. **Given** the engine is a pure TypeScript module, **when** its import graph is inspected, **then** it imports only from other `shared/` files or standard TypeScript/JavaScript built-ins — no `server/`, `client/`, `node_modules`, or I/O modules.
+
+6. **Given** the engine computes projections, **when** each monthly row is calculated, **then** the calculation follows this execution order: (1) total startup investment, (2) CapEx/depreciation schedule, (3) financing calculations (loan payment, interest, principal), (4) monthly revenue (AUV × growth × ramp), (5) monthly operating expenses (% of revenue + fixed costs), (6) monthly P&L (revenue − expenses − depreciation − interest), (7) monthly cash flow (P&L + depreciation − principal payments), (8) balance sheet snapshots, (9) ROI metrics (break-even month, annual ROI %), (10) accounting identity checks.
+
+7. **Given** the engine completes a calculation, **when** accounting identity checks run, **then** it validates: balance sheet balances (assets === liabilities + equity within $0.01), P&L-to-cash-flow consistency, and depreciation-to-CapEx consistency. Results are returned as `identityChecks` in the output — failures do not throw, they are reported.
+
+8. **Given** the engine output is produced, **when** summary metrics are extracted, **then** the output includes: total startup investment, projected annual revenue (Year 1), ROI percentage, and break-even month.
+
+## Dev Notes
+
+### Architecture Patterns to Follow
+
+**Database Schema (shared/schema.ts):**
+- Table name: `plans` (lowercase plural)
+- Column names: snake_case — `user_id`, `brand_id`, `pipeline_stage`, `financial_inputs`, `last_auto_save`
+- Foreign keys: `user_id` → `users.id`, `brand_id` → `brands.id`
+- Indexes: `idx_plans_user_id`, `idx_plans_brand_id`
+- ID pattern: `varchar("id").primaryKey().default(sql\`gen_random_uuid()\`)`
+- Follow existing schema pattern: `insertPlanSchema = createInsertSchema(plans).omit({ id: true, lastAutoSave: true, createdAt: true, updatedAt: true })`, `updatePlanSchema = insertPlanSchema.partial()`, `type Plan = typeof plans.$inferSelect`, `type InsertPlan = z.infer<typeof insertPlanSchema>`, `type UpdatePlan = z.infer<typeof updatePlanSchema>`
+- JSONB columns: `financial_inputs` typed as `FinancialInputs` (interface defined in `shared/financial-engine.ts`), `financial_outputs` is NOT in this story — it will be added later
+
+**Financial Engine (shared/financial-engine.ts):**
+- Pure TypeScript module — zero side effects, zero I/O
+- All interfaces co-located in this file: `EngineInput`, `EngineOutput`, `FinancialInputs`, `FinancialFieldValue`, `MonthlyProjection`, `AnnualSummary`, `ROIMetrics`, `CashFlowProjection`, `BalanceSheetSnapshot`, `IdentityCheckResult`
+- No `shared/types.ts` — engine owns its interfaces
+- Functions are pure: no `Date.now()`, no `Math.random()`, no `console.log`
+- If a timestamp is needed for context, pass it as an input parameter
+- Export a single main function: `calculateProjections(input: EngineInput): EngineOutput`
+
+**Number Format Rules (critical):**
+| Type | Storage | Example | Display |
+|------|---------|---------|---------|
+| Currency | Cents as integers | `15000` = $150.00 | `$150.00` |
+| Percentages | Decimal form | `0.065` = 6.5% | `6.5%` |
+| Counts | Plain integers | `60` = 60 months | `60` |
+
+- Currency formatting happens exclusively in the UI layer — never in the engine or API
+- All intermediate calculations use full floating-point precision
+- Final output applies `Math.round(value * 100) / 100` for currency before returning
+
+**JSONB Per-Field Metadata Pattern (FinancialFieldValue):**
+```typescript
+interface FinancialFieldValue {
+  currentValue: number;          // The active value (cents for currency, decimal for rates)
+  source: 'brand_default' | 'manual' | 'ai_populated';
+  brandDefault: number | null;   // Original brand default for reset
+  item7Range: { min: number; max: number } | null;
+}
+```
+- JSONB content uses camelCase keys (consumed by TypeScript)
+- The `FinancialInputs` interface mirrors the structure of `BrandParameters` but wraps each value in `FinancialFieldValue`
+
+**FinancialInputs structure (mirrors BrandParameters categories):**
+```typescript
+interface FinancialInputs {
+  revenue: {
+    monthlyAuv: FinancialFieldValue;
+    year1GrowthRate: FinancialFieldValue;
+    year2GrowthRate: FinancialFieldValue;
+    startingMonthAuvPct: FinancialFieldValue;
+  };
+  operatingCosts: {
+    cogsPct: FinancialFieldValue;
+    laborPct: FinancialFieldValue;
+    rentMonthly: FinancialFieldValue;
+    utilitiesMonthly: FinancialFieldValue;
+    insuranceMonthly: FinancialFieldValue;
+    marketingPct: FinancialFieldValue;
+    royaltyPct: FinancialFieldValue;
+    adFundPct: FinancialFieldValue;
+    otherMonthly: FinancialFieldValue;
+  };
+  financing: {
+    loanAmount: FinancialFieldValue;
+    interestRate: FinancialFieldValue;
+    loanTermMonths: FinancialFieldValue;
+    downPaymentPct: FinancialFieldValue;
+  };
+  startupCapital: {
+    workingCapitalMonths: FinancialFieldValue;
+    depreciationYears: FinancialFieldValue;
+  };
+}
+```
+
+**Calculation Graph (execution order — 10 steps):**
+1. **Total startup investment** — Sum all startup cost line items (`amount` field)
+2. **CapEx/depreciation schedule** — CapEx-classified items depreciated straight-line over `depreciationYears`
+3. **Financing calculations** — Standard amortization: monthly payment, interest split, principal split using loan amount, interest rate, term
+4. **Monthly revenue** — Month 1 starts at `monthlyAuv × startingMonthAuvPct`, ramps linearly to full AUV by month 6, then applies `year1GrowthRate` for months 7-12 and `year2GrowthRate` for months 13+
+5. **Monthly operating expenses** — Percentage-based costs (COGS, labor, marketing, royalty, ad fund) as % of that month's revenue + fixed costs (rent, utilities, insurance, other)
+6. **Monthly P&L** — Revenue − operating expenses − monthly depreciation − monthly interest
+7. **Monthly cash flow** — Net income + depreciation (non-cash) − loan principal payment
+8. **Balance sheet snapshots** — Assets (cash + net CapEx), Liabilities (remaining loan balance), Equity (accumulated retained earnings + initial equity)
+9. **ROI metrics** — Break-even month (first month cumulative cash flow > 0), annual ROI % (Year 1 net income / total investment)
+10. **Accounting identity checks** — Balance sheet: assets === liabilities + equity (±$0.01 tolerance); P&L-to-cash-flow consistency
+
+**IStorage additions (server/storage.ts):**
+- Add plan CRUD methods to `IStorage` interface: `createPlan(plan: InsertPlan): Promise<Plan>`, `getPlan(id: string): Promise<Plan | undefined>`, `getPlansByUser(userId: string): Promise<Plan[]>`, `getPlansByBrand(brandId: string): Promise<Plan[]>`, `updatePlan(id: string, data: UpdatePlan): Promise<Plan>`, `deletePlan(id: string): Promise<void>`
+- Implement in `DatabaseStorage` class using existing patterns
+
+### Anti-Patterns & Hard Constraints
+
+- **DO NOT** create `shared/types.ts` — engine interfaces live in `shared/financial-engine.ts`
+- **DO NOT** split the Drizzle schema across multiple files — everything stays in `shared/schema.ts`
+- **DO NOT** use floating-point for currency storage — use cents (integers). `amount: 150.00` is WRONG, `amount: 15000` is correct
+- **DO NOT** import from `server/` or `client/` in the financial engine
+- **DO NOT** use `Date.now()`, `Math.random()`, or `console.log` inside the engine
+- **DO NOT** modify `vite.config.ts`, `drizzle.config.ts`, or `package.json` scripts
+- **DO NOT** modify files in `client/src/components/ui/` (Shadcn-managed)
+- **DO NOT** add API routes or UI components in this story — Story 3.1 is engine + schema only. API routes come in Story 3.5, UI comes in Epic 4
+- **DO NOT** use `snake_case` inside JSONB content — use `camelCase` (consumed by TypeScript)
+- **DO NOT** throw errors from accounting identity checks — return them as results in `identityChecks` array
+
+### Gotchas & Integration Warnings
+
+- **Brand parameters use snake_case keys** (`monthly_auv`, `cogs_pct`) in the Zod schema but the `FinancialInputs` JSONB uses **camelCase keys** (`monthlyAuv`, `cogsPct`). The bridge between these is the plan initialization logic (Story 3.2), not this story. In this story, the engine accepts `FinancialInputs` in camelCase.
+- **BrandParameters schema** already exists in `shared/schema.ts` with `{ value, label, description }` per field. The engine's `EngineInput.brandParameters` should accept the existing `BrandParameters` type from schema.ts — do not redefine it.
+- **StartupCostItem type** already exists in `shared/schema.ts`. The engine's `EngineInput.startupCosts` should use the existing `StartupCostItem[]` type.
+- **Existing brand parameter values use raw numbers** (not cents). The `currencyParam` schema validates `value: z.number().min(0)`. The engine must be aware that brand parameter currency values may be in dollars (not cents) depending on how they were entered. Document the expected format clearly in the interface JSDoc.
+- **Depreciation edge case:** If `depreciationYears` is 0, CapEx items should be fully expensed in Month 1 (no depreciation schedule).
+- **Loan edge case:** If `loanAmount` is 0 or `loanTermMonths` is 0, skip financing calculations entirely (no division by zero).
+- **Revenue ramp:** The ramp from `startingMonthAuvPct` to 100% of AUV over 6 months should be linear interpolation. Month 1 = AUV × startingMonthAuvPct, Month 6 = AUV × 1.0, Months 2-5 linearly interpolated.
+- **Growth rates apply after ramp:** Year 1 growth rate applies to months 7-12 (post-ramp), Year 2 growth rate applies to months 13-24, and the Year 2 rate continues for years 3-5.
+- **The `plans` table does NOT include `financial_outputs` column yet.** Engine outputs are computed on-demand and cached — the output storage pattern comes in Story 3.5 when the API is built.
+
+### File Change Summary
+
+| File | Action | Notes |
+|------|--------|-------|
+| `shared/schema.ts` | MODIFY | Add `plans` table, insert/update schemas, Plan/InsertPlan/UpdatePlan types |
+| `shared/financial-engine.ts` | CREATE | Pure computation module with all interfaces (EngineInput, EngineOutput, FinancialInputs, FinancialFieldValue, etc.) and `calculateProjections()` function |
+| `server/storage.ts` | MODIFY | Add plan CRUD methods to IStorage interface and DatabaseStorage implementation |
+| `server/routes/financial-engine.ts` | NO CHANGE | Remains empty scaffold — API routes come in Story 3.5 |
+
+### Dependencies & Environment Variables
+
+**Packages already installed (DO NOT reinstall):**
+- `drizzle-orm`, `drizzle-zod`, `zod` — schema and validation
+- `@neondatabase/serverless` — PostgreSQL driver
+
+**No new packages needed.** The financial engine is pure TypeScript with no external dependencies.
+
+**No new environment variables needed.**
+
+**Database migration:** After adding the `plans` table to `shared/schema.ts`, run `npm run db:push` to sync the schema.
+
+### References
+
+- Architecture: `_bmad-output/planning-artifacts/architecture.md` — Decision 15 (Engine Design), Decision 2 (Number Precision), Financial Engine Purity Enforcement, Schema Patterns, Number Format Rules, Naming Patterns
+- Epics: `_bmad-output/planning-artifacts/epics.md` — Epic 3 overview, Story 3.1 AC, FR1/FR9/FR10
+- Existing schema: `shared/schema.ts` — BrandParameters, StartupCostItem types
+- Reference data: `attached_assets/PostNet_-_Business_Plan_1770511701987.xlsx` — PostNet financial model reference (for validation in Story 3.7)
+
+## Dev Agent Record
+
+### Agent Model Used
+
+### Completion Notes
+
+### File List

@@ -1,4 +1,4 @@
-# generated: 2026-02-08
+# generated: 2026-02-09
 # project: Katalyst Growth Planner
 # project_key: NOKEY
 # tracking_system: file-system
@@ -33,7 +33,7 @@
 # - SM typically creates next story after previous one is 'done' to incorporate learnings
 # - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
 
-generated: 2026-02-08
+generated: 2026-02-09
 project: Katalyst Growth Planner
 project_key: NOKEY
 tracking_system: file-system
@@ -51,22 +51,25 @@ development_status:
   epic-1-retrospective: done
 
   # Epic 2: Brand Configuration & Administration
-  epic-2: in-progress
+  # Note: Story 2.5 (Brand Configuration Validation) relocated to Epic 3 as Story 3.7
+  # due to dependency on financial engine. Epic 2 closes with 4/4 stories.
+  epic-2: done
   2-1-brand-entity-financial-parameter-configuration: done
   2-2-startup-cost-template-management: done
-  2-3-brand-identity-dynamic-theming: backlog
-  2-4-account-manager-assignment: backlog
-  2-5-brand-configuration-validation: backlog
-  epic-2-retrospective: optional
+  2-3-brand-identity-dynamic-theming: done
+  2-4-account-manager-assignment: done
+  # 2-5: moved to 3-7-brand-configuration-validation (depends on financial engine)
+  epic-2-retrospective: done
 
   # Epic 3: Financial Planning Engine
-  epic-3: backlog
-  3-1-financial-engine-core-plan-schema: backlog
+  epic-3: in-progress
+  3-1-financial-engine-core-plan-schema: ready-for-dev
   3-2-brand-default-integration-per-field-metadata: backlog
   3-3-startup-cost-computation-custom-line-items: backlog
   3-4-live-summary-metrics-accounting-validation: backlog
   3-5-financial-input-api-per-field-reset: backlog
   3-6-quick-roi-first-90-second-experience: backlog
+  3-7-brand-configuration-validation: backlog  # relocated from Epic 2 Story 2.5
   epic-3-retrospective: optional
 
   # Epic 4: Forms & Quick Entry Experience

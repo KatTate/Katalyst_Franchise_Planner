@@ -1,6 +1,6 @@
 # Story 2.1: Brand Entity & Financial Parameter Configuration
 
-Status: review
+Status: done
 
 ## Story
 
