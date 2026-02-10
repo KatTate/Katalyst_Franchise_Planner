@@ -24,7 +24,7 @@ so that I immediately understand the impact of each change (FR7, FR8).
 
 7. **Given** the financial engine returns identity check results, **when** all checks pass, **then** no user-facing indication of the validation is shown — the validation is silent and successful.
 
-8. **Given** the financial engine returns identity check results with one or more failures, **when** the results are displayed, **then** a subtle, non-blocking advisory indicator appears in the summary metrics area (using the "Gurple" #A9A2AA advisory color, not red/error) informing the user that a calculation review is in progress — the user can dismiss it and continue working.
+8. **Given** the financial engine returns identity check results with one or more failures, **when** the results are displayed, **then** a subtle, non-blocking advisory indicator appears in the summary metrics area (using the "Gurple" #A9A2AA advisory color, not red/error) with warm language such as "We're double-checking the numbers" — the user can dismiss it and continue working.
 
 ## Dev Notes
 
@@ -157,14 +157,14 @@ Each card shows:
 - Use shadcn/ui `Card` component
 - Financial values use consistent formatting (NFR27): currency with $ and commas, percentages with no decimal for whole numbers or 1 decimal
 - Cards arranged in a responsive grid: 4 columns on wide screens, 2×2 on narrower panels
-- Per-field `data-testid` attributes: `value-total-investment`, `value-annual-revenue`, `value-roi-pct`, `value-break-even-month`
+- Per-field `data-testid` attributes: `value-total-investment`, `value-annual-revenue`, `value-roi-pct`, `value-break-even-month`, `status-identity-check` (advisory banner), `status-metrics-loading` (loading state)
 
 **UI States:**
 - **Loading state:** Skeleton placeholders in each card while engine output is being fetched (use shadcn Skeleton)
 - **Success state:** Metric values displayed with animation on value change (subtle number transition, not disruptive)
 - **Identity check warning state:** If any identity check fails, a small advisory banner appears below the metrics cards: "Calculation review in progress" with Gurple (#A9A2AA) background — dismissible, non-blocking
 - **Error state:** If the API call fails, show inline message: "Unable to compute metrics. Your data is safe — please try refreshing." with retry action
-- **No plan state:** If plan has no financial inputs yet, show placeholder values or "Set up your plan to see projections"
+- **No plan state:** If plan `financialInputs` is `null` (plan not yet initialized), show "Set up your plan to see projections." If `financialInputs` exists with all brand defaults (no user edits), show the computed metrics — this provides immediate value by showing "here's what a typical [Brand] location looks like"
 
 **Interaction:**
 - Metrics update automatically when the `['plans', planId, 'outputs']` query refetches (triggered by input changes)
@@ -209,6 +209,12 @@ Each card shows:
 - **Plans with no startup costs:** If `startupCosts` is empty or null, `totalStartupInvestment` will be 0, which makes ROI computation divide-by-zero. The engine handles this by returning `fiveYearROIPct: 0` and `breakEvenMonth: null` when investment is zero. The UI should display these edge cases meaningfully.
 
 - **TanStack Query invalidation cascade:** When startup costs are updated (via the `useStartupCosts` hook), the `['plans', planId, 'outputs']` query must also be invalidated so metrics refresh. Wire this in the `usePlanOutputs` hook or in the startup cost mutation's `onSuccess` callback. Similarly, when `financial_inputs` are updated via plan PATCH, outputs must be invalidated.
+
+- **End-to-end latency budget for NFR1 (<2s):** The 2-second recalculation budget from NFR1 covers the full user-perceived latency: input change → save mutation (PATCH) → output refetch (GET /outputs including engine computation) → render. That's potentially three network hops. The engine itself is fast (<100ms), but the network roundtrips add up. To stay within budget: (a) the output fetch can fire immediately after the input mutation starts (don't wait for PATCH response), (b) use optimistic UI — keep previous values visible during recomputation, and (c) consider firing the output fetch with the latest local state even before the save confirms, since the engine is deterministic.
+
+- **Brand-default-only plans should show computed metrics:** When a plan has `financialInputs` populated with all brand defaults (no user edits yet), the metrics should display the computed projections — this gives Sam immediate value ("here's what a typical PostNet location looks like"). The "Set up your plan to see projections" placeholder should only appear when `financialInputs` is truly `null` (plan not yet initialized), not when all values are defaults.
+
+- **Legacy startup cost format plans:** `storage.getStartupCosts()` handles migration from the pre-Story 3.3 format (3-field objects to full `StartupCostLineItem`). Always go through the storage method — do not read `plan.startupCosts` directly. Add a test case for a plan with legacy-format startup costs to verify the engine still computes correctly after migration.
 
 - **Existing empty financial engine router:** `server/routes/financial-engine.ts` exists as an empty router mounted at `/api/financial-engine`. The new outputs endpoint should be added to `server/routes/plans.ts` as `/api/plans/:planId/outputs` (plan sub-resource), not to the financial engine router — this follows the pattern established for startup costs.
 
