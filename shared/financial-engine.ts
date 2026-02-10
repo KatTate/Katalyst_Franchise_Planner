@@ -127,9 +127,16 @@ export interface FinancialInputs {
 }
 
 export interface StartupCostLineItem {
+  id: string;
   name: string;
   amount: number; // cents
   capexClassification: "capex" | "non_capex" | "working_capital";
+  isCustom: boolean;
+  source: "brand_default" | "user_entry";
+  brandDefaultAmount: number | null;
+  item7RangeLow: number | null;
+  item7RangeHigh: number | null;
+  sortOrder: number;
 }
 
 export interface EngineInput {

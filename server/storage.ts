@@ -20,6 +20,8 @@ import {
   plans,
   brandAccountManagers,
 } from "@shared/schema";
+import type { StartupCostLineItem } from "@shared/financial-engine";
+import { buildPlanStartupCosts, migrateStartupCosts } from "@shared/plan-initialization";
 
 export interface IStorage {
   getUser(id: string): Promise<User | undefined>;
@@ -74,6 +76,10 @@ export interface IStorage {
   upsertBrandAccountManager(brandId: string, accountManagerId: string, bookingUrl: string | null): Promise<BrandAccountManager>;
   removeBrandAccountManager(brandId: string, accountManagerId: string): Promise<void>;
   setDefaultAccountManager(brandId: string, accountManagerId: string | null): Promise<Brand>;
+
+  getStartupCosts(planId: string): Promise<StartupCostLineItem[]>;
+  updateStartupCosts(planId: string, costs: StartupCostLineItem[]): Promise<StartupCostLineItem[]>;
+  resetStartupCostsToDefaults(planId: string, brandId: string): Promise<StartupCostLineItem[]>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -362,6 +368,30 @@ export class DatabaseStorage implements IStorage {
       .where(eq(brands.id, brandId))
       .returning();
     return updated;
+  }
+
+  async getStartupCosts(planId: string): Promise<StartupCostLineItem[]> {
+    const plan = await this.getPlan(planId);
+    if (!plan) return [];
+    const raw = (plan.startupCosts ?? []) as Array<Partial<StartupCostLineItem> & { name: string; amount: number; capexClassification: StartupCostLineItem["capexClassification"] }>;
+    const costs = migrateStartupCosts(raw);
+    return costs.sort((a, b) => a.sortOrder - b.sortOrder);
+  }
+
+  async updateStartupCosts(planId: string, costs: StartupCostLineItem[]): Promise<StartupCostLineItem[]> {
+    await db
+      .update(plans)
+      .set({ startupCosts: costs, updatedAt: new Date() })
+      .where(eq(plans.id, planId));
+    return costs;
+  }
+
+  async resetStartupCostsToDefaults(planId: string, brandId: string): Promise<StartupCostLineItem[]> {
+    const brand = await this.getBrand(brandId);
+    if (!brand || !brand.startupCostTemplate) return [];
+    const defaults = buildPlanStartupCosts(brand.startupCostTemplate);
+    await this.updateStartupCosts(planId, defaults);
+    return defaults;
   }
 }
 
