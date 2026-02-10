@@ -52,4 +52,4 @@ When the user triggers an agent or workflow, the AI MUST load the referenced fil
     - React
     - Express
     - Passport.js
-- **Reference Data:** `attached_assets/PostNet_-_Business_Plan_1770511701987.xlsx`
+- **Reference Data:** `_bmad-output/planning-artifacts/reference-data/` — PostNet, Jeremiah's Italian Ice, Tint World, Ubreakifix business plan spreadsheets
