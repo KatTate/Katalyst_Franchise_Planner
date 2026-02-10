@@ -201,9 +201,17 @@
       **Review Notes Added:** {{action_count}}
 
       {{#if new_status == "done"}}
-      Story is done! Say "create story" to start the next one, or "what's next?" for guidance.
+      **Recommended Next Steps (stay in this session):**
+      1. Say **"party mode"** for a multi-agent review of the code review findings (recommended for critical epics)
+      2. Apply any remaining fixes identified during party mode
+      3. Close the story (update status, dev agent record, sprint-status.yaml)
+      4. Then **start a fresh chat** and say **"create story"** to begin the next cycle
+
+      💡 *Session tip: Party mode, fixes, and story close all belong in this session — they refine and wrap up the current work. The next story deserves a fresh context.*
       {{else}}
-      Say "dev story" to address the review findings and continue implementation.
+      Stay in this session to fix the issues:
+      1. Say **"dev story"** to address the review findings
+      2. After fixes, run **"code review"** again to verify
       {{/if}}
     </output>
   </step>

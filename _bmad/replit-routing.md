@@ -89,15 +89,16 @@ This file maps natural language trigger phrases to BMAD agents and workflows. Wh
 
 1. **Exact code match** — If user types a 2-letter code (BP, CP, CA, etc.), route directly to that workflow
 2. **Agent name match** — If user mentions an agent by name (Mary, John, Winston, etc.), load that agent
-3. **Keyword match** — Match against trigger phrases in the tables above
+3. **Keyword/intent match** — Match against trigger phrases in the tables above. Use intent matching, not just exact phrases. Example: "should we do sprint planning for Epic 2?" contains the intent "sprint planning" and matches the SP workflow.
 4. **Ambiguous request** — If unclear, ask the user to clarify or suggest the most likely match
 5. **"What's next?" / "help"** — Always route to `_bmad/core/tasks/help.md`
 
 ## Execution Protocol
 
 When a route is matched:
-1. Read the target file
+1. Read the target file completely before responding
 2. For agents: adopt the persona and present their menu
-3. For workflows: execute following `_bmad/core/tasks/workflow.xml` execution engine
+3. For workflows: load and execute following `_bmad/core/tasks/workflow.xml` as the execution engine — read the COMPLETE file, execute ALL steps IN ORDER, never skip steps
 4. For tasks: execute the task directly
 5. Load BMAD settings from `_bmad/bmm/config.yaml`; resolve user/project/language from Replit environment ($REPLIT_USER, $REPL_SLUG, $LANG)
+6. When a workflow says WAIT for user input, STOP and WAIT — do not auto-proceed, simulate responses, or skip ahead

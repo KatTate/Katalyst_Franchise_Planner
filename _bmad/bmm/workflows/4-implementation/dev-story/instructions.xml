@@ -204,10 +204,12 @@
     </action>
 
     <output>
-      **Next Steps:**
-      1. Review the implementation
-      2. Say "code review" for a thorough review by a different perspective
-      3. When satisfied, the story is ready for the next one
+      **Recommended Next Steps:**
+      1. **Start a fresh chat** and say **"code review"** — a fresh perspective catches what the implementer missed
+      2. In that review session: run **"party mode"** on the findings, apply fixes, and close the story
+      3. Then **start a fresh chat** and say **"create story"** to begin the next cycle
+
+      💡 *Fresh chat tip: Code review is most effective when the reviewer reads the code cold, without the implementation context biasing its perspective.*
     </output>
 
     <check if="{{sprint_status}} file exists">

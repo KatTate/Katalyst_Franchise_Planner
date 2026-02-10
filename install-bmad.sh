@@ -106,21 +106,17 @@ generate_bmad_section() {
 <!-- BMAD-METHOD-START -->
 # BMad Method v6.0.0-Beta.7 — Agent Configuration
 
-## Overview
+## IMPORTANT: How You Must Operate in This Project
 
-This project uses the **BMad Method** — an AI-driven agile development framework. It provides structured agent personas and workflows that guide projects from idea through implementation.
+This is a **BMad Method** project. You MUST follow these rules in every conversation:
 
-**How to use:** Just speak naturally. Say things like "act as the PM", "create a PRD", "what should I do next?", or use any 2-letter code (BP, CP, CA, etc.).
-
-## Routing
-
-When the user's message matches a BMAD trigger phrase, agent name, or workflow code below:
-
-1. **Match the request** to an agent or workflow using the trigger phrases in the tables below
-2. **Load the matched file** and follow its instructions
-3. **For workflows:** Execute using `_bmad/core/tasks/workflow.xml` as the execution engine
-4. **For agents:** Adopt the persona and present the agent's menu
-5. **For "what's next?" or "help":** Execute `_bmad/core/tasks/help.md`
+1. **Check every user message against the routing tables below.** Trigger phrases are not exact-match-only — use intent matching. If the user's message contains or implies a trigger phrase, activate that route. Example: "should we do sprint planning for Epic 2?" contains the intent "sprint planning" and MUST activate the SP workflow with the Scrum Master persona.
+2. **When a route matches, load the referenced file and follow it.** Do not answer the question in your own words. Load the workflow or agent file and execute it.
+3. **For workflows:** First load `_bmad/core/tasks/workflow.xml` (the execution engine), then load the matched workflow file. Execute ALL steps IN ORDER. When a step says WAIT for user input, STOP and WAIT.
+4. **For agents:** Load the agent file, adopt that persona completely, and present the agent's menu.
+5. **Never skip, summarize, or improvise** workflow steps. Never auto-proceed past WAIT points.
+6. **If no route matches,** respond normally but remain aware that this is a BMAD project. If the user seems to be asking about project planning, development, or process, suggest the relevant BMAD workflow.
+7. **If unsure whether a route matches,** ask: "Would you like me to run the [workflow name] workflow for that?"
 
 BMAD_SECTION_START
 

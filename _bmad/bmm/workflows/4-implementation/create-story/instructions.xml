@@ -262,12 +262,12 @@
       - File: {{story_file}}
       - Status: ready-for-dev
 
-      **Next Steps:**
+      **Recommended Next Steps:**
       1. Review the story in {{story_file}}
-      2. Say "dev story" to begin implementation
-      3. Say "code review" when implementation is complete
+      2. Say **"party mode"** for a multi-agent review of the story before implementation (recommended for critical epics)
+      3. **Start a fresh chat** and say **"dev story"** to begin implementation — a clean context gives the dev agent maximum working memory for the build
 
-      **The dev agent now has everything needed for implementation.**
+      💡 *Fresh chat tip: Implementation works best in its own session so the agent has full context for coding rather than carrying story-creation history.*
     </output>
   </step>
 
