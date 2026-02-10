@@ -1,6 +1,6 @@
 # Story 3.1: Financial Engine Core & Plan Schema
 
-Status: in-progress
+Status: review
 
 ## Story
 
@@ -186,16 +186,18 @@ interface FinancialInputs {
 |----|----------|---------|--------|------|--------|
 | CR-1 | HIGH | `plans` table not pushed to database — table does not exist in live DB. AC #1 requires it to exist. | Replit Review H1 | `shared/schema.ts` | Run `npm run db:push` after schema finalized |
 | CR-2 | HIGH | `deletePlan(id: string): Promise<void>` missing from `IStorage` interface and `DatabaseStorage` class. Explicitly required by Dev Notes. | Replit Review H2 | `server/storage.ts` | Add method to interface and implementation |
-| CR-3 | HIGH | `startup_costs` JSONB column missing from `plans` table. Per-plan startup cost customization has nowhere to persist. | External Review F5 | `shared/schema.ts` | Add `startupCosts: jsonb("startup_costs").$type<StartupCostLineItem[]>()` column |
+| CR-3 | HIGH | `startup_costs` JSONB column missing from `plans` table. Per-plan startup cost customization has nowhere to persist. | External Review F5 | `shared/schema.ts` | Add `startupCosts` JSONB column. Type should align with schema's existing `StartupCostItem` pattern (from `brandParameters.startupCosts`) — engine's `StartupCostLineItem` is a runtime computation type, not a persistence type. Story 3.2 will define the mapping. |
 | CR-4 | HIGH | `financialInputs` JSONB column missing `.$type<FinancialInputs>()` annotation. All other JSONB columns use typed annotations. | External Review F6 | `shared/schema.ts` | Add type annotation for consistency |
 | CR-5 | MEDIUM | LSP type error on `updatePlan` (line ~285). Spreading `UpdatePlan` with `updatedAt: new Date()` causes type incompatibility — `status` is `string` in partial schema but column expects `"draft" \| "in_progress" \| "completed"`. | Replit Review M3 | `server/storage.ts` | Cast or narrow the type appropriately |
 | CR-6 | MEDIUM | Comment on `managementSalariesAnnual` says "0 = auto-calc from contribution margin /3" but this logic is not implemented in the engine. Misleading. | External Review F9 | `shared/financial-engine.ts` | Either implement auto-calc or remove/reword the comment to clarify that 0 means no management salary |
+| CR-7 | MEDIUM | `vitest` was added to `package.json` (a forbidden change per project guidelines) and test config is incomplete — tests cannot actually run. | External Review OS-8 / Project Rules | `package.json` | Either complete vitest setup properly or remove the dependency. Resolve the forbidden-change compliance issue. |
 
 ### Design Decisions to Document (Not Bugs)
 
 | ID | Finding | Consensus | Action |
 |----|---------|-----------|--------|
-| DD-1 | `FinancialInputs` structure diverges from story spec — uses raw per-year arrays instead of `FinancialFieldValue` wrappers mirroring `BrandParameters`. | **Intentional separation of concerns.** The engine should receive clean numeric inputs. The `FinancialFieldValue` metadata wrapper pattern (with `source`, `brandDefault`, `item7Range`) belongs in the plan initialization layer (Story 3.2), not the computation engine. However, the structural mismatch (`annualGrossSales` vs `monthlyAuv`, 5-element arrays vs single values) creates integration risk for Story 3.2. | Story 3.2 must define the bridge function. The engine's `FinancialInputs` interface is the computation contract; a separate `PlanFinancialInputs` (with `FinancialFieldValue` wrappers) should be defined in Story 3.2 for persistence. |
+| DD-1a | `FinancialInputs` structure diverges from story spec — uses raw per-year arrays instead of `FinancialFieldValue` wrappers mirroring `BrandParameters`. | **Intentional separation of concerns.** The engine should receive clean numeric inputs. The `FinancialFieldValue` metadata wrapper pattern (with `source`, `brandDefault`, `item7Range`) belongs in the plan initialization layer (Story 3.2), not the computation engine. | Story 3.2 must define a separate `PlanFinancialInputs` (with `FinancialFieldValue` wrappers) for persistence. The engine's `FinancialInputs` interface remains the clean computation contract. |
+| DD-1b | No transformation function between `BrandParameters` (wrapped `{value, label, description}`) and engine `FinancialInputs` (raw numbers). (External Review F7) | **Out of scope for 3.1.** The engine deliberately takes raw numeric inputs. The bridge/transform function that maps `BrandParameters` → `FinancialInputs` (handling field name differences like `monthlyAuv` → `annualGrossSales`, extracting values from wrappers, expanding single values into 5-year arrays) is Story 3.2's core responsibility. | Story 3.2 must implement `buildFinancialInputsFromBrand()` or equivalent. This is a known integration risk — the structural differences (naming, shape) are wider than typical. |
 | DD-2 | `taxRate` field exists on `FinancialInputs` but is never used in calculations. All P&L metrics are pre-tax. | **Intentionally pre-tax for now.** PostNet reference model tracks pre-tax income. However, the field's presence implies tax calculations that don't exist. | Either remove `taxRate` from the interface or add a TODO comment explaining it's reserved for future tax modeling. Don't leave an unused field with no explanation. |
 | DD-3 | Engine uses simple growth `rate/12` instead of compound `(1+rate)^(1/12)-1`. | **Matches PostNet reference spreadsheet** which uses `1 + (rate/12)`. This is a modeling choice, not a bug. | Document in engine JSDoc that simple monthly division is used to match franchise industry conventions. |
 | DD-4 | Engine defines `StartupCostLineItem` instead of using `StartupCostItem` from `shared/schema.ts`. | **Semantically different types.** Schema's `StartupCostItem` has `default_amount` (template value), `sort_order`, `item7_range_low/high`. Engine's `StartupCostLineItem` has `amount` (runtime actual value) and `capexClassification`. These serve different purposes. | Acceptable divergence. Story 3.2 plan initialization should map `StartupCostItem[]` → `StartupCostLineItem[]`. |
@@ -219,7 +221,7 @@ interface FinancialInputs {
 | OS-5 | FK references on `plans` table lack `.onDelete()` cascade specification. | Story 3.5 or schema hardening pass |
 | OS-6 | 5-element tuple arrays not validated at runtime. | Story 3.5 — API validation |
 | OS-7 | No edge case tests for `monthsToReachAuv = 0` or `1`, negative inputs. | Story 3.7 — Validation story |
-| OS-8 | `vitest` added to `package.json` (technically a forbidden change) but tests cannot run due to missing vitest config. | Resolve: either complete vitest setup or remove dependency |
+| ~~OS-8~~ | Promoted to CR-7 (must-fix). | See CR-7 above. |
 
 ### Additional Low-Severity Notes
 
