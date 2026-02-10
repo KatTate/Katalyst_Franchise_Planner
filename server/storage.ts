@@ -284,6 +284,10 @@ export class DatabaseStorage implements IStorage {
       .update(plans)
       .set({ ...data, updatedAt: new Date() })
       .where(eq(plans.id, id))
+      .returning();
+    return updated;
+  }
+
   async getKatalystAdmins(): Promise<Array<{ id: string; email: string; displayName: string | null; profileImageUrl: string | null }>> {
     const admins = await db
       .select({
