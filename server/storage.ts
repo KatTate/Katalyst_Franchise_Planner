@@ -7,6 +7,9 @@ import {
   type InsertInvitation,
   type Brand,
   type InsertBrand,
+  type Plan,
+  type InsertPlan,
+  type UpdatePlan,
   type BrandParameters,
   type StartupCostTemplate,
   type BrandAccountManager,
@@ -14,6 +17,7 @@ import {
   users,
   invitations,
   brands,
+  plans,
   brandAccountManagers,
 } from "@shared/schema";
 
@@ -58,8 +62,12 @@ export interface IStorage {
   assignAccountManager(franchiseeId: string, accountManagerId: string, bookingUrl: string): Promise<User>;
   getUsersByBrand(brandId: string): Promise<User[]>;
   getFranchiseesByBrand(brandId: string): Promise<User[]>;
+  createPlan(plan: InsertPlan): Promise<Plan>;
+  getPlan(id: string): Promise<Plan | undefined>;
+  getPlansByUser(userId: string): Promise<Plan[]>;
+  getPlansByBrand(brandId: string): Promise<Plan[]>;
+  updatePlan(id: string, data: UpdatePlan): Promise<Plan>;
   getKatalystAdmins(): Promise<Array<{ id: string; email: string; displayName: string | null; profileImageUrl: string | null }>>;
-
   getBrandAccountManagers(brandId: string): Promise<BrandAccountManager[]>;
   getBrandAccountManager(brandId: string, accountManagerId: string): Promise<BrandAccountManager | undefined>;
   upsertBrandAccountManager(brandId: string, accountManagerId: string, bookingUrl: string | null): Promise<BrandAccountManager>;
@@ -253,6 +261,29 @@ export class DatabaseStorage implements IStorage {
       .where(and(eq(users.brandId, brandId), eq(users.role, "franchisee")));
   }
 
+  async createPlan(plan: InsertPlan): Promise<Plan> {
+    const [created] = await db.insert(plans).values(plan as any).returning();
+    return created;
+  }
+
+  async getPlan(id: string): Promise<Plan | undefined> {
+    const [plan] = await db.select().from(plans).where(eq(plans.id, id)).limit(1);
+    return plan;
+  }
+
+  async getPlansByUser(userId: string): Promise<Plan[]> {
+    return db.select().from(plans).where(eq(plans.userId, userId));
+  }
+
+  async getPlansByBrand(brandId: string): Promise<Plan[]> {
+    return db.select().from(plans).where(eq(plans.brandId, brandId));
+  }
+
+  async updatePlan(id: string, data: UpdatePlan): Promise<Plan> {
+    const [updated] = await db
+      .update(plans)
+      .set({ ...data, updatedAt: new Date() })
+      .where(eq(plans.id, id))
   async getKatalystAdmins(): Promise<Array<{ id: string; email: string; displayName: string | null; profileImageUrl: string | null }>> {
     const admins = await db
       .select({
