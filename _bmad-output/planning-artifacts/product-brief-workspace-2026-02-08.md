@@ -1,6 +1,6 @@
 ---
 stepsCompleted: [1, 2, 3, 4, 5]
-inputDocuments: ['_bmad-output/brainstorming/brainstorming-session-2026-02-08.md', 'attached_assets/katalyst-replit-agent-context-final_1770513125481.md', 'attached_assets/PostNet_-_Business_Plan_1770511701987.xlsx']
+inputDocuments: ['_bmad-output/brainstorming/brainstorming-session-2026-02-08.md', 'attached_assets/katalyst-replit-agent-context-final_1770513125481.md', '_bmad-output/planning-artifacts/reference-data/PostNet_-_Business_Plan_1770511701987.xlsx']
 date: 2026-02-08
 author: User
 ---

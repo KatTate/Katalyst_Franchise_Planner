@@ -7,7 +7,7 @@ import {
 } from "./financial-engine";
 
 // ─── PostNet Reference Data ─────────────────────────────────────────────
-// Extracted from attached_assets/PostNet_-_Business_Plan_1770511701987.xlsx
+// Extracted from _bmad-output/planning-artifacts/reference-data/PostNet_-_Business_Plan_1770511701987.xlsx
 // All currency values in CENTS
 
 const postNetInputs: FinancialInputs = {

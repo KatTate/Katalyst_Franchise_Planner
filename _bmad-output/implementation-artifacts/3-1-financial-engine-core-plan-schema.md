@@ -170,7 +170,7 @@ interface FinancialInputs {
 - Architecture: `_bmad-output/planning-artifacts/architecture.md` — Decision 15 (Engine Design), Decision 2 (Number Precision), Financial Engine Purity Enforcement, Schema Patterns, Number Format Rules, Naming Patterns
 - Epics: `_bmad-output/planning-artifacts/epics.md` — Epic 3 overview, Story 3.1 AC, FR1/FR9/FR10
 - Existing schema: `shared/schema.ts` — BrandParameters, StartupCostItem types
-- Reference data: `attached_assets/PostNet_-_Business_Plan_1770511701987.xlsx` — PostNet financial model reference (for validation in Story 3.7)
+- Reference data: `_bmad-output/planning-artifacts/reference-data/PostNet_-_Business_Plan_1770511701987.xlsx` — PostNet financial model reference (for validation in Story 3.7)
 
 ## Code Review Notes
 

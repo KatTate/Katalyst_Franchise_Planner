@@ -1,6 +1,6 @@
 ---
 stepsCompleted: ['step-01-init', 'step-02-discovery', 'step-03-success', 'step-04-journeys', 'step-05-domain', 'step-06-innovation', 'step-07-project-type', 'step-08-scoping', 'step-09-functional', 'step-10-nonfunctional', 'step-11-polish', 'step-12-complete']
-inputDocuments: ['_bmad-output/planning-artifacts/product-brief-workspace-2026-02-08.md', '_bmad-output/brainstorming/brainstorming-session-2026-02-08.md', 'attached_assets/katalyst-replit-agent-context-final_1770513125481.md', 'attached_assets/PostNet_-_Business_Plan_1770511701987.xlsx', 'attached_assets/Pasted-Persona-A-First-Time-Franchisee-Sam-The-New-Owner-Snaps_1770523428988.txt']
+inputDocuments: ['_bmad-output/planning-artifacts/product-brief-workspace-2026-02-08.md', '_bmad-output/brainstorming/brainstorming-session-2026-02-08.md', 'attached_assets/katalyst-replit-agent-context-final_1770513125481.md', '_bmad-output/planning-artifacts/reference-data/PostNet_-_Business_Plan_1770511701987.xlsx', 'attached_assets/Pasted-Persona-A-First-Time-Franchisee-Sam-The-New-Owner-Snaps_1770523428988.txt']
 workflowType: 'prd'
 briefCount: 1
 brainstormingCount: 1
