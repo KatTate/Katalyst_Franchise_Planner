@@ -67,6 +67,7 @@ export interface IStorage {
   getPlansByUser(userId: string): Promise<Plan[]>;
   getPlansByBrand(brandId: string): Promise<Plan[]>;
   updatePlan(id: string, data: UpdatePlan): Promise<Plan>;
+  deletePlan(id: string): Promise<void>;
   getKatalystAdmins(): Promise<Array<{ id: string; email: string; displayName: string | null; profileImageUrl: string | null }>>;
   getBrandAccountManagers(brandId: string): Promise<BrandAccountManager[]>;
   getBrandAccountManager(brandId: string, accountManagerId: string): Promise<BrandAccountManager | undefined>;
@@ -286,6 +287,10 @@ export class DatabaseStorage implements IStorage {
       .where(eq(plans.id, id))
       .returning();
     return updated;
+  }
+
+  async deletePlan(id: string): Promise<void> {
+    await db.delete(plans).where(eq(plans.id, id));
   }
 
   async getKatalystAdmins(): Promise<Array<{ id: string; email: string; displayName: string | null; profileImageUrl: string | null }>> {
