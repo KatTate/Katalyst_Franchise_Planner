@@ -1,6 +1,6 @@
 # Story 3.2: Brand Default Integration & Per-Field Metadata
 
-Status: review
+Status: in-progress
 
 ## Story
 
@@ -166,3 +166,46 @@ N/A — this story is infrastructure/data-layer only (developer role), no UI com
 | `shared/plan-initialization.test.ts` | CREATED | 60 tests: field initialization, startup cost mapping, engine unwrap, field update/reset, engine integration, edge cases |
 | `shared/schema.ts` | MODIFIED | Changed `financialInputs` JSONB type annotation from `FinancialInputs` to `PlanFinancialInputs` |
 | `_bmad-output/implementation-artifacts/3-2-brand-default-integration-per-field-metadata.md` | CREATED | Story file with detailed dev notes and AC |
+
+## Code Review Notes
+
+**Reviewer:** Claude Opus 4.6 (adversarial code review + BMAD party mode multi-agent review)
+**Date:** 2026-02-10
+**Verdict:** IN PROGRESS — 2 items must be resolved before done
+
+### Findings
+
+#### HIGH — Must Fix
+
+**H1: AC7 NOT SATISFIED — Missing PostNet reference value assertions**
+- **File:** `shared/plan-initialization.test.ts` (Engine Integration section, lines 346-381)
+- **Description:** AC7 requires "engine output matches previously validated PostNet reference results within tolerance." Current tests verify identity checks pass, positive revenue, and deterministic output — but do NOT assert against specific known-good PostNet reference values (e.g., Y1-Y5 annual revenue, break-even month, 5-year ROI).
+- **Suggested fix:** Add 3-5 snapshot assertions to the Engine Integration test section comparing key output metrics against PostNet reference values from `shared/financial-engine.test.ts`. Example: `expect(output.annualSummaries[0].revenue).toBeCloseTo(expectedY1Revenue, -2)`.
+- **Party mode consensus:** 4/5 agents agreed this blocks done (Quinn, Amelia, Bob, John).
+
+#### MEDIUM — Should Fix
+
+**M1: Dead code — `makeSystemDefault` function never called**
+- **File:** `shared/plan-initialization.ts:74-83`
+- **Description:** `makeSystemDefault()` creates a `FinancialFieldValue` with `brandDefault: null`. Not used anywhere. System defaults (payrollTaxPct, monthsToReachAuv, etc.) are hardcoded as raw numbers in `unwrapForEngine()`.
+- **Suggested fix:** Remove the function. It can be recreated if needed in a future story.
+
+**M2: `otherMonthly` → `otherOpexPct` conversion is semantically lossy**
+- **File:** `shared/plan-initialization.ts:191-199`
+- **Description:** Fixed monthly dollar costs (`otherMonthly`) are converted to a percentage of revenue (`otherOpexPct`). This means "other costs" scale with revenue instead of staying fixed. For PostNet ($1,000/mo, ~$322K/yr), the derived 3.72% is reasonable at initialization. However, if a user changes revenue, the dollar-equivalent of "other costs" shifts proportionally.
+- **Context:** Dev notes (line 72, 95) explicitly document this as a known limitation — the engine interface accepts `otherOpexPct` (percentage) not fixed dollar amounts. The implementation follows the spec.
+- **Suggested fix:** Document as a known limitation in code comments. Consider adding `otherFixedCostsAnnual` to the engine interface in a future story if this causes inaccurate projections.
+
+#### LOW — Nice to Fix
+
+**L1: `workingCapitalMonths` stored but unused**
+- `PlanFinancialInputs.startupCapital.workingCapitalMonths` is initialized but `unwrapForEngine` never reads it. Placeholder for future WC modeling story.
+
+**L2: Empty startup costs produce degenerate ROI metrics**
+- When `startupCosts = []`, `totalStartupInvestment = 0` in engine, causing `breakEvenMonth = 1` and `fiveYearROIPct = 0`.
+
+**L3: `item7Range` always null for financial input fields**
+- Item 7 data exists on startup cost items, not financial parameter fields. Field is a placeholder.
+
+**L4: `sprint-status.yaml` changed in git but not in story File List**
+- Expected workflow housekeeping, not a code issue.
