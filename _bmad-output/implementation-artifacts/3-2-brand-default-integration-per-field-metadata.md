@@ -1,6 +1,6 @@
 # Story 3.2: Brand Default Integration & Per-Field Metadata
 
-Status: in-progress
+Status: review
 
 ## Story
 
@@ -141,16 +141,22 @@ Claude Opus 4.6 (claude-opus-4-6) via Claude Code CLI
   - `updateFieldValue()`: immutable field update with source tracking
   - `resetFieldToDefault()`: immutable reset to brand default
 - Updated `plans.financialInputs` JSONB type annotation from engine `FinancialInputs` to `PlanFinancialInputs`
-- 60 new tests covering all functions, edge cases, round-trip edit/reset, and engine integration
-- All 93 tests passing (60 new + 33 existing engine tests)
+- 66 new tests covering all functions, edge cases, round-trip edit/reset, engine integration, and PostNet reference validation (AC7)
+- All 99 tests passing (66 new + 33 existing engine tests)
 - No TypeScript errors in new/modified files
 
 **Design Decisions:**
 - `PlanFinancialInputs` stores user-editable fields as single values (e.g., `cogsPct: 0.30`). The `unwrapForEngine()` function expands these to 5-year arrays for the engine. Per-year differentiation (like rent escalation) is handled automatically.
 - Fixed monthly costs (rent + utilities + insurance) are combined into `facilitiesAnnual` with 3% annual escalation, matching PostNet convention.
-- `otherMonthly` (fixed cents) is converted to `otherOpexPct` (% of revenue) in the unwrap function.
+- `otherMonthly` (fixed cents) is converted to `otherOpexPct` (% of revenue) in the unwrap function. This is a known lossy conversion documented in code comments — the engine only accepts percentages, not fixed dollar amounts.
 - System defaults for fields without brand parameters: `monthsToReachAuv=14`, `payrollTaxPct=0.20`, `managementSalariesAnnual=[0,0,0,0,0]`, `workingCapitalAssumptions={ar:30,ap:60,inv:60}`, `distributions=[0,0,0,0,0]`, `taxRate=0.21`.
-- `equityPct` is derived dynamically from `loanAmount / totalInvestment` rather than stored as a separate field.
+- `equityPct` is derived dynamically from `loanAmount / totalInvestment` rather than stored as a separate field. `downPaymentPct` is stored for UI display only; it does not drive engine computation.
+
+**Code Review Fix Pass (2026-02-10):**
+- H1 FIXED: Added 6 PostNet reference validation tests (AC7) — Y1-Y5 revenue, EBITDA, cumulative cash flow, ROI, startup investment assertions
+- M1 FIXED: Removed dead `makeSystemDefault()` function
+- M2 FIXED: Added code comment documenting lossy `otherMonthly` → `otherOpexPct` conversion
+- M3/M4 FIXED: Unified `equityPct` derivation using `effectiveInvestment` — removes `downPaymentPct` as computation driver, ensures consistent math when startup costs are empty (`equityPct = 0` instead of `downPaymentPct`)
 
 ### LSP Status
 Clean — no errors in new/modified files. Pre-existing Drizzle ORM type issues in node_modules and server/storage.ts are unrelated.
@@ -163,7 +169,7 @@ N/A — this story is infrastructure/data-layer only (developer role), no UI com
 |------|--------|-------|
 | `shared/financial-engine.ts` | MODIFIED | Updated `FinancialFieldValue` (added lastModifiedAt, isCustom; "manual"→"user_entry"). Added `PlanFinancialInputs` interface. |
 | `shared/plan-initialization.ts` | CREATED | Plan initialization bridge: `buildPlanFinancialInputs()`, `buildPlanStartupCosts()`, `unwrapForEngine()`, `updateFieldValue()`, `resetFieldToDefault()` |
-| `shared/plan-initialization.test.ts` | CREATED | 60 tests: field initialization, startup cost mapping, engine unwrap, field update/reset, engine integration, edge cases |
+| `shared/plan-initialization.test.ts` | CREATED | 66 tests: field initialization, startup cost mapping, engine unwrap, field update/reset, engine integration, PostNet reference validation (AC7), edge cases |
 | `shared/schema.ts` | MODIFIED | Changed `financialInputs` JSONB type annotation from `FinancialInputs` to `PlanFinancialInputs` |
 | `_bmad-output/implementation-artifacts/3-2-brand-default-integration-per-field-metadata.md` | CREATED | Story file with detailed dev notes and AC |
 

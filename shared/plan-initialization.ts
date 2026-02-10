@@ -70,18 +70,6 @@ function makeField(
   };
 }
 
-/** Create a FinancialFieldValue with a system default (no brand default) */
-function makeSystemDefault(value: number): FinancialFieldValue {
-  return {
-    currentValue: value,
-    source: "brand_default",
-    brandDefault: null,
-    item7Range: null,
-    lastModifiedAt: null,
-    isCustom: false,
-  };
-}
-
 // ─── Build Plan Financial Inputs ─────────────────────────────────────────
 
 /**
@@ -151,7 +139,7 @@ export function buildPlanStartupCosts(
  *  - Single percentage values → 5-element per-year arrays
  *  - Fixed monthly costs (rent + utilities + insurance) * 12 → facilitiesAnnual with 3% escalation
  *  - otherMonthly converted to otherOpexPct as proportion of estimated annual revenue
- *  - downPaymentPct → equityPct via totalInvestment from startup costs
+ *  - loanAmount / totalInvestment → equityPct (downPaymentPct stored for UI only)
  *  - depreciationYears → depreciationRate (1/years)
  */
 export function unwrapForEngine(
@@ -188,8 +176,10 @@ export function unwrapForEngine(
     Math.round(baseAnnualFacilities * Math.pow(1 + RENT_ESCALATION_RATE, 4)),
   ];
 
-  // Other monthly → otherOpexPct: derive as proportion of estimated Y1 revenue
-  // If otherMonthly is 0, use system default
+  // Other monthly → otherOpexPct: derive as proportion of estimated Y1 revenue.
+  // KNOWN LIMITATION: This converts a fixed monthly dollar cost into a percentage of
+  // revenue, making it scale with revenue changes. The engine interface only accepts
+  // otherOpexPct (percentage), not fixed dollar amounts. See dev notes lines 72, 95.
   const otherMonthlyCents = v(pi.operatingCosts.otherMonthly);
   let otherOpexPct: number;
   if (otherMonthlyCents > 0 && annualGrossSales > 0) {
@@ -198,12 +188,15 @@ export function unwrapForEngine(
     otherOpexPct = otherMonthlyCents > 0 ? DEFAULT_OTHER_OPEX_PCT : 0;
   }
 
-  // Financing
+  // Financing — equityPct derived from loanAmount / totalInvestment (dev notes line 73).
+  // downPaymentPct is stored in PlanFinancialInputs for UI display but does not drive
+  // engine computation; loanAmount is the authoritative financing input.
   const totalInvestment = startupCosts.reduce((sum, c) => sum + c.amount, 0);
   const loanAmount = v(pi.financing.loanAmount);
-  const equityPct = totalInvestment > 0
-    ? Math.max(0, Math.min(1, 1 - (loanAmount / totalInvestment)))
-    : v(pi.financing.downPaymentPct);
+  const effectiveInvestment = totalInvestment > 0 ? totalInvestment : loanAmount;
+  const equityPct = effectiveInvestment > 0
+    ? Math.max(0, Math.min(1, 1 - (loanAmount / effectiveInvestment)))
+    : 0;
 
   // Depreciation
   const depYears = v(pi.startupCapital.depreciationYears);
@@ -228,7 +221,7 @@ export function unwrapForEngine(
       managementSalariesAnnual: [0, 0, 0, 0, 0],
     },
     financing: {
-      totalInvestment: totalInvestment > 0 ? totalInvestment : loanAmount,
+      totalInvestment: effectiveInvestment,
       equityPct,
       interestRate: v(pi.financing.interestRate),
       termMonths: v(pi.financing.loanTermMonths),
