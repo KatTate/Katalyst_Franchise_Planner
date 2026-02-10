@@ -10,6 +10,7 @@ import brandsRouter from "./routes/brands";
 import adminRouter from "./routes/admin";
 import usersRouter from "./routes/users";
 import financialEngineRouter from "./routes/financial-engine";
+import plansRouter from "./routes/plans";
 
 export async function registerRoutes(
   httpServer: Server,
@@ -45,6 +46,7 @@ export async function registerRoutes(
   app.use("/api/admin", adminRouter);
   app.use("/api/users", usersRouter);
   app.use("/api/financial-engine", financialEngineRouter);
+  app.use("/api/plans", plansRouter);
 
   return httpServer;
 }
