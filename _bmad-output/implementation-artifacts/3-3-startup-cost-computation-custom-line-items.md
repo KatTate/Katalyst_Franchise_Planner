@@ -12,7 +12,7 @@ so that my plan reflects my specific situation (FR5, FR6).
 
 1. **Given** my plan has the brand's startup cost template pre-filled (via Story 3.2's `buildPlanStartupCosts()`), **when** I view the Startup Cost Builder section of my plan, **then** I see all template line items listed with columns: Item Name, My Estimate (editable), Brand Default, FDD Item 7 Low, FDD Item 7 High, and CapEx/Non-CapEx classification — and each template line item shows the FDD Item 7 range alongside the brand default and my estimate (FR4).
 
-2. **Given** I am viewing my startup cost line items, **when** I click "Add Custom Item," **then** I see a form to enter: item name, amount (currency), and CapEx classification (CapEx or Non-CapEx) — **and** upon saving, the new custom item appears in my list with `isCustom: true` and `source: 'user_entry'`, **and** the dashboard metrics (total investment, ROI, break-even) update to reflect the addition.
+2. **Given** I am viewing my startup cost line items, **when** I click "Add Custom Item," **then** I see an inline form row to enter: item name, amount (currency), and classification (Depreciable Asset / One-Time Expense / Working Capital) with Save and Cancel buttons — **and** upon saving, the new custom item appears in my list with `isCustom: true` and `source: 'user_entry'`, **and** the dashboard metrics (total investment, ROI, break-even) update to reflect the addition. Pressing Escape or clicking Cancel dismisses the form without adding an item.
 
 3. **Given** I have a custom line item in my startup costs, **when** I click the remove action on that item, **then** the item is removed from my list, **and** the dashboard metrics update to reflect the removal. Template line items cannot be removed — only custom items have a remove action.
 
@@ -89,9 +89,9 @@ Add pure helper functions for startup cost operations:
 
 All functions are pure (return new arrays, don't mutate) and live in `shared/plan-initialization.ts` for reuse on both client and server.
 
-**API Endpoints (server/routes/financial-engine.ts):**
+**API Endpoints (server/routes/plans.ts — plan sub-resource routes):**
 
-The architecture specifies dedicated startup cost endpoints:
+Startup cost endpoints are plan sub-resources and belong under a plans router (not the financial-engine router, which is for computation). Create `server/routes/plans.ts` (or mount directly in `server/routes.ts`) with:
 
 - `GET /api/plans/:planId/startup-costs` — returns the plan's startup cost line items sorted by `sortOrder`
 - `PUT /api/plans/:planId/startup-costs` — bulk replaces the startup cost array (the client sends the full updated array after add/remove/edit/reorder operations)
@@ -120,11 +120,16 @@ export const planStartupCostLineItemSchema = z.object({
 export const planStartupCostsSchema = z.array(planStartupCostLineItemSchema);
 ```
 
+**Cross-field refinements** — add `.refine()` validators to `planStartupCostLineItemSchema`:
+- If `isCustom === true`, then `brandDefaultAmount` must be `null` (custom items have no brand default)
+- If `item7RangeLow` and `item7RangeHigh` are both non-null, then `item7RangeLow <= item7RangeHigh`
+- If `isCustom === false`, then `brandDefaultAmount` must be non-null (template items always have a brand default)
+
 **IStorage additions (server/storage.ts):**
 
 - `getStartupCosts(planId: string): Promise<StartupCostLineItem[]>` — reads `plans.startup_costs` JSONB, returns sorted by `sortOrder`
-- `updateStartupCosts(planId: string, costs: StartupCostLineItem[]): Promise<StartupCostLineItem[]>` — writes to `plans.startup_costs` JSONB, returns the saved array
-- `resetStartupCostsToDefaults(planId: string, brandId: string): Promise<StartupCostLineItem[]>` — loads the brand's startup cost template, calls `buildPlanStartupCosts()`, saves to plan, returns result
+- `updateStartupCosts(planId: string, costs: StartupCostLineItem[]): Promise<StartupCostLineItem[]>` — writes to `plans.startup_costs` JSONB using a **targeted column update** (`db.update(plans).set({ startupCosts: costs }).where(eq(plans.id, planId))`), NOT through the generic `updatePlan()` method. This prevents race conditions where auto-save (which updates `financial_inputs`) could overwrite startup costs or vice versa.
+- `resetStartupCostsToDefaults(planId: string, brandId: string): Promise<StartupCostLineItem[]>` — loads the brand's startup cost template, calls `buildPlanStartupCosts()`, saves to plan via the same targeted column update, returns result
 
 All storage methods must accept user context for RBAC scoping (franchisee can only access their own plan).
 
@@ -167,7 +172,11 @@ Each row displays:
 - My Estimate field (editable currency input, auto-formatted with $ and commas)
 - Brand Default column (shown for template items, "—" for custom items)
 - FDD Item 7 Range column (e.g., "$30,000 – $60,000" for template items, "—" for custom items)
-- CapEx/Non-CapEx badge
+- Classification badge with user-friendly labels:
+  - `capex` → "Depreciable Asset" (tooltip: "Long-term items like equipment — cost is spread over multiple years")
+  - `non_capex` → "One-Time Expense" (tooltip: "Costs paid once at startup — expensed in Year 1")
+  - `working_capital` → "Working Capital" (tooltip: "Cash reserve for operating expenses during ramp-up")
+  - Internal values remain `capex` / `non_capex` / `working_capital`; labels are display-only
 - Action buttons: Reset to default (template items only, shown when user has overridden), Remove (custom items only)
 
 **UI States:**
@@ -180,9 +189,15 @@ Each row displays:
 
 **Interaction Patterns:**
 - Inline editing: click/focus on the amount cell to edit directly (no modal)
-- Auto-save: changes trigger the debounced auto-save mechanism (existing pattern from Story 4.5, but for this story the PUT endpoint handles explicit save)
-- Drag-and-drop reorder: uses HTML drag-and-drop or a lightweight library (consider `@dnd-kit/core` if available, otherwise use move up/down buttons)
-- "Add Custom Item" opens an inline form row (not a modal) at the bottom of the list
+- **Save triggers (this story — auto-save infrastructure from Story 4.5 does not exist yet):**
+  - Amount edits: save on blur (when the user leaves the field)
+  - "Add Custom Item": save on Save button click
+  - Reorder: save on drop (after drag completes)
+  - Remove: save immediately on confirmation
+  - Reset to default: save immediately
+  - All saves use the `PUT /api/plans/:planId/startup-costs` endpoint with the complete array
+- Drag-and-drop reorder: uses HTML drag-and-drop or a lightweight library (consider `@dnd-kit/core` if available, otherwise use move up/down buttons — move buttons must always be present for keyboard accessibility)
+- "Add Custom Item" opens an inline form row (not a modal) at the bottom of the list with Save and Cancel buttons; pressing Escape dismisses without adding
 - Currency input auto-formats: user types "45000" and sees "$45,000"
 
 **Emotional Design (from UX spec):**
@@ -196,6 +211,8 @@ Each row displays:
 - In Forms mode: appears as a collapsible "Startup Costs" section
 - In Quick Entry mode: startup costs appear as a category group in the grid
 - In Planning Assistant mode: the AI can guide the user through startup cost review, with values updating in the Startup Cost Builder on the right panel
+
+**Standalone Component Note:** The planning workspace layout (Detail Panel shell) is built in Story 4.1. For this story, `<StartupCostBuilder />` must be independently renderable and testable — it accepts `planId` as a prop and manages its own data fetching via the `useStartupCosts` hook. It can be mounted on a temporary test route (e.g., `/plans/:id/startup-costs-dev`) or tested via unit tests with mocked query data. Integration into the Detail Panel layout happens in Story 4.1.
 
 ### Anti-Patterns & Hard Constraints
 
@@ -215,7 +232,7 @@ Each row displays:
 ### Gotchas & Integration Warnings
 
 - **Interface extension must be backward-compatible:** The existing `buildPlanStartupCosts()` and `unwrapForEngine()` functions in `shared/plan-initialization.ts` currently produce `StartupCostLineItem` objects with only `name`, `amount`, and `capexClassification`. After extending the interface, these functions must be updated to populate the new fields. Existing engine tests must continue to pass since `calculateProjections()` only reads `name`, `amount`, and `capexClassification`.
-- **Existing plan data migration:** Plans created before this story have `startup_costs` JSONB with the old 3-field format (no `id`, `isCustom`, `source`, etc.). The API and UI must handle plans that have the old format gracefully — either migrate on first read or treat missing fields with sensible defaults (`id: generated`, `isCustom: false`, `source: 'brand_default'`, etc.).
+- **Existing plan data migration:** Plans created before this story have `startup_costs` JSONB with the old 3-field format (no `id`, `isCustom`, `source`, etc.). The API and UI must handle plans that have the old format gracefully — either migrate on first read or treat missing fields with sensible defaults (`id: generated`, `isCustom: false`, `source: 'brand_default'`, `brandDefaultAmount: amount`, `item7RangeLow: null`, `item7RangeHigh: null`, `sortOrder: index`). **Required test case:** "Given a startup cost array with only `name`, `amount`, `capexClassification` (old format), when loaded through `getStartupCosts()`, then missing fields are populated with sensible defaults and the result passes Zod validation."
 - **Brand parameter amounts are in dollars, plan amounts are in cents:** The `buildPlanStartupCosts()` function handles this conversion via `dollarsToCents()`. Custom items entered by the user via the UI are entered in dollars and must be converted to cents before storage.
 - **Item 7 ranges from the brand template use `item7_range_low` / `item7_range_high` (snake_case in the template Zod schema).** These must be mapped to `item7RangeLow` / `item7RangeHigh` (camelCase) in the `StartupCostLineItem` and converted from dollars to cents.
 - **`crypto.randomUUID()` availability:** Use `crypto.randomUUID()` for ID generation in the shared module. This is available in Node.js 19+ and modern browsers. If running in an older environment, fall back to a simple UUID generator or use the `uuid` package (already available if previously installed).
@@ -233,7 +250,7 @@ Each row displays:
 | `shared/plan-initialization.test.ts` | MODIFY | Add tests for new startup cost helper functions and updated buildPlanStartupCosts |
 | `shared/schema.ts` | MODIFY | Add `planStartupCostLineItemSchema` and `planStartupCostsSchema` Zod validators |
 | `server/storage.ts` | MODIFY | Add `getStartupCosts()`, `updateStartupCosts()`, `resetStartupCostsToDefaults()` to IStorage interface and DatabaseStorage |
-| `server/routes/financial-engine.ts` | MODIFY | Add startup cost API endpoints: GET, PUT, POST reset |
+| `server/routes/plans.ts` | CREATE | Startup cost API endpoints (plan sub-resource routes): GET, PUT, POST reset — mount in `server/routes.ts` |
 | `client/src/components/shared/startup-cost-builder.tsx` | CREATE | Startup Cost Builder component — line item list, add/remove/edit/reorder/reset UI |
 | `client/src/hooks/use-startup-costs.ts` | CREATE | Custom hook wrapping TanStack Query for startup cost data fetching and mutations |
 | `client/src/lib/format-currency.ts` | CREATE | Currency formatting utility (cents → display string) if not already present |
