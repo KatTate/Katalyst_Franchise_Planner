@@ -171,7 +171,7 @@ N/A — this story is infrastructure/data-layer only (developer role), no UI com
 
 **Reviewer:** Claude Opus 4.6 (adversarial code review + BMAD party mode multi-agent review)
 **Date:** 2026-02-10
-**Verdict:** IN PROGRESS — 2 items must be resolved before done
+**Verdict:** IN PROGRESS — 1 HIGH + 4 MEDIUM items must be resolved before done
 
 ### Findings
 
@@ -195,6 +195,16 @@ N/A — this story is infrastructure/data-layer only (developer role), no UI com
 - **Description:** Fixed monthly dollar costs (`otherMonthly`) are converted to a percentage of revenue (`otherOpexPct`). This means "other costs" scale with revenue instead of staying fixed. For PostNet ($1,000/mo, ~$322K/yr), the derived 3.72% is reasonable at initialization. However, if a user changes revenue, the dollar-equivalent of "other costs" shifts proportionally.
 - **Context:** Dev notes (line 72, 95) explicitly document this as a known limitation — the engine interface accepts `otherOpexPct` (percentage) not fixed dollar amounts. The implementation follows the spec.
 - **Suggested fix:** Document as a known limitation in code comments. Consider adding `otherFixedCostsAnnual` to the engine interface in a future story if this causes inaccurate projections.
+
+**M3: `downPaymentPct` is a dead editable field on the normal path** *(Codex P2)*
+- **File:** `shared/plan-initialization.ts:202-206`
+- **Description:** When `startupCosts` is non-empty (the normal path), `equityPct` is derived solely from `loanAmount / totalInvestment`. The persisted field `financing.downPaymentPct.currentValue` is never read, making it a no-op in projections. A franchisee could edit `downPaymentPct` in the UI and see zero effect — only `loanAmount` matters.
+- **Suggested fix:** Either derive `equityPct` from `downPaymentPct` (honoring user intent), or remove `downPaymentPct` from `PlanFinancialInputs` and compute it as a display-only derived value.
+
+**M4: Fallback financing internally inconsistent when startup costs empty** *(Codex P2)*
+- **File:** `shared/plan-initialization.ts:204-206, 231`
+- **Description:** When `startupCosts = []`, the fallback sets `totalInvestment = loanAmount` (line 231), but `equityPct` comes from `downPaymentPct` (line 206). The engine then computes `debtAmount = totalInvestment * (1 - equityPct)`, which is smaller than the entered loan. E.g., $200K loan + 20% down → `debtAmount = $160K`, under-financing the exact scenario the fallback is meant to handle.
+- **Suggested fix:** When startup costs are empty, set `equityPct = 0` (100% debt-financed) so `debtAmount = loanAmount`, or derive `totalInvestment = loanAmount / (1 - downPaymentPct)` to keep the math consistent.
 
 #### LOW — Nice to Fix
 
