@@ -1,6 +1,6 @@
 # Story 3.4: Live Summary Metrics & Accounting Validation
 
-Status: review
+Status: done
 
 ## Story
 
@@ -297,3 +297,33 @@ server-side financial service, and client-side SummaryMetrics UI component.
 - `client/src/App.tsx` — MODIFY — Added /plans/:planId/metrics route
 - `_bmad-output/implementation-artifacts/sprint-status.yaml` — MODIFY — Status updated to review
 - `_bmad-output/implementation-artifacts/3-4-live-summary-metrics-accounting-validation.md` — MODIFY — Status and Dev Agent Record
+
+## Code Review Record
+
+### Review Agent Model Used
+
+Claude Opus 4.6 (claude-opus-4-6)
+
+### Review Findings
+
+**HIGH: 0** | **MEDIUM: 3 (all fixed)** | **LOW: 2 (accepted)**
+
+#### MEDIUM — Fixed
+
+1. **Unused `apiRequest` import in `use-plan-outputs.ts`** — Removed. The hook uses TanStack Query's default `queryFn` (which joins the query key as URL), so `apiRequest` was dead code.
+
+2. **Unused `EngineOutput` type import in `summary-metrics.tsx`** — Removed. The component accesses engine output properties through the hook's return value, never referencing the `EngineOutput` type directly.
+
+3. **Misplaced `import type { Plan }` after `const router = Router()` in `plans.ts`** — Merged into the existing `@shared/schema` import line at the top of the file. All imports now precede executable code.
+
+#### LOW — Accepted
+
+1. **Dev route path `/plans/:planId/metrics` vs spec's `/plans/:planId/metrics-dev`** — The route serves the same purpose (temporary dev preview). Path name is cosmetic and will be removed when Story 4.1 mounts the component in the real planning workspace.
+
+2. **`StructuredLogEntry` omits `planId` as a top-level field** — The spec suggested `planId` as a top-level field, but the implementation uses a generic `data: Record<string, unknown>` bag. `planId` is included inside `data`. The generic approach is more reusable for non-plan-related structured logs in the future.
+
+### Verification
+
+- All 140 tests pass (33 engine + 98 plan-init + 9 financial service)
+- Zero new TypeScript errors introduced (pre-existing errors in `server/storage.ts` unchanged)
+- All 8 Acceptance Criteria verified against implementation

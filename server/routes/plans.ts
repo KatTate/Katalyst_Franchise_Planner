@@ -1,12 +1,10 @@
 import { Router, type Request, type Response } from "express";
 import { requireAuth } from "../middleware/auth";
 import { storage } from "../storage";
-import { planStartupCostsSchema } from "@shared/schema";
+import { planStartupCostsSchema, type Plan } from "@shared/schema";
 import { computePlanOutputs } from "../services/financial-service";
 
 const router = Router();
-
-import type { Plan } from "@shared/schema";
 
 /** Ownership check: franchisee can only access own plans; franchisor scoped to own brand. */
 async function requirePlanAccess(req: Request, res: Response): Promise<Plan | null> {

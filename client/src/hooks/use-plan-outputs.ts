@@ -1,5 +1,4 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { apiRequest } from "@/lib/queryClient";
 import type { EngineOutput } from "../../../shared/financial-engine";
 
 /** Query key factory for plan outputs. */
