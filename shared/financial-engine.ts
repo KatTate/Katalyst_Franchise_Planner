@@ -24,9 +24,44 @@ const CENTS_PRECISION = 100;
  *  wrapper is consumed by the UI/plan-initialization layer (Story 3.2+). */
 export interface FinancialFieldValue {
   currentValue: number;
-  source: "brand_default" | "manual" | "ai_populated";
+  source: "brand_default" | "user_entry" | "ai_populated";
   brandDefault: number | null;
   item7Range: { min: number; max: number } | null;
+  lastModifiedAt: string | null;
+  isCustom: boolean;
+}
+
+/** Wrapped financial inputs for plan JSONB persistence. Each user-editable field
+ *  carries metadata (source, brand default, reset capability). The structure
+ *  mirrors BrandParameters categories with camelCase keys. */
+export interface PlanFinancialInputs {
+  revenue: {
+    monthlyAuv: FinancialFieldValue;
+    year1GrowthRate: FinancialFieldValue;
+    year2GrowthRate: FinancialFieldValue;
+    startingMonthAuvPct: FinancialFieldValue;
+  };
+  operatingCosts: {
+    cogsPct: FinancialFieldValue;
+    laborPct: FinancialFieldValue;
+    rentMonthly: FinancialFieldValue;
+    utilitiesMonthly: FinancialFieldValue;
+    insuranceMonthly: FinancialFieldValue;
+    marketingPct: FinancialFieldValue;
+    royaltyPct: FinancialFieldValue;
+    adFundPct: FinancialFieldValue;
+    otherMonthly: FinancialFieldValue;
+  };
+  financing: {
+    loanAmount: FinancialFieldValue;
+    interestRate: FinancialFieldValue;
+    loanTermMonths: FinancialFieldValue;
+    downPaymentPct: FinancialFieldValue;
+  };
+  startupCapital: {
+    workingCapitalMonths: FinancialFieldValue;
+    depreciationYears: FinancialFieldValue;
+  };
 }
 
 // ─── Input Interfaces ───────────────────────────────────────────────────

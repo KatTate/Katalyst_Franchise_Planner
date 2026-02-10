@@ -141,7 +141,7 @@ export const plans = pgTable("plans", {
   userId: varchar("user_id").references(() => users.id).notNull(),
   brandId: varchar("brand_id").references(() => brands.id).notNull(),
   name: text("name").notNull(),
-  financialInputs: jsonb("financial_inputs").$type<import("./financial-engine").FinancialInputs>(),
+  financialInputs: jsonb("financial_inputs").$type<import("./financial-engine").PlanFinancialInputs>(),
   startupCosts: jsonb("startup_costs").$type<import("./financial-engine").StartupCostLineItem[]>(),
   status: text("status").notNull().$type<"draft" | "in_progress" | "completed">().default("draft"),
   pipelineStage: text("pipeline_stage").$type<"planning" | "site_evaluation" | "financing" | "construction" | "open">().default("planning"),
