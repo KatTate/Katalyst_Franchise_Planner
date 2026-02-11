@@ -134,6 +134,7 @@ export const users = pgTable("users", {
   preferredTier: text("preferred_tier").$type<"planning_assistant" | "forms" | "quick_entry">(),
   accountManagerId: varchar("account_manager_id").references(() => users.id),
   bookingUrl: text("booking_url"),
+  isDemo: boolean("is_demo").default(false).notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 }, (table) => [
   index("idx_users_email").on(table.email),
@@ -279,6 +280,17 @@ export type ImpersonationStatus =
       editingEnabled: boolean;
       remainingMinutes: number;
       returnBrandId: string | null;
+    };
+
+// ─── Demo Mode Status (ST.3 — frontend/backend contract) ─────────────────
+
+export type DemoModeStatus =
+  | { active: false }
+  | {
+      active: true;
+      brandId: string;
+      brandName: string;
+      demoUserId: string;
     };
 
 export const impersonationAuditLogs = pgTable("impersonation_audit_logs", {

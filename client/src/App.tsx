@@ -21,6 +21,8 @@ import InputsDevPage from "@/pages/inputs-dev";
 import { useBrandTheme } from "@/hooks/use-brand-theme";
 import { ImpersonationProvider, useImpersonation } from "@/contexts/ImpersonationContext";
 import { ImpersonationBanner } from "@/components/ImpersonationBanner";
+import { DemoModeProvider, useDemoMode } from "@/contexts/DemoModeContext";
+import { DemoModeBanner } from "@/components/DemoModeBanner";
 
 function ProtectedRoute({ component: Component }: { component: () => JSX.Element | null }) {
   const { isAuthenticated, isLoading } = useAuth();
@@ -131,13 +133,16 @@ function AppRouter() {
 function AuthenticatedLayoutInner() {
   useBrandTheme();
   const { active: isImpersonating, readOnly } = useImpersonation();
+  const { active: isDemoMode } = useDemoMode();
 
   return (
     <SidebarProvider>
       <div className="flex h-screen w-full">
         <AppSidebar />
         <div className="flex flex-col flex-1 min-w-0">
-          {isImpersonating ? (
+          {isDemoMode ? (
+            <DemoModeBanner />
+          ) : isImpersonating ? (
             <ImpersonationBanner />
           ) : (
             <header className="flex items-center gap-2 p-2 border-b h-12">
@@ -156,7 +161,9 @@ function AuthenticatedLayoutInner() {
 function AuthenticatedLayout() {
   return (
     <ImpersonationProvider>
-      <AuthenticatedLayoutInner />
+      <DemoModeProvider>
+        <AuthenticatedLayoutInner />
+      </DemoModeProvider>
     </ImpersonationProvider>
   );
 }

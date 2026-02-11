@@ -3,6 +3,7 @@ import { useLocation } from "wouter";
 import { useAuth } from "@/hooks/use-auth";
 import { useBrandTheme } from "@/hooks/use-brand-theme";
 import { useImpersonation } from "@/contexts/ImpersonationContext";
+import { useDemoMode } from "@/contexts/DemoModeContext";
 import { Home, Mail, Building2, LogOut } from "lucide-react";
 import {
   Sidebar,
@@ -34,6 +35,7 @@ export function AppSidebar() {
   const { user, logout } = useAuth();
   const { brand } = useBrandTheme();
   const { active: isImpersonating } = useImpersonation();
+  const { active: isDemoMode } = useDemoMode();
   const [location, setLocation] = useLocation();
   const [showLogoutDialog, setShowLogoutDialog] = useState(false);
   const [logoError, setLogoError] = useState(false);
@@ -48,11 +50,11 @@ export function AppSidebar() {
     : "Katalyst Growth Planner";
   const showBrandLogo = hasBrandContext && brand.logoUrl && !logoError;
 
-  // During impersonation, only show franchisee-appropriate navigation
+  const hideAdminNav = isImpersonating || isDemoMode;
   const navItems = [
     { title: "Dashboard", url: "/", icon: Home, visible: true },
-    { title: "Brands", url: "/admin/brands", icon: Building2, visible: isKatalystAdmin && !isImpersonating },
-    { title: "Invitations", url: "/admin/invitations", icon: Mail, visible: isAdmin && !isImpersonating },
+    { title: "Brands", url: "/admin/brands", icon: Building2, visible: isKatalystAdmin && !hideAdminNav },
+    { title: "Invitations", url: "/admin/invitations", icon: Mail, visible: isAdmin && !hideAdminNav },
   ].filter((item) => item.visible);
 
   const initials = user.displayName

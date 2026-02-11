@@ -1,6 +1,6 @@
 # Story ST.3: Franchisee Demo Mode (Per Brand)
 
-Status: ready-for-dev
+Status: in-progress
 
 ## Story
 

@@ -31,12 +31,40 @@ export function requireRole(...roles: Array<"franchisee" | "franchisor" | "katal
 }
 
 /**
- * Returns the impersonated user when impersonation is active, or req.user when not.
+ * Returns the effective user: demo user > impersonated user > req.user.
  * Caches the result on the request object to avoid redundant DB lookups within a single request.
  */
 export async function getEffectiveUser(req: Request): Promise<Express.User> {
   if (!req.user) {
     throw new Error("getEffectiveUser called without authenticated user");
+  }
+
+  // Use cached effective user if available on this request
+  const cached = (req as any)._effectiveUser as Express.User | undefined;
+  if (cached) {
+    return cached;
+  }
+
+  // Check demo mode first (no timeout)
+  const demoUserId = req.session?.demo_mode_user_id;
+  if (demoUserId) {
+    const demoUser = await storage.getUser(demoUserId);
+    if (demoUser) {
+      const effectiveUser: Express.User = {
+        id: demoUser.id,
+        email: demoUser.email,
+        role: demoUser.role,
+        brandId: demoUser.brandId,
+        displayName: demoUser.displayName,
+        profileImageUrl: demoUser.profileImageUrl,
+        onboardingCompleted: demoUser.onboardingCompleted,
+        preferredTier: demoUser.preferredTier,
+      };
+      (req as any)._effectiveUser = effectiveUser;
+      return effectiveUser;
+    }
+    delete req.session.demo_mode_brand_id;
+    delete req.session.demo_mode_user_id;
   }
 
   const impersonatingId = req.session?.impersonating_user_id;
@@ -49,7 +77,6 @@ export async function getEffectiveUser(req: Request): Promise<Express.User> {
   if (startedAt) {
     const elapsed = Date.now() - new Date(startedAt).getTime();
     if (elapsed > IMPERSONATION_MAX_MINUTES * 60 * 1000) {
-      // End any active audit log before auto-reverting
       await endEditSessionAuditLog(req);
       delete req.session.impersonating_user_id;
       delete req.session.impersonation_started_at;
@@ -60,15 +87,8 @@ export async function getEffectiveUser(req: Request): Promise<Express.User> {
     }
   }
 
-  // Use cached effective user if available on this request
-  const cached = (req as any)._effectiveUser as Express.User | undefined;
-  if (cached) {
-    return cached;
-  }
-
   const impersonatedUser = await storage.getUser(impersonatingId);
   if (!impersonatedUser) {
-    // End any active audit log before clearing
     await endEditSessionAuditLog(req);
     delete req.session.impersonating_user_id;
     delete req.session.impersonation_started_at;
@@ -89,7 +109,6 @@ export async function getEffectiveUser(req: Request): Promise<Express.User> {
     preferredTier: impersonatedUser.preferredTier,
   };
 
-  // Cache on request object
   (req as any)._effectiveUser = effectiveUser;
   return effectiveUser;
 }
@@ -99,6 +118,13 @@ export async function getEffectiveUser(req: Request): Promise<Express.User> {
  */
 export function isImpersonating(req: Request): boolean {
   return !!req.session?.impersonating_user_id;
+}
+
+/**
+ * Returns true if demo mode is currently active on this request's session.
+ */
+export function isDemoMode(req: Request): boolean {
+  return !!req.session?.demo_mode_user_id;
 }
 
 const DESTRUCTIVE_IMPERSONATION_PATTERNS = [
@@ -121,8 +147,13 @@ function isDestructiveAction(req: Request): boolean {
  * read-only impersonation is active. When edit mode is enabled (ST-2),
  * normal mutations are allowed through — but destructive account-level
  * actions are always blocked during impersonation regardless of edit mode.
+ * Demo mode is always fully interactive — mutations pass through.
  */
 export function requireReadOnlyImpersonation(req: Request, res: Response, next: NextFunction) {
+  if (req.session?.demo_mode_user_id) {
+    return next();
+  }
+
   if (!req.session?.impersonating_user_id) {
     return next();
   }
