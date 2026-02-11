@@ -1,4 +1,13 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
+import type { Request, Response, NextFunction } from "express";
+import {
+  requireAuth,
+  requireRole,
+  getEffectiveUser,
+  isImpersonating,
+  requireReadOnlyImpersonation,
+  IMPERSONATION_MAX_MINUTES,
+} from "./auth";
 
 vi.mock("../storage", () => ({
   storage: {
@@ -8,202 +17,332 @@ vi.mock("../storage", () => ({
 
 import { storage } from "../storage";
 
-const IMPERSONATION_MAX_MINUTES = 60;
+function mockReq(overrides: Record<string, any> = {}): Request {
+  return {
+    isAuthenticated: () => true,
+    user: { id: "u1", role: "katalyst_admin" },
+    session: {},
+    method: "GET",
+    ...overrides,
+  } as any;
+}
 
-describe("Auth Middleware - Unit Tests", () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
+function mockRes(): Response & { _status: number; _json: any } {
+  const res: any = {
+    _status: 0,
+    _json: null,
+    status(code: number) {
+      res._status = code;
+      return res;
+    },
+    json(body: any) {
+      res._json = body;
+      return res;
+    },
+  };
+  return res;
+}
+
+describe("requireAuth middleware", () => {
+  it("returns 401 when not authenticated", () => {
+    const req = mockReq({ isAuthenticated: () => false, user: undefined });
+    const res = mockRes();
+    const next = vi.fn();
+
+    requireAuth(req, res, next);
+
+    expect(res._status).toBe(401);
+    expect(res._json).toEqual({ message: "Authentication required" });
+    expect(next).not.toHaveBeenCalled();
   });
 
-  describe("requireAuth", () => {
-    it("should reject unauthenticated requests", () => {
-      const req = { isAuthenticated: () => false, user: undefined };
-      const res = { status: vi.fn().mockReturnThis(), json: vi.fn() };
-      const next = vi.fn();
+  it("returns 401 when user is missing", () => {
+    const req = mockReq({ isAuthenticated: () => true, user: undefined });
+    const res = mockRes();
+    const next = vi.fn();
 
-      if (!req.isAuthenticated() || !req.user) {
-        res.status(401).json({ message: "Authentication required" });
-      } else {
-        next();
-      }
+    requireAuth(req, res, next);
 
-      expect(res.status).toHaveBeenCalledWith(401);
-      expect(next).not.toHaveBeenCalled();
-    });
-
-    it("should allow authenticated requests", () => {
-      const req = { isAuthenticated: () => true, user: { id: "u1", role: "franchisee" } };
-      const res = { status: vi.fn().mockReturnThis(), json: vi.fn() };
-      const next = vi.fn();
-
-      if (!req.isAuthenticated() || !req.user) {
-        res.status(401).json({ message: "Authentication required" });
-      } else {
-        next();
-      }
-
-      expect(next).toHaveBeenCalled();
-      expect(res.status).not.toHaveBeenCalled();
-    });
+    expect(res._status).toBe(401);
+    expect(next).not.toHaveBeenCalled();
   });
 
-  describe("requireRole", () => {
-    it("should allow user with matching role", () => {
-      const roles = ["katalyst_admin", "franchisor"];
-      const user = { role: "katalyst_admin" };
-      const hasRole = roles.includes(user.role);
-      expect(hasRole).toBe(true);
-    });
+  it("calls next when authenticated", () => {
+    const req = mockReq();
+    const res = mockRes();
+    const next = vi.fn();
 
-    it("should deny user without matching role", () => {
-      const roles = ["katalyst_admin"];
-      const user = { role: "franchisee" };
-      const hasRole = roles.includes(user.role);
-      expect(hasRole).toBe(false);
-    });
+    requireAuth(req, res, next);
 
-    it("should check multiple roles correctly", () => {
-      const roles = ["katalyst_admin", "franchisor"];
+    expect(next).toHaveBeenCalled();
+    expect(res._status).toBe(0);
+  });
+});
 
-      expect(roles.includes("katalyst_admin")).toBe(true);
-      expect(roles.includes("franchisor")).toBe(true);
-      expect(roles.includes("franchisee")).toBe(false);
-    });
+describe("requireRole middleware", () => {
+  it("allows user with matching role", () => {
+    const middleware = requireRole("katalyst_admin");
+    const req = mockReq({ user: { id: "u1", role: "katalyst_admin" } });
+    const res = mockRes();
+    const next = vi.fn();
+
+    middleware(req, res, next);
+
+    expect(next).toHaveBeenCalled();
   });
 
-  describe("getEffectiveUser", () => {
-    it("should return req.user when not impersonating", () => {
-      const session: Record<string, any> = {};
-      const reqUser = { id: "u1", role: "katalyst_admin" };
+  it("allows user when multiple roles specified", () => {
+    const middleware = requireRole("katalyst_admin", "franchisor");
+    const req = mockReq({ user: { id: "u1", role: "franchisor" } });
+    const res = mockRes();
+    const next = vi.fn();
 
-      const impersonatingId = session.impersonating_user_id;
-      if (!impersonatingId) {
-        expect(reqUser).toBeDefined();
-      }
-    });
+    middleware(req, res, next);
 
-    it("should return impersonated user when active", async () => {
-      const impersonatedUser = {
-        id: "target-1",
-        email: "target@example.com",
-        role: "franchisee",
-        brandId: "b1",
-        displayName: "Target",
-        profileImageUrl: null,
-        onboardingCompleted: true,
-        preferredTier: null,
-      };
-      (storage.getUser as any).mockResolvedValue(impersonatedUser);
+    expect(next).toHaveBeenCalled();
+  });
 
-      const session = {
+  it("returns 403 when role does not match", () => {
+    const middleware = requireRole("katalyst_admin");
+    const req = mockReq({ user: { id: "u1", role: "franchisee" } });
+    const res = mockRes();
+    const next = vi.fn();
+
+    middleware(req, res, next);
+
+    expect(res._status).toBe(403);
+    expect(res._json).toEqual({ message: "Insufficient permissions" });
+    expect(next).not.toHaveBeenCalled();
+  });
+
+  it("returns 403 when user is missing", () => {
+    const middleware = requireRole("katalyst_admin");
+    const req = mockReq({ user: undefined });
+    const res = mockRes();
+    const next = vi.fn();
+
+    middleware(req, res, next);
+
+    expect(res._status).toBe(403);
+  });
+});
+
+describe("getEffectiveUser", () => {
+  beforeEach(() => vi.clearAllMocks());
+
+  it("returns req.user when not impersonating", async () => {
+    const user = { id: "u1", role: "katalyst_admin" };
+    const req = mockReq({ user, session: {} });
+
+    const result = await getEffectiveUser(req);
+    expect(result).toEqual(user);
+  });
+
+  it("throws when no user on request", async () => {
+    const req = mockReq({ user: undefined });
+    await expect(getEffectiveUser(req)).rejects.toThrow("getEffectiveUser called without authenticated user");
+  });
+
+  it("returns impersonated user when active", async () => {
+    const impersonatedUser = {
+      id: "target-1",
+      email: "target@test.com",
+      role: "franchisee",
+      brandId: "b1",
+      displayName: "Target",
+      profileImageUrl: null,
+      onboardingCompleted: true,
+      preferredTier: null,
+    };
+    (storage.getUser as any).mockResolvedValue(impersonatedUser);
+
+    const req = mockReq({
+      user: { id: "admin1", role: "katalyst_admin" },
+      session: {
         impersonating_user_id: "target-1",
         impersonation_started_at: new Date().toISOString(),
-      };
-
-      const result = await storage.getUser(session.impersonating_user_id);
-      expect(result!.id).toBe("target-1");
-      expect(result!.role).toBe("franchisee");
+      },
     });
 
-    it("should auto-revert expired impersonation", () => {
-      const session: Record<string, any> = {
+    const result = await getEffectiveUser(req);
+    expect(result.id).toBe("target-1");
+    expect(result.role).toBe("franchisee");
+    expect(storage.getUser).toHaveBeenCalledWith("target-1");
+  });
+
+  it("auto-reverts expired impersonation and returns req.user", async () => {
+    const req = mockReq({
+      user: { id: "admin1", role: "katalyst_admin" },
+      session: {
         impersonating_user_id: "target-1",
         impersonation_started_at: new Date(Date.now() - 61 * 60 * 1000).toISOString(),
         return_brand_id: "b1",
-      };
-
-      const startedAt = session.impersonation_started_at;
-      const elapsed = Date.now() - new Date(startedAt).getTime();
-      if (elapsed > IMPERSONATION_MAX_MINUTES * 60 * 1000) {
-        delete session.impersonating_user_id;
-        delete session.impersonation_started_at;
-        delete session.return_brand_id;
-      }
-
-      expect(session.impersonating_user_id).toBeUndefined();
+      },
     });
 
-    it("should clear impersonation if target user no longer exists", async () => {
-      (storage.getUser as any).mockResolvedValue(undefined);
-      const session: Record<string, any> = {
-        impersonating_user_id: "deleted-user",
-      };
-
-      const user = await storage.getUser(session.impersonating_user_id);
-      if (!user) {
-        delete session.impersonating_user_id;
-      }
-
-      expect(session.impersonating_user_id).toBeUndefined();
-    });
+    const result = await getEffectiveUser(req);
+    expect(result.id).toBe("admin1");
+    expect(req.session.impersonating_user_id).toBeUndefined();
+    expect(storage.getUser).not.toHaveBeenCalled();
   });
 
-  describe("requireReadOnlyImpersonation", () => {
-    it("should pass through when not impersonating", () => {
-      const session: Record<string, any> = {};
-      const isImpersonating = !!session.impersonating_user_id;
-      expect(isImpersonating).toBe(false);
+  it("clears impersonation when target user no longer exists", async () => {
+    (storage.getUser as any).mockResolvedValue(undefined);
+    const req = mockReq({
+      user: { id: "admin1", role: "katalyst_admin" },
+      session: {
+        impersonating_user_id: "deleted-user",
+        impersonation_started_at: new Date().toISOString(),
+      },
     });
 
-    it("should block POST during impersonation", () => {
-      const session = { impersonating_user_id: "u1" };
-      const method = "POST";
-      const mutationMethods = ["POST", "PATCH", "PUT", "DELETE"];
-      const blocked = !!session.impersonating_user_id && mutationMethods.includes(method);
-      expect(blocked).toBe(true);
+    const result = await getEffectiveUser(req);
+    expect(result.id).toBe("admin1");
+    expect(req.session.impersonating_user_id).toBeUndefined();
+  });
+
+  it("caches effective user on request object", async () => {
+    const impersonatedUser = {
+      id: "target-1",
+      email: "target@test.com",
+      role: "franchisee",
+      brandId: "b1",
+      displayName: "Target",
+      profileImageUrl: null,
+      onboardingCompleted: true,
+      preferredTier: null,
+    };
+    (storage.getUser as any).mockResolvedValue(impersonatedUser);
+
+    const req = mockReq({
+      user: { id: "admin1", role: "katalyst_admin" },
+      session: {
+        impersonating_user_id: "target-1",
+        impersonation_started_at: new Date().toISOString(),
+      },
     });
 
-    it("should block PUT during impersonation", () => {
-      const session = { impersonating_user_id: "u1" };
-      const method = "PUT";
-      const mutationMethods = ["POST", "PATCH", "PUT", "DELETE"];
-      const blocked = !!session.impersonating_user_id && mutationMethods.includes(method);
-      expect(blocked).toBe(true);
-    });
+    await getEffectiveUser(req);
+    await getEffectiveUser(req);
 
-    it("should block DELETE during impersonation", () => {
-      const session = { impersonating_user_id: "u1" };
-      const method = "DELETE";
-      const mutationMethods = ["POST", "PATCH", "PUT", "DELETE"];
-      const blocked = !!session.impersonating_user_id && mutationMethods.includes(method);
-      expect(blocked).toBe(true);
-    });
+    expect(storage.getUser).toHaveBeenCalledTimes(1);
+  });
+});
 
-    it("should allow GET during impersonation", () => {
-      const session = { impersonating_user_id: "u1" };
-      const method = "GET";
-      const mutationMethods = ["POST", "PATCH", "PUT", "DELETE"];
-      const blocked = !!session.impersonating_user_id && mutationMethods.includes(method);
-      expect(blocked).toBe(false);
-    });
+describe("isImpersonating", () => {
+  it("returns true when impersonating", () => {
+    const req = mockReq({ session: { impersonating_user_id: "u1" } });
+    expect(isImpersonating(req)).toBe(true);
+  });
 
-    it("should auto-revert and allow writes if impersonation expired", () => {
-      const session: Record<string, any> = {
+  it("returns false when not impersonating", () => {
+    const req = mockReq({ session: {} });
+    expect(isImpersonating(req)).toBe(false);
+  });
+});
+
+describe("requireReadOnlyImpersonation middleware", () => {
+  it("passes through when not impersonating", () => {
+    const req = mockReq({ session: {}, method: "POST" });
+    const res = mockRes();
+    const next = vi.fn();
+
+    requireReadOnlyImpersonation(req, res, next);
+    expect(next).toHaveBeenCalled();
+  });
+
+  it("blocks POST during active impersonation", () => {
+    const req = mockReq({
+      session: {
+        impersonating_user_id: "u1",
+        impersonation_started_at: new Date().toISOString(),
+      },
+      method: "POST",
+    });
+    const res = mockRes();
+    const next = vi.fn();
+
+    requireReadOnlyImpersonation(req, res, next);
+    expect(res._status).toBe(403);
+    expect(res._json.message).toContain("read-only");
+    expect(next).not.toHaveBeenCalled();
+  });
+
+  it("blocks PATCH during active impersonation", () => {
+    const req = mockReq({
+      session: {
+        impersonating_user_id: "u1",
+        impersonation_started_at: new Date().toISOString(),
+      },
+      method: "PATCH",
+    });
+    const res = mockRes();
+    const next = vi.fn();
+
+    requireReadOnlyImpersonation(req, res, next);
+    expect(res._status).toBe(403);
+    expect(next).not.toHaveBeenCalled();
+  });
+
+  it("blocks PUT during active impersonation", () => {
+    const req = mockReq({
+      session: {
+        impersonating_user_id: "u1",
+        impersonation_started_at: new Date().toISOString(),
+      },
+      method: "PUT",
+    });
+    const res = mockRes();
+    const next = vi.fn();
+
+    requireReadOnlyImpersonation(req, res, next);
+    expect(res._status).toBe(403);
+  });
+
+  it("blocks DELETE during active impersonation", () => {
+    const req = mockReq({
+      session: {
+        impersonating_user_id: "u1",
+        impersonation_started_at: new Date().toISOString(),
+      },
+      method: "DELETE",
+    });
+    const res = mockRes();
+    const next = vi.fn();
+
+    requireReadOnlyImpersonation(req, res, next);
+    expect(res._status).toBe(403);
+  });
+
+  it("allows GET during active impersonation", () => {
+    const req = mockReq({
+      session: {
+        impersonating_user_id: "u1",
+        impersonation_started_at: new Date().toISOString(),
+      },
+      method: "GET",
+    });
+    const res = mockRes();
+    const next = vi.fn();
+
+    requireReadOnlyImpersonation(req, res, next);
+    expect(next).toHaveBeenCalled();
+  });
+
+  it("auto-reverts expired impersonation and allows mutation", () => {
+    const req = mockReq({
+      session: {
         impersonating_user_id: "u1",
         impersonation_started_at: new Date(Date.now() - 61 * 60 * 1000).toISOString(),
-      };
-
-      const startedAt = session.impersonation_started_at;
-      const elapsed = Date.now() - new Date(startedAt).getTime();
-      if (elapsed > IMPERSONATION_MAX_MINUTES * 60 * 1000) {
-        delete session.impersonating_user_id;
-        delete session.impersonation_started_at;
-      }
-
-      const blocked = !!session.impersonating_user_id;
-      expect(blocked).toBe(false);
+        return_brand_id: "b1",
+      },
+      method: "POST",
     });
-  });
+    const res = mockRes();
+    const next = vi.fn();
 
-  describe("isImpersonating", () => {
-    it("should return true when impersonating", () => {
-      const session = { impersonating_user_id: "u1" };
-      expect(!!session.impersonating_user_id).toBe(true);
-    });
-
-    it("should return false when not impersonating", () => {
-      const session: Record<string, any> = {};
-      expect(!!session.impersonating_user_id).toBe(false);
-    });
+    requireReadOnlyImpersonation(req, res, next);
+    expect(next).toHaveBeenCalled();
+    expect(req.session.impersonating_user_id).toBeUndefined();
   });
 });
