@@ -106,14 +106,16 @@ export function computeQuickPreview(
 // ─── Break-Even Calendar Date ───────────────────────────────────────────
 
 /** Convert a break-even month number to a calendar date string.
- *  Returns "February 2027 (Month 14)" format — calendar date primary. */
+ *  breakEvenMonth is 1-indexed from the engine (month 1 = first month of operations).
+ *  Returns "January 2027 (Month 14)" format — calendar date primary. */
 export function breakEvenToCalendarDate(
   breakEvenMonth: number | null,
   baseDate?: Date
 ): string {
   if (breakEvenMonth === null) return "Beyond 5 years";
   const base = baseDate ?? new Date();
-  const targetDate = new Date(base.getFullYear(), base.getMonth() + breakEvenMonth, 1);
+  // Subtract 1 because breakEvenMonth is 1-indexed (month 1 = current month)
+  const targetDate = new Date(base.getFullYear(), base.getMonth() + breakEvenMonth - 1, 1);
   const monthName = targetDate.toLocaleString("en-US", { month: "long" });
   const year = targetDate.getFullYear();
   return `${monthName} ${year} (Month ${breakEvenMonth})`;
@@ -140,11 +142,19 @@ export function findHighestImpactInput(
 
   const candidates: SensitivityResult[] = [];
 
-  // 1. Revenue +10%
+  // 1. Revenue +10% (also recalculate labor pct to match UI behavior —
+  //    staff count stays fixed so labor % decreases with higher revenue)
   const revenueInputs = structuredClone(financialInputs);
+  const newRevenue = Math.round(revenueInputs.revenue.monthlyAuv.currentValue * 1.1);
   revenueInputs.revenue.monthlyAuv = updateFieldValue(
     revenueInputs.revenue.monthlyAuv,
-    Math.round(revenueInputs.revenue.monthlyAuv.currentValue * 1.1),
+    newRevenue,
+    now
+  );
+  const revenueAdjustedLaborPct = staffCountToLaborPct(currentStaffCount, newRevenue);
+  revenueInputs.operatingCosts.laborPct = updateFieldValue(
+    revenueInputs.operatingCosts.laborPct,
+    revenueAdjustedLaborPct,
     now
   );
   const revenueROI = computeQuickPreview(revenueInputs, startupCosts).roiMetrics.fiveYearROIPct;

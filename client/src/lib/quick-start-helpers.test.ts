@@ -186,28 +186,32 @@ describe("breakEvenToCalendarDate", () => {
     expect(breakEvenToCalendarDate(null)).toBe("Beyond 5 years");
   });
 
-  it("formats as 'Month Year (Month N)' with calendar date primary", () => {
+  it("formats as 'Month Year (Month N)' with 1-indexed engine month", () => {
     const base = new Date(2026, 0, 1); // January 2026
+    // breakEvenMonth=14 (1-indexed) → 13 months after Jan 2026 → February 2027
     const result = breakEvenToCalendarDate(14, base);
-    expect(result).toBe("March 2027 (Month 14)");
+    expect(result).toBe("February 2027 (Month 14)");
   });
 
-  it("handles single-month break-even", () => {
+  it("handles single-month break-even (month 1 = current month)", () => {
     const base = new Date(2026, 0, 1);
+    // breakEvenMonth=1 → first month of ops → January 2026 (same month)
     const result = breakEvenToCalendarDate(1, base);
-    expect(result).toBe("February 2026 (Month 1)");
+    expect(result).toBe("January 2026 (Month 1)");
   });
 
   it("handles December year boundary", () => {
     const base = new Date(2026, 11, 1); // December 2026
+    // breakEvenMonth=1 → first month of ops → December 2026 (same month)
     const result = breakEvenToCalendarDate(1, base);
-    expect(result).toBe("January 2027 (Month 1)");
+    expect(result).toBe("December 2026 (Month 1)");
   });
 
   it("handles 60-month break-even", () => {
     const base = new Date(2026, 0, 1);
+    // breakEvenMonth=60 → 59 months after Jan 2026 → December 2030
     const result = breakEvenToCalendarDate(60, base);
-    expect(result).toBe("January 2031 (Month 60)");
+    expect(result).toBe("December 2030 (Month 60)");
   });
 });
 
