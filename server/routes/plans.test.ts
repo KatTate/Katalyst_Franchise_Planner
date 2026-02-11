@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { z } from "zod";
+import express from "express";
+import request from "supertest";
 
 vi.mock("../storage", () => ({
   storage: {
@@ -8,6 +9,7 @@ vi.mock("../storage", () => ({
     getStartupCosts: vi.fn(),
     updateStartupCosts: vi.fn(),
     resetStartupCostsToDefaults: vi.fn(),
+    getUser: vi.fn(),
   },
 }));
 
@@ -17,165 +19,202 @@ vi.mock("../services/financial-service", () => ({
 
 import { storage } from "../storage";
 import { computePlanOutputs } from "../services/financial-service";
+import plansRouter from "./plans";
 
-describe("Plans Routes - Unit Tests", () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
+function createApp(user?: Express.User) {
+  const app = express();
+  app.use(express.json());
+  app.use((req: any, _res: any, next: any) => {
+    if (user) {
+      req.user = user;
+      req.isAuthenticated = () => true;
+    } else {
+      req.isAuthenticated = () => false;
+    }
+    if (!req.session) req.session = {};
+    next();
   });
+  app.use("/api/plans", plansRouter);
+  return app;
+}
 
-  describe("Plan Access Control", () => {
-    it("should allow franchisee to access own plan", () => {
-      const plan = { id: "p1", userId: "u1", brandId: "b1" };
-      const effectiveUser = { id: "u1", role: "franchisee" as const, brandId: "b1" };
-      const hasAccess = !(effectiveUser.role === "franchisee" && plan.userId !== effectiveUser.id);
-      expect(hasAccess).toBe(true);
+const franchiseeUser: Express.User = {
+  id: "f1",
+  email: "franchisee@test.com",
+  role: "franchisee",
+  brandId: "b1",
+  displayName: "Franchisee",
+  profileImageUrl: null,
+  onboardingCompleted: true,
+  preferredTier: "forms",
+};
+
+const otherFranchisee: Express.User = {
+  id: "f2",
+  email: "other@test.com",
+  role: "franchisee",
+  brandId: "b1",
+  displayName: "Other",
+  profileImageUrl: null,
+  onboardingCompleted: true,
+  preferredTier: null,
+};
+
+const adminUser: Express.User = {
+  id: "a1",
+  email: "admin@katgroupinc.com",
+  role: "katalyst_admin",
+  brandId: null,
+  displayName: "Admin",
+  profileImageUrl: null,
+  onboardingCompleted: true,
+  preferredTier: null,
+};
+
+const mockPlan = {
+  id: "p1",
+  userId: "f1",
+  brandId: "b1",
+  name: "Test Plan",
+  financialInputs: { revenue: { monthly_auv: 50000 } },
+  startupCosts: [],
+};
+
+describe("Plans Routes", () => {
+  beforeEach(() => vi.clearAllMocks());
+
+  describe("GET /api/plans/:planId", () => {
+    it("returns 401 when not authenticated", async () => {
+      const app = createApp();
+      const res = await request(app).get("/api/plans/p1");
+      expect(res.status).toBe(401);
     });
 
-    it("should deny franchisee access to other user's plan", () => {
-      const plan = { id: "p1", userId: "u2", brandId: "b1" };
-      const effectiveUser = { id: "u1", role: "franchisee" as const, brandId: "b1" };
-      const denied = effectiveUser.role === "franchisee" && plan.userId !== effectiveUser.id;
-      expect(denied).toBe(true);
+    it("returns plan for owner", async () => {
+      (storage.getPlan as any).mockResolvedValue(mockPlan);
+      const app = createApp(franchiseeUser);
+      const res = await request(app).get("/api/plans/p1");
+      expect(res.status).toBe(200);
+      expect(res.body.data.id).toBe("p1");
     });
 
-    it("should allow franchisor to access plans in own brand", () => {
-      const plan = { id: "p1", userId: "u1", brandId: "b1" };
-      const effectiveUser = { id: "f1", role: "franchisor" as const, brandId: "b1" };
-      const denied = effectiveUser.role === "franchisor" && plan.brandId !== effectiveUser.brandId;
-      expect(denied).toBe(false);
+    it("returns 403 for non-owner franchisee", async () => {
+      (storage.getPlan as any).mockResolvedValue(mockPlan);
+      const app = createApp(otherFranchisee);
+      const res = await request(app).get("/api/plans/p1");
+      expect(res.status).toBe(403);
     });
 
-    it("should deny franchisor access to plans in other brand", () => {
-      const plan = { id: "p1", userId: "u1", brandId: "b2" };
-      const effectiveUser = { id: "f1", role: "franchisor" as const, brandId: "b1" };
-      const denied = effectiveUser.role === "franchisor" && plan.brandId !== effectiveUser.brandId;
-      expect(denied).toBe(true);
+    it("returns plan for admin (any plan)", async () => {
+      (storage.getPlan as any).mockResolvedValue(mockPlan);
+      const app = createApp(adminUser);
+      const res = await request(app).get("/api/plans/p1");
+      expect(res.status).toBe(200);
     });
 
-    it("should allow katalyst_admin to access any plan", () => {
-      const plan = { id: "p1", userId: "u1", brandId: "b1" };
-      const effectiveUser = { id: "a1", role: "katalyst_admin" as const, brandId: null };
-      const franchiseeDenied = effectiveUser.role === "franchisee" && plan.userId !== effectiveUser.id;
-      const franchisorDenied = effectiveUser.role === "franchisor" && plan.brandId !== effectiveUser.brandId;
-      expect(franchiseeDenied || franchisorDenied).toBe(false);
-    });
-
-    it("should return 404 for non-existent plan", async () => {
+    it("returns 404 for non-existent plan", async () => {
       (storage.getPlan as any).mockResolvedValue(undefined);
-      const plan = await storage.getPlan("nonexistent");
-      expect(plan).toBeUndefined();
+      const app = createApp(franchiseeUser);
+      const res = await request(app).get("/api/plans/nonexistent");
+      expect(res.status).toBe(404);
     });
   });
 
-  describe("Plan Update (PATCH)", () => {
-    it("should strip protected fields userId and brandId from updates", () => {
-      const updateData = {
-        name: "Updated Plan",
-        userId: "hacker-id",
+  describe("PATCH /api/plans/:planId", () => {
+    it("updates plan name for owner", async () => {
+      (storage.getPlan as any).mockResolvedValue(mockPlan);
+      (storage.updatePlan as any).mockResolvedValue({ ...mockPlan, name: "Updated" });
+
+      const app = createApp(franchiseeUser);
+      const res = await request(app).patch("/api/plans/p1").send({ name: "Updated" });
+      expect(res.status).toBe(200);
+      expect(res.body.data.name).toBe("Updated");
+    });
+
+    it("strips userId and brandId from update payload", async () => {
+      (storage.getPlan as any).mockResolvedValue(mockPlan);
+      (storage.updatePlan as any).mockImplementation((_id: string, data: any) => {
+        expect(data).not.toHaveProperty("userId");
+        expect(data).not.toHaveProperty("brandId");
+        return { ...mockPlan, ...data };
+      });
+
+      const app = createApp(franchiseeUser);
+      await request(app).patch("/api/plans/p1").send({
+        name: "Updated",
+        userId: "hacker",
         brandId: "hacker-brand",
-        financialInputs: {},
-      };
+      });
 
-      const { userId, brandId, ...allowedFields } = updateData;
-      expect(allowedFields).not.toHaveProperty("userId");
-      expect(allowedFields).not.toHaveProperty("brandId");
-      expect(allowedFields).toHaveProperty("name");
+      expect(storage.updatePlan).toHaveBeenCalled();
     });
 
-    it("should persist allowed fields via storage", async () => {
-      const updatedPlan = { id: "p1", name: "Updated" };
-      (storage.updatePlan as any).mockResolvedValue(updatedPlan);
-
-      const result = await storage.updatePlan("p1", { name: "Updated" } as any);
-      expect(result.name).toBe("Updated");
+    it("returns 403 for non-owner", async () => {
+      (storage.getPlan as any).mockResolvedValue(mockPlan);
+      const app = createApp(otherFranchisee);
+      const res = await request(app).patch("/api/plans/p1").send({ name: "Hacked" });
+      expect(res.status).toBe(403);
     });
   });
 
-  describe("Startup Costs", () => {
-    it("should get startup costs for a plan", async () => {
-      const mockCosts = [
-        { id: "c1", name: "Franchise Fee", amount: 35000, capexClassification: "non_capex" },
-      ];
-      (storage.getStartupCosts as any).mockResolvedValue(mockCosts);
+  describe("GET /api/plans/:planId/startup-costs", () => {
+    it("returns startup costs for plan owner", async () => {
+      (storage.getPlan as any).mockResolvedValue(mockPlan);
+      (storage.getStartupCosts as any).mockResolvedValue([
+        { id: "c1", name: "Franchise Fee", amount: 35000 },
+      ]);
 
-      const costs = await storage.getStartupCosts("p1");
-      expect(costs).toHaveLength(1);
-      expect(costs[0].name).toBe("Franchise Fee");
-    });
-
-    it("should update startup costs", async () => {
-      const newCosts = [
-        { id: "c1", name: "Updated Fee", amount: 40000, capexClassification: "non_capex" },
-      ];
-      (storage.updateStartupCosts as any).mockResolvedValue(newCosts);
-
-      const result = await storage.updateStartupCosts("p1", newCosts as any);
-      expect(result[0].amount).toBe(40000);
-    });
-
-    it("should reset startup costs to brand defaults", async () => {
-      const defaults = [
-        { id: "c1", name: "Default Fee", amount: 35000, capexClassification: "non_capex" },
-      ];
-      (storage.resetStartupCostsToDefaults as any).mockResolvedValue(defaults);
-
-      const result = await storage.resetStartupCostsToDefaults("p1", "b1");
-      expect(result[0].name).toBe("Default Fee");
+      const app = createApp(franchiseeUser);
+      const res = await request(app).get("/api/plans/p1/startup-costs");
+      expect(res.status).toBe(200);
+      expect(res.body).toHaveLength(1);
     });
   });
 
-  describe("Financial Outputs", () => {
-    it("should require financialInputs before computing outputs", () => {
-      const plan = { id: "p1", financialInputs: null };
-      const hasInputs = !!plan.financialInputs;
-      expect(hasInputs).toBe(false);
-    });
+  describe("POST /api/plans/:planId/startup-costs/reset", () => {
+    it("resets startup costs to brand defaults", async () => {
+      (storage.getPlan as any).mockResolvedValue(mockPlan);
+      (storage.resetStartupCostsToDefaults as any).mockResolvedValue([
+        { id: "c1", name: "Default Fee", amount: 30000 },
+      ]);
 
-    it("should compute outputs when financialInputs present", async () => {
-      const mockPlan = {
-        id: "p1",
-        financialInputs: { revenue: {} },
-        brandId: "b1",
-      };
-      const mockOutput = {
+      const app = createApp(franchiseeUser);
+      const res = await request(app).post("/api/plans/p1/startup-costs/reset");
+      expect(res.status).toBe(200);
+      expect(storage.resetStartupCostsToDefaults).toHaveBeenCalledWith("p1", "b1");
+    });
+  });
+
+  describe("GET /api/plans/:planId/outputs", () => {
+    it("returns financial projections", async () => {
+      (storage.getPlan as any).mockResolvedValue(mockPlan);
+      (computePlanOutputs as any).mockResolvedValue({
         projections: [],
         summary: { totalRevenue: 500000 },
-      };
-      (computePlanOutputs as any).mockResolvedValue(mockOutput);
+      });
 
-      const result = await computePlanOutputs(mockPlan as any, storage as any);
-      expect(result.summary.totalRevenue).toBe(500000);
+      const app = createApp(franchiseeUser);
+      const res = await request(app).get("/api/plans/p1/outputs");
+      expect(res.status).toBe(200);
+      expect(res.body.data.summary.totalRevenue).toBe(500000);
     });
 
-    it("should handle engine errors gracefully", async () => {
-      (computePlanOutputs as any).mockRejectedValue(new Error("Engine failure"));
-
-      await expect(computePlanOutputs({} as any, storage as any)).rejects.toThrow("Engine failure");
-    });
-  });
-
-  describe("Read-Only Impersonation Guard", () => {
-    it("should block mutations during impersonation", () => {
-      const session = { impersonating_user_id: "u1" };
-      const method = "PATCH";
-      const mutationMethods = ["POST", "PATCH", "PUT", "DELETE"];
-      const blocked = !!session.impersonating_user_id && mutationMethods.includes(method);
-      expect(blocked).toBe(true);
+    it("returns 400 when plan has no financial inputs", async () => {
+      (storage.getPlan as any).mockResolvedValue({ ...mockPlan, financialInputs: null });
+      const app = createApp(franchiseeUser);
+      const res = await request(app).get("/api/plans/p1/outputs");
+      expect(res.status).toBe(400);
+      expect(res.body.error.code).toBe("MISSING_FINANCIAL_INPUTS");
     });
 
-    it("should allow GET during impersonation", () => {
-      const session = { impersonating_user_id: "u1" };
-      const method = "GET";
-      const mutationMethods = ["POST", "PATCH", "PUT", "DELETE"];
-      const blocked = !!session.impersonating_user_id && mutationMethods.includes(method);
-      expect(blocked).toBe(false);
-    });
+    it("returns 500 when engine fails", async () => {
+      (storage.getPlan as any).mockResolvedValue(mockPlan);
+      (computePlanOutputs as any).mockRejectedValue(new Error("Engine crash"));
 
-    it("should allow mutations when not impersonating", () => {
-      const session: Record<string, any> = {};
-      const method = "PATCH";
-      const blocked = !!session.impersonating_user_id;
-      expect(blocked).toBe(false);
+      const app = createApp(franchiseeUser);
+      const res = await request(app).get("/api/plans/p1/outputs");
+      expect(res.status).toBe(500);
+      expect(res.body.error.code).toBe("ENGINE_ERROR");
     });
   });
 });
