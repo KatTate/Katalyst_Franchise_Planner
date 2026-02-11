@@ -14,11 +14,14 @@ import {
   type StartupCostTemplate,
   type BrandAccountManager,
   type InsertBrandAccountManager,
+  type ImpersonationAuditLog,
+  type InsertImpersonationAuditLog,
   users,
   invitations,
   brands,
   plans,
   brandAccountManagers,
+  impersonationAuditLogs,
 } from "@shared/schema";
 import type { StartupCostLineItem } from "@shared/financial-engine";
 import { buildPlanStartupCosts, migrateStartupCosts } from "@shared/plan-initialization";
@@ -80,6 +83,12 @@ export interface IStorage {
   getStartupCosts(planId: string): Promise<StartupCostLineItem[]>;
   updateStartupCosts(planId: string, costs: StartupCostLineItem[]): Promise<StartupCostLineItem[]>;
   resetStartupCostsToDefaults(planId: string, brandId: string): Promise<StartupCostLineItem[]>;
+
+  createAuditLog(data: InsertImpersonationAuditLog): Promise<ImpersonationAuditLog>;
+  endAuditLog(id: string, endedAt?: Date): Promise<ImpersonationAuditLog | undefined>;
+  getAuditLogs(): Promise<ImpersonationAuditLog[]>;
+  getAuditLog(id: string): Promise<ImpersonationAuditLog | undefined>;
+  appendAuditLogAction(id: string, action: string): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -392,6 +401,39 @@ export class DatabaseStorage implements IStorage {
     const defaults = buildPlanStartupCosts(brand.startupCostTemplate);
     await this.updateStartupCosts(planId, defaults);
     return defaults;
+  }
+
+  async createAuditLog(data: InsertImpersonationAuditLog): Promise<ImpersonationAuditLog> {
+    const [created] = await db.insert(impersonationAuditLogs).values(data as any).returning();
+    return created;
+  }
+
+  async endAuditLog(id: string, endedAt?: Date): Promise<ImpersonationAuditLog | undefined> {
+    const [updated] = await db
+      .update(impersonationAuditLogs)
+      .set({ editSessionEndedAt: endedAt ?? new Date() })
+      .where(eq(impersonationAuditLogs.id, id))
+      .returning();
+    return updated;
+  }
+
+  async getAuditLogs(): Promise<ImpersonationAuditLog[]> {
+    return db.select().from(impersonationAuditLogs);
+  }
+
+  async getAuditLog(id: string): Promise<ImpersonationAuditLog | undefined> {
+    const [log] = await db.select().from(impersonationAuditLogs).where(eq(impersonationAuditLogs.id, id)).limit(1);
+    return log;
+  }
+
+  async appendAuditLogAction(id: string, action: string): Promise<void> {
+    const log = await this.getAuditLog(id);
+    if (!log) return;
+    const current = (log.actionsSummary as string[] | null) ?? [];
+    await db
+      .update(impersonationAuditLogs)
+      .set({ actionsSummary: [...current, action] })
+      .where(eq(impersonationAuditLogs.id, id));
   }
 }
 

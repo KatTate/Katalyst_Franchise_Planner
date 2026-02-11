@@ -1,4 +1,4 @@
-import { createContext, useContext, useCallback, useEffect, useRef } from "react";
+import { createContext, useContext, useCallback, useEffect, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useLocation } from "wouter";
 import { apiRequest, getQueryFn } from "@/lib/queryClient";
@@ -7,33 +7,31 @@ import { useToast } from "@/hooks/use-toast";
 import type { ImpersonationStatus } from "@shared/schema";
 
 interface ImpersonationContextValue {
-  /** Whether impersonation is currently active */
   active: boolean;
-  /** Target user details when active */
   targetUser: { id: string; displayName: string | null; email: string; role: string; brandId: string | null } | null;
-  /** Whether the impersonation is read-only (always true in ST.1) */
   readOnly: boolean;
-  /** Minutes remaining before auto-revert */
+  editingEnabled: boolean;
   remainingMinutes: number;
-  /** Brand ID to return to on exit */
   returnBrandId: string | null;
-  /** Whether the status is still loading */
   isLoading: boolean;
-  /** Start impersonating a user */
+  isTogglingEditMode: boolean;
   startImpersonation: (userId: string) => Promise<void>;
-  /** Stop impersonation and return to admin view */
   stopImpersonation: () => Promise<void>;
+  toggleEditMode: (enabled: boolean) => Promise<void>;
 }
 
 const ImpersonationContext = createContext<ImpersonationContextValue>({
   active: false,
   targetUser: null,
   readOnly: true,
+  editingEnabled: false,
   remainingMinutes: 0,
   returnBrandId: null,
   isLoading: false,
+  isTogglingEditMode: false,
   startImpersonation: async () => {},
   stopImpersonation: async () => {},
+  toggleEditMode: async () => {},
 });
 
 export function useImpersonation() {
@@ -46,6 +44,7 @@ export function ImpersonationProvider({ children }: { children: React.ReactNode 
   const queryClient = useQueryClient();
   const [, setLocation] = useLocation();
   const autoRevertTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [isTogglingEditMode, setIsTogglingEditMode] = useState(false);
 
   const isAdmin = user?.role === "katalyst_admin";
 
@@ -57,7 +56,6 @@ export function ImpersonationProvider({ children }: { children: React.ReactNode 
     staleTime: 30_000,
   });
 
-  // Handle expired status returned from server
   useEffect(() => {
     if (status && !status.active && "expired" in status && status.expired) {
       toast({ title: "Impersonation session expired", description: "Returning to admin view." });
@@ -69,7 +67,6 @@ export function ImpersonationProvider({ children }: { children: React.ReactNode 
     }
   }, [status, toast, setLocation]);
 
-  // Set up frontend auto-revert timer
   useEffect(() => {
     if (autoRevertTimerRef.current) {
       clearTimeout(autoRevertTimerRef.current);
@@ -78,7 +75,6 @@ export function ImpersonationProvider({ children }: { children: React.ReactNode 
 
     if (status?.active && status.remainingMinutes > 0) {
       autoRevertTimerRef.current = setTimeout(() => {
-        // Refetch status which will trigger server-side auto-revert
         queryClient.invalidateQueries({ queryKey: ["/api/admin/impersonate/status"] });
       }, status.remainingMinutes * 60 * 1000);
     }
@@ -97,7 +93,6 @@ export function ImpersonationProvider({ children }: { children: React.ReactNode 
       queryClient.setQueryData(["/api/admin/impersonate/status"], data);
 
       if (data.active) {
-        // Invalidate stale admin-context queries before entering impersonated view
         queryClient.invalidateQueries();
         toast({
           title: `Now viewing as ${data.targetUser.displayName || data.targetUser.email}`,
@@ -119,7 +114,6 @@ export function ImpersonationProvider({ children }: { children: React.ReactNode 
       const res = await apiRequest("POST", "/api/admin/impersonate/stop");
       const data = await res.json();
       queryClient.setQueryData(["/api/admin/impersonate/status"], { active: false });
-      // Invalidate queries that may have been scoped to impersonated user
       queryClient.invalidateQueries();
 
       toast({ title: "Exited View As mode", description: "Returned to admin view." });
@@ -138,15 +132,50 @@ export function ImpersonationProvider({ children }: { children: React.ReactNode 
     }
   }, [queryClient, toast, setLocation]);
 
+  const toggleEditMode = useCallback(async (enabled: boolean) => {
+    setIsTogglingEditMode(true);
+    try {
+      const res = await apiRequest("POST", "/api/admin/impersonate/edit-mode", { enabled });
+      const data = await res.json();
+
+      queryClient.setQueryData(["/api/admin/impersonate/status"], (prev: ImpersonationStatus | undefined) => {
+        if (!prev || !prev.active) return prev;
+        return {
+          ...prev,
+          readOnly: !data.editingEnabled,
+          editingEnabled: data.editingEnabled,
+        };
+      });
+
+      const displayName = status?.active ? (status.targetUser.displayName || status.targetUser.email) : "";
+      if (data.editingEnabled) {
+        toast({ title: `Editing enabled for ${displayName}`, description: "You can now make changes on their behalf." });
+      } else {
+        toast({ title: "Returned to read-only mode", description: "No further changes can be made." });
+      }
+    } catch (err) {
+      toast({
+        title: "Failed to toggle edit mode",
+        description: err instanceof Error ? err.message : "Unknown error",
+        variant: "destructive",
+      });
+    } finally {
+      setIsTogglingEditMode(false);
+    }
+  }, [queryClient, toast, status]);
+
   const value: ImpersonationContextValue = {
     active: status?.active ?? false,
     targetUser: status?.active ? status.targetUser : null,
     readOnly: status?.active ? status.readOnly : true,
+    editingEnabled: status?.active ? status.editingEnabled : false,
     remainingMinutes: status?.active ? status.remainingMinutes : 0,
     returnBrandId: status?.active ? status.returnBrandId : null,
     isLoading: isAdmin ? isLoading : false,
+    isTogglingEditMode,
     startImpersonation,
     stopImpersonation,
+    toggleEditMode,
   };
 
   return (

@@ -66,7 +66,10 @@ export const planStartupCostLineItemSchema = z.object({
   amount: z.number().int().min(0),
   capexClassification: z.enum(["capex", "non_capex", "working_capital"]),
   isCustom: z.boolean(),
-  source: z.enum(["brand_default", "user_entry"]),
+  source: z.string().refine(
+    (s) => ["brand_default", "user_entry"].includes(s) || s.startsWith("admin:"),
+    { message: "source must be brand_default, user_entry, or admin:[name]" }
+  ),
   brandDefaultAmount: z.number().int().min(0).nullable(),
   item7RangeLow: z.number().int().min(0).nullable(),
   item7RangeHigh: z.number().int().min(0).nullable(),
@@ -201,7 +204,10 @@ export type UpdatePlan = z.infer<typeof updatePlanSchema>;
 
 export const financialFieldValueSchema = z.object({
   currentValue: z.number(),
-  source: z.enum(["brand_default", "user_entry", "ai_populated"]),
+  source: z.string().refine(
+    (s) => ["brand_default", "user_entry", "ai_populated"].includes(s) || s.startsWith("admin:"),
+    { message: "source must be brand_default, user_entry, ai_populated, or admin:[name]" }
+  ),
   brandDefault: z.number().nullable(),
   item7Range: z.object({ min: z.number(), max: z.number() }).nullable(),
   lastModifiedAt: z.string().nullable(),
@@ -270,6 +276,27 @@ export type ImpersonationStatus =
         brandId: string | null;
       };
       readOnly: boolean;
+      editingEnabled: boolean;
       remainingMinutes: number;
       returnBrandId: string | null;
     };
+
+export const impersonationAuditLogs = pgTable("impersonation_audit_logs", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  adminUserId: varchar("admin_user_id").notNull().references(() => users.id),
+  impersonatedUserId: varchar("impersonated_user_id").notNull().references(() => users.id),
+  editSessionStartedAt: timestamp("edit_session_started_at").notNull(),
+  editSessionEndedAt: timestamp("edit_session_ended_at"),
+  actionsSummary: jsonb("actions_summary").$type<string[]>().default([]),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+}, (table) => [
+  index("idx_audit_logs_admin").on(table.adminUserId),
+  index("idx_audit_logs_impersonated").on(table.impersonatedUserId),
+]);
+
+export const insertImpersonationAuditLogSchema = createInsertSchema(impersonationAuditLogs).omit({
+  id: true,
+  createdAt: true,
+});
+export type InsertImpersonationAuditLog = z.infer<typeof insertImpersonationAuditLogSchema>;
+export type ImpersonationAuditLog = typeof impersonationAuditLogs.$inferSelect;

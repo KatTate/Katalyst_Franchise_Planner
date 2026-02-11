@@ -1,6 +1,6 @@
 # Story ST.2: View As Edit Mode & Audit Logging
 
-Status: ready-for-dev
+Status: review
 
 ## Story
 
@@ -129,7 +129,24 @@ so that I can help clients directly without asking them to make changes themselv
 ## Dev Agent Record
 
 ### Agent Model Used
+Claude 4.6 Opus (Replit Agent)
 
 ### Completion Notes
+- All 10 acceptance criteria implemented
+- 244 tests pass (34 middleware tests, including 4 new audit log cleanup tests, 6 new edit mode tests, 1 destructive invitation test)
+- Schema updated: `financialFieldValueSchema.source` and `planStartupCostLineItemSchema.source` both now accept `admin:[name]` pattern via string refine
+- Audit log lifecycle covers: toggle-on create, toggle-off end, stop-impersonation end, auto-revert (getEffectiveUser expiry) end, and user-deleted cleanup end
+- Destructive action guard blocks: DELETE users, PATCH/PUT user role, PATCH/PUT user brand, DELETE invitations
+- Banner pulsation CSS animation cycles between #FF6D00 and #FF8F33 over 2s
+- Database table `impersonation_audit_logs` created via direct SQL (drizzle-kit push requires interactive confirmation)
 
 ### File List
+- `server/types/session.d.ts` — Added `impersonation_edit_enabled`, `impersonation_audit_log_id` to SessionData
+- `shared/schema.ts` — Added `impersonationAuditLogs` table, updated `ImpersonationStatus` with `editingEnabled`, updated source field schemas to accept `admin:*`
+- `server/storage.ts` — Added `createAuditLog`, `endAuditLog`, `getAuditLogs`, `getAuditLog`, `appendAuditLogAction` to IStorage and DatabaseStorage
+- `server/middleware/auth.ts` — Added `endEditSessionAuditLog` helper, destructive action guard, updated `requireReadOnlyImpersonation` for edit mode, added audit cleanup to `getEffectiveUser` auto-revert paths
+- `server/middleware/auth.test.ts` — Added 15 new tests for edit mode, destructive actions, and audit log cleanup
+- `server/routes/admin.ts` — Added `POST /impersonate/edit-mode`, `GET /audit-logs` endpoints; updated stop/status/start to handle edit mode state and audit logs
+- `client/src/contexts/ImpersonationContext.tsx` — Added `toggleEditMode`, `editingEnabled`, `isTogglingEditMode` to context
+- `client/src/components/ImpersonationBanner.tsx` — Added Enable Editing toggle, confirmation dialog, pulsation animation
+- `client/src/index.css` — Added `impersonation-banner-pulse` keyframe animation

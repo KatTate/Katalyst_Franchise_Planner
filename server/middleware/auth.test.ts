@@ -12,6 +12,7 @@ import {
 vi.mock("../storage", () => ({
   storage: {
     getUser: vi.fn(),
+    endAuditLog: vi.fn().mockResolvedValue(undefined),
   },
 }));
 
@@ -23,6 +24,8 @@ function mockReq(overrides: Record<string, any> = {}): Request {
     user: { id: "u1", role: "katalyst_admin" },
     session: {},
     method: "GET",
+    url: "/api/plans/123",
+    originalUrl: "/api/plans/123",
     ...overrides,
   } as any;
 }
@@ -251,7 +254,7 @@ describe("requireReadOnlyImpersonation middleware", () => {
     expect(next).toHaveBeenCalled();
   });
 
-  it("blocks POST during active impersonation", () => {
+  it("blocks POST during active impersonation (read-only default)", () => {
     const req = mockReq({
       session: {
         impersonating_user_id: "u1",
@@ -268,7 +271,7 @@ describe("requireReadOnlyImpersonation middleware", () => {
     expect(next).not.toHaveBeenCalled();
   });
 
-  it("blocks PATCH during active impersonation", () => {
+  it("blocks PATCH during active impersonation (read-only default)", () => {
     const req = mockReq({
       session: {
         impersonating_user_id: "u1",
@@ -284,7 +287,7 @@ describe("requireReadOnlyImpersonation middleware", () => {
     expect(next).not.toHaveBeenCalled();
   });
 
-  it("blocks PUT during active impersonation", () => {
+  it("blocks PUT during active impersonation (read-only default)", () => {
     const req = mockReq({
       session: {
         impersonating_user_id: "u1",
@@ -299,7 +302,7 @@ describe("requireReadOnlyImpersonation middleware", () => {
     expect(res._status).toBe(403);
   });
 
-  it("blocks DELETE during active impersonation", () => {
+  it("blocks DELETE during active impersonation (read-only default)", () => {
     const req = mockReq({
       session: {
         impersonating_user_id: "u1",
@@ -344,5 +347,223 @@ describe("requireReadOnlyImpersonation middleware", () => {
     requireReadOnlyImpersonation(req, res, next);
     expect(next).toHaveBeenCalled();
     expect(req.session.impersonating_user_id).toBeUndefined();
+  });
+
+  it("allows POST when edit mode is enabled", () => {
+    const req = mockReq({
+      session: {
+        impersonating_user_id: "u1",
+        impersonation_started_at: new Date().toISOString(),
+        impersonation_edit_enabled: true,
+      },
+      method: "POST",
+    });
+    const res = mockRes();
+    const next = vi.fn();
+
+    requireReadOnlyImpersonation(req, res, next);
+    expect(next).toHaveBeenCalled();
+  });
+
+  it("allows PATCH when edit mode is enabled", () => {
+    const req = mockReq({
+      session: {
+        impersonating_user_id: "u1",
+        impersonation_started_at: new Date().toISOString(),
+        impersonation_edit_enabled: true,
+      },
+      method: "PATCH",
+    });
+    const res = mockRes();
+    const next = vi.fn();
+
+    requireReadOnlyImpersonation(req, res, next);
+    expect(next).toHaveBeenCalled();
+  });
+
+  it("allows PUT when edit mode is enabled", () => {
+    const req = mockReq({
+      session: {
+        impersonating_user_id: "u1",
+        impersonation_started_at: new Date().toISOString(),
+        impersonation_edit_enabled: true,
+      },
+      method: "PUT",
+    });
+    const res = mockRes();
+    const next = vi.fn();
+
+    requireReadOnlyImpersonation(req, res, next);
+    expect(next).toHaveBeenCalled();
+  });
+
+  it("allows DELETE when edit mode is enabled (non-destructive path)", () => {
+    const req = mockReq({
+      session: {
+        impersonating_user_id: "u1",
+        impersonation_started_at: new Date().toISOString(),
+        impersonation_edit_enabled: true,
+      },
+      method: "DELETE",
+      url: "/api/plans/123",
+      originalUrl: "/api/plans/123",
+    });
+    const res = mockRes();
+    const next = vi.fn();
+
+    requireReadOnlyImpersonation(req, res, next);
+    expect(next).toHaveBeenCalled();
+  });
+
+  it("blocks DELETE /api/users/:id even with edit mode enabled (destructive)", () => {
+    const req = mockReq({
+      session: {
+        impersonating_user_id: "u1",
+        impersonation_started_at: new Date().toISOString(),
+        impersonation_edit_enabled: true,
+      },
+      method: "DELETE",
+      url: "/api/users/some-user-id",
+      originalUrl: "/api/users/some-user-id",
+    });
+    const res = mockRes();
+    const next = vi.fn();
+
+    requireReadOnlyImpersonation(req, res, next);
+    expect(res._status).toBe(403);
+    expect(res._json.message).toContain("not allowed during impersonation");
+    expect(next).not.toHaveBeenCalled();
+  });
+
+  it("blocks PATCH /api/users/:id/role even with edit mode enabled (destructive)", () => {
+    const req = mockReq({
+      session: {
+        impersonating_user_id: "u1",
+        impersonation_started_at: new Date().toISOString(),
+        impersonation_edit_enabled: true,
+      },
+      method: "PATCH",
+      url: "/api/users/some-user-id/role",
+      originalUrl: "/api/users/some-user-id/role",
+    });
+    const res = mockRes();
+    const next = vi.fn();
+
+    requireReadOnlyImpersonation(req, res, next);
+    expect(res._status).toBe(403);
+    expect(res._json.message).toContain("not allowed during impersonation");
+    expect(next).not.toHaveBeenCalled();
+  });
+
+  it("blocks PATCH /api/users/:id/brand even with edit mode enabled (destructive)", () => {
+    const req = mockReq({
+      session: {
+        impersonating_user_id: "u1",
+        impersonation_started_at: new Date().toISOString(),
+        impersonation_edit_enabled: true,
+      },
+      method: "PATCH",
+      url: "/api/users/some-user-id/brand",
+      originalUrl: "/api/users/some-user-id/brand",
+    });
+    const res = mockRes();
+    const next = vi.fn();
+
+    requireReadOnlyImpersonation(req, res, next);
+    expect(res._status).toBe(403);
+    expect(next).not.toHaveBeenCalled();
+  });
+
+  it("clears edit mode fields on expired auto-revert", () => {
+    const req = mockReq({
+      session: {
+        impersonating_user_id: "u1",
+        impersonation_started_at: new Date(Date.now() - 61 * 60 * 1000).toISOString(),
+        return_brand_id: "b1",
+        impersonation_edit_enabled: true,
+        impersonation_audit_log_id: "audit-1",
+      },
+      method: "POST",
+    });
+    const res = mockRes();
+    const next = vi.fn();
+
+    requireReadOnlyImpersonation(req, res, next);
+    expect(next).toHaveBeenCalled();
+    expect(req.session.impersonation_edit_enabled).toBeUndefined();
+    expect(req.session.impersonation_audit_log_id).toBeUndefined();
+  });
+
+  it("blocks DELETE /api/invitations/:id even with edit mode enabled (destructive)", () => {
+    const req = mockReq({
+      session: {
+        impersonating_user_id: "u1",
+        impersonation_started_at: new Date().toISOString(),
+        impersonation_edit_enabled: true,
+      },
+      method: "DELETE",
+      url: "/api/invitations/some-id",
+      originalUrl: "/api/invitations/some-id",
+    });
+    const res = mockRes();
+    const next = vi.fn();
+
+    requireReadOnlyImpersonation(req, res, next);
+    expect(res._status).toBe(403);
+    expect(res._json.message).toContain("not allowed during impersonation");
+    expect(next).not.toHaveBeenCalled();
+  });
+});
+
+describe("getEffectiveUser - audit log cleanup", () => {
+  beforeEach(() => vi.clearAllMocks());
+
+  it("ends audit log when auto-reverting expired impersonation", async () => {
+    const req = mockReq({
+      user: { id: "admin1", role: "katalyst_admin" },
+      session: {
+        impersonating_user_id: "target-1",
+        impersonation_started_at: new Date(Date.now() - 61 * 60 * 1000).toISOString(),
+        return_brand_id: "b1",
+        impersonation_edit_enabled: true,
+        impersonation_audit_log_id: "audit-log-1",
+      },
+    });
+
+    const result = await getEffectiveUser(req);
+    expect(result.id).toBe("admin1");
+    expect(storage.endAuditLog).toHaveBeenCalledWith("audit-log-1");
+    expect(req.session.impersonation_edit_enabled).toBeUndefined();
+    expect(req.session.impersonation_audit_log_id).toBeUndefined();
+  });
+
+  it("ends audit log when target user no longer exists", async () => {
+    (storage.getUser as any).mockResolvedValue(undefined);
+    const req = mockReq({
+      user: { id: "admin1", role: "katalyst_admin" },
+      session: {
+        impersonating_user_id: "deleted-user",
+        impersonation_started_at: new Date().toISOString(),
+        impersonation_edit_enabled: true,
+        impersonation_audit_log_id: "audit-log-2",
+      },
+    });
+
+    const result = await getEffectiveUser(req);
+    expect(result.id).toBe("admin1");
+    expect(storage.endAuditLog).toHaveBeenCalledWith("audit-log-2");
+  });
+
+  it("does not call endAuditLog when no audit log is active", async () => {
+    const req = mockReq({
+      user: { id: "admin1", role: "katalyst_admin" },
+      session: {
+        impersonating_user_id: "target-1",
+        impersonation_started_at: new Date(Date.now() - 61 * 60 * 1000).toISOString(),
+      },
+    });
+
+    await getEffectiveUser(req);
+    expect(storage.endAuditLog).not.toHaveBeenCalled();
   });
 });
