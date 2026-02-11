@@ -255,3 +255,21 @@ export const insertBrandAccountManagerSchema = createInsertSchema(brandAccountMa
 });
 export type InsertBrandAccountManager = z.infer<typeof insertBrandAccountManagerSchema>;
 export type BrandAccountManager = typeof brandAccountManagers.$inferSelect;
+
+// ─── Impersonation Status (ST.1 — frontend/backend contract) ─────────────
+
+export type ImpersonationStatus =
+  | { active: false; expired?: boolean; returnBrandId?: string | null }
+  | {
+      active: true;
+      targetUser: {
+        id: string;
+        displayName: string | null;
+        email: string;
+        role: string;
+        brandId: string | null;
+      };
+      readOnly: boolean;
+      remainingMinutes: number;
+      returnBrandId: string | null;
+    };

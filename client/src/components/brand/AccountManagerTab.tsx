@@ -33,7 +33,9 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { useToast } from "@/hooks/use-toast";
-import { Pencil, Trash2, UserPlus, X, Star, Save } from "lucide-react";
+import { useAuth } from "@/hooks/use-auth";
+import { useImpersonation } from "@/contexts/ImpersonationContext";
+import { Pencil, Trash2, UserPlus, X, Star, Save, Eye } from "lucide-react";
 
 type AccountManager = {
   id: string;
@@ -60,6 +62,9 @@ type FranchiseeRow = {
 
 export function AccountManagerTab({ brand }: { brand: Brand }) {
   const { toast } = useToast();
+  const { user } = useAuth();
+  const { startImpersonation } = useImpersonation();
+  const isKatalystAdmin = user?.role === "katalyst_admin";
 
   const { data: allAdmins, isLoading: adminsLoading } = useQuery<AccountManager[]>({
     queryKey: ["/api/admin/account-managers"],
@@ -385,6 +390,7 @@ export function AccountManagerTab({ brand }: { brand: Brand }) {
                 <TableHead>Account Manager</TableHead>
                 <TableHead>Booking URL</TableHead>
                 <TableHead className="w-[100px]">Actions</TableHead>
+                {isKatalystAdmin && <TableHead className="w-[80px]">View As</TableHead>}
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -419,6 +425,19 @@ export function AccountManagerTab({ brand }: { brand: Brand }) {
                       <Pencil className="h-4 w-4" />
                     </Button>
                   </TableCell>
+                  {isKatalystAdmin && (
+                    <TableCell>
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        aria-label={`View as ${f.displayName || f.email}`}
+                        onClick={() => startImpersonation(f.id)}
+                        data-testid={`button-view-as-${f.id}`}
+                      >
+                        <Eye className="h-4 w-4" />
+                      </Button>
+                    </TableCell>
+                  )}
                 </TableRow>
               ))}
             </TableBody>
