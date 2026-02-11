@@ -264,6 +264,17 @@ export function QuickStartOverlay({ planId, brand, onComplete }: QuickStartOverl
     }
   }, [workingInputs, workingCosts, staffNum, updatePlan, onComplete]);
 
+  const brandName = brand?.displayName || brand?.name || "franchise";
+  const roiMetrics = preview?.roiMetrics;
+  const isNegativeROI = roiMetrics ? roiMetrics.fiveYearROIPct <= 0 : false;
+
+  // Memoize sensitivity analysis — must be called before early returns (Rules of Hooks)
+  const leverHint = useMemo(() => {
+    if (!isNegativeROI || !workingInputs || !workingCosts) return null;
+    const impact = findHighestImpactInput(workingInputs, workingCosts, staffNum);
+    return generateLeverHint(impact);
+  }, [isNegativeROI, workingInputs, workingCosts, staffNum]);
+
   // ── Error State (checked before loading guard so errors aren't masked) ──
   if (error && !isLoading) {
     return (
@@ -300,17 +311,6 @@ export function QuickStartOverlay({ planId, brand, onComplete }: QuickStartOverl
       </div>
     );
   }
-
-  const brandName = brand?.displayName || brand?.name || "franchise";
-  const roiMetrics = preview?.roiMetrics;
-  const isNegativeROI = roiMetrics ? roiMetrics.fiveYearROIPct <= 0 : false;
-
-  // Memoize sensitivity analysis — only recompute when inputs actually change
-  const leverHint = useMemo(() => {
-    if (!isNegativeROI || !workingInputs || !workingCosts) return null;
-    const impact = findHighestImpactInput(workingInputs, workingCosts, staffNum);
-    return generateLeverHint(impact);
-  }, [isNegativeROI, workingInputs, workingCosts, staffNum]);
 
   return (
     <div data-testid="quick-start-overlay" className="max-w-5xl mx-auto py-8 px-4">

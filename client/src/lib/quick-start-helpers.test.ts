@@ -148,6 +148,18 @@ describe("scaleStartupCosts", () => {
     const result = scaleStartupCosts(costs, 500_000);
     expect(result[0].amount).toBe(0);
   });
+
+  it("clamps rounding adjustment so no item goes negative", () => {
+    // Tiny item + large item: scale down drastically so rounding diff could push tiny item negative
+    const costs = [
+      makeCost({ id: "tiny", amount: 1, name: "Tiny" }),
+      makeCost({ id: "big", amount: 999_999, name: "Big" }),
+    ];
+    const scaled = scaleStartupCosts(costs, 1); // scale to just 1 cent
+    scaled.forEach((c) => {
+      expect(c.amount).toBeGreaterThanOrEqual(0);
+    });
+  });
 });
 
 // ─── startupCostTotal ───────────────────────────────────────────────────
