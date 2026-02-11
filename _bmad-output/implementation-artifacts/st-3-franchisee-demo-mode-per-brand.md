@@ -1,6 +1,6 @@
 # Story ST.3: Franchisee Demo Mode (Per Brand)
 
-Status: in-progress
+Status: done
 
 ## Story
 
@@ -130,7 +130,32 @@ so that I can demo the platform to prospective franchisees and franchisors witho
 ## Dev Agent Record
 
 ### Agent Model Used
+Claude 4.6 Opus (Replit Agent)
 
 ### Completion Notes
+- All 12 acceptance criteria met
+- Backend: storage methods, admin routes, auth middleware integration all implemented
+- Frontend: DemoModeContext, DemoModeBanner (teal #0891B2), sidebar hiding, App.tsx integration
+- Session-based demo state (mirrors impersonation pattern)
+- Mutual exclusion with impersonation enforced
+- Demo users excluded from regular user lists via isDemo=false filter
+- Lazy demo user/plan creation on first entry
+- Reset Demo Data re-seeds from current brand defaults
+- No timeout for demo mode (unlike impersonation)
+- No audit logging for demo mode (no real user data at risk)
+- 256/256 tests passing (12 new demo mode endpoint tests)
+- 0 LSP errors
+- Architect review: PASS — no critical gaps
 
 ### File List
+- `server/types/session.d.ts` — demo_mode_brand_id, demo_mode_user_id on SessionData
+- `shared/schema.ts` — isDemo column on users table, DemoModeStatus type
+- `server/storage.ts` — getDemoUserForBrand, createDemoUser, createDemoPlan, resetDemoPlan; getUsersByBrand/getFranchiseesByBrand filter isDemo=false
+- `server/middleware/auth.ts` — getEffectiveUser checks demo mode first (no timeout), isDemoMode helper, requireReadOnlyImpersonation allows mutations in demo mode
+- `server/routes/admin.ts` — POST demo/franchisee/:brandId, POST demo/exit, POST demo/reset/:brandId, GET demo/status; clearDemoSession/clearImpersonationSession helpers; mutual exclusion logic
+- `server/routes/admin.test.ts` — 12 new demo mode endpoint tests
+- `client/src/contexts/DemoModeContext.tsx` — DemoModeProvider with enterDemoMode, exitDemoMode, resetDemoData
+- `client/src/components/DemoModeBanner.tsx` — Teal banner with Monitor icon, Reset Demo Data and Exit Demo buttons
+- `client/src/components/app-sidebar.tsx` — Admin nav hidden when isDemoMode active
+- `client/src/pages/admin-brands.tsx` — "Demo" button on each brand card (katalyst_admin only)
+- `client/src/App.tsx` — DemoModeProvider wrapping, DemoModeBanner conditional rendering, no read-only overlay for demo mode
