@@ -1,6 +1,6 @@
 # Story ST.1: View As Infrastructure & Read-Only Mode
 
-Status: review
+Status: done
 
 ## Story
 
@@ -134,6 +134,14 @@ Implemented full View As impersonation infrastructure with read-only mode. Key i
 - **Sidebar transformation**: Admin nav items (Brands, Invitations) hidden during impersonation via `useImpersonation` context check.
 - **All 140 existing tests pass** — no regressions.
 
+### Code Review Notes
+Review performed by adversarial CR workflow (claude-opus-4-6). 4 issues found and fixed:
+
+1. **[H1 FIXED] Route shadowing** — `POST /impersonate/stop` was unreachable because `POST /impersonate/:userId` was registered first in Express Router. Reordered routes so literal paths precede the parametric route.
+2. **[M1 FIXED] Missing `requireRole("katalyst_admin")` on status endpoint** — GET `/impersonate/status` only had `requireAuth`. Added `requireRole("katalyst_admin")` per dev notes constraint.
+3. **[M2 FIXED] Duplicated `IMPERSONATION_MAX_MINUTES` constant** — Was defined independently in `auth.ts` and `admin.ts`. Exported from `auth.ts` and imported in `admin.ts`.
+4. **[M3 FIXED] Exit navigation didn't target Franchisees tab** — Stop/expired navigation went to `/admin/brands/:id` without tab context. Updated to append `?tab=account-manager` and made `admin-brand-detail.tsx` read the tab query param.
+
 ### LSP Status
 Clean — no new TypeScript errors introduced. Pre-existing errors in `server/storage.ts` and `shared/schema.ts` lines 122/132 are unrelated.
 
@@ -143,8 +151,9 @@ N/A — no running web server available for screenshot verification. UI componen
 ### File List
 - `server/auth.ts` — MODIFIED — Added `express-session` SessionData augmentation for impersonation fields
 - `server/middleware/auth.ts` — MODIFIED — Added `getEffectiveUser()`, `isImpersonating()`, `requireReadOnlyImpersonation`
-- `server/middleware/rbac.ts` — REVIEWED — No changes needed (callers updated to pass effective user)
-- `server/routes/admin.ts` — MODIFIED — Added 3 impersonation endpoints (start, stop, status)
+- `server/middleware/auth.ts` — MODIFIED (review) — Exported `IMPERSONATION_MAX_MINUTES` constant
+- `server/middleware/rbac.ts` — REVIEWED — No changes needed (functions already accept Express.User parameter; no callers exist in codebase)
+- `server/routes/admin.ts` — MODIFIED — Added 3 impersonation endpoints (start, stop, status); reordered routes to prevent shadowing; imported shared timeout constant; added `requireRole("katalyst_admin")` to status endpoint
 - `server/routes/plans.ts` — MODIFIED — Updated `requirePlanAccess` to use `getEffectiveUser`, added `requireReadOnlyImpersonation` to mutation endpoints
 - `shared/schema.ts` — MODIFIED — Added `ImpersonationStatus` type
 - `client/src/contexts/ImpersonationContext.tsx` — CREATED — React context + provider for impersonation state
@@ -152,3 +161,4 @@ N/A — no running web server available for screenshot verification. UI componen
 - `client/src/components/brand/AccountManagerTab.tsx` — MODIFIED — Added "View As" Eye button to franchisee rows (katalyst_admin only)
 - `client/src/components/app-sidebar.tsx` — MODIFIED — Hide admin nav items during impersonation
 - `client/src/App.tsx` — MODIFIED — Wrapped AuthenticatedLayout with ImpersonationProvider, banner replaces header during impersonation, read-only overlay on main content
+- `client/src/pages/admin-brand-detail.tsx` — MODIFIED (review) — Added `useSearch` to read `?tab=` query param for tab targeting on exit navigation

@@ -62,7 +62,7 @@ export function ImpersonationProvider({ children }: { children: React.ReactNode 
     if (status && !status.active && "expired" in status && status.expired) {
       toast({ title: "Impersonation session expired", description: "Returning to admin view." });
       if (status.returnBrandId) {
-        setLocation(`/admin/brands/${status.returnBrandId}`);
+        setLocation(`/admin/brands/${status.returnBrandId}?tab=account-manager`);
       } else {
         setLocation("/");
       }
@@ -123,7 +123,7 @@ export function ImpersonationProvider({ children }: { children: React.ReactNode 
       toast({ title: "Exited View As mode", description: "Returned to admin view." });
 
       if (data.returnBrandId) {
-        setLocation(`/admin/brands/${data.returnBrandId}`);
+        setLocation(`/admin/brands/${data.returnBrandId}?tab=account-manager`);
       } else {
         setLocation("/");
       }

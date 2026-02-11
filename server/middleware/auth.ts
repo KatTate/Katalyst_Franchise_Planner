@@ -1,7 +1,7 @@
 import type { Request, Response, NextFunction } from "express";
 import { storage } from "../storage";
 
-const IMPERSONATION_MAX_MINUTES = 60;
+export const IMPERSONATION_MAX_MINUTES = 60;
 
 export function requireAuth(req: Request, res: Response, next: NextFunction) {
   if (!req.isAuthenticated() || !req.user) {

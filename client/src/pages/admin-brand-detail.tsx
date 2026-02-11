@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { useParams, useLocation } from "wouter";
+import { useParams, useLocation, useSearch } from "wouter";
 import type { Brand } from "@shared/schema";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -15,6 +15,8 @@ import { AccountManagerTab } from "@/components/brand/AccountManagerTab";
 export default function AdminBrandDetailPage() {
   const params = useParams<{ brandId: string }>();
   const [, setLocation] = useLocation();
+  const search = useSearch();
+  const initialTab = new URLSearchParams(search).get("tab") || "parameters";
 
   const { data: brand, isLoading, error } = useQuery<Brand>({
     queryKey: ["/api/brands", params.brandId],
@@ -67,7 +69,7 @@ export default function AdminBrandDetailPage() {
         </div>
       </div>
 
-      <Tabs defaultValue="parameters">
+      <Tabs defaultValue={initialTab}>
         <TabsList data-testid="tabs-brand-sections">
           <TabsTrigger value="parameters" data-testid="tab-parameters">Financial Parameters</TabsTrigger>
           <TabsTrigger value="startup-costs" data-testid="tab-startup-costs">Startup Costs</TabsTrigger>
