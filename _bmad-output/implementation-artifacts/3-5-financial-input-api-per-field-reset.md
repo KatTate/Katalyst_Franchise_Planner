@@ -1,6 +1,6 @@
 # Story 3.5: Financial Input API & Per-Field Reset
 
-Status: ready-for-dev
+Status: dev-complete
 
 ## Story
 
@@ -297,6 +297,31 @@ Each field row displays:
 
 ### Agent Model Used
 
+Claude Opus 4.6 (claude-opus-4-6)
+
 ### Completion Notes
 
+All 6 files implemented per the story specification:
+
+**Backend:**
+- Added `financialFieldValueSchema` and `planFinancialInputsSchema` Zod validators to `shared/schema.ts` for API boundary validation (resolves Story 3.1 OS-2)
+- Added `GET /api/plans/:planId` endpoint returning `{ data: Plan }` with `requireAuth` + `requirePlanAccess()`
+- Added `PATCH /api/plans/:planId` endpoint with two-stage validation: top-level `updatePlanSchema` then deep `planFinancialInputsSchema` when `financialInputs` present
+
+**Frontend:**
+- Created `usePlan` hook with `planKey()` factory, optimistic updates via `queryClient.setQueryData`, PATCH mutation via `apiRequest`, and automatic `planOutputsKey` invalidation on success
+- Created `FinancialInputEditor` component with 4 collapsible category sections, inline editing (save-on-blur), source badges ("Brand Default" / "Your Entry"), per-field reset buttons (`RotateCcw`), brand default reference values always visible, expanded metadata on focus, and all `data-testid` attributes per spec
+- Created `InputsDevPage` at `/plans/:planId/inputs` route following existing dev page pattern
+
+**Testing note:** Vitest is not installed in the current environment. Existing test files are unmodified; no regressions expected since changes are additive (new schemas, new endpoints, new components). Pre-existing `tsc` type errors (missing `@types/node` and `vite/client`) are unrelated.
+
 ### File List
+
+| File | Action |
+|------|--------|
+| `shared/schema.ts` | MODIFIED — added `financialFieldValueSchema`, `planFinancialInputsSchema` |
+| `server/routes/plans.ts` | MODIFIED — added GET and PATCH `/:planId` endpoints |
+| `client/src/hooks/use-plan.ts` | CREATED — `usePlan` hook with `planKey()` factory |
+| `client/src/components/shared/financial-input-editor.tsx` | CREATED — `FinancialInputEditor` component |
+| `client/src/pages/inputs-dev.tsx` | CREATED — `InputsDevPage` dev page |
+| `client/src/App.tsx` | MODIFIED — added `/plans/:planId/inputs` route |
