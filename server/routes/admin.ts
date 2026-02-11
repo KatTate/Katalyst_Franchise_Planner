@@ -145,6 +145,10 @@ router.post(
       return res.status(400).json({ message: "Can only impersonate franchisee users" });
     }
 
+    if (req.session.demo_mode_user_id) {
+      clearDemoSession(req);
+    }
+
     if (req.session.impersonating_user_id) {
       await endActiveEditSession(req);
       delete req.session.impersonating_user_id;
@@ -181,6 +185,133 @@ router.get(
   async (_req: Request, res: Response) => {
     const logs = await storage.getAuditLogs();
     return res.json(logs);
+  }
+);
+
+// ─── Demo Mode Endpoints (ST-3) ──────────────────────────────────────────
+
+function clearImpersonationSession(req: Request) {
+  delete req.session.impersonating_user_id;
+  delete req.session.impersonation_started_at;
+  delete req.session.return_brand_id;
+  delete req.session.impersonation_edit_enabled;
+  delete req.session.impersonation_audit_log_id;
+}
+
+function clearDemoSession(req: Request) {
+  delete req.session.demo_mode_brand_id;
+  delete req.session.demo_mode_user_id;
+}
+
+router.post(
+  "/demo/franchisee/:brandId",
+  requireAuth,
+  requireRole("katalyst_admin"),
+  async (req: Request<{ brandId: string }>, res: Response) => {
+    const brandId = req.params.brandId;
+    const brand = await storage.getBrand(brandId);
+    if (!brand) {
+      return res.status(404).json({ message: "Brand not found" });
+    }
+
+    if (req.session.impersonating_user_id) {
+      await endActiveEditSession(req);
+      clearImpersonationSession(req);
+    }
+
+    let demoUser = await storage.getDemoUserForBrand(brandId);
+    if (!demoUser) {
+      demoUser = await storage.createDemoUser(brandId, brand.name, brand.slug);
+    }
+
+    const existingPlans = await storage.getPlansByUser(demoUser.id);
+    if (existingPlans.length === 0) {
+      await storage.createDemoPlan(demoUser.id, brandId, brand);
+    }
+
+    req.session.demo_mode_brand_id = brandId;
+    req.session.demo_mode_user_id = demoUser.id;
+
+    return res.json({
+      active: true,
+      brandId,
+      brandName: brand.displayName || brand.name,
+      demoUserId: demoUser.id,
+    });
+  }
+);
+
+router.post(
+  "/demo/exit",
+  requireAuth,
+  requireRole("katalyst_admin"),
+  async (req: Request, res: Response) => {
+    clearDemoSession(req);
+    clearImpersonationSession(req);
+    return res.json({ active: false });
+  }
+);
+
+router.post(
+  "/demo/reset/:brandId",
+  requireAuth,
+  requireRole("katalyst_admin"),
+  async (req: Request<{ brandId: string }>, res: Response) => {
+    const brandId = req.params.brandId;
+    const brand = await storage.getBrand(brandId);
+    if (!brand) {
+      return res.status(404).json({ message: "Brand not found" });
+    }
+
+    let demoUser = await storage.getDemoUserForBrand(brandId);
+    if (!demoUser) {
+      return res.status(404).json({ message: "No demo account found for this brand" });
+    }
+
+    const existingPlans = await storage.getPlansByUser(demoUser.id);
+    if (existingPlans.length > 0) {
+      await storage.resetDemoPlan(existingPlans[0].id, brandId);
+    } else {
+      await storage.createDemoPlan(demoUser.id, brandId, brand);
+    }
+
+    return res.json({
+      message: `Demo data reset to ${brand.displayName || brand.name} defaults`,
+      brandName: brand.displayName || brand.name,
+    });
+  }
+);
+
+router.get(
+  "/demo/status",
+  requireAuth,
+  requireRole("katalyst_admin"),
+  async (req: Request, res: Response) => {
+    const demoBrandId = req.session?.demo_mode_brand_id;
+    const demoUserId = req.session?.demo_mode_user_id;
+
+    if (!demoBrandId || !demoUserId) {
+      return res.json({ active: false });
+    }
+
+    const brand = await storage.getBrand(demoBrandId);
+    if (!brand) {
+      clearDemoSession(req);
+      return res.json({ active: false });
+    }
+
+    const demoUser = await storage.getUser(demoUserId);
+    if (!demoUser) {
+      clearDemoSession(req);
+      return res.json({ active: false });
+    }
+
+    return res.json({
+      active: true,
+      brandId: demoBrandId,
+      brandName: brand.displayName || brand.name,
+      demoUserId,
+    });
   }
 );
 

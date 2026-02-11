@@ -27,7 +27,9 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, Building2, ChevronRight } from "lucide-react";
+import { useAuth } from "@/hooks/use-auth";
+import { useDemoMode } from "@/contexts/DemoModeContext";
+import { Plus, Building2, ChevronRight, Monitor } from "lucide-react";
 
 const createBrandFormSchema = z.object({
   name: z.string().min(1, "Brand name is required").max(100),
@@ -49,6 +51,9 @@ export default function AdminBrandsPage() {
   const [, setLocation] = useLocation();
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const { toast } = useToast();
+  const { user } = useAuth();
+  const { enterDemoMode } = useDemoMode();
+  const isKatalystAdmin = user?.role === "katalyst_admin";
 
   const { data: brands, isLoading } = useQuery<Brand[]>({
     queryKey: ["/api/brands"],
@@ -144,6 +149,20 @@ export default function AdminBrandsPage() {
                   </div>
                 </div>
                 <div className="flex items-center gap-2 shrink-0">
+                  {isKatalystAdmin && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        enterDemoMode(brand.id);
+                      }}
+                      data-testid={`button-demo-mode-${brand.id}`}
+                    >
+                      <Monitor className="h-4 w-4 mr-1" />
+                      Demo
+                    </Button>
+                  )}
                   <Badge variant="secondary" data-testid={`badge-brand-slug-${brand.id}`}>{brand.slug}</Badge>
                   {brand.brandParameters ? (
                     <Badge variant="outline">Configured</Badge>

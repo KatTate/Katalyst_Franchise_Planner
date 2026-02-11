@@ -24,7 +24,7 @@ import {
   impersonationAuditLogs,
 } from "@shared/schema";
 import type { StartupCostLineItem } from "@shared/financial-engine";
-import { buildPlanStartupCosts, migrateStartupCosts } from "@shared/plan-initialization";
+import { buildPlanFinancialInputs, buildPlanStartupCosts, migrateStartupCosts } from "@shared/plan-initialization";
 
 export interface IStorage {
   getUser(id: string): Promise<User | undefined>;
@@ -89,6 +89,11 @@ export interface IStorage {
   getAuditLogs(): Promise<ImpersonationAuditLog[]>;
   getAuditLog(id: string): Promise<ImpersonationAuditLog | undefined>;
   appendAuditLogAction(id: string, action: string): Promise<void>;
+
+  getDemoUserForBrand(brandId: string): Promise<User | undefined>;
+  createDemoUser(brandId: string, brandName: string, brandSlug: string): Promise<User>;
+  createDemoPlan(userId: string, brandId: string, brand: import("@shared/schema").Brand): Promise<Plan>;
+  resetDemoPlan(planId: string, brandId: string): Promise<Plan | undefined>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -267,14 +272,14 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getUsersByBrand(brandId: string): Promise<User[]> {
-    return db.select().from(users).where(eq(users.brandId, brandId));
+    return db.select().from(users).where(and(eq(users.brandId, brandId), eq(users.isDemo, false)));
   }
 
   async getFranchiseesByBrand(brandId: string): Promise<User[]> {
     return db
       .select()
       .from(users)
-      .where(and(eq(users.brandId, brandId), eq(users.role, "franchisee")));
+      .where(and(eq(users.brandId, brandId), eq(users.role, "franchisee"), eq(users.isDemo, false)));
   }
 
   async createPlan(plan: InsertPlan): Promise<Plan> {
@@ -434,6 +439,73 @@ export class DatabaseStorage implements IStorage {
       .update(impersonationAuditLogs)
       .set({ actionsSummary: [...current, action] })
       .where(eq(impersonationAuditLogs.id, id));
+  }
+
+  async getDemoUserForBrand(brandId: string): Promise<User | undefined> {
+    const [user] = await db
+      .select()
+      .from(users)
+      .where(and(eq(users.brandId, brandId), eq(users.isDemo, true), eq(users.role, "franchisee")))
+      .limit(1);
+    return user;
+  }
+
+  async createDemoUser(brandId: string, brandName: string, brandSlug: string): Promise<User> {
+    const email = `demo-franchisee@${brandSlug}.katalyst.internal`;
+    const [created] = await db
+      .insert(users)
+      .values({
+        email,
+        role: "franchisee" as const,
+        brandId,
+        displayName: `${brandName} Demo Franchisee`,
+        isDemo: true,
+        onboardingCompleted: true,
+      })
+      .returning();
+    return created;
+  }
+
+  async createDemoPlan(userId: string, brandId: string, brand: Brand): Promise<Plan> {
+    const financialInputs = brand.brandParameters
+      ? buildPlanFinancialInputs(brand.brandParameters)
+      : null;
+    const startupCosts = brand.startupCostTemplate
+      ? buildPlanStartupCosts(brand.startupCostTemplate)
+      : null;
+    const [created] = await db
+      .insert(plans)
+      .values({
+        userId,
+        brandId,
+        name: `${brand.name} Demo Plan`,
+        status: "in_progress" as const,
+        financialInputs: financialInputs as any,
+        startupCosts: startupCosts as any,
+      } as any)
+      .returning();
+    return created;
+  }
+
+  async resetDemoPlan(planId: string, brandId: string): Promise<Plan | undefined> {
+    const brand = await this.getBrand(brandId);
+    if (!brand) return undefined;
+    const financialInputs = brand.brandParameters
+      ? buildPlanFinancialInputs(brand.brandParameters)
+      : null;
+    const startupCosts = brand.startupCostTemplate
+      ? buildPlanStartupCosts(brand.startupCostTemplate)
+      : null;
+    const [updated] = await db
+      .update(plans)
+      .set({
+        financialInputs: financialInputs as any,
+        startupCosts: startupCosts as any,
+        updatedAt: new Date(),
+      })
+      .where(eq(plans.id, planId))
+      .returning();
+    return updated;
   }
 }
 
