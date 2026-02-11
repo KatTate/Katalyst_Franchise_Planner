@@ -143,6 +143,9 @@ export function FinancialInputEditor({ planId }: FinancialInputEditorProps) {
 
   const handleEditStart = useCallback(
     (category: string, fieldName: string, field: FinancialFieldValue) => {
+      // Block new edits while a save is in-flight to prevent stale-snapshot overwrites
+      if (isSaving) return;
+
       const meta = FIELD_METADATA[category]?.[fieldName];
       if (!meta) return;
 
@@ -162,7 +165,7 @@ export function FinancialInputEditor({ planId }: FinancialInputEditorProps) {
           break;
       }
     },
-    []
+    [isSaving]
   );
 
   const handleEditCommit = useCallback(() => {
@@ -212,7 +215,7 @@ export function FinancialInputEditor({ planId }: FinancialInputEditorProps) {
 
   const handleReset = useCallback(
     (category: string, fieldName: string) => {
-      if (!financialInputs) return;
+      if (!financialInputs || isSaving) return;
 
       const categoryObj = financialInputs[category as keyof PlanFinancialInputs];
       const field = categoryObj[fieldName as keyof typeof categoryObj] as FinancialFieldValue;
@@ -227,7 +230,7 @@ export function FinancialInputEditor({ planId }: FinancialInputEditorProps) {
       };
       saveInputs(updatedInputs as PlanFinancialInputs);
     },
-    [financialInputs, saveInputs]
+    [financialInputs, isSaving, saveInputs]
   );
 
   // ─── Loading state ──────────────────────────────────────────────────────
