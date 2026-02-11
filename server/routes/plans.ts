@@ -62,10 +62,13 @@ router.patch(
       });
     }
 
+    // Stage 1b: strip protected fields that clients must never mutate
+    const { userId, brandId, ...allowedFields } = parsed.data;
+
     // Stage 2: deep validation for financialInputs when present
-    if (parsed.data.financialInputs !== undefined) {
+    if (allowedFields.financialInputs !== undefined) {
       const fiParsed = planFinancialInputsSchema.safeParse(
-        parsed.data.financialInputs
+        allowedFields.financialInputs
       );
       if (!fiParsed.success) {
         return res.status(400).json({
@@ -76,11 +79,11 @@ router.patch(
           })),
         });
       }
-      parsed.data.financialInputs = fiParsed.data as typeof parsed.data.financialInputs;
+      allowedFields.financialInputs = fiParsed.data as typeof allowedFields.financialInputs;
     }
 
     // Stage 3: persist
-    const updated = await storage.updatePlan(req.params.planId, parsed.data);
+    const updated = await storage.updatePlan(req.params.planId, allowedFields);
     return res.json({ data: updated });
   }
 );
