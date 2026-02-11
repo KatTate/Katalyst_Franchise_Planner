@@ -87,6 +87,7 @@ In addition to the primary AI Planning Advisor (one-on-one conversation for data
 - **Persona system:** Data-driven, not hardcoded. Persona definitions stored as configuration with domain expertise, relevant financial model areas, communication style, and advisory priorities. Extensible per brand if needed.
 - **Architectural relationship:** Advisory Board reads from the same financial input state and engine output as everything else. Advisor suggestions that the franchisee accepts are written back to the financial input state with appropriate attribution.
 - **Differentiation from primary chat:** The Planning Advisor is one-on-one, linear, focused on data collection. The Advisory Board is multi-voice, exploratory, focused on assumption stress-testing.
+- **BMad Builder reference:** Before implementation, review the BMad Builder project (https://github.com/bmad-code-org/bmad-builder) for updated patterns, agent orchestration techniques, and persona management architecture applicable to the Advisory Board feature.
 
 ### AI Integration Phasing
 
