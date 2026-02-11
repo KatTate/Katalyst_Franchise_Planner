@@ -467,6 +467,14 @@ Every table that contains brand-specific data includes `brand_id` as a column. A
 
 **Password Security (if used for franchisee accounts):** bcrypt with cost factor 12.
 
+**Impersonation Session Model:**
+- Admin impersonation stored as `impersonating_user_id` on the server session object
+- Helper function `getEffectiveUser(req)` returns the impersonated user for data access when impersonation is active, or `req.user` when not
+- `req.user` always contains the real admin identity for audit purposes
+- Impersonation state stored in PostgreSQL session store (survives server restarts within session TTL)
+- Maximum impersonation duration enforced server-side (configurable, default 60 minutes)
+- Demo mode uses the same mechanism with synthetic user targets
+
 #### Decision 4: Authorization (RBAC) Pattern
 
 **Decision:** Middleware-enforced role-based access control with query-level data scoping.
@@ -555,6 +563,17 @@ Pipeline (Franchisor/Katalyst):
 
 Booking:
   GET    /api/booking-url               (get current user's consultant booking URL)
+
+Impersonation:
+  POST   /api/admin/impersonate/:userId    (Start impersonation — Katalyst admin only)
+  POST   /api/admin/impersonate/stop       (End impersonation — return to admin view)
+  GET    /api/admin/impersonate/status      (Current impersonation state)
+
+Demo Mode:
+  POST   /api/admin/demo/franchisee/:brandId  (Enter Franchisee Demo Mode for brand)
+  POST   /api/admin/demo/franchisor            (Enter Franchisor Demo Mode)
+  POST   /api/admin/demo/exit                  (Exit any demo mode)
+  POST   /api/admin/demo/reset/:brandId        (Reset demo data to brand defaults)
 ```
 
 **Error Handling Standard:**

@@ -107,8 +107,8 @@ development_status:
   # Added via Sprint Change Proposal 2026-02-11
   # Priority: ST-1 and ST-2 immediate (before Epic 3 backlog resumes)
   # ST-3 and ST-4 follow after ST-1/ST-2
-  epic-st: backlog
-  st-1-view-as-infrastructure-read-only-mode: backlog
+  epic-st: in-progress
+  st-1-view-as-infrastructure-read-only-mode: ready-for-dev
   st-2-view-as-edit-mode-audit-logging: backlog
   st-3-franchisee-demo-mode-per-brand: backlog
   st-4-franchisor-demo-mode-fictitious-brand: backlog  # blocked: depends on Epic 8 franchisor dashboard
