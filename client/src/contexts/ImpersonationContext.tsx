@@ -97,6 +97,8 @@ export function ImpersonationProvider({ children }: { children: React.ReactNode 
       queryClient.setQueryData(["/api/admin/impersonate/status"], data);
 
       if (data.active) {
+        // Invalidate stale admin-context queries before entering impersonated view
+        queryClient.invalidateQueries();
         toast({
           title: `Now viewing as ${data.targetUser.displayName || data.targetUser.email}`,
           description: "Read-only mode — no changes can be made.",

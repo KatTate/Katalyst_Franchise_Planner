@@ -94,6 +94,18 @@ export function requireReadOnlyImpersonation(req: Request, res: Response, next: 
     return next();
   }
 
+  // Check if the impersonation has expired — if so, auto-revert and allow the write
+  const startedAt = req.session.impersonation_started_at;
+  if (startedAt) {
+    const elapsed = Date.now() - new Date(startedAt).getTime();
+    if (elapsed > IMPERSONATION_MAX_MINUTES * 60 * 1000) {
+      delete req.session.impersonating_user_id;
+      delete req.session.impersonation_started_at;
+      delete req.session.return_brand_id;
+      return next();
+    }
+  }
+
   const mutationMethods = ["POST", "PATCH", "PUT", "DELETE"];
   if (mutationMethods.includes(req.method)) {
     return res.status(403).json({
