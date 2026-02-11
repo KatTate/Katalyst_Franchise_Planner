@@ -67,7 +67,7 @@ development_status:
   3-2-brand-default-integration-per-field-metadata: done
   3-3-startup-cost-computation-custom-line-items: done
   3-4-live-summary-metrics-accounting-validation: done
-  3-5-financial-input-api-per-field-reset: backlog
+  3-5-financial-input-api-per-field-reset: ready-for-dev
   3-6-quick-roi-first-90-second-experience: backlog
   3-7-brand-configuration-validation: backlog  # relocated from Epic 2 Story 2.5
   epic-3-retrospective: optional
