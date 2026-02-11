@@ -149,7 +149,7 @@ function AuthenticatedLayoutInner() {
               <SidebarTrigger data-testid="button-sidebar-toggle" />
             </header>
           )}
-          <main className={`flex-1 overflow-auto p-4 sm:p-6${isImpersonating && readOnly ? " opacity-60" : ""}`}>
+          <main className={`flex-1 overflow-auto p-4 sm:p-6${isImpersonating && readOnly ? " pointer-events-none opacity-60" : ""}`}>
             <AppRouter />
           </main>
         </div>

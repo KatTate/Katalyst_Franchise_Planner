@@ -1,6 +1,6 @@
 # Story ST.2: View As Edit Mode & Audit Logging
 
-Status: review
+Status: done
 
 ## Story
 
@@ -143,10 +143,23 @@ Claude 4.6 Opus (Replit Agent)
 ### File List
 - `server/types/session.d.ts` — Added `impersonation_edit_enabled`, `impersonation_audit_log_id` to SessionData
 - `shared/schema.ts` — Added `impersonationAuditLogs` table, updated `ImpersonationStatus` with `editingEnabled`, updated source field schemas to accept `admin:*`
+- `shared/financial-engine.ts` — Updated `FinancialFieldValue.source` and `StartupCostLineItem.source` types to accept `admin:${string}` template literal
 - `server/storage.ts` — Added `createAuditLog`, `endAuditLog`, `getAuditLogs`, `getAuditLog`, `appendAuditLogAction` to IStorage and DatabaseStorage
-- `server/middleware/auth.ts` — Added `endEditSessionAuditLog` helper, destructive action guard, updated `requireReadOnlyImpersonation` for edit mode, added audit cleanup to `getEffectiveUser` auto-revert paths
+- `server/middleware/auth.ts` — Added `endEditSessionAuditLog` helper, destructive action guard, updated `requireReadOnlyImpersonation` for edit mode, added audit cleanup to `getEffectiveUser` auto-revert paths, added audit log closure in `requireReadOnlyImpersonation` auto-revert path
 - `server/middleware/auth.test.ts` — Added 15 new tests for edit mode, destructive actions, and audit log cleanup
 - `server/routes/admin.ts` — Added `POST /impersonate/edit-mode`, `GET /audit-logs` endpoints; updated stop/status/start to handle edit mode state and audit logs
+- `server/routes/plans.ts` — Added admin source attribution (`getAdminSourceTag`, `stampAdminSource`) for financial inputs and startup costs during impersonation edit sessions; added `appendAuditLogAction` calls for mutation tracking
 - `client/src/contexts/ImpersonationContext.tsx` — Added `toggleEditMode`, `editingEnabled`, `isTogglingEditMode` to context
 - `client/src/components/ImpersonationBanner.tsx` — Added Enable Editing toggle, confirmation dialog, pulsation animation
+- `client/src/App.tsx` — Fixed read-only overlay to include `pointer-events-none` alongside `opacity-60`
 - `client/src/index.css` — Added `impersonation-banner-pulse` keyframe animation
+
+### Code Review Notes (2026-02-11)
+- **Reviewer:** Claude 4.6 Opus (Replit Agent) — adversarial code review
+- **Issues found:** 2 HIGH, 2 MEDIUM, 1 LOW — all HIGH and MEDIUM fixed
+- **H1 (fixed):** Per-field source attribution `admin:[name]` was not being written server-side. Added `getAdminSourceTag()` and `stampAdminSource()` to plans.ts, updated source types in financial-engine.ts.
+- **H2 (fixed):** Missing `pointer-events-none` on read-only impersonation overlay in App.tsx.
+- **M1 (fixed):** Audit log not closed in `requireReadOnlyImpersonation` auto-revert path — added `endEditSessionAuditLog()` call.
+- **M2 (fixed):** `appendAuditLogAction` was never called during mutations — added calls in PATCH plan and PUT startup-costs routes.
+- **L1 (noted):** Time-remaining display only renders when <=10 minutes — cosmetic, not fixed.
+- **244/244 tests pass post-fix. 0 LSP errors.**
