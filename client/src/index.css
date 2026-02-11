@@ -287,3 +287,12 @@
     inset: -1px;
   }
 }
+
+@keyframes impersonation-pulse {
+  0%, 100% { background-color: #FF6D00; }
+  50% { background-color: #FF8F33; }
+}
+
+.impersonation-banner-pulse {
+  animation: impersonation-pulse 2s ease-in-out infinite;
+}

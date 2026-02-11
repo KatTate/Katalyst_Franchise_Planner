@@ -5,5 +5,7 @@ declare module "express-session" {
     impersonating_user_id?: string;
     impersonation_started_at?: string;
     return_brand_id?: string;
+    impersonation_edit_enabled?: boolean;
+    impersonation_audit_log_id?: string;
   }
 }
