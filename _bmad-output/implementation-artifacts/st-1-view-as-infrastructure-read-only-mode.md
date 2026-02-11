@@ -1,6 +1,6 @@
 # Story ST.1: View As Infrastructure & Read-Only Mode
 
-Status: ready-for-dev
+Status: review
 
 ## Story
 
@@ -121,7 +121,34 @@ so that I can validate the franchisee experience and support clients shoulder-to
 ## Dev Agent Record
 
 ### Agent Model Used
+claude-opus-4-6
 
 ### Completion Notes
+Implemented full View As impersonation infrastructure with read-only mode. Key implementation decisions:
+
+- **Dual-identity session pattern**: `req.user` always holds real admin; `getEffectiveUser(req)` resolves to impersonated user when active. Result cached on `req._effectiveUser` to avoid redundant DB queries per request.
+- **Three API endpoints** in `/api/admin/impersonate/` (start, stop, status) — all gated by `requireRole("katalyst_admin")`. Start endpoint auto-stops any existing impersonation before beginning a new one (handles concurrent tab scenario).
+- **60-minute timeout** enforced both server-side (in `getEffectiveUser` and status endpoint) and client-side (auto-revert via `setTimeout`).
+- **Read-only enforcement**: `requireReadOnlyImpersonation` middleware applied to PATCH/PUT/POST plan mutation endpoints. Frontend applies `pointer-events-none opacity-60` to entire `<main>` during impersonation.
+- **Banner replaces header** — no layout shift, no second bar. Uses `#FF6D00` orange with `aria-live="assertive"` for accessibility.
+- **Sidebar transformation**: Admin nav items (Brands, Invitations) hidden during impersonation via `useImpersonation` context check.
+- **All 140 existing tests pass** — no regressions.
+
+### LSP Status
+Clean — no new TypeScript errors introduced. Pre-existing errors in `server/storage.ts` and `shared/schema.ts` lines 122/132 are unrelated.
+
+### Visual Verification
+N/A — no running web server available for screenshot verification. UI components implemented per spec and ready for manual visual verification.
 
 ### File List
+- `server/auth.ts` — MODIFIED — Added `express-session` SessionData augmentation for impersonation fields
+- `server/middleware/auth.ts` — MODIFIED — Added `getEffectiveUser()`, `isImpersonating()`, `requireReadOnlyImpersonation`
+- `server/middleware/rbac.ts` — REVIEWED — No changes needed (callers updated to pass effective user)
+- `server/routes/admin.ts` — MODIFIED — Added 3 impersonation endpoints (start, stop, status)
+- `server/routes/plans.ts` — MODIFIED — Updated `requirePlanAccess` to use `getEffectiveUser`, added `requireReadOnlyImpersonation` to mutation endpoints
+- `shared/schema.ts` — MODIFIED — Added `ImpersonationStatus` type
+- `client/src/contexts/ImpersonationContext.tsx` — CREATED — React context + provider for impersonation state
+- `client/src/components/ImpersonationBanner.tsx` — CREATED — Orange impersonation banner component
+- `client/src/components/brand/AccountManagerTab.tsx` — MODIFIED — Added "View As" Eye button to franchisee rows (katalyst_admin only)
+- `client/src/components/app-sidebar.tsx` — MODIFIED — Hide admin nav items during impersonation
+- `client/src/App.tsx` — MODIFIED — Wrapped AuthenticatedLayout with ImpersonationProvider, banner replaces header during impersonation, read-only overlay on main content

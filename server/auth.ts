@@ -4,6 +4,14 @@ import { Strategy as LocalStrategy } from "passport-local";
 import bcrypt from "bcrypt";
 import { storage } from "./storage";
 
+declare module "express-session" {
+  interface SessionData {
+    impersonating_user_id?: string;
+    impersonation_started_at?: string;
+    return_brand_id?: string;
+  }
+}
+
 declare global {
   namespace Express {
     interface User {

@@ -19,6 +19,8 @@ import StartupCostsDevPage from "@/pages/startup-costs-dev";
 import MetricsDevPage from "@/pages/metrics-dev";
 import InputsDevPage from "@/pages/inputs-dev";
 import { useBrandTheme } from "@/hooks/use-brand-theme";
+import { ImpersonationProvider, useImpersonation } from "@/contexts/ImpersonationContext";
+import { ImpersonationBanner } from "@/components/ImpersonationBanner";
 
 function ProtectedRoute({ component: Component }: { component: () => JSX.Element | null }) {
   const { isAuthenticated, isLoading } = useAuth();
@@ -126,23 +128,36 @@ function AppRouter() {
   );
 }
 
-function AuthenticatedLayout() {
+function AuthenticatedLayoutInner() {
   useBrandTheme();
+  const { active: isImpersonating, readOnly } = useImpersonation();
 
   return (
     <SidebarProvider>
       <div className="flex h-screen w-full">
         <AppSidebar />
         <div className="flex flex-col flex-1 min-w-0">
-          <header className="flex items-center gap-2 p-2 border-b h-12">
-            <SidebarTrigger data-testid="button-sidebar-toggle" />
-          </header>
-          <main className="flex-1 overflow-auto p-4 sm:p-6">
+          {isImpersonating ? (
+            <ImpersonationBanner />
+          ) : (
+            <header className="flex items-center gap-2 p-2 border-b h-12">
+              <SidebarTrigger data-testid="button-sidebar-toggle" />
+            </header>
+          )}
+          <main className={`flex-1 overflow-auto p-4 sm:p-6${isImpersonating && readOnly ? " pointer-events-none opacity-60" : ""}`}>
             <AppRouter />
           </main>
         </div>
       </div>
     </SidebarProvider>
+  );
+}
+
+function AuthenticatedLayout() {
+  return (
+    <ImpersonationProvider>
+      <AuthenticatedLayoutInner />
+    </ImpersonationProvider>
   );
 }
 
