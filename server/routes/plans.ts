@@ -1,5 +1,5 @@
 import { Router, type Request, type Response } from "express";
-import { requireAuth, getEffectiveUser, requireReadOnlyImpersonation } from "../middleware/auth";
+import { requireAuth, getEffectiveUser, requireReadOnlyImpersonation, isImpersonating } from "../middleware/auth";
 import { storage } from "../storage";
 import {
   planStartupCostsSchema,
@@ -10,6 +10,27 @@ import {
 import { computePlanOutputs } from "../services/financial-service";
 
 const router = Router();
+
+function getAdminSourceTag(req: Request): string | null {
+  if (!isImpersonating(req) || !req.session?.impersonation_edit_enabled) {
+    return null;
+  }
+  const admin = req.user!;
+  return `admin:${(admin as any).displayName || (admin as any).email}`;
+}
+
+function stampAdminSource(financialInputs: any, sourceTag: string): void {
+  for (const section of Object.values(financialInputs) as any[]) {
+    if (section && typeof section === "object") {
+      for (const field of Object.values(section) as any[]) {
+        if (field && typeof field === "object" && "source" in field) {
+          field.source = sourceTag;
+          field.lastModifiedAt = new Date().toISOString();
+        }
+      }
+    }
+  }
+}
 
 /** Ownership check using effective user: franchisee can only access own plans; franchisor scoped to own brand. */
 async function requirePlanAccess(req: Request, res: Response): Promise<Plan | null> {
@@ -82,10 +103,21 @@ router.patch(
         });
       }
       allowedFields.financialInputs = fiParsed.data as typeof allowedFields.financialInputs;
+
+      const adminTag = getAdminSourceTag(req);
+      if (adminTag) {
+        stampAdminSource(allowedFields.financialInputs, adminTag);
+      }
     }
 
     // Stage 3: persist
     const updated = await storage.updatePlan(req.params.planId, allowedFields);
+
+    const auditLogId = req.session?.impersonation_audit_log_id;
+    if (auditLogId && allowedFields.financialInputs !== undefined) {
+      storage.appendAuditLogAction(auditLogId, "Modified financial inputs").catch(() => {});
+    }
+
     return res.json({ data: updated });
   }
 );
@@ -123,7 +155,21 @@ router.put(
       });
     }
 
-    const updated = await storage.updateStartupCosts(req.params.planId, parsed.data);
+    const items = parsed.data;
+    const adminTag = getAdminSourceTag(req);
+    if (adminTag) {
+      for (const item of items) {
+        (item as { source: string }).source = adminTag;
+      }
+    }
+
+    const updated = await storage.updateStartupCosts(req.params.planId, items as any);
+
+    const auditLogId = req.session?.impersonation_audit_log_id;
+    if (auditLogId) {
+      storage.appendAuditLogAction(auditLogId, "Updated startup costs").catch(() => {});
+    }
+
     return res.json(updated);
   }
 );

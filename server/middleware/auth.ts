@@ -163,6 +163,7 @@ export function requireReadOnlyImpersonation(req: Request, res: Response, next: 
   if (startedAt) {
     const elapsed = Date.now() - new Date(startedAt).getTime();
     if (elapsed > IMPERSONATION_MAX_MINUTES * 60 * 1000) {
+      endEditSessionAuditLog(req).catch(() => {});
       delete req.session.impersonating_user_id;
       delete req.session.impersonation_started_at;
       delete req.session.return_brand_id;

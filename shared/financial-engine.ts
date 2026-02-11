@@ -24,7 +24,7 @@ const CENTS_PRECISION = 100;
  *  wrapper is consumed by the UI/plan-initialization layer (Story 3.2+). */
 export interface FinancialFieldValue {
   currentValue: number;
-  source: "brand_default" | "user_entry" | "ai_populated";
+  source: "brand_default" | "user_entry" | "ai_populated" | `admin:${string}`;
   brandDefault: number | null;
   item7Range: { min: number; max: number } | null;
   lastModifiedAt: string | null;
@@ -132,7 +132,7 @@ export interface StartupCostLineItem {
   amount: number; // cents
   capexClassification: "capex" | "non_capex" | "working_capital";
   isCustom: boolean;
-  source: "brand_default" | "user_entry";
+  source: "brand_default" | "user_entry" | `admin:${string}`;
   brandDefaultAmount: number | null;
   item7RangeLow: number | null;
   item7RangeHigh: number | null;
