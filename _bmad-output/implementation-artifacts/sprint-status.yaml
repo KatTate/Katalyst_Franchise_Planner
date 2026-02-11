@@ -110,7 +110,7 @@ development_status:
   epic-st: in-progress
   st-1-view-as-infrastructure-read-only-mode: done
   st-2-view-as-edit-mode-audit-logging: review
-  st-3-franchisee-demo-mode-per-brand: backlog
+  st-3-franchisee-demo-mode-per-brand: ready-for-dev
   st-4-franchisor-demo-mode-fictitious-brand: backlog  # blocked: depends on Epic 8 franchisor dashboard
   epic-st-retrospective: optional
 
