@@ -237,6 +237,7 @@ export const planFinancialInputsSchema = z.object({
     depreciationYears: financialFieldValueSchema,
   }),
 });
+
 export const brandAccountManagers = pgTable("brand_account_managers", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   brandId: varchar("brand_id").notNull().references(() => brands.id),
