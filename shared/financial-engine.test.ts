@@ -3,6 +3,7 @@ import {
   calculateProjections,
   type EngineInput,
   type FinancialInputs,
+  type StartupCostLineItem,
   MAX_PROJECTION_MONTHS,
 } from "./financial-engine";
 
@@ -46,12 +47,12 @@ const postNetInputs: FinancialInputs = {
   taxRate: 0.21,
 };
 
-const postNetStartupCosts = [
-  { name: "Equipment & Signage", amount: 12605700, capexClassification: "capex" as const },
-  { name: "Leasehold Improvements", amount: 87500, capexClassification: "capex" as const },
-  { name: "Technology", amount: 520000, capexClassification: "capex" as const },
-  { name: "Non-CapEx Investments", amount: 8437500, capexClassification: "non_capex" as const },
-  { name: "Working Capital", amount: 4000000, capexClassification: "working_capital" as const },
+const postNetStartupCosts: StartupCostLineItem[] = [
+  { id: "1", name: "Equipment & Signage", amount: 12605700, capexClassification: "capex", isCustom: false, source: "brand_default", brandDefaultAmount: 12605700, item7RangeLow: null, item7RangeHigh: null, sortOrder: 0 },
+  { id: "2", name: "Leasehold Improvements", amount: 87500, capexClassification: "capex", isCustom: false, source: "brand_default", brandDefaultAmount: 87500, item7RangeLow: null, item7RangeHigh: null, sortOrder: 1 },
+  { id: "3", name: "Technology", amount: 520000, capexClassification: "capex", isCustom: false, source: "brand_default", brandDefaultAmount: 520000, item7RangeLow: null, item7RangeHigh: null, sortOrder: 2 },
+  { id: "4", name: "Non-CapEx Investments", amount: 8437500, capexClassification: "non_capex", isCustom: false, source: "brand_default", brandDefaultAmount: 8437500, item7RangeLow: null, item7RangeHigh: null, sortOrder: 3 },
+  { id: "5", name: "Working Capital", amount: 4000000, capexClassification: "working_capital", isCustom: false, source: "brand_default", brandDefaultAmount: 4000000, item7RangeLow: null, item7RangeHigh: null, sortOrder: 4 },
 ];
 
 const postNetInput: EngineInput = {
@@ -318,9 +319,9 @@ describe("Financial Engine", () => {
       const modifiedInput: EngineInput = {
         financialInputs: postNetInputs,
         startupCosts: [
-          { name: "Equipment", amount: 10000000, capexClassification: "capex" },
-          { name: "Other", amount: 5000000, capexClassification: "non_capex" },
-          { name: "WC", amount: 2000000, capexClassification: "working_capital" },
+          { id: "t1", name: "Equipment", amount: 10000000, capexClassification: "capex", isCustom: false, source: "brand_default", brandDefaultAmount: 10000000, item7RangeLow: null, item7RangeHigh: null, sortOrder: 0 },
+          { id: "t2", name: "Other", amount: 5000000, capexClassification: "non_capex", isCustom: false, source: "brand_default", brandDefaultAmount: 5000000, item7RangeLow: null, item7RangeHigh: null, sortOrder: 1 },
+          { id: "t3", name: "WC", amount: 2000000, capexClassification: "working_capital", isCustom: false, source: "brand_default", brandDefaultAmount: 2000000, item7RangeLow: null, item7RangeHigh: null, sortOrder: 2 },
         ],
       };
       const modResult = calculateProjections(modifiedInput);
