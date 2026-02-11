@@ -180,6 +180,8 @@ export const plans = pgTable("plans", {
   startupCosts: jsonb("startup_costs").$type<import("./financial-engine").StartupCostLineItem[]>(),
   status: text("status").notNull().$type<"draft" | "in_progress" | "completed">().default("draft"),
   pipelineStage: text("pipeline_stage").$type<"planning" | "site_evaluation" | "financing" | "construction" | "open">().default("planning"),
+  quickStartCompleted: boolean("quick_start_completed").default(false).notNull(),
+  quickStartStaffCount: integer("quick_start_staff_count"),
   targetMarket: text("target_market"),
   targetOpenQuarter: text("target_open_quarter"),
   lastAutoSave: timestamp("last_auto_save"),

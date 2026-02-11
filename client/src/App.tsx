@@ -18,6 +18,7 @@ import NotFound from "@/pages/not-found";
 import StartupCostsDevPage from "@/pages/startup-costs-dev";
 import MetricsDevPage from "@/pages/metrics-dev";
 import InputsDevPage from "@/pages/inputs-dev";
+import QuickStartDevPage from "@/pages/quick-start-dev";
 import { useBrandTheme } from "@/hooks/use-brand-theme";
 import { ImpersonationProvider, useImpersonation } from "@/contexts/ImpersonationContext";
 import { ImpersonationBanner } from "@/components/ImpersonationBanner";
@@ -124,6 +125,9 @@ function AppRouter() {
       </Route>
       <Route path="/plans/:planId/inputs">
         <ProtectedRoute component={InputsDevPage} />
+      </Route>
+      <Route path="/plans/:planId/quick-start">
+        <ProtectedRoute component={QuickStartDevPage} />
       </Route>
       <Route component={NotFound} />
     </Switch>

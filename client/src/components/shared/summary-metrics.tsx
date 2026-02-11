@@ -10,18 +10,18 @@ interface SummaryMetricsProps {
   planId: string;
 }
 
-function formatROI(pct: number): string {
+export function formatROI(pct: number): string {
   const display = pct * 100;
   if (Number.isInteger(display)) return `${display}%`;
   return `${display.toFixed(1)}%`;
 }
 
-function formatBreakEven(month: number | null): string {
+export function formatBreakEven(month: number | null): string {
   if (month === null) return "N/A";
   return `Month ${month}`;
 }
 
-function MetricCard({
+export function MetricCard({
   label,
   value,
   subtitle,

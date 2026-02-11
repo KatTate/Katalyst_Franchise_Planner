@@ -1,6 +1,6 @@
 # Story 3.6: Quick ROI — First 90-Second Experience
 
-Status: ready-for-dev
+Status: review
 
 ## Story
 
@@ -302,8 +302,40 @@ The following improvements were incorporated via Party Mode review (Architect Wi
 
 ### Agent Model Used
 
-{{agent_model_name_version}}
+Claude Opus 4.6 (claude-opus-4-6)
 
 ### Completion Notes
 
+Implemented the Quick ROI "First 90-Second Experience" — a focused Quick Start overlay that presents 5 user-friendly financial inputs with real-time ROI preview powered by the client-side financial engine.
+
+Key implementation decisions:
+- Client-side engine computation via `unwrapForEngine()` + `calculateProjections()` for instant (<200ms) preview — no server round-trip during interaction
+- Investment budget uses proportional startup cost scaling with rounding adjustment on the largest item
+- Staff count is a proxy field converted to `operatingCosts.laborPct` via configurable average wage constant
+- Sensitivity analysis computes 10% improvement on each of the 5 fields to identify the highest-impact lever for AC9 constructive guidance
+- Break-even displayed as calendar date primary ("February 2027 (Month 14)") per UX Principle #2
+- Animated number transitions via Framer Motion spring physics for the "magic moment"
+- Debounced 2s auto-save to server matching the architecture's auto-save pattern
+- `quickStartCompleted` is per-plan (on `plans` table), not per-user — each new plan shows Quick Start fresh
+- Generic sentiment frame only — brand-specific ROI ranges deferred per Party Mode consensus
+- PATCH endpoint automatically accepts new fields via `updatePlanSchema.partial()` derived from the plans table schema — no route code changes needed
+- Dev page at `/plans/:planId/quick-start` following Stories 3.3-3.5 pattern; workspace integration deferred to Story 4.1
+
+### LSP Status
+
+Clean — no new TypeScript errors introduced. Pre-existing errors in `server/storage.ts` (drizzle type inference) remain unchanged.
+
+### Visual Verification
+
+N/A — dev server not running in this environment. UI verified structurally via build success and code review.
+
 ### File List
+
+- `shared/schema.ts` — MODIFIED: Added `quickStartCompleted` boolean (default false) and `quickStartStaffCount` integer (nullable) columns to `plans` table
+- `client/src/components/shared/summary-metrics.tsx` — MODIFIED: Exported `MetricCard`, `formatROI`, `formatBreakEven` (previously local functions)
+- `client/src/lib/quick-start-helpers.ts` — CREATED: Field mapping logic (staff↔labor conversion, startup cost scaling, sensitivity analysis, break-even calendar date, sentiment frame generation)
+- `client/src/components/shared/quick-start-overlay.tsx` — CREATED: QuickStartOverlay component (5 inputs, live ROI result card, animated transitions, constructive negative-ROI guidance, complete/skip actions)
+- `client/src/pages/quick-start-dev.tsx` — CREATED: Temporary dev page at `/plans/:planId/quick-start`
+- `client/src/App.tsx` — MODIFIED: Added `/plans/:planId/quick-start` route with QuickStartDevPage
+- `_bmad-output/implementation-artifacts/sprint-status.yaml` — MODIFIED: Updated 3-6 status
+- `_bmad-output/implementation-artifacts/3-6-quick-roi-first-90-second-experience.md` — MODIFIED: Updated status and Dev Agent Record
