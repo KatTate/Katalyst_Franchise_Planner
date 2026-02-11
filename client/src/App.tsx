@@ -17,6 +17,7 @@ import AdminBrandDetailPage from "@/pages/admin-brand-detail";
 import NotFound from "@/pages/not-found";
 import StartupCostsDevPage from "@/pages/startup-costs-dev";
 import MetricsDevPage from "@/pages/metrics-dev";
+import InputsDevPage from "@/pages/inputs-dev";
 import { useBrandTheme } from "@/hooks/use-brand-theme";
 
 function ProtectedRoute({ component: Component }: { component: () => JSX.Element | null }) {
@@ -116,6 +117,9 @@ function AppRouter() {
       </Route>
       <Route path="/plans/:planId/metrics">
         <ProtectedRoute component={MetricsDevPage} />
+      </Route>
+      <Route path="/plans/:planId/inputs">
+        <ProtectedRoute component={InputsDevPage} />
       </Route>
       <Route component={NotFound} />
     </Switch>

@@ -196,6 +196,48 @@ export type InsertPlan = z.infer<typeof insertPlanSchema>;
 export type Plan = typeof plans.$inferSelect;
 export const updatePlanSchema = insertPlanSchema.partial();
 export type UpdatePlan = z.infer<typeof updatePlanSchema>;
+
+// ─── Financial Input JSONB Validation (Story 3.5 — API boundary) ─────────
+
+export const financialFieldValueSchema = z.object({
+  currentValue: z.number(),
+  source: z.enum(["brand_default", "user_entry", "ai_populated"]),
+  brandDefault: z.number().nullable(),
+  item7Range: z.object({ min: z.number(), max: z.number() }).nullable(),
+  lastModifiedAt: z.string().nullable(),
+  isCustom: z.boolean(),
+});
+
+export const planFinancialInputsSchema = z.object({
+  revenue: z.object({
+    monthlyAuv: financialFieldValueSchema,
+    year1GrowthRate: financialFieldValueSchema,
+    year2GrowthRate: financialFieldValueSchema,
+    startingMonthAuvPct: financialFieldValueSchema,
+  }),
+  operatingCosts: z.object({
+    cogsPct: financialFieldValueSchema,
+    laborPct: financialFieldValueSchema,
+    rentMonthly: financialFieldValueSchema,
+    utilitiesMonthly: financialFieldValueSchema,
+    insuranceMonthly: financialFieldValueSchema,
+    marketingPct: financialFieldValueSchema,
+    royaltyPct: financialFieldValueSchema,
+    adFundPct: financialFieldValueSchema,
+    otherMonthly: financialFieldValueSchema,
+  }),
+  financing: z.object({
+    loanAmount: financialFieldValueSchema,
+    interestRate: financialFieldValueSchema,
+    loanTermMonths: financialFieldValueSchema,
+    downPaymentPct: financialFieldValueSchema,
+  }),
+  startupCapital: z.object({
+    workingCapitalMonths: financialFieldValueSchema,
+    depreciationYears: financialFieldValueSchema,
+  }),
+});
+
 export const brandAccountManagers = pgTable("brand_account_managers", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   brandId: varchar("brand_id").notNull().references(() => brands.id),

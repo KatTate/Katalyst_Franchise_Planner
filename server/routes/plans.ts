@@ -1,7 +1,12 @@
 import { Router, type Request, type Response } from "express";
 import { requireAuth } from "../middleware/auth";
 import { storage } from "../storage";
-import { planStartupCostsSchema, type Plan } from "@shared/schema";
+import {
+  planStartupCostsSchema,
+  planFinancialInputsSchema,
+  updatePlanSchema,
+  type Plan,
+} from "@shared/schema";
 import { computePlanOutputs } from "../services/financial-service";
 
 const router = Router();
@@ -24,6 +29,64 @@ async function requirePlanAccess(req: Request, res: Response): Promise<Plan | nu
   }
   return plan;
 }
+
+// GET /api/plans/:planId — return complete plan object
+router.get(
+  "/:planId",
+  requireAuth,
+  async (req: Request<{ planId: string }>, res: Response) => {
+    const plan = await requirePlanAccess(req, res);
+    if (plan === null) return;
+
+    return res.json({ data: plan });
+  }
+);
+
+// PATCH /api/plans/:planId — partial plan update (financial inputs, name, etc.)
+router.patch(
+  "/:planId",
+  requireAuth,
+  async (req: Request<{ planId: string }>, res: Response) => {
+    const plan = await requirePlanAccess(req, res);
+    if (plan === null) return;
+
+    // Stage 1: top-level schema validation
+    const parsed = updatePlanSchema.safeParse(req.body);
+    if (!parsed.success) {
+      return res.status(400).json({
+        message: "Validation failed",
+        errors: parsed.error.errors.map((e) => ({
+          path: e.path.map(String),
+          message: e.message,
+        })),
+      });
+    }
+
+    // Stage 1b: strip protected fields that clients must never mutate
+    const { userId, brandId, ...allowedFields } = parsed.data;
+
+    // Stage 2: deep validation for financialInputs when present
+    if (allowedFields.financialInputs !== undefined) {
+      const fiParsed = planFinancialInputsSchema.safeParse(
+        allowedFields.financialInputs
+      );
+      if (!fiParsed.success) {
+        return res.status(400).json({
+          message: "Financial inputs validation failed",
+          errors: fiParsed.error.errors.map((e) => ({
+            path: e.path.map(String),
+            message: e.message,
+          })),
+        });
+      }
+      allowedFields.financialInputs = fiParsed.data as typeof allowedFields.financialInputs;
+    }
+
+    // Stage 3: persist
+    const updated = await storage.updatePlan(req.params.planId, allowedFields);
+    return res.json({ data: updated });
+  }
+);
 
 // GET /api/plans/:planId/startup-costs
 router.get(
