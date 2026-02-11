@@ -1,10 +1,14 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
-import type { StartupCostLineItem } from "../../../shared/financial-engine";
+import type { StartupCostLineItem } from "@shared/financial-engine";
+
+export function startupCostsKey(planId: string) {
+  return ["/api/plans", planId, "startup-costs"] as const;
+}
 
 export function useStartupCosts(planId: string) {
   const queryClient = useQueryClient();
-  const queryKey = [`/api/plans/${planId}/startup-costs`];
+  const queryKey = startupCostsKey(planId);
 
   const query = useQuery<StartupCostLineItem[]>({
     queryKey,

@@ -3,11 +3,11 @@ import { usePlan } from "@/hooks/use-plan";
 import {
   updateFieldValue,
   resetFieldToDefault,
-} from "../../../../shared/plan-initialization";
+} from "@shared/plan-initialization";
 import type {
   PlanFinancialInputs,
   FinancialFieldValue,
-} from "../../../../shared/financial-engine";
+} from "@shared/financial-engine";
 import { formatCents, parseDollarsToCents } from "@/lib/format-currency";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";

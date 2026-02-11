@@ -1,11 +1,11 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { planOutputsKey } from "@/hooks/use-plan-outputs";
-import type { Plan } from "../../../shared/schema";
+import type { Plan } from "@shared/schema";
 
 /** Query key factory for plan data. */
 export function planKey(planId: string) {
-  return [`/api/plans/${planId}`] as const;
+  return ["/api/plans", planId] as const;
 }
 
 export function usePlan(planId: string) {

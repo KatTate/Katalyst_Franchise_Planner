@@ -1,9 +1,9 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import type { EngineOutput } from "../../../shared/financial-engine";
+import type { EngineOutput } from "@shared/financial-engine";
 
 /** Query key factory for plan outputs. */
 export function planOutputsKey(planId: string) {
-  return [`/api/plans/${planId}/outputs`] as const;
+  return ["/api/plans", planId, "outputs"] as const;
 }
 
 /**

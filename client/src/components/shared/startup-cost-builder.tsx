@@ -7,8 +7,8 @@ import {
   resetStartupCostToDefault,
   reorderStartupCosts,
   getStartupCostTotals,
-} from "../../../../shared/plan-initialization";
-import type { StartupCostLineItem } from "../../../../shared/financial-engine";
+} from "@shared/plan-initialization";
+import type { StartupCostLineItem } from "@shared/financial-engine";
 import { formatCents, parseDollarsToCents } from "@/lib/format-currency";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";

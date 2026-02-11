@@ -245,10 +245,12 @@ export interface EngineOutput {
 
 // ─── Helpers ────────────────────────────────────────────────────────────
 
-/** Round to nearest cent, normalizing -0 to 0 */
+/** Round to nearest cent (values are in cents, rounds to 2 sub-cent decimal places
+ *  to minimize cumulative rounding error across 60-month projections).
+ *  Normalizes -0 to 0. */
 function roundCents(value: number): number {
   const result = Math.round(value * CENTS_PRECISION) / CENTS_PRECISION;
-  return result === 0 ? 0 : result; // normalize -0 to 0
+  return result === 0 ? 0 : result;
 }
 
 /** Get year index (0-4) from month number (1-60) */
