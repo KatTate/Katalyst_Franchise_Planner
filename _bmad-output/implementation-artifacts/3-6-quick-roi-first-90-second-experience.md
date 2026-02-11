@@ -321,6 +321,14 @@ Key implementation decisions:
 - PATCH endpoint automatically accepts new fields via `updatePlanSchema.partial()` derived from the plans table schema — no route code changes needed
 - Dev page at `/plans/:planId/quick-start` following Stories 3.3-3.5 pattern; workspace integration deferred to Story 4.1
 
+**Code Review Fixes (Post-Implementation):**
+- **Codex P2:** Reordered error/loading guards — error state now checked before `!values` guard so API failures surface recovery UI instead of infinite skeleton
+- **M1:** Fixed `handleSkip` zero-staff bug — `staffNum ? ...` → `staffNum != null ? ...` so staff count of 0 is persisted
+- **M2:** Wrapped `findHighestImpactInput` in `useMemo` — sensitivity analysis (6 engine runs) no longer fires on every render
+- **M3:** Added `useEffect` cleanup to clear debounce timer on unmount — prevents stale saves after component removal
+- **L1:** Removed unused `FinancialFieldValue` type import from helpers
+- **H1:** Added 31 unit tests for `quick-start-helpers.ts` covering staff conversion, cost scaling, date formatting, sentiment generation, and edge cases (zero revenue, empty costs, rounding)
+
 ### LSP Status
 
 Clean — no new TypeScript errors introduced. Pre-existing errors in `server/storage.ts` (drizzle type inference) remain unchanged.
@@ -334,8 +342,10 @@ N/A — dev server not running in this environment. UI verified structurally via
 - `shared/schema.ts` — MODIFIED: Added `quickStartCompleted` boolean (default false) and `quickStartStaffCount` integer (nullable) columns to `plans` table
 - `client/src/components/shared/summary-metrics.tsx` — MODIFIED: Exported `MetricCard`, `formatROI`, `formatBreakEven` (previously local functions)
 - `client/src/lib/quick-start-helpers.ts` — CREATED: Field mapping logic (staff↔labor conversion, startup cost scaling, sensitivity analysis, break-even calendar date, sentiment frame generation)
+- `client/src/lib/quick-start-helpers.test.ts` — CREATED: 31 unit tests for helpers (staff conversion, cost scaling, date formatting, sentiment, edge cases)
 - `client/src/components/shared/quick-start-overlay.tsx` — CREATED: QuickStartOverlay component (5 inputs, live ROI result card, animated transitions, constructive negative-ROI guidance, complete/skip actions)
 - `client/src/pages/quick-start-dev.tsx` — CREATED: Temporary dev page at `/plans/:planId/quick-start`
 - `client/src/App.tsx` — MODIFIED: Added `/plans/:planId/quick-start` route with QuickStartDevPage
+- `vitest.config.ts` — MODIFIED: Added `@/` alias and `client/src/lib/**/*.test.ts` include pattern for client-side unit tests
 - `_bmad-output/implementation-artifacts/sprint-status.yaml` — MODIFIED: Updated 3-6 status
 - `_bmad-output/implementation-artifacts/3-6-quick-roi-first-90-second-experience.md` — MODIFIED: Updated status and Dev Agent Record

@@ -10,7 +10,6 @@
 
 import type {
   PlanFinancialInputs,
-  FinancialFieldValue,
   StartupCostLineItem,
   EngineOutput,
 } from "@shared/financial-engine";

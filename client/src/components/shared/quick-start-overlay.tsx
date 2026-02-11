@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef, useEffect } from "react";
+import { useState, useCallback, useRef, useEffect, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -73,6 +73,13 @@ function AnimatedValue({
 export function QuickStartOverlay({ planId, brand, onComplete }: QuickStartOverlayProps) {
   const { plan, isLoading, error, updatePlan, isSaving } = usePlan(planId);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Clear pending debounce on unmount
+  useEffect(() => {
+    return () => {
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+    };
+  }, []);
 
   // Local state for the 5 input fields (string for input editing)
   const [values, setValues] = useState<QuickStartValues | null>(null);
@@ -249,13 +256,28 @@ export function QuickStartOverlay({ planId, brand, onComplete }: QuickStartOverl
         quickStartCompleted: true,
         ...(workingInputs ? { financialInputs: workingInputs as any } : {}),
         ...(workingCosts ? { startupCosts: workingCosts as any } : {}),
-        ...(staffNum ? { quickStartStaffCount: staffNum } : {}),
+        ...(staffNum != null ? { quickStartStaffCount: staffNum } : {}),
       });
       onComplete();
     } catch {
       // Save error
     }
   }, [workingInputs, workingCosts, staffNum, updatePlan, onComplete]);
+
+  // ── Error State (checked before loading guard so errors aren't masked) ──
+  if (error && !isLoading) {
+    return (
+      <div data-testid="quick-start-error" className="max-w-md mx-auto py-16 text-center">
+        <p className="text-sm text-muted-foreground mb-4">
+          We couldn't load your plan details. Your data is safe — please try refreshing.
+        </p>
+        <Button variant="outline" onClick={() => window.location.reload()}>
+          <RefreshCw className="h-4 w-4 mr-2" />
+          Refresh
+        </Button>
+      </div>
+    );
+  }
 
   // ── Loading State ──────────────────────────────────────────────────────
   if (isLoading || !values) {
@@ -279,31 +301,16 @@ export function QuickStartOverlay({ planId, brand, onComplete }: QuickStartOverl
     );
   }
 
-  // ── Error State ────────────────────────────────────────────────────────
-  if (error) {
-    return (
-      <div data-testid="quick-start-error" className="max-w-md mx-auto py-16 text-center">
-        <p className="text-sm text-muted-foreground mb-4">
-          We couldn't load your plan details. Your data is safe — please try refreshing.
-        </p>
-        <Button variant="outline" onClick={() => window.location.reload()}>
-          <RefreshCw className="h-4 w-4 mr-2" />
-          Refresh
-        </Button>
-      </div>
-    );
-  }
-
   const brandName = brand?.displayName || brand?.name || "franchise";
   const roiMetrics = preview?.roiMetrics;
   const isNegativeROI = roiMetrics ? roiMetrics.fiveYearROIPct <= 0 : false;
 
-  // Compute highest-impact input for negative ROI guidance
-  let leverHint: string | null = null;
-  if (isNegativeROI && workingInputs && workingCosts) {
+  // Memoize sensitivity analysis — only recompute when inputs actually change
+  const leverHint = useMemo(() => {
+    if (!isNegativeROI || !workingInputs || !workingCosts) return null;
     const impact = findHighestImpactInput(workingInputs, workingCosts, staffNum);
-    leverHint = generateLeverHint(impact);
-  }
+    return generateLeverHint(impact);
+  }, [isNegativeROI, workingInputs, workingCosts, staffNum]);
 
   return (
     <div data-testid="quick-start-overlay" className="max-w-5xl mx-auto py-8 px-4">
