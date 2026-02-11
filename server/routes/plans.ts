@@ -1,5 +1,5 @@
 import { Router, type Request, type Response } from "express";
-import { requireAuth } from "../middleware/auth";
+import { requireAuth, getEffectiveUser, requireReadOnlyImpersonation } from "../middleware/auth";
 import { storage } from "../storage";
 import {
   planStartupCostsSchema,
@@ -11,7 +11,7 @@ import { computePlanOutputs } from "../services/financial-service";
 
 const router = Router();
 
-/** Ownership check: franchisee can only access own plans; franchisor scoped to own brand. */
+/** Ownership check using effective user: franchisee can only access own plans; franchisor scoped to own brand. */
 async function requirePlanAccess(req: Request, res: Response): Promise<Plan | null> {
   const planId = req.params.planId as string;
   const plan = await storage.getPlan(planId);
@@ -19,11 +19,12 @@ async function requirePlanAccess(req: Request, res: Response): Promise<Plan | nu
     res.status(404).json({ message: "Plan not found" });
     return null;
   }
-  if (req.user!.role === "franchisee" && plan.userId !== req.user!.id) {
+  const effectiveUser = await getEffectiveUser(req);
+  if (effectiveUser.role === "franchisee" && plan.userId !== effectiveUser.id) {
     res.status(403).json({ message: "Access denied" });
     return null;
   }
-  if (req.user!.role === "franchisor" && plan.brandId !== req.user!.brandId) {
+  if (effectiveUser.role === "franchisor" && plan.brandId !== effectiveUser.brandId) {
     res.status(403).json({ message: "Access denied" });
     return null;
   }
@@ -46,6 +47,7 @@ router.get(
 router.patch(
   "/:planId",
   requireAuth,
+  requireReadOnlyImpersonation,
   async (req: Request<{ planId: string }>, res: Response) => {
     const plan = await requirePlanAccess(req, res);
     if (plan === null) return;
@@ -105,6 +107,7 @@ router.get(
 router.put(
   "/:planId/startup-costs",
   requireAuth,
+  requireReadOnlyImpersonation,
   async (req: Request<{ planId: string }>, res: Response) => {
     const plan = await requirePlanAccess(req, res);
     if (plan === null) return;
@@ -129,6 +132,7 @@ router.put(
 router.post(
   "/:planId/startup-costs/reset",
   requireAuth,
+  requireReadOnlyImpersonation,
   async (req: Request<{ planId: string }>, res: Response) => {
     const plan = await requirePlanAccess(req, res);
     if (plan === null) return;
