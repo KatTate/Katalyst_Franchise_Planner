@@ -77,6 +77,11 @@ describe("Users Routes", () => {
       expect(res.status).toBe(200);
       expect(res.body.accountManagerId).toBe("a1");
       expect(res.body.bookingUrl).toBe("https://calendly.com/admin");
+      expect(storage.assignAccountManager).toHaveBeenCalledWith(
+        "f1",
+        "a1",
+        "https://calendly.com/admin",
+      );
     });
 
     it("returns 401 for unauthenticated request", async () => {
