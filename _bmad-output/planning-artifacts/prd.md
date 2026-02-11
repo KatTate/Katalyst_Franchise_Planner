@@ -455,7 +455,7 @@ Three roles with distinct access patterns:
 |------|------------|---------|-----|
 | **Franchisee** | Own locations and plans only. Can opt in to share financial details with franchisor | Create/edit plans, run scenarios, generate documents, manage document vault, update estimated vs. actual | Wizard-driven with adaptive tiers (Story/Normal/Expert) |
 | **Franchisor Admin** | Pipeline status for all brand franchisees (read-only). Financial details only for opted-in franchisees (read-only). Optional: acknowledge/review franchisee plans (status signal, not data edit) | View pipeline, view opted-in financials, acknowledge plans (if brand-configured) | Dashboard-only, primarily read-only |
-| **Katalyst Admin** | All data across all franchisees and all brands | Brand parameter setup, startup cost template creation, franchisee invitation/provisioning, model validation, cross-brand views | Admin dashboard with configuration tools |
+| **Katalyst Admin** | All data across all franchisees and all brands; impersonation scopes view to target user's data boundaries | Brand parameter setup, startup cost template creation, franchisee invitation/provisioning, model validation, cross-brand views, "View As" impersonation of any franchisee (FR59-FR65), Franchisee Demo Mode per brand (FR66-FR69), Franchisor Demo Mode with fictitious brand (FR70-FR73) | Admin dashboard with configuration tools; impersonation banner (orange) and demo banner (distinct color) indicate active mode |
 
 **Key RBAC principles:**
 - Franchisor admin CANNOT edit franchisee data — ever
@@ -718,7 +718,7 @@ This section defines THE CAPABILITY CONTRACT for the entire product. UX designer
 
 - **FR45:** Franchisor admin can view a dashboard showing all their brand's franchisees with planning status, stage, target market, and timeline
 - **FR46:** Katalyst admin can view a cross-brand dashboard showing franchisee progress across all brands
-- **FR47:** Katalyst admin can view individual franchisee plan details for operational support
+- **FR47:** Katalyst admin can view individual franchisee plan details for operational support _(Note: FR47 provides a read-only admin-context view of a franchisee's plan data within the Katalyst admin dashboard. FR59 (View As) provides full role-simulation where the admin sees the franchisee's own UI as the franchisee would experience it. These are complementary — FR47 is for quick operational review, FR59 is for support and validation.)_
 - **FR48:** Franchisor admin can acknowledge/review a franchisee's development plan as a status signal (if the brand has this feature enabled)
 
 ### 9. Brand Identity & Experience
@@ -740,6 +740,34 @@ This section defines THE CAPABILITY CONTRACT for the entire product. UX designer
 - **FR57:** Franchisee can accept or reject specific Advisory Board suggestions — accepted suggestions are written back to the financial input state with appropriate attribution
 - **FR58:** Advisory Board persona definitions (domain expertise, communication style, advisory priorities) are data-driven and configurable by Katalyst admin
 
+### 12. Admin Support Tools: Impersonation & Demo Modes
+
+_Scope: Katalyst admins only. Franchisors and franchisees never see or access these tools. Franchisor impersonation is deferred until Epic 8 delivers the franchisor dashboard UI and a Franchisor Users admin view exists._
+
+**12a. View As — Franchisee Impersonation**
+
+- **FR59:** Katalyst admin can activate "View As" mode for any franchisee by clicking a "View As" button in the franchisee's row on the brand detail Franchisees tab; the system loads that franchisee's home page with their real data and role-scoped access boundaries
+- **FR60:** While in "View As" mode, the existing application header bar transforms into a high-contrast impersonation banner (neon construction orange) displaying: the franchisee's name, their role, current mode (read-only or editing), and an "Exit View As" button that returns the admin to the brand detail page they came from
+- **FR61:** "View As" mode is read-only by default; an "Enable Editing" toggle in the impersonation banner requires an explicit confirmation dialog ("You will be able to modify [Franchisee Name]'s data. Continue?") before activating; once editing is enabled, the impersonation banner pulsates to provide a persistent visual alert that edits are live
+- **FR62:** While editing is enabled, the admin can perform the same actions the impersonated franchisee could perform (edit financial inputs, add startup cost line items, etc.) but cannot perform destructive account-level actions (delete the user's account, revoke their invitation, change their role, or reassign their brand)
+- **FR63:** Edits made while impersonating are attributed in the per-field metadata source field using a structured format (e.g., "admin:[admin_name]") distinct from existing source values ("brand_default", "user_entry", "ai_populated"), and each impersonation edit session is logged in an audit record containing: admin identity, impersonated user, session start/end timestamps, and summary of actions taken
+- **FR64:** "View As" impersonation state is stored in the server session and is scoped to that session only — it terminates on logout, session expiry, or when the admin clicks "Exit View As"; impersonation state is never persisted beyond the active session
+- **FR65:** During impersonation, the RBAC middleware resolves data queries using the impersonated user's identity and access scope while preserving the admin's real identity for audit purposes; NFR9 (endpoint RBAC) and NFR10 (DB-level data isolation) remain enforced — the admin sees exactly what the impersonated user is authorized to see, nothing more
+
+**12b. Demo Mode — Franchisee (Per Brand)**
+
+- **FR66:** Each brand has a demo franchisee account pre-populated with that brand's default financial parameters and startup cost template; this account is system-managed and cannot be invited, deleted, or assigned to a real user
+- **FR67:** Katalyst admin can activate Franchisee Demo Mode by clicking "Enter Franchisee Demo Mode" on the brand card in the brand management screen; the system loads the demo franchisee's home page with brand-default data
+- **FR68:** While in Franchisee Demo Mode, the application header displays a visually distinct demo banner (different color from the orange impersonation banner) indicating "Demo Mode: [Brand Name] — Franchisee View" with an "Exit Demo" button; this banner must contrast with the impersonation banner to clearly communicate that the admin is in a safe sandbox with no real user data at risk
+- **FR69:** Franchisee Demo Mode is fully interactive — the admin can edit demo financial inputs, add line items, and experience the full franchisee workflow; changes to demo data do not affect any real user data and can be reset to brand defaults
+
+**12c. Demo Mode — Franchisor (Fictitious Brand)**
+
+- **FR70:** The system includes a pre-seeded fictitious demo brand (e.g., "Bob's Burgers" or similar lighthearted brand) with a complete franchisor demo environment: brand identity, financial parameters, startup cost template, and multiple demo franchisees at various planning states and statuses
+- **FR71:** Katalyst admin can activate Franchisor Demo Mode via a "Demo Mode" menu item in the Katalyst admin sidebar; the system loads the fictitious brand's franchisor dashboard as the demo franchisor would see it, with the pipeline of demo franchisees
+- **FR72:** From within Franchisor Demo Mode, the admin can click into any demo franchisee to enter that franchisee's planning experience (Franchisee Demo within Franchisor Demo), with the demo banner updating to reflect the nested context; exiting the nested franchisee demo returns to the franchisor demo dashboard
+- **FR73:** While in Franchisor Demo Mode, the application header displays a demo banner indicating "Demo Mode: [Fictitious Brand] — Franchisor View" with an "Exit Demo" button; the demo banner is visually distinct from the impersonation banner (FR60) and uses the same demo color scheme as Franchisee Demo Mode (FR68)
+
 ## Non-Functional Requirements
 
 ### Performance
@@ -755,8 +783,8 @@ This section defines THE CAPABILITY CONTRACT for the entire product. UX designer
 - **NFR6:** All data transmitted over HTTPS/TLS — no unencrypted connections
 - **NFR7:** Passwords hashed using industry-standard algorithms (bcrypt or equivalent) — never stored in plaintext (applies to franchisee accounts if password-based auth is used; Katalyst admins authenticate via Google OAuth)
 - **NFR8:** Session tokens expire after a reasonable inactivity period, with configurable timeout
-- **NFR9:** Every API endpoint enforces role-based access control — no endpoint returns data the requesting user's role should not see
-- **NFR10:** Franchisee data isolation enforced at the database query level — queries always scoped to the authenticated user's permissions, not filtered after retrieval
+- **NFR9:** Every API endpoint enforces role-based access control — no endpoint returns data the requesting user's role should not see. During admin impersonation (FR59-FR65), RBAC is enforced using the impersonated user's role and scope, not the admin's; the admin's real identity is preserved separately for audit purposes.
+- **NFR10:** Franchisee data isolation enforced at the database query level — queries always scoped to the authenticated user's permissions, not filtered after retrieval. During admin impersonation, queries are scoped to the impersonated user's data boundaries; the admin does not gain broader data access than the impersonated user would have.
 - **NFR11:** Invitation tokens are single-use, time-limited, and cryptographically secure
 - **NFR12:** No financial data, passwords, or secrets logged or exposed in error messages
 
@@ -787,3 +815,8 @@ This section defines THE CAPABILITY CONTRACT for the entire product. UX designer
 - **NFR26:** All user-facing error messages written in plain language, not technical jargon — franchisees are not technical users
 - **NFR27:** Financial values displayed with consistent formatting (currency symbols, thousand separators, appropriate decimal places) throughout the application
 - **NFR28:** The system provides visual feedback within 200ms for any user action (click, keystroke, toggle) — even if the underlying operation takes longer
+
+### Admin Support Tools
+
+- **NFR29:** Impersonation sessions have a maximum duration limit (configurable, default 60 minutes) after which the session automatically reverts to admin view, requiring re-activation for continued impersonation
+- **NFR30:** All impersonation and demo mode API endpoints (start, stop, status, reset) are restricted to the `katalyst_admin` role; audit log records for impersonation edit sessions are retained for a minimum of 90 days

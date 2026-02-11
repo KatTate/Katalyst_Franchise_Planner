@@ -1074,3 +1074,38 @@ The following decisions were incorporated via Party Mode review session:
 | 6 | **State persistence across mode switches must be tested** | Financial input state must be verified to persist correctly when switching between all mode permutations (Planning Assistant → Forms → Quick Entry and back). This is a required test scenario. |
 | 7 | **Split-panel min-widths must be enforced** | Conversation panel minimum 360px, dashboard panel minimum 480px. The resize handle must not allow panels to shrink below these minimums. |
 | 8 | **Sprint 1 acceptance criterion: sidebar collapse/expand behavior with mode switching** | Sprint 1 must deliver working sidebar collapse/expand with smooth animation that correctly interacts with mode switching. This is a gating acceptance criterion for Sprint 1 completion. |
+
+---
+
+## Admin Support Tools — Impersonation & Demo Mode UX
+
+### Impersonation Banner (View As Mode)
+
+- Reuses the existing application header bar — no new layout elements
+- Background: neon construction orange (#FF6D00 or similar high-contrast orange)
+- Content: "[Franchisee Name] — Franchisee | Read-Only Mode | [Enable Editing toggle] | [Exit View As button]"
+- When editing is enabled: banner pulsates (CSS animation), text changes to "Editing Enabled"
+- Exit button returns admin to the brand detail Franchisees tab
+- Must contrast with all brand accent colors (several brands use red accents — orange avoids conflict)
+
+### Demo Mode Banner
+
+- Same header bar reuse pattern as impersonation banner
+- Background: visually distinct from orange impersonation banner (color TBD — blue, purple, or teal recommended)
+- Content: "Demo Mode: [Brand Name] — [Role] View | [Exit Demo button]"
+- Franchisee demo and franchisor demo use the same demo banner color scheme
+- Nested context (franchisee within franchisor demo) updates the banner text, not the color
+- No pulsation — demo mode is always fully interactive, no safety gate needed
+
+### Entry Points
+
+- **View As:** "View As" button in each franchisee's row on the brand detail Franchisees tab
+- **Franchisee Demo:** "Enter Franchisee Demo Mode" button on each brand card in brand management
+- **Franchisor Demo:** "Demo Mode" menu item in the Katalyst admin sidebar
+
+### Design Rationale
+
+- Orange impersonation banner signals "real user data at risk" — safety-critical color choice (construction/hazard association)
+- Demo banner uses a calming, distinct color to signal "safe sandbox, no real data"
+- Pulsation on edit mode serves as a persistent, unavoidable reminder that the admin is modifying real data
+- Banner reuses the header bar rather than adding a new element to avoid layout shift and maintain consistency

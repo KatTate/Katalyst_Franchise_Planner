@@ -109,8 +109,8 @@ This document provides the complete epic and story breakdown for the Katalyst Gr
 - NFR6: All data transmitted over HTTPS/TLS
 - NFR7: Passwords hashed using bcrypt — never stored in plaintext (applies to franchisee accounts; Katalyst admins use Google OAuth)
 - NFR8: Session tokens expire after a reasonable inactivity period, with configurable timeout
-- NFR9: Every API endpoint enforces role-based access control
-- NFR10: Franchisee data isolation enforced at the database query level
+- NFR9: Every API endpoint enforces role-based access control. During admin impersonation (FR59-FR65), RBAC is enforced using the impersonated user's role and scope, not the admin's; the admin's real identity is preserved separately for audit purposes.
+- NFR10: Franchisee data isolation enforced at the database query level. During admin impersonation, queries are scoped to the impersonated user's data boundaries; the admin does not gain broader data access than the impersonated user would have.
 - NFR11: Invitation tokens are single-use, time-limited, and cryptographically secure
 - NFR12: No financial data, passwords, or secrets logged or exposed in error messages
 
@@ -137,6 +137,8 @@ This document provides the complete epic and story breakdown for the Katalyst Gr
 - NFR26: All user-facing error messages written in plain language
 - NFR27: Financial values displayed with consistent formatting throughout
 - NFR28: System provides visual feedback within 200ms for any user action
+- NFR29: Impersonation sessions have a maximum duration limit (configurable, default 60 minutes) after which the session automatically reverts to admin view
+- NFR30: All impersonation and demo mode API endpoints restricted to `katalyst_admin` role; audit log records retained for minimum 90 days
 
 ### Additional Requirements
 
@@ -243,8 +245,11 @@ This document provides the complete epic and story breakdown for the Katalyst Gr
 | FR56 | Epic 9 | Multiple domain-specific advisor personas (Phase 2) |
 | FR57 | Epic 9 | Accept/reject Advisory Board suggestions (Phase 2) |
 | FR58 | Epic 9 | Configurable persona definitions (Phase 2) |
+| FR59-FR65 | Epic ST | Admin "View As" impersonation of franchisees |
+| FR66-FR69 | Epic ST | Per-brand Franchisee Demo Mode |
+| FR70-FR73 | Epic ST | Franchisor Demo Mode with fictitious brand |
 
-**Coverage Summary:** 58/58 FRs mapped. All functional requirements covered. 36 stories across 8 MVP epics (+ 1 deferred Phase 2 epic).
+**Coverage Summary:** 73/73 FRs mapped. All functional requirements covered. 40 stories across 8 MVP epics (+ 1 deferred Phase 2 epic + 1 admin support tools epic).
 
 ## Epic List
 
@@ -292,6 +297,12 @@ Franchisees control data sharing with their franchisor via explicit opt-in/revok
 Franchisees can stress-test their plan with multiple AI advisor personas who provide cross-cutting domain feedback. Persona definitions are data-driven and configurable.
 **FRs covered:** FR55, FR56, FR57, FR58
 **Status:** Deferred to Phase 2 per PRD decision
+
+### Epic ST: Admin Support Tools — Impersonation & Demo Modes
+Katalyst admins can impersonate franchisees ("View As") for support and validation, enter per-brand franchisee demo mode for sales demos, and enter franchisor demo mode with a fictitious brand.
+**FRs covered:** FR59-FR73
+**NFRs addressed:** NFR9 (amended), NFR10 (amended), NFR29 (new), NFR30 (new)
+**Priority:** ST-1, ST-2 immediate; ST-3 after ST-2; ST-4 blocked until Epic 8.2
 
 ---
 
@@ -1087,3 +1098,99 @@ So that I can support franchisees and monitor platform health (FR46, FR47).
 Franchisees can stress-test their plan with multiple AI advisor personas who provide cross-cutting domain feedback. Persona definitions are data-driven and configurable.
 
 *Stories for this epic will be created when Phase 2 planning begins. FRs covered: FR55, FR56, FR57, FR58.*
+
+---
+
+## Epic ST: Admin Support Tools — Impersonation & Demo Modes
+
+Katalyst admins need tools to validate the franchisee/franchisor experience, support clients shoulder-to-shoulder, and demo the platform to prospects. This epic delivers "View As" impersonation for real user data, per-brand franchisee demo mode, and a franchisor demo mode with a fictitious brand.
+
+**Scope:** Katalyst admins only. Franchisors and franchisees never see or access these tools.
+**Dependency:** Stories ST-1 and ST-2 have no external dependencies. Story ST-3 depends on brand financial parameters (Epic 2, done). Story ST-4 is blocked until Epic 8 delivers the franchisor dashboard — it should not be started until Story 8.2 is complete.
+
+**Priority:** Stories ST-1 and ST-2 are immediate — needed for validating Epic 3 code reviews and all subsequent franchisee-facing work. Stories ST-3 and ST-4 follow.
+
+**FRs covered:** FR59, FR60, FR61, FR62, FR63, FR64, FR65, FR66, FR67, FR68, FR69, FR70, FR71, FR72, FR73
+**NFRs addressed:** NFR9 (amended), NFR10 (amended), NFR29 (new), NFR30 (new)
+
+### Story ST-1: View As Infrastructure & Read-Only Mode
+
+As a Katalyst admin,
+I want to activate "View As" mode for any franchisee and see the platform exactly as they would see it,
+So that I can validate the franchisee experience and support clients shoulder-to-shoulder (FR59, FR60, FR64, FR65).
+
+**Acceptance Criteria:**
+
+**Given** I am logged in as a Katalyst admin viewing a brand's Franchisees tab
+**When** I click the "View As" button in a franchisee's row
+**Then** the system loads that franchisee's home page with their real data
+**And** the sidebar navigation shows only what the franchisee would see (no admin items)
+**And** the application header transforms into a high-contrast neon construction orange impersonation banner
+**And** the banner displays: the franchisee's name, their role ("Franchisee"), "Read-Only Mode", and an "Exit View As" button
+**And** I can navigate the platform as the franchisee would — all pages, all data scoped to their permissions
+**And** I cannot make any edits — all input fields, buttons, and actions that modify data are disabled
+**And** clicking "Exit View As" returns me to the brand detail Franchisees tab I came from
+**And** the impersonation state is stored in the server session and terminates on logout or session expiry
+**And** the impersonation session has a maximum duration (configurable, default 60 minutes) after which it auto-reverts (NFR29)
+**And** during impersonation, API endpoints enforce RBAC using the franchisee's role and data scope, not my admin scope (NFR9, NFR10)
+**And** my admin identity is preserved in the session for audit purposes (FR65)
+
+### Story ST-2: View As Edit Mode & Audit Logging
+
+As a Katalyst admin in "View As" mode,
+I want to optionally enable editing to make changes on a franchisee's behalf during a support session,
+So that I can help clients directly without asking them to make changes themselves (FR61, FR62, FR63).
+
+**Acceptance Criteria:**
+
+**Given** I am in "View As" read-only mode for a franchisee
+**When** I click the "Enable Editing" toggle in the impersonation banner
+**Then** a confirmation dialog appears: "You will be able to modify [Franchisee Name]'s data. Continue?"
+**And** if I confirm, the impersonation banner begins pulsating to visually alert me that edits are live
+**And** the banner text updates to show "Editing Enabled" instead of "Read-Only Mode"
+**And** I can perform the same actions the franchisee could perform (edit financial inputs, add startup cost line items, etc.)
+**And** I cannot perform destructive account-level actions (delete account, revoke invitation, change role, reassign brand)
+**And** edits I make are attributed in the per-field metadata source field using a structured format ("admin:[my_admin_name]") distinct from "brand_default", "user_entry", "ai_populated"
+**And** an audit record is created for this impersonation edit session containing: my admin identity, the impersonated franchisee, session start/end timestamps, and summary of actions taken
+**And** I can toggle editing off to return to read-only mode without exiting "View As"
+
+### Story ST-3: Franchisee Demo Mode (Per Brand)
+
+As a Katalyst admin,
+I want to enter a franchisee demo mode for any brand to showcase the franchisee planning experience with brand-default data,
+So that I can demo the platform to prospective franchisees and franchisors without using real client data (FR66, FR67, FR68, FR69).
+
+**Acceptance Criteria:**
+
+**Given** I am viewing the brand management screen
+**When** I click "Enter Franchisee Demo Mode" on a brand card
+**Then** the system loads the demo franchisee's home page pre-populated with that brand's default financial parameters and startup cost template
+**And** the application header displays a demo banner in a visually distinct color (NOT orange — different from impersonation banner) indicating "Demo Mode: [Brand Name] — Franchisee View"
+**And** the demo banner includes an "Exit Demo" button that returns me to the brand management screen
+**And** I can interact fully — edit financial inputs, add line items, and experience the complete franchisee workflow
+**And** changes to demo data do not affect any real user data
+**And** demo data can be reset to brand defaults
+**And** the demo franchisee account is system-managed — it cannot be invited, deleted, or assigned to a real user
+**And** each brand has exactly one demo franchisee account, auto-created when the brand is configured
+**And** the demo account is seeded with the brand's current default financial parameters and startup cost template at creation time
+**And** a "Reset Demo Data" action is available that re-seeds the demo account with current brand defaults (clearing any modifications from previous demo sessions)
+
+### Story ST-4: Franchisor Demo Mode (Fictitious Brand)
+
+As a Katalyst admin,
+I want to enter a franchisor demo mode with a fictitious brand to showcase the franchisor pipeline dashboard experience,
+So that I can demo the franchisor view to prospective franchisors with realistic but fictional data (FR70, FR71, FR72, FR73).
+
+**Acceptance Criteria:**
+
+**Given** the system includes a pre-seeded fictitious demo brand (e.g., "Bob's Burgers") with brand identity, financial parameters, startup cost template, and multiple demo franchisees at various planning states and statuses
+**When** I click "Demo Mode" in the Katalyst admin sidebar
+**Then** the system loads the fictitious brand's franchisor dashboard as a demo franchisor would see it
+**And** the dashboard shows a pipeline of demo franchisees at different stages (new, mid-planning, completed, stalled, etc.)
+**And** the application header displays a demo banner indicating "Demo Mode: [Fictitious Brand] — Franchisor View" with an "Exit Demo" button
+**And** the demo banner uses the same color scheme as Franchisee Demo Mode (FR68) — visually distinct from the orange impersonation banner
+**And** I can click into any demo franchisee to enter that franchisee's planning experience (nested Franchisee Demo within Franchisor Demo)
+**And** when in nested franchisee demo, the demo banner updates to reflect the nested context
+**And** exiting the nested franchisee demo returns me to the franchisor demo dashboard
+**And** the "Exit Demo" button from the franchisor demo returns me to the admin view
+**And** the fictitious brand and its demo data are system-managed and do not appear in real brand lists or reports

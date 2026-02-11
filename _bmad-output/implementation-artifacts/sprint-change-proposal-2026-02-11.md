@@ -144,15 +144,15 @@ _Scope: Katalyst admins only. Franchisors and franchisees never see or access th
 
 **Rationale:** Makes explicit that impersonation narrows admin access to the target user's scope rather than widening it.
 
-#### Change P-4: New NFR (insert after NFR27, line 788)
+#### Change P-4: New NFRs (insert after NFR28, line 820)
 
 **NEW:**
 ```
-- **NFR28:** Impersonation sessions have a maximum duration limit (configurable, default 60 minutes) after which the session automatically reverts to admin view, requiring re-activation for continued impersonation
-- **NFR29:** All impersonation and demo mode API endpoints (start, stop, status, reset) are restricted to the `katalyst_admin` role; audit log records for impersonation edit sessions are retained for a minimum of 90 days
+- **NFR29:** Impersonation sessions have a maximum duration limit (configurable, default 60 minutes) after which the session automatically reverts to admin view, requiring re-activation for continued impersonation
+- **NFR30:** All impersonation and demo mode API endpoints (start, stop, status, reset) are restricted to the `katalyst_admin` role; audit log records for impersonation edit sessions are retained for a minimum of 90 days
 ```
 
-**Rationale:** Security safeguard — prevents indefinite impersonation sessions that could be left open accidentally.
+**Rationale:** Security safeguard — prevents indefinite impersonation sessions that could be left open accidentally. Note: renumbered from original proposal's NFR28/NFR29 to NFR29/NFR30 to avoid collision with existing NFR28 (visual feedback within 200ms).
 
 #### Change P-5: Role Access Matrix Update (line 458)
 
@@ -195,7 +195,7 @@ Katalyst admins need tools to validate the franchisee/franchisor experience, sup
 **Priority:** Stories ST-1 and ST-2 are immediate — needed for validating Epic 3 code reviews and all subsequent franchisee-facing work. Stories ST-3 and ST-4 follow.
 
 **FRs covered:** FR59, FR60, FR61, FR62, FR63, FR64, FR65, FR66, FR67, FR68, FR69, FR70, FR71, FR72, FR73
-**NFRs addressed:** NFR9 (amended), NFR10 (amended), NFR28 (new), NFR29 (new)
+**NFRs addressed:** NFR9 (amended), NFR10 (amended), NFR29 (new), NFR30 (new)
 
 ### Story ST-1: View As Infrastructure & Read-Only Mode
 
@@ -215,7 +215,7 @@ So that I can validate the franchisee experience and support clients shoulder-to
 **And** I cannot make any edits — all input fields, buttons, and actions that modify data are disabled
 **And** clicking "Exit View As" returns me to the brand detail Franchisees tab I came from
 **And** the impersonation state is stored in the server session and terminates on logout or session expiry
-**And** the impersonation session has a maximum duration (configurable, default 60 minutes) after which it auto-reverts (NFR28)
+**And** the impersonation session has a maximum duration (configurable, default 60 minutes) after which it auto-reverts (NFR29)
 **And** during impersonation, API endpoints enforce RBAC using the franchisee's role and data scope, not my admin scope (NFR9, NFR10)
 **And** my admin identity is preserved in the session for audit purposes (FR65)
 
@@ -295,7 +295,7 @@ So that I can demo the franchisor view to prospective franchisors with realistic
 
 #### Change E-3: NFR Amendments (matching PRD changes P-2, P-3, P-4)
 
-Apply the same NFR9, NFR10 amendments and NFR28 addition as described in PRD changes P-2, P-3, P-4.
+Apply the same NFR9, NFR10 amendments and NFR29/NFR30 additions as described in PRD changes P-2, P-3, P-4.
 
 ### 4.3 Architecture Changes (architecture.md)
 
@@ -380,8 +380,8 @@ Demo Mode:
 - All planning artifacts consistently describe the impersonation and demo mode features
 - FR59-FR73 are assigned to Epic ST in the coverage map
 - NFR9, NFR10 are amended to address impersonation
-- NFR28 is added for impersonation session limits
-- NFR29 is added for admin-only endpoint gating and audit log retention
+- NFR29 is added for impersonation session limits
+- NFR30 is added for admin-only endpoint gating and audit log retention
 - Sprint status reflects the new epic with correct story sequencing
 - No confusion between FR47 (admin-context view) and FR59 (role simulation)
 
