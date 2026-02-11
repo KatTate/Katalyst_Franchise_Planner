@@ -16,9 +16,9 @@ so that I can experiment freely without fear of losing the starting point (FR2, 
 
 3. **Given** I am viewing my plan, **when** the financial inputs page loads, **then** I see all financial input fields grouped by category (Revenue, Operating Costs, Financing, Startup Capital) with their current values, source attribution badges ("Brand Default" / "Your Entry"), and formatted appropriately — currency with $ and commas, percentages with %, integers for months/years.
 
-4. **Given** I edit or reset a financial input, **when** the change is saved, **then** the summary metrics (total startup investment, projected annual revenue, ROI, break-even month) update to reflect my changes within 2 seconds (NFR1).
+4. **Given** I edit or reset a financial input, **when** the change is saved, **then** the summary metrics (total startup investment, projected annual revenue, ROI, break-even month) update to reflect my changes within 2 seconds (NFR1). _Note: In this story, metrics update is verified via query invalidation of `planOutputsKey`. End-to-end visual verification (input + metrics on the same screen) becomes testable in Story 4.1 when both components are co-rendered in the planning workspace._
 
-5. **Given** I focus on a financial input field, **when** the field receives focus, **then** I see the brand default value and source attribution alongside the editable value — providing context for my editing decision. On blur, the metadata recedes so the interface stays clean.
+5. **Given** I am viewing any financial input field, **then** the brand default value is always visible as muted secondary text (e.g., "Default: $25,000"). **When** I focus on the field, **then** an expanded metadata panel appears showing source attribution and last-modified timestamp. On blur, the expanded panel recedes back to the compact default-value-only display — providing full context on demand while keeping the interface clean at rest.
 
 6. **Given** my plan has financial inputs with a mix of brand defaults and my custom entries, **when** I navigate away and return to the financial inputs page, **then** all my edits are preserved — every field shows its last-saved value and correct source badge.
 
@@ -81,13 +81,17 @@ export const planFinancialInputsSchema = z.object({
 });
 ```
 
-In the PATCH handler, validate `req.body.financialInputs` against `planFinancialInputsSchema` when present. Other plan fields (name, status, etc.) use the existing `updatePlanSchema` validation.
+**PATCH validation sequence (two-stage):**
+
+1. **Stage 1 — Top-level schema:** Parse `req.body` with `updatePlanSchema` to validate top-level plan fields (name, status, etc.). This rejects unknown fields and validates scalar types. Since `financialInputs` is typed as `unknown`/`any` in the Drizzle-generated schema, it passes through without nested validation.
+2. **Stage 2 — Financial inputs deep validation:** If `parsedBody.financialInputs` is present, validate it separately with `planFinancialInputsSchema.parse(parsedBody.financialInputs)`. If validation fails, return 400 with the Zod error details. If it passes, use the validated data for the storage update.
+3. **Persist:** Call `storage.updatePlan(planId, validatedData)` with only the validated fields.
 
 **Client-Side Edit Flow:**
 
 The client owns the field update logic using pure functions from `shared/plan-initialization.ts`:
 
-1. Load plan via `usePlan(planId)` hook → has full `PlanFinancialInputs`
+1. Load plan via `usePlan(planId)` hook (query key: `` [`/api/plans/${planId}`] ``) → has full `PlanFinancialInputs`
 2. User edits a field → call `updateFieldValue(field, newValue, new Date().toISOString())`
 3. Build updated `PlanFinancialInputs` with the changed field
 4. Call PATCH mutation with `{ financialInputs: updatedInputs }`
@@ -103,10 +107,10 @@ For reset:
 
 Follow TanStack React Query patterns established in Stories 3.3–3.4:
 
-- Query key: `['/api/plans', planId]` for plan data
-- The hook `usePlan` fetches `GET /api/plans/:planId` and provides a `updatePlan` mutation for PATCH
+- Query key: `` [`/api/plans/${planId}`] `` — single-element template literal, consistent with `use-plan-outputs.ts` and `use-startup-costs.ts`. Export a `planKey(planId)` factory function for reuse.
+- The hook `usePlan` fetches `GET /api/plans/:planId` and provides an `updatePlan` mutation for PATCH (use `apiRequest("PATCH", ...)` from `client/src/lib/queryClient.ts`, matching the `useStartupCosts` mutation pattern)
 - After a successful PATCH that includes `financialInputs`, invalidate `planOutputsKey(planId)` from `use-plan-outputs.ts` so summary metrics refresh
-- Use optimistic UI: apply field changes to the local cache immediately, reconcile on server response
+- Use optimistic UI: apply field changes to the local cache immediately via `queryClient.setQueryData`, reconcile on server response
 - Save on blur (when user leaves the field) — consistent with startup cost editing pattern from Story 3.3
 
 **Component Naming:**
@@ -122,7 +126,38 @@ Follow TanStack React Query patterns established in Stories 3.3–3.4:
 | Percentages/rates | Decimal form | `0.065` = 6.5% | `6.5%` |
 | Months/years | Plain integers | `120` = 120 months | `120` |
 
-Currency formatting uses the existing `formatCents()` utility from `client/src/lib/format-currency.ts`. Percentage formatting divides by 1 and multiplies by 100 for display (e.g., `0.065` → `6.5%`).
+Currency formatting uses the existing `formatCents()` utility from `client/src/lib/format-currency.ts`. Percentage formatting multiplies by 100 for display (e.g., `0.065` → `6.5%`).
+
+**Field Metadata Mapping (labels and types):**
+
+Use a constant mapping object (e.g., `FIELD_METADATA` in `financial-input-editor.tsx`) rather than algorithmic camelCase-to-title conversion, since abbreviations (AUV, COGS) and suffixes (Pct → %) need explicit labels:
+
+| Field Key | Label | Format Type |
+|-----------|-------|-------------|
+| `revenue.monthlyAuv` | Monthly AUV | currency |
+| `revenue.year1GrowthRate` | Year 1 Growth Rate | percentage |
+| `revenue.year2GrowthRate` | Year 2 Growth Rate | percentage |
+| `revenue.startingMonthAuvPct` | Starting Month AUV % | percentage |
+| `operatingCosts.cogsPct` | COGS % | percentage |
+| `operatingCosts.laborPct` | Labor % | percentage |
+| `operatingCosts.rentMonthly` | Rent (Monthly) | currency |
+| `operatingCosts.utilitiesMonthly` | Utilities (Monthly) | currency |
+| `operatingCosts.insuranceMonthly` | Insurance (Monthly) | currency |
+| `operatingCosts.marketingPct` | Marketing % | percentage |
+| `operatingCosts.royaltyPct` | Royalty % | percentage |
+| `operatingCosts.adFundPct` | Ad Fund % | percentage |
+| `operatingCosts.otherMonthly` | Other (Monthly) | currency |
+| `financing.loanAmount` | Loan Amount | currency |
+| `financing.interestRate` | Interest Rate | percentage |
+| `financing.loanTermMonths` | Loan Term (Months) | integer |
+| `financing.downPaymentPct` | Down Payment % | percentage |
+| `startupCapital.workingCapitalMonths` | Working Capital (Months) | integer |
+| `startupCapital.depreciationYears` | Depreciation (Years) | integer |
+
+Format type determines input behavior:
+- **currency**: Display via `formatCents()`, input accepts dollar amounts, store as cents (`value * 100`)
+- **percentage**: Display as `value * 100` with `%` suffix, input accepts percentage, store as decimal (`input / 100`)
+- **integer**: Display and store as-is, input accepts whole numbers only
 
 ### UI/UX Deliverables
 
@@ -143,8 +178,18 @@ Each field row displays:
 - Field label (human-readable name derived from the camelCase key, e.g., `monthlyAuv` → "Monthly AUV")
 - Editable value input (type-aware: currency fields show $ formatting, percentage fields show %, integer fields accept whole numbers)
 - Source badge: "Brand Default" (muted style) or "Your Entry" (accent style)
-- Reset button: visible only when `source === 'user_entry'` — a subtle icon button (e.g., undo/refresh icon from lucide-react) that resets to brand default on click
-- Brand default reference value (shown on focus or as secondary text)
+- Reset button: visible only when `source === 'user_entry'` — a subtle icon button (e.g., `RotateCcw` from lucide-react, `aria-label="Reset to brand default"`) that resets to brand default on click
+- Brand default reference value: **always visible** as muted secondary text below/beside the input (e.g., "Default: $25,000") so users can scan and compare without clicking into each field. On field focus, the metadata panel expands to also show the source badge more prominently and the `lastModifiedAt` timestamp if present. On blur, the expanded metadata recedes back to the compact default-value-only display.
+
+**Test IDs (`data-testid` attributes):**
+- `section-{category}` — category section container (e.g., `section-revenue`, `section-operatingCosts`)
+- `field-input-{fieldName}` — editable input for each field (e.g., `field-input-monthlyAuv`, `field-input-cogsPct`)
+- `badge-source-{fieldName}` — source attribution badge (e.g., `badge-source-monthlyAuv`)
+- `button-reset-{fieldName}` — per-field reset button (e.g., `button-reset-monthlyAuv`)
+- `field-default-{fieldName}` — brand default reference value display
+- `status-saving` — saving indicator
+- `status-error` — error message container
+- `status-no-inputs` — empty state for null financialInputs
 
 **UI States:**
 - **Loading state:** Skeleton rows while plan data loads
@@ -169,7 +214,7 @@ Each field row displays:
 
 ### Anti-Patterns & Hard Constraints
 
-- **DO NOT** implement deep-merge PATCH for `financialInputs` — the client sends the complete `PlanFinancialInputs` object with changes applied locally, and the server replaces the entire JSONB column. This matches the startup costs pattern and avoids complex merge logic.
+- **DO NOT** implement deep-merge PATCH for `financialInputs` — the client sends the complete `PlanFinancialInputs` object with changes applied locally, and the server replaces the entire JSONB column. This matches the startup costs pattern and avoids complex merge logic. _Clarification on epic AC wording: the epic says "only changed fields are updated (partial update)" — this refers to the plan-level PATCH (only `financialInputs` is sent, not `name`, `status`, etc.), NOT field-level deep-merging within the JSONB. The JSONB column itself is replaced wholesale._
 - **DO NOT** modify `shared/financial-engine.ts` — the engine and its interfaces are complete. This story wires editing and reset through the API layer.
 - **DO NOT** modify `shared/plan-initialization.ts` — the `updateFieldValue()` and `resetFieldToDefault()` functions are already implemented and tested (Story 3.2). Use them as-is.
 - **DO NOT** modify `server/services/financial-service.ts` — the engine orchestration is complete from Story 3.4.
@@ -205,7 +250,7 @@ Each field row displays:
 
 - **Existing tests must continue passing:** `shared/financial-engine.test.ts` (33+ tests), `shared/plan-initialization.test.ts` (131+ tests), and `server/services/financial-service.test.ts` (9 tests) must all pass after changes.
 
-- **TanStack Query default queryFn joins query keys as URL:** The default `queryFn` in `client/src/lib/queryClient.ts` joins the query key array elements to form the fetch URL. So query key `['/api/plans', planId]` fetches `GET /api/plans/<planId>`. This should work for the plan GET endpoint, but verify the key format matches the URL pattern (note: no trailing slash).
+- **TanStack Query default queryFn joins query keys as URL:** The default `queryFn` in `client/src/lib/queryClient.ts` joins the query key array elements to form the fetch URL. Use single-element template literal key `` [`/api/plans/${planId}`] `` (consistent with existing hooks) so the join produces the correct URL `GET /api/plans/<planId>`.
 
 - **Pre-existing type errors:** There are known pre-existing Drizzle ORM type issues in `server/storage.ts`. Do not attempt to fix these — they are tracked separately.
 
