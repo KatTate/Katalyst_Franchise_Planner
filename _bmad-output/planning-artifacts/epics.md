@@ -1099,6 +1099,9 @@ Franchisees can stress-test their plan with multiple AI advisor personas who pro
 
 *Stories for this epic will be created when Phase 2 planning begins. FRs covered: FR55, FR56, FR57, FR58.*
 
+> **Pre-Planning Note:** Before story creation begins for Epic 9, review the **BMad Builder** project for applicable patterns, agent orchestration techniques, and persona management architecture. The Advisory Board Meeting feature's multi-persona orchestration is inspired by BMAD party mode, and the BMad Builder may contain updated patterns, templates, or tooling relevant to implementation.
+> Reference: https://github.com/bmad-code-org/bmad-builder
+
 ---
 
 ## Epic ST: Admin Support Tools — Impersonation & Demo Modes
