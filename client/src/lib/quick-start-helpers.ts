@@ -78,7 +78,7 @@ export function scaleStartupCosts(
     }
     scaled[largestIdx] = {
       ...scaled[largestIdx],
-      amount: scaled[largestIdx].amount + diff,
+      amount: Math.max(0, scaled[largestIdx].amount + diff),
     };
   }
 
