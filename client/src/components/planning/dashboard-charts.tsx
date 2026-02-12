@@ -26,17 +26,14 @@ const breakEvenConfig: ChartConfig = {
 };
 
 export function BreakEvenChart({ monthlyProjections }: BreakEvenChartProps) {
-  // Compute cumulative cash flow from monthly projections
-  const data = monthlyProjections.map((mp, i) => {
-    const cumulative = monthlyProjections
-      .slice(0, i + 1)
-      .reduce((sum, p) => sum + p.operatingCashFlow, 0);
-    return {
-      month: `M${mp.month}`,
-      monthNum: mp.month,
-      cumulativeCashFlow: cumulative / 100, // Convert cents to dollars
-    };
-  });
+  // Use the engine's pre-computed cumulative net cash flow which accounts for
+  // financing inflows, loan principal payments, and distributions — matching
+  // the same basis as roiMetrics.breakEvenMonth.
+  const data = monthlyProjections.map((mp) => ({
+    month: `M${mp.month}`,
+    monthNum: mp.month,
+    cumulativeCashFlow: mp.cumulativeNetCashFlow / 100, // Convert cents to dollars
+  }));
 
   // Sample every 3 months for cleaner X axis
   const tickIndices = data.filter((_, i) => i % 6 === 0 || i === data.length - 1).map(d => d.month);

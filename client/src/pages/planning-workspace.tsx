@@ -7,15 +7,14 @@ import { RefreshCw } from "lucide-react";
 import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from "@/components/ui/resizable";
 import { useSidebar } from "@/components/ui/sidebar";
 import { useAuth } from "@/hooks/use-auth";
-import { usePlan } from "@/hooks/use-plan";
+import { usePlan, planKey } from "@/hooks/use-plan";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { PlanningHeader } from "@/components/planning/planning-header";
 import { InputPanel } from "@/components/planning/input-panel";
 import { DashboardPanel } from "@/components/planning/dashboard-panel";
 import { QuickStartOverlay } from "@/components/shared/quick-start-overlay";
+import type { ExperienceTier } from "@/components/planning/mode-switcher";
 import type { Brand } from "@shared/schema";
-
-type ExperienceTier = "planning_assistant" | "forms" | "quick_entry";
 
 export default function PlanningWorkspace() {
   const params = useParams<{ planId: string }>();
@@ -72,12 +71,10 @@ export default function PlanningWorkspace() {
     []
   );
 
-  // Quick Start completion handler — invalidate plan to refetch quickStartCompleted
+  // Quick Start completion handler — invalidate plan query to refetch quickStartCompleted
   const handleQuickStartComplete = useCallback(() => {
-    // Plan query will be invalidated by usePlan's mutation onSuccess
-    // Force re-render by triggering a refetch
-    window.location.reload();
-  }, []);
+    queryClient.invalidateQueries({ queryKey: planKey(planId) });
+  }, [planId]);
 
   // Loading state
   if (planLoading) {
@@ -139,11 +136,11 @@ export default function PlanningWorkspace() {
       />
       <div className="flex-1 min-h-0">
         <ResizablePanelGroup direction="horizontal">
-          <ResizablePanel defaultSize={40} minSize={25}>
+          <ResizablePanel defaultSize={40} minSize={30}>
             <InputPanel activeMode={activeMode} />
           </ResizablePanel>
           <ResizableHandle withHandle />
-          <ResizablePanel defaultSize={60} minSize={35}>
+          <ResizablePanel defaultSize={60} minSize={40}>
             <DashboardPanel planId={planId} />
           </ResizablePanel>
         </ResizablePanelGroup>
