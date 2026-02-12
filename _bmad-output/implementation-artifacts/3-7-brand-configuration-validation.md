@@ -1,6 +1,6 @@
 # Story 3.7: Brand Configuration Validation
 
-Status: review
+Status: done
 
 ## Story
 
