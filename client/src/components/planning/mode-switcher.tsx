@@ -1,4 +1,4 @@
-type ExperienceTier = "planning_assistant" | "forms" | "quick_entry";
+export type ExperienceTier = "planning_assistant" | "forms" | "quick_entry";
 
 const MODES: { value: ExperienceTier; label: string; testId: string }[] = [
   { value: "planning_assistant", label: "Planning Assistant", testId: "mode-switcher-planning-assistant" },

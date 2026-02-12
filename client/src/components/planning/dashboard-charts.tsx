@@ -16,6 +16,7 @@ import type { MonthlyProjection, AnnualSummary } from "@shared/financial-engine"
 
 interface BreakEvenChartProps {
   monthlyProjections: MonthlyProjection[];
+  totalStartupInvestment: number; // in cents
 }
 
 const breakEvenConfig: ChartConfig = {
@@ -25,16 +26,17 @@ const breakEvenConfig: ChartConfig = {
   },
 };
 
-export function BreakEvenChart({ monthlyProjections }: BreakEvenChartProps) {
-  // Compute cumulative cash flow from monthly projections
+export function BreakEvenChart({ monthlyProjections, totalStartupInvestment }: BreakEvenChartProps) {
+  // Compute cumulative cash flow starting from -totalStartupInvestment
+  // so the zero-crossing represents when the initial investment is recovered
   const data = monthlyProjections.map((mp, i) => {
-    const cumulative = monthlyProjections
+    const cumulativeOperating = monthlyProjections
       .slice(0, i + 1)
       .reduce((sum, p) => sum + p.operatingCashFlow, 0);
     return {
       month: `M${mp.month}`,
       monthNum: mp.month,
-      cumulativeCashFlow: cumulative / 100, // Convert cents to dollars
+      cumulativeCashFlow: (cumulativeOperating - totalStartupInvestment) / 100, // Convert cents to dollars
     };
   });
 
