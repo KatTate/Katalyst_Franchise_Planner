@@ -48,18 +48,45 @@ export function laborPctToStaffCount(
   return Math.round((laborPct * annualRevenue) / AVG_ANNUAL_WAGE_CENTS);
 }
 
+// ─── Default Startup Cost Item ───────────────────────────────────────────
+
+/** Create a single fallback startup cost line item when the brand template is empty. */
+export function createDefaultStartupCostItem(amountCents: number): StartupCostLineItem {
+  return {
+    id: "qs-general-investment",
+    name: "General Startup Investment",
+    amount: amountCents,
+    capexClassification: "non_capex",
+    isCustom: true,
+    source: "user_entry",
+    brandDefaultAmount: null,
+    item7RangeLow: null,
+    item7RangeHigh: null,
+    sortOrder: 0,
+  };
+}
+
 // ─── Investment Budget → Proportional Startup Cost Scaling ──────────────
 
 /** Scale all startup cost line items proportionally to match a new budget total.
- *  Adjusts the largest item by rounding difference to ensure exact match. */
+ *  Adjusts the largest item by rounding difference to ensure exact match.
+ *  If costs array is empty, creates a single "General Investment" line item. */
 export function scaleStartupCosts(
   costs: StartupCostLineItem[],
   newBudgetCents: number
 ): StartupCostLineItem[] {
-  if (costs.length === 0) return costs;
+  if (costs.length === 0) {
+    return [createDefaultStartupCostItem(newBudgetCents)];
+  }
 
   const currentTotal = costs.reduce((sum, c) => sum + c.amount, 0);
-  if (currentTotal <= 0) return costs;
+  if (currentTotal <= 0) {
+    return costs.map((c, i) =>
+      i === 0
+        ? { ...c, amount: newBudgetCents, source: "user_entry" as const }
+        : c
+    );
+  }
 
   const scaleFactor = newBudgetCents / currentTotal;
   const scaled = costs.map((c) => ({

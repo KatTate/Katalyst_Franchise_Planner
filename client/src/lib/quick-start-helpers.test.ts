@@ -7,6 +7,7 @@ import {
   breakEvenToCalendarDate,
   generateSentimentFrame,
   generateLeverHint,
+  createDefaultStartupCostItem,
   AVG_ANNUAL_WAGE_CENTS,
 } from "./quick-start-helpers";
 import type { StartupCostLineItem } from "@shared/financial-engine";
@@ -138,15 +139,20 @@ describe("scaleStartupCosts", () => {
     expect(total).toBe(target);
   });
 
-  it("returns empty array unchanged", () => {
+  it("creates a default line item when costs array is empty", () => {
     const result = scaleStartupCosts([], 500_000);
-    expect(result).toEqual([]);
+    expect(result).toHaveLength(1);
+    expect(result[0].id).toBe("qs-general-investment");
+    expect(result[0].amount).toBe(500_000);
+    expect(result[0].source).toBe("user_entry");
+    expect(result[0].name).toBe("General Startup Investment");
   });
 
-  it("returns costs unchanged if current total is zero", () => {
+  it("assigns budget to first item when current total is zero", () => {
     const costs = [makeCost({ amount: 0 }), makeCost({ id: "b", amount: 0 })];
     const result = scaleStartupCosts(costs, 500_000);
-    expect(result[0].amount).toBe(0);
+    expect(result[0].amount).toBe(500_000);
+    expect(result[0].source).toBe("user_entry");
   });
 
   it("clamps rounding adjustment so no item goes negative", () => {
@@ -159,6 +165,25 @@ describe("scaleStartupCosts", () => {
     scaled.forEach((c) => {
       expect(c.amount).toBeGreaterThanOrEqual(0);
     });
+  });
+});
+
+// ─── createDefaultStartupCostItem ────────────────────────────────────────
+
+describe("createDefaultStartupCostItem", () => {
+  it("creates a valid startup cost line item with the given amount", () => {
+    const item = createDefaultStartupCostItem(5_000_000);
+    expect(item.id).toBe("qs-general-investment");
+    expect(item.name).toBe("General Startup Investment");
+    expect(item.amount).toBe(5_000_000);
+    expect(item.source).toBe("user_entry");
+    expect(item.isCustom).toBe(true);
+    expect(item.capexClassification).toBe("non_capex");
+  });
+
+  it("creates item with zero amount", () => {
+    const item = createDefaultStartupCostItem(0);
+    expect(item.amount).toBe(0);
   });
 });
 
