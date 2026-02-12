@@ -16,7 +16,6 @@ import type { MonthlyProjection, AnnualSummary } from "@shared/financial-engine"
 
 interface BreakEvenChartProps {
   monthlyProjections: MonthlyProjection[];
-  totalStartupInvestment: number; // in cents
 }
 
 const breakEvenConfig: ChartConfig = {
@@ -26,19 +25,15 @@ const breakEvenConfig: ChartConfig = {
   },
 };
 
-export function BreakEvenChart({ monthlyProjections, totalStartupInvestment }: BreakEvenChartProps) {
-  // Compute cumulative cash flow starting from -totalStartupInvestment
-  // so the zero-crossing represents when the initial investment is recovered
-  const data = monthlyProjections.map((mp, i) => {
-    const cumulativeOperating = monthlyProjections
-      .slice(0, i + 1)
-      .reduce((sum, p) => sum + p.operatingCashFlow, 0);
-    return {
-      month: `M${mp.month}`,
-      monthNum: mp.month,
-      cumulativeCashFlow: (cumulativeOperating - totalStartupInvestment) / 100, // Convert cents to dollars
-    };
-  });
+export function BreakEvenChart({ monthlyProjections }: BreakEvenChartProps) {
+  // Use the engine's pre-computed cumulative net cash flow which accounts for
+  // financing inflows, loan principal payments, and distributions — matching
+  // the same basis as roiMetrics.breakEvenMonth.
+  const data = monthlyProjections.map((mp) => ({
+    month: `M${mp.month}`,
+    monthNum: mp.month,
+    cumulativeCashFlow: mp.cumulativeNetCashFlow / 100, // Convert cents to dollars
+  }));
 
   // Sample every 3 months for cleaner X axis
   const tickIndices = data.filter((_, i) => i % 6 === 0 || i === data.length - 1).map(d => d.month);

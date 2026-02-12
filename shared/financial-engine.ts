@@ -187,6 +187,10 @@ export interface MonthlyProjection {
 
   // Cash flow
   operatingCashFlow: number;
+  /** Running cumulative net cash flow matching break-even basis (cents).
+   *  Starts from -totalStartupInvestment + financing inflows, then accumulates
+   *  operatingCashFlow - principal - distributions each month. */
+  cumulativeNetCashFlow: number;
 
   // Debt
   loanOpeningBalance: number;
@@ -437,6 +441,7 @@ export function calculateProjections(input: EngineInput): EngineOutput {
       accountsPayable,
       netFixedAssets,
       operatingCashFlow,
+      cumulativeNetCashFlow: 0, // populated in Step 6
       loanOpeningBalance: loanOpening,
       loanPrincipalPayment: principalPayment,
       loanClosingBalance: loanBalance,
@@ -527,6 +532,7 @@ export function calculateProjections(input: EngineInput): EngineOutput {
     const yearIdx = yearIndex(m + 1);
     const monthlyDistribution = fi.distributions[yearIdx] / MONTHS_PER_YEAR;
     cumulativeNetCash += monthly[m].operatingCashFlow - monthly[m].loanPrincipalPayment - monthlyDistribution;
+    monthly[m].cumulativeNetCashFlow = roundCents(cumulativeNetCash);
     if (cumulativeNetCash >= 0 && breakEvenMonth === null) {
       breakEvenMonth = m + 1;
     }
