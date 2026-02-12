@@ -2,7 +2,7 @@
 name: 'step-05-review'
 description: 'Use platform review tools to verify implementation quality'
 
-workflow_path: '{project-root}/_bmad/bmm/workflows/bmad-quick-flow/quick-dev'
+installed_path: '{project-root}/_bmad/bmm/workflows/bmad-quick-flow/quick-dev'
 thisStepFile: './step-05-review.md'
 nextStepFile: './step-06-resolve-findings.md'
 ---

@@ -1,9 +1,9 @@
 ---
 name: assess-brownfield
-description: Scans an existing Replit project to understand its current state, technology stack, architecture, and patterns before integrating with the BMad Method planning workflow. Produces a brownfield assessment report that determines which BMAD phases to enter.
+description: Scans an existing Replit project to understand its current state, technology stack, architecture, and patterns before integrating with the BMad Method planning workflow. Produces an established project assessment report that determines which BMAD phases to enter.
 ---
 
-# Assess Brownfield Project Workflow
+# Assess Established Project Workflow
 
 **Goal:** Analyze an existing Replit project to understand what's already built, identify its technology stack, architecture patterns, and current state — then determine the optimal entry point into the BMad Method workflow.
 

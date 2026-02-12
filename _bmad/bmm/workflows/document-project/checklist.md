@@ -143,7 +143,7 @@
 - [ ] Terminology is consistent across all documents
 - [ ] Descriptions are clear and actionable
 
-## Brownfield PRD Readiness
+## Established Project PRD Readiness
 
 - [ ] Documentation provides enough context for AI to understand existing system
 - [ ] Integration points are clear for planning new features
@@ -166,7 +166,7 @@
 - [ ] User confirmed project classification is accurate
 - [ ] User provided any additional context needed
 - [ ] All requested areas of focus addressed
-- [ ] Documentation is immediately usable for brownfield PRD workflow
+- [ ] Documentation is immediately usable for established project PRD workflow
 - [ ] No critical information gaps identified
 
 ## Issues Found
@@ -231,7 +231,7 @@ All items in the following sections must be checked:
 - ✓ Architecture Documentation Quality
 - ✓ Index and Navigation
 - ✓ File Completeness
-- ✓ Brownfield PRD Readiness
+- ✓ Established Project PRD Readiness
 - ✓ State File Quality
 - ✓ Deep-Dive Mode Validation (if applicable)
 
@@ -240,6 +240,6 @@ The workflow is complete when:
 1. All critical checklist items are satisfied
 2. No critical issues remain
 3. User has reviewed and approved the documentation
-4. Generated docs are ready for use in brownfield PRD workflow
+4. Generated docs are ready for use in established project PRD workflow
 5. Deep-dive docs (if any) are comprehensive and implementation-ready
 6. State file is valid and can enable resumption if interrupted

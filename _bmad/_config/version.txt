@@ -1,1 +1,1 @@
-6.0.0-beta.7-replit.2
+6.0.0-beta.8-replit.3

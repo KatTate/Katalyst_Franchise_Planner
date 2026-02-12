@@ -1,4 +1,4 @@
-# Quinn QA - Automate
+# QA - Automate
 
 **Goal**: Generate automated API and E2E tests for implemented code.
 

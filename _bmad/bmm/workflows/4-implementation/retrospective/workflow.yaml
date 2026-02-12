@@ -45,7 +45,7 @@ input_file_patterns:
     sharded: "{planning_artifacts}/*prd*/*.md"
     load_strategy: "FULL_LOAD"
   document_project:
-    description: "Brownfield project documentation (optional)"
+    description: "Established project documentation (optional)"
     sharded: "{planning_artifacts}/*.md"
     load_strategy: "INDEX_GUIDED"
 

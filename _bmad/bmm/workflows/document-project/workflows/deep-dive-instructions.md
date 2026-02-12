@@ -286,7 +286,7 @@ These comprehensive docs are now ready for:
 - Architecture review
 - Implementation planning
 - Code understanding
-- Brownfield PRD creation
+- Established project PRD creation
 
 Thank you for using the document-project workflow!
 </action>

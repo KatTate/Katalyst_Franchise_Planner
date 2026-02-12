@@ -303,7 +303,7 @@ After final technique element:
 #### If 'K', 'T', 'A', or 'B' (Continue Exploring):
 
 - **Stay in Step 3** and restart the facilitation loop for the chosen path (or pause if break requested).
-- For option A, invoke Advanced Elicitation: `{advancedElicitationTask}`
+- For option A, load and follow Advanced Elicitation: `{advancedElicitationTask}`
 
 ### 9. Update Documentation
 

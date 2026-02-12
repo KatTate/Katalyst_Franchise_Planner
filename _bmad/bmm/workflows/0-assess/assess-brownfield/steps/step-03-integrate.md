@@ -3,26 +3,26 @@
 ## MANDATORY EXECUTION RULES (READ FIRST):
 
 - Use the chosen path from Step 2
-- UPDATE the replit.md project state with brownfield findings
+- UPDATE the replit.md project state with established project findings
 - SET UP the next workflow in the chosen path
 - YOU MUST ALWAYS SPEAK OUTPUT in your Agent communication style with the config `{communication_language}`
 
 ## EXECUTION PROTOCOLS:
 
-- Finalize the brownfield assessment document
+- Finalize the established project assessment document
 - Update replit.md with the project state and chosen path
 - Guide the user to their first workflow step
 - FORBIDDEN to skip the replit.md update
 
 ## YOUR TASK:
 
-Finalize the brownfield assessment, update project state, and hand off to the chosen BMAD workflow path.
+Finalize the established project assessment, update project state, and hand off to the chosen BMAD workflow path.
 
 ## INTEGRATION SEQUENCE:
 
 ### 1. Finalize Assessment Document
 
-Update the brownfield assessment document at `{output_file}` with:
+Update the established project assessment document at `{output_file}` with:
 - The chosen path and rationale
 - Phase mapping results
 - Recommended workflow sequence
@@ -35,10 +35,10 @@ Read `{project-root}/replit.md` and update the **Project State** section:
 ```
 ## Project State
 
-- **Current Phase:** {{chosen_phase}} (entered via brownfield assessment)
-- **Project Type:** brownfield
-- **Brownfield Path:** {{path_letter}} — {{path_name}}
-- **Completed Artifacts:** brownfield-assessment.md
+- **Current Phase:** {{chosen_phase}} (entered via established project assessment)
+- **Project Type:** established
+- **Established Project Path:** {{path_letter}} — {{path_name}}
+- **Completed Artifacts:** established-project-assessment.md
 - **Technology Stack:** {{primary_tech_summary}}
 - **Next Workflow:** {{first_workflow_in_path}}
 ```
@@ -53,7 +53,7 @@ Say **'generate project context'** or **'GPC'** to start."
 
 ### 4. Present Kickoff Summary
 
-"**Brownfield Assessment Complete!**
+"**Established Project Assessment Complete!**
 
 **Your Project:** {project_name}
 **Chosen Path:** {{path_letter}} — {{path_name}}
@@ -74,7 +74,7 @@ Let's build something great with what you already have!"
 ## SUCCESS METRICS:
 
 - Assessment document is complete with all findings and chosen path
-- replit.md is updated with brownfield project state
+- replit.md is updated with established project state
 - User knows exactly what to do next
 - First workflow trigger is clearly communicated
 - Project context generation is recommended where appropriate
@@ -88,4 +88,4 @@ Let's build something great with what you already have!"
 
 ## WORKFLOW COMPLETE
 
-This is the final step of the brownfield assessment workflow. The user should now proceed to their chosen BMAD workflow path.
+This is the final step of the established project assessment workflow. The user should now proceed to their chosen BMAD workflow path.
