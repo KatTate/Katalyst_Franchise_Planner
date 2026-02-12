@@ -288,6 +288,17 @@
   }
 }
 
+/* Sidebar collapse/expand transition — Direction F (250ms) */
+[data-slot="sidebar"] {
+  transition-duration: 250ms !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-slot="sidebar"] {
+    transition-duration: 0ms !important;
+  }
+}
+
 @keyframes impersonation-pulse {
   0%, 100% { background-color: #FF6D00; }
   50% { background-color: #FF8F33; }
