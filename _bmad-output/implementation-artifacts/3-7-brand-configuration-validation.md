@@ -1,6 +1,6 @@
 # Story 3.7: Brand Configuration Validation
 
-Status: review
+Status: done
 
 ## Story
 
@@ -287,3 +287,43 @@ All 9 acceptance criteria implemented and verified via E2E test:
 - `server/routes/brands.ts` — Added POST validate, GET validation-runs, GET validation-runs/:runId routes
 - `client/src/components/brand/BrandValidationTab.tsx` — New: validation UI with manual input, JSON upload, comparison report, and history
 - `client/src/pages/admin-brand-detail.tsx` — Added Validation tab between Startup Costs and Settings
+
+## Code Review Notes
+
+**Reviewer:** Replit Agent (Code Review Workflow)
+**Date:** 2026-02-12
+**Outcome:** PASS — all 9 ACs satisfied, all Dev Notes constraints respected
+
+### AC Verification
+
+| AC | Status | Evidence |
+|---|---|---|
+| AC1 | SATISFIED | Tab integrated in admin-brand-detail.tsx (line 77) with BrandValidationTab component |
+| AC2 | SATISFIED | Toggle between "manual" and "upload" modes; file upload handler + JSON textarea |
+| AC3 | SATISFIED | `runBrandValidation()` calls full engine pipeline: buildPlanFinancialInputs → applyOverrides → unwrapForEngine → calculateProjections |
+| AC4 | SATISFIED | `compareMetrics()` produces per-metric expected/actual/difference/passed with configurable tolerances (currency ±$1, percentage ±0.1%, months ±1) |
+| AC5 | SATISFIED | ComparisonReport renders "X of Y metrics passed" banner + destructive highlighting on failing rows |
+| AC6 | SATISFIED | GET /api/brands/:brandId/validation-runs + history list with timestamp, status badge, metric count, notes |
+| AC7 | SATISFIED | HistoryItem component with expandable state rendering full ComparisonReport |
+| AC8 | SATISFIED | Same mutation re-runs engine with current brand parameters — no cached results |
+| AC9 | SATISFIED | hasParameters check renders warning card with clickable links to parameters/startup cost tabs |
+
+### Dev Notes Compliance
+
+- Protected files (financial-engine.ts, plan-initialization.ts, financial-service.ts): NOT MODIFIED (verified via git diff)
+- Separate validation service created (brand-validation-service.ts)
+- Admin-only routes: all 3 endpoints guarded by requireAuth + requireRole("katalyst_admin")
+- No plan entity created — ephemeral engine invocation only
+- Fixture content stored in JSONB columns, not filesystem
+- No UI component (client/src/components/ui/) modifications
+
+### Platform Intelligence
+
+- LSP diagnostics: 0 errors, 0 warnings across all changed files
+- Architect sub-agent analysis: PASS
+- E2E visual verification: PASS — manual entry, JSON upload, comparison report, history, and no-config warning all confirmed working
+
+### Findings
+
+**LOW — Nice to Fix (non-blocking):**
+- OS-1: `lastResult` state variable typed as `any` (BrandValidationTab.tsx line 67). Could use a proper interface for the validation result response. Code quality improvement only — no functional impact.
