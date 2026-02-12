@@ -51,6 +51,8 @@ export interface IStorage {
     preferredTier?: "planning_assistant" | "forms" | "quick_entry" | null;
   }): Promise<User>;
 
+  updateUserPreferredTier(userId: string, preferredTier: "planning_assistant" | "forms" | "quick_entry"): Promise<User>;
+
   getBrands(): Promise<Brand[]>;
   getBrand(id: string): Promise<Brand | undefined>;
   getBrandBySlug(slug: string): Promise<Brand | undefined>;
@@ -202,6 +204,15 @@ export class DatabaseStorage implements IStorage {
     const [updated] = await db
       .update(users)
       .set(updateData)
+      .where(eq(users.id, userId))
+      .returning();
+    return updated;
+  }
+
+  async updateUserPreferredTier(userId: string, preferredTier: "planning_assistant" | "forms" | "quick_entry"): Promise<User> {
+    const [updated] = await db
+      .update(users)
+      .set({ preferredTier })
       .where(eq(users.id, userId))
       .returning();
     return updated;

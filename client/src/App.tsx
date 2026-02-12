@@ -1,4 +1,4 @@
-import { useRef, useEffect } from "react";
+import { useRef, useEffect, useMemo } from "react";
 import { Switch, Route, Redirect, useLocation } from "wouter";
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
@@ -15,10 +15,7 @@ import OnboardingPage from "@/pages/onboarding";
 import AdminBrandsPage from "@/pages/admin-brands";
 import AdminBrandDetailPage from "@/pages/admin-brand-detail";
 import NotFound from "@/pages/not-found";
-import StartupCostsDevPage from "@/pages/startup-costs-dev";
-import MetricsDevPage from "@/pages/metrics-dev";
-import InputsDevPage from "@/pages/inputs-dev";
-import QuickStartDevPage from "@/pages/quick-start-dev";
+import PlanningWorkspace from "@/pages/planning-workspace";
 import { useBrandTheme } from "@/hooks/use-brand-theme";
 import { ImpersonationProvider, useImpersonation } from "@/contexts/ImpersonationContext";
 import { ImpersonationBanner } from "@/components/ImpersonationBanner";
@@ -117,17 +114,8 @@ function AppRouter() {
       <Route path="/admin/brands/:brandId">
         <AdminRoute component={AdminBrandDetailPage} />
       </Route>
-      <Route path="/plans/:planId/startup-costs">
-        <ProtectedRoute component={StartupCostsDevPage} />
-      </Route>
-      <Route path="/plans/:planId/metrics">
-        <ProtectedRoute component={MetricsDevPage} />
-      </Route>
-      <Route path="/plans/:planId/inputs">
-        <ProtectedRoute component={InputsDevPage} />
-      </Route>
-      <Route path="/plans/:planId/quick-start">
-        <ProtectedRoute component={QuickStartDevPage} />
+      <Route path="/plans/:planId">
+        <ProtectedRoute component={PlanningWorkspace} />
       </Route>
       <Route component={NotFound} />
     </Switch>
@@ -136,8 +124,12 @@ function AppRouter() {
 
 function AuthenticatedLayoutInner() {
   useBrandTheme();
+  const [location] = useLocation();
   const { active: isImpersonating, readOnly } = useImpersonation();
   const { active: isDemoMode } = useDemoMode();
+
+  // Planning workspace manages its own header and layout
+  const isWorkspace = useMemo(() => /^\/plans\/[^/]+$/.test(location), [location]);
 
   return (
     <SidebarProvider>
@@ -148,12 +140,12 @@ function AuthenticatedLayoutInner() {
             <DemoModeBanner />
           ) : isImpersonating ? (
             <ImpersonationBanner />
-          ) : (
+          ) : !isWorkspace ? (
             <header className="flex items-center gap-2 p-2 border-b h-12">
               <SidebarTrigger data-testid="button-sidebar-toggle" />
             </header>
-          )}
-          <main className={`flex-1 overflow-auto p-4 sm:p-6${isImpersonating && readOnly ? " pointer-events-none opacity-60" : ""}`}>
+          ) : null}
+          <main className={`flex-1 min-h-0${isWorkspace ? "" : " overflow-auto p-4 sm:p-6"}${isImpersonating && readOnly ? " pointer-events-none opacity-60" : ""}`}>
             <AppRouter />
           </main>
         </div>
