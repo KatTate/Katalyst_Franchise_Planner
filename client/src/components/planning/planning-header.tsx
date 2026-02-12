@@ -1,7 +1,6 @@
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { ModeSwitcher } from "@/components/planning/mode-switcher";
-
-type ExperienceTier = "planning_assistant" | "forms" | "quick_entry";
+import type { ExperienceTier } from "@/components/planning/mode-switcher";
 
 interface PlanningHeaderProps {
   planName: string;

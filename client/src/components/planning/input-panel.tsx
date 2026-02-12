@@ -1,7 +1,6 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { MessageSquare, ClipboardList, Grid3X3 } from "lucide-react";
-
-type ExperienceTier = "planning_assistant" | "forms" | "quick_entry";
+import type { ExperienceTier } from "@/components/planning/mode-switcher";
 
 interface InputPanelProps {
   activeMode: ExperienceTier;
