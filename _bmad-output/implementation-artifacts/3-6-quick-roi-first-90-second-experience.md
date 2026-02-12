@@ -335,7 +335,14 @@ Clean — no new TypeScript errors introduced. Pre-existing errors in `server/st
 
 ### Visual Verification
 
-N/A — dev server not running in this environment. UI verified structurally via build success and code review.
+COMPLETED — E2E test verified Quick Start overlay renders correctly with all 5 input fields pre-filled (revenue $25K, rent $0, investment $15K, staff 3, supplies 0%), ROI updates dynamically (5005% → 1501% → 7276% as inputs change), break-even displays as calendar dates (June 2026 → Dec 2026 → Apr 2026), "See My Full Plan" dismisses overlay and persists quickStartCompleted=true via PATCH.
+
+**Post-Visual-Review Bug Fixes:**
+- **BUG-1 (HIGH):** Investment field was non-functional when brand has empty startup cost template — `scaleStartupCosts([])` returned `[]` unchanged. Fixed: creates fallback "General Startup Investment" line item via `createDefaultStartupCostItem()`.
+- **BUG-2 (HIGH):** ROI always showed 0% when `totalStartupInvestment` was $0 (division by zero). Fixed: displays "N/A" with guidance to enter an investment amount.
+- **BUG-3 (MEDIUM):** Empty startup cost template at initialization left overlay without usable investment field. Fixed: `initializeQuickStartValues` creates $15K default investment item when brand template is empty.
+- **BUG-4 (MEDIUM):** `isNegativeROI` triggered on 0% ROI (no investment scenario). Fixed: changed from `<= 0` to `< 0 && hasInvestment`.
+- **TEST-UPDATE:** Updated 2 existing tests + added 3 new tests (createDefaultStartupCostItem, empty costs default item creation, zero-total budget assignment). All 34 tests pass.
 
 ### File List
 
