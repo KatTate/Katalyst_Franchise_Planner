@@ -74,7 +74,7 @@ development_status:
 
   # Epic 4: Forms & Quick Entry Experience
   epic-4: in-progress
-  4-1-planning-layout-dashboard-mode-switcher: ready-for-dev
+  4-1-planning-layout-dashboard-mode-switcher: review
   4-2-forms-mode-section-based-input: backlog
   4-3-quick-entry-mode-grid-foundation: backlog
   4-4-quick-entry-mode-keyboard-navigation-formatting: backlog

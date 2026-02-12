@@ -1,6 +1,6 @@
 # Story 4.1: Planning Layout, Dashboard & Mode Switcher
 
-Status: ready-for-dev
+Status: review
 
 ## Story
 
@@ -275,7 +275,43 @@ The full-screen planning experience. The page occupies the entire content area (
 ## Dev Agent Record
 
 ### Agent Model Used
+Claude Opus 4.6
 
 ### Completion Notes
+Implemented the full planning workspace shell with:
+- **Mode Switcher**: Segmented control with 3 modes (Planning Assistant, Forms, Quick Entry). Instant switching via local state. Mode preference persisted to user profile via debounced PATCH `/api/auth/me`.
+- **Direction F Layout**: Sidebar auto-collapses in Planning Assistant mode, expands in Forms/Quick Entry. 250ms transition with prefers-reduced-motion override.
+- **Split View**: ResizablePanelGroup with horizontal split — input panel (left, 40% default) and dashboard panel (right, 60% default). Draggable resize handle.
+- **Financial Dashboard**: 5 metric cards (Investment, Revenue, ROI, Break-Even, Monthly Cash Flow) reusing MetricCard from SummaryMetrics. Two Recharts charts: break-even timeline (AreaChart) and revenue vs. expenses (BarChart with annual data).
+- **Quick Start Integration**: Conditional render of QuickStartOverlay when plan.quickStartCompleted is false.
+- **Dev Route Cleanup**: Removed 4 dev routes and deleted 4 dev page files. Added single `/plans/:planId` route.
+- **Server-side**: Added PATCH `/api/auth/me` endpoint and `updateUserPreferredTier` storage method.
+- **Input panels are placeholders** per story scope — actual mode content comes in Stories 4.2-4.4 and Epic 6.
+- **Source badge component** created and ready for use in subsequent stories.
+- **minSize** uses percentages (react-resizable-panels default) — pixel-based enforcement noted as known limitation per story gotcha section.
+
+### LSP Status
+Pre-existing infrastructure warnings only (missing type defs for node, vite/client). No new errors introduced.
+
+### Visual Verification
+N/A — no running web server available in this environment. UI components verified via successful build compilation.
+
+### Test Results
+298 tests passed, 0 failed. 12 test files. No regressions from baseline.
 
 ### File List
+- `client/src/pages/planning-workspace.tsx` — CREATED — Main planning workspace page
+- `client/src/components/planning/planning-header.tsx` — CREATED — Header with mode switcher and plan name
+- `client/src/components/planning/mode-switcher.tsx` — CREATED — Segmented control for experience tiers
+- `client/src/components/planning/dashboard-panel.tsx` — CREATED — Financial dashboard with metrics and charts
+- `client/src/components/planning/dashboard-charts.tsx` — CREATED — Recharts break-even and revenue/expenses charts
+- `client/src/components/planning/input-panel.tsx` — CREATED — Mode-specific input panel with placeholders
+- `client/src/components/shared/source-badge.tsx` — CREATED — Source attribution badge component
+- `client/src/App.tsx` — MODIFIED — Replaced dev routes with `/plans/:planId`, workspace-aware layout
+- `client/src/index.css` — MODIFIED — Added sidebar transition duration and prefers-reduced-motion
+- `server/routes/auth.ts` — MODIFIED — Added PATCH `/api/auth/me` endpoint for preferredTier
+- `server/storage.ts` — MODIFIED — Added `updateUserPreferredTier` to IStorage and DatabaseStorage
+- `client/src/pages/startup-costs-dev.tsx` — DELETED
+- `client/src/pages/metrics-dev.tsx` — DELETED
+- `client/src/pages/inputs-dev.tsx` — DELETED
+- `client/src/pages/quick-start-dev.tsx` — DELETED
