@@ -1,6 +1,6 @@
 # Story 3.6: Quick ROI — First 90-Second Experience
 
-Status: review
+Status: done
 
 ## Story
 
@@ -356,3 +356,17 @@ COMPLETED — E2E test verified Quick Start overlay renders correctly with all 5
 - `vitest.config.ts` — MODIFIED: Added `@/` alias and `client/src/lib/**/*.test.ts` include pattern for client-side unit tests
 - `_bmad-output/implementation-artifacts/sprint-status.yaml` — MODIFIED: Updated 3-6 status
 - `_bmad-output/implementation-artifacts/3-6-quick-roi-first-90-second-experience.md` — MODIFIED: Updated status and Dev Agent Record
+
+## Code Review Notes (2026-02-12)
+
+**Reviewer:** Claude Opus 4.6 (code-review workflow)
+
+**Findings Fixed:**
+- **H1 (HIGH):** `GET /api/brands/:brandId` required `requireRole("katalyst_admin")`, blocking franchisee access to brand defaults needed for Quick Start pre-fill. Fixed in `server/routes/brands.ts`: added `"franchisor"` and `"franchisee"` roles with brand-scoping guard ensuring users can only access their own brand.
+- **L1 (LOW):** Brand queryKey in `quick-start-dev.tsx` used multi-element `["/api/brands", plan?.brandId]` instead of single-element template literal. Fixed to `` [`/api/brands/${plan?.brandId}`] ``.
+
+**Cleared (Not Issues):**
+- Workspace integration (AC1/5/6/7): Confirmed per dev notes — Quick Start is scoped to dev route; workspace integration deferred to Story 4.1.
+- Brand API response shape: `GET /api/brands/:brandId` returns brand directly (not wrapped in `{ data: ... }`), typing is correct.
+
+**Verdict:** All ACs verified as satisfied within story scope. No HIGH issues remain. Story approved.

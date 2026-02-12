@@ -12,7 +12,7 @@ export default function QuickStartDevPage() {
 
   // Load brand data for pre-fill defaults
   const { data: brand } = useQuery<Brand>({
-    queryKey: ["/api/brands", plan?.brandId],
+    queryKey: [`/api/brands/${plan?.brandId}`],
     enabled: !!plan?.brandId,
   });
 

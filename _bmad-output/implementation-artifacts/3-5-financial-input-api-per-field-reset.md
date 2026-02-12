@@ -1,6 +1,6 @@
 # Story 3.5: Financial Input API & Per-Field Reset
 
-Status: dev-complete
+Status: done
 
 ## Story
 
@@ -325,3 +325,17 @@ All 6 files implemented per the story specification:
 | `client/src/components/shared/financial-input-editor.tsx` | CREATED — `FinancialInputEditor` component |
 | `client/src/pages/inputs-dev.tsx` | CREATED — `InputsDevPage` dev page |
 | `client/src/App.tsx` | MODIFIED — added `/plans/:planId/inputs` route |
+
+## Code Review Notes (2026-02-12)
+
+**Reviewer:** Claude Opus 4.6 (code-review workflow)
+
+**Findings Fixed:**
+- **M2 (MEDIUM):** `planKey()` in `use-plan.ts` used `["/api/plans", planId]` instead of spec-required `` [`/api/plans/${planId}`] ``. Fixed to match single-element template literal pattern consistent with `use-plan-outputs.ts` and `use-startup-costs.ts`.
+- **M1 (MEDIUM):** `sprint-status.yaml` showed `ready-for-dev` for this story despite `dev-complete` status in story file. Fixed to `review`.
+
+**Cross-Story Findings Also Fixed:**
+- **H1 (HIGH):** `GET /api/brands/:brandId` was admin-only (`requireRole("katalyst_admin")`), blocking franchisee access to brand data needed by Quick Start overlay. Fixed: added `"franchisor"` and `"franchisee"` roles with brand-scoping guard.
+- **M3 (MEDIUM):** Badge component missing `forwardRef`, causing React "Invalid hook call" console warning when used with Radix `asChild`. Fixed.
+
+**Verdict:** All ACs verified as satisfied. No HIGH issues remain. Story approved.
