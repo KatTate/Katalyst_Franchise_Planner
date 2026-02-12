@@ -1,6 +1,6 @@
 # Story 3.7: Brand Configuration Validation
 
-Status: ready-for-dev
+Status: review
 
 ## Story
 
@@ -266,7 +266,24 @@ Add a "Validation" tab to the existing `admin-brand-detail.tsx` TabsList, positi
 ## Dev Agent Record
 
 ### Agent Model Used
+Claude 4.6 Opus (Replit Agent)
 
 ### Completion Notes
+All 9 acceptance criteria implemented and verified via E2E test:
+- AC1: Validation tab accessible from brand detail page with full validation interface
+- AC2: Upload JSON fixture and manual entry modes implemented with toggle
+- AC3: Run Validation triggers financial engine with test inputs + brand parameters, displays comparison report
+- AC4: Each metric row shows name, category, expected, calculated, difference, pass/fail; tolerances configurable
+- AC5: Failing rows highlighted with destructive background; summary banner shows "X of Y metrics passed" with overall pass/fail
+- AC6: Validation history list shows timestamp, status badge, metric count, notes; ordered most recent first
+- AC7: Expandable history items show full comparison report from that run
+- AC8: Re-running after parameter changes produces fresh results against updated configuration
+- AC9: Warning message with links to parameters and startup costs tabs when brand not configured
 
 ### File List
+- `shared/schema.ts` — Added `brandValidationRuns` table, `ValidationMetricComparison` and `ValidationToleranceConfig` interfaces, insert schema and types
+- `server/storage.ts` — Added `createBrandValidationRun`, `getBrandValidationRuns`, `getBrandValidationRun` to IStorage and DatabaseStorage
+- `server/services/brand-validation-service.ts` — New: validation orchestration, engine invocation, metric comparison logic
+- `server/routes/brands.ts` — Added POST validate, GET validation-runs, GET validation-runs/:runId routes
+- `client/src/components/brand/BrandValidationTab.tsx` — New: validation UI with manual input, JSON upload, comparison report, and history
+- `client/src/pages/admin-brand-detail.tsx` — Added Validation tab between Startup Costs and Settings

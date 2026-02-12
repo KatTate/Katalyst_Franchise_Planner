@@ -11,6 +11,7 @@ import { FinancialParametersTab } from "@/components/brand/FinancialParametersTa
 import { StartupCostTemplateTab } from "@/components/brand/StartupCostTemplateTab";
 import { BrandIdentityTab } from "@/components/brand/BrandIdentityTab";
 import { AccountManagerTab } from "@/components/brand/AccountManagerTab";
+import { BrandValidationTab } from "@/components/brand/BrandValidationTab";
 
 export default function AdminBrandDetailPage() {
   const params = useParams<{ brandId: string }>();
@@ -73,6 +74,7 @@ export default function AdminBrandDetailPage() {
         <TabsList data-testid="tabs-brand-sections">
           <TabsTrigger value="parameters" data-testid="tab-parameters">Financial Parameters</TabsTrigger>
           <TabsTrigger value="startup-costs" data-testid="tab-startup-costs">Startup Costs</TabsTrigger>
+          <TabsTrigger value="validation" data-testid="tab-validation">Validation</TabsTrigger>
           <TabsTrigger value="identity" data-testid="tab-identity">Settings</TabsTrigger>
           <TabsTrigger value="account-manager" data-testid="tab-account-manager">Franchisees</TabsTrigger>
         </TabsList>
@@ -82,6 +84,9 @@ export default function AdminBrandDetailPage() {
         </TabsContent>
         <TabsContent value="startup-costs" className="mt-4">
           <StartupCostTemplateTab brand={brand} />
+        </TabsContent>
+        <TabsContent value="validation" className="mt-4">
+          <BrandValidationTab brand={brand} />
         </TabsContent>
         <TabsContent value="identity" className="mt-4">
           <BrandIdentityTab brand={brand} />

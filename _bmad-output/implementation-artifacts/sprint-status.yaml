@@ -69,7 +69,7 @@ development_status:
   3-4-live-summary-metrics-accounting-validation: done
   3-5-financial-input-api-per-field-reset: done
   3-6-quick-roi-first-90-second-experience: done
-  3-7-brand-configuration-validation: ready-for-dev  # relocated from Epic 2 Story 2.5
+  3-7-brand-configuration-validation: in-progress  # relocated from Epic 2 Story 2.5
   epic-3-retrospective: optional
 
   # Epic 4: Forms & Quick Entry Experience
