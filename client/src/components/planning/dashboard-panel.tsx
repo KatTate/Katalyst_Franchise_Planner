@@ -127,7 +127,7 @@ export function DashboardPanel({ planId }: DashboardPanelProps) {
         </div>
 
         {/* Charts */}
-        <BreakEvenChart monthlyProjections={monthlyProjections} totalStartupInvestment={roiMetrics.totalStartupInvestment} />
+        <BreakEvenChart monthlyProjections={monthlyProjections} />
         <RevenueExpensesChart annualSummaries={annualSummaries} />
       </div>
     </div>
