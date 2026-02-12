@@ -1,4 +1,4 @@
-import { eq, and, isNull, gt } from "drizzle-orm";
+import { eq, and, isNull, gt, sql } from "drizzle-orm";
 import { db } from "./db";
 import {
   type User,
@@ -16,12 +16,15 @@ import {
   type InsertBrandAccountManager,
   type ImpersonationAuditLog,
   type InsertImpersonationAuditLog,
+  type BrandValidationRun,
+  type InsertBrandValidationRun,
   users,
   invitations,
   brands,
   plans,
   brandAccountManagers,
   impersonationAuditLogs,
+  brandValidationRuns,
 } from "@shared/schema";
 import type { StartupCostLineItem } from "@shared/financial-engine";
 import { buildPlanFinancialInputs, buildPlanStartupCosts, migrateStartupCosts } from "@shared/plan-initialization";
@@ -94,6 +97,10 @@ export interface IStorage {
   createDemoUser(brandId: string, brandName: string, brandSlug: string): Promise<User>;
   createDemoPlan(userId: string, brandId: string, brand: import("@shared/schema").Brand): Promise<Plan>;
   resetDemoPlan(planId: string, brandId: string): Promise<Plan | undefined>;
+
+  createBrandValidationRun(run: InsertBrandValidationRun): Promise<BrandValidationRun>;
+  getBrandValidationRuns(brandId: string): Promise<BrandValidationRun[]>;
+  getBrandValidationRun(runId: string): Promise<BrandValidationRun | undefined>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -506,6 +513,24 @@ export class DatabaseStorage implements IStorage {
       .where(eq(plans.id, planId))
       .returning();
     return updated;
+  }
+
+  async createBrandValidationRun(run: InsertBrandValidationRun): Promise<BrandValidationRun> {
+    const [created] = await db.insert(brandValidationRuns).values(run as any).returning();
+    return created;
+  }
+
+  async getBrandValidationRuns(brandId: string): Promise<BrandValidationRun[]> {
+    return db
+      .select()
+      .from(brandValidationRuns)
+      .where(eq(brandValidationRuns.brandId, brandId))
+      .orderBy(sql`run_at DESC`);
+  }
+
+  async getBrandValidationRun(runId: string): Promise<BrandValidationRun | undefined> {
+    const [run] = await db.select().from(brandValidationRuns).where(eq(brandValidationRuns.id, runId)).limit(1);
+    return run;
   }
 }
 

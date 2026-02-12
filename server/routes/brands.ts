@@ -3,6 +3,8 @@ import { z } from "zod";
 import { storage } from "../storage";
 import { brandParameterSchema, startupCostTemplateSchema } from "@shared/schema";
 import { requireAuth, requireRole } from "../middleware/auth";
+import { runBrandValidation, type ValidationTestInputs, type ValidationExpectedOutputs } from "../services/brand-validation-service";
+import type { ValidationToleranceConfig } from "@shared/schema";
 
 const router = Router();
 
@@ -354,6 +356,151 @@ router.put(
 
     const updated = await storage.setDefaultAccountManager(brandId, parsed.data.account_manager_id);
     return res.json(updated);
+  }
+);
+
+const validationRequestSchema = z.object({
+  inputs: z.object({
+    revenue: z.object({
+      monthlyAuv: z.number().optional(),
+      year1GrowthRate: z.number().optional(),
+      year2GrowthRate: z.number().optional(),
+      startingMonthAuvPct: z.number().optional(),
+    }).optional(),
+    operatingCosts: z.object({
+      cogsPct: z.number().optional(),
+      laborPct: z.number().optional(),
+      rentMonthly: z.number().optional(),
+      utilitiesMonthly: z.number().optional(),
+      insuranceMonthly: z.number().optional(),
+      marketingPct: z.number().optional(),
+      royaltyPct: z.number().optional(),
+      adFundPct: z.number().optional(),
+      otherMonthly: z.number().optional(),
+    }).optional(),
+    financing: z.object({
+      loanAmount: z.number().optional(),
+      interestRate: z.number().optional(),
+      loanTermMonths: z.number().optional(),
+      downPaymentPct: z.number().optional(),
+    }).optional(),
+    startupCapital: z.object({
+      workingCapitalMonths: z.number().optional(),
+      depreciationYears: z.number().optional(),
+    }).optional(),
+    startupCosts: z.array(z.object({
+      name: z.string(),
+      amount: z.number(),
+    })).optional(),
+  }).default({}),
+  expectedOutputs: z.object({
+    roiMetrics: z.object({
+      totalStartupInvestment: z.number().optional(),
+      fiveYearCumulativeCashFlow: z.number().optional(),
+      fiveYearROIPct: z.number().optional(),
+      breakEvenMonth: z.number().nullable().optional(),
+    }).optional(),
+    annualSummaries: z.array(z.object({
+      year: z.number(),
+      revenue: z.number().optional(),
+      totalCogs: z.number().optional(),
+      grossProfit: z.number().optional(),
+      totalOpex: z.number().optional(),
+      ebitda: z.number().optional(),
+      preTaxIncome: z.number().optional(),
+      endingCash: z.number().optional(),
+    })).optional(),
+    identityChecks: z.boolean().optional(),
+  }),
+  tolerances: z.object({
+    currency: z.number().min(0).optional(),
+    percentage: z.number().min(0).optional(),
+    months: z.number().min(0).optional(),
+  }).optional(),
+  notes: z.string().max(500).optional(),
+});
+
+router.post(
+  "/:brandId/validate",
+  requireAuth,
+  requireRole("katalyst_admin"),
+  async (req: Request<{ brandId: string }>, res: Response) => {
+    const { brandId } = req.params;
+    const brand = await storage.getBrand(brandId);
+    if (!brand) {
+      return res.status(404).json({ message: "Brand not found" });
+    }
+
+    if (!brand.brandParameters) {
+      return res.status(400).json({ message: "Brand does not have financial parameters configured. Please configure parameters first." });
+    }
+
+    const parsed = validationRequestSchema.safeParse(req.body);
+    if (!parsed.success) {
+      return res.status(400).json({
+        message: "Validation request failed",
+        errors: parsed.error.errors.map((e) => ({ path: e.path.map(String), message: e.message })),
+      });
+    }
+
+    try {
+      const result = runBrandValidation(
+        brand,
+        parsed.data.inputs as ValidationTestInputs,
+        parsed.data.expectedOutputs as ValidationExpectedOutputs,
+        parsed.data.tolerances as Partial<ValidationToleranceConfig> | undefined,
+      );
+
+      const savedRun = await storage.createBrandValidationRun({
+        brandId,
+        runAt: new Date(),
+        status: result.status,
+        testInputs: result.testInputs,
+        expectedOutputs: result.expectedOutputs,
+        actualOutputs: result.actualOutputs,
+        comparisonResults: result.comparisonResults,
+        toleranceConfig: result.toleranceConfig,
+        runBy: req.user!.id,
+        notes: parsed.data.notes ?? null,
+      });
+
+      return res.json({
+        ...result,
+        runId: savedRun.id,
+      });
+    } catch (err: any) {
+      return res.status(500).json({ message: err.message || "Validation engine error" });
+    }
+  }
+);
+
+router.get(
+  "/:brandId/validation-runs",
+  requireAuth,
+  requireRole("katalyst_admin"),
+  async (req: Request<{ brandId: string }>, res: Response) => {
+    const { brandId } = req.params;
+    const brand = await storage.getBrand(brandId);
+    if (!brand) {
+      return res.status(404).json({ message: "Brand not found" });
+    }
+
+    const runs = await storage.getBrandValidationRuns(brandId);
+    return res.json(runs);
+  }
+);
+
+router.get(
+  "/:brandId/validation-runs/:runId",
+  requireAuth,
+  requireRole("katalyst_admin"),
+  async (req: Request<{ brandId: string; runId: string }>, res: Response) => {
+    const { runId } = req.params;
+    const run = await storage.getBrandValidationRun(runId);
+    if (!run) {
+      return res.status(404).json({ message: "Validation run not found" });
+    }
+    return res.json(run);
   }
 );
 

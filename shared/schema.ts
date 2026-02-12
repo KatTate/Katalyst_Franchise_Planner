@@ -314,3 +314,43 @@ export const insertImpersonationAuditLogSchema = createInsertSchema(impersonatio
 });
 export type InsertImpersonationAuditLog = z.infer<typeof insertImpersonationAuditLogSchema>;
 export type ImpersonationAuditLog = typeof impersonationAuditLogs.$inferSelect;
+
+// ─── Brand Validation Runs (Story 3.7) ───────────────────────────────────
+
+export interface ValidationMetricComparison {
+  metric: string;
+  category: string;
+  expected: number;
+  actual: number;
+  difference: number;
+  toleranceUsed: number;
+  passed: boolean;
+}
+
+export interface ValidationToleranceConfig {
+  currency: number;
+  percentage: number;
+  months: number;
+}
+
+export const brandValidationRuns = pgTable("brand_validation_runs", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  brandId: varchar("brand_id").notNull().references(() => brands.id),
+  runAt: timestamp("run_at").defaultNow().notNull(),
+  status: text("status").notNull().$type<"pass" | "fail">(),
+  testInputs: jsonb("test_inputs").notNull(),
+  expectedOutputs: jsonb("expected_outputs").notNull(),
+  actualOutputs: jsonb("actual_outputs").notNull(),
+  comparisonResults: jsonb("comparison_results").$type<ValidationMetricComparison[]>().notNull(),
+  toleranceConfig: jsonb("tolerance_config").$type<ValidationToleranceConfig>().notNull(),
+  runBy: varchar("run_by").references(() => users.id),
+  notes: text("notes"),
+}, (table) => [
+  index("idx_brand_validation_runs_brand").on(table.brandId),
+]);
+
+export const insertBrandValidationRunSchema = createInsertSchema(brandValidationRuns).omit({
+  id: true,
+});
+export type InsertBrandValidationRun = z.infer<typeof insertBrandValidationRunSchema>;
+export type BrandValidationRun = typeof brandValidationRuns.$inferSelect;
