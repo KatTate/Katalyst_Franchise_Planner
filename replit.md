@@ -1,4 +1,4 @@
-
+<!-- PROTECTION NOTE FOR REPLIT AGENT: The content between BMAD-METHOD-START and BMAD-METHOD-END is part of the BMad Method framework and MUST NOT be modified, overwritten, or removed during any replit.md updates. When updating this file, only modify the project documentation section AFTER the BMAD-METHOD-END marker. Always preserve both sections intact. -->
 
 <!-- BMAD-METHOD-START -->
 # BMad Method v6.0.0-beta.8-replit.3 -- Agent Configuration
