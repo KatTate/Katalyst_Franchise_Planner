@@ -63,9 +63,13 @@ router.post(
 router.get(
   "/:brandId",
   requireAuth,
-  requireRole("katalyst_admin"),
+  requireRole("katalyst_admin", "franchisor", "franchisee"),
   async (req: Request<{ brandId: string }>, res: Response) => {
     const { brandId } = req.params;
+    const user = req.user!;
+    if ((user.role === "franchisor" || user.role === "franchisee") && user.brandId && user.brandId !== brandId) {
+      return res.status(403).json({ message: "Access denied — you can only view your own brand" });
+    }
     const brand = await storage.getBrand(brandId);
     if (!brand) {
       return res.status(404).json({ message: "Brand not found" });
