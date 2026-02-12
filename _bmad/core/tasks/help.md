@@ -23,7 +23,7 @@ When `command` field has a value:
 ### Agent-Based Workflows
 When `command` field is empty:
 - User asks to become or work with that agent (e.g., "act as the tech writer" or "I need Paige")
-- Then invokes by referencing the `code` field or describing the `name` field
+- Then loads by referencing the `code` field or describing the `name` field
 - Show the natural language trigger and the code shortcut
 
 Example presentation for empty command:

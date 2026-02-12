@@ -2,7 +2,7 @@
 name: 'step-03-execute'
 description: 'Execute implementation — work from acceptance criteria and context, not a checkbox sequence'
 
-workflow_path: '{project-root}/_bmad/bmm/workflows/bmad-quick-flow/quick-dev'
+installed_path: '{project-root}/_bmad/bmm/workflows/bmad-quick-flow/quick-dev'
 thisStepFile: './step-03-execute.md'
 nextStepFile: './step-04-self-check.md'
 ---

@@ -21,6 +21,6 @@ name,description,module,path
 "sprint-status","Summarize sprint-status.yaml, surface risks, and route to the right implementation workflow.","bmm","_bmad/bmm/workflows/4-implementation/sprint-status/workflow.yaml"
 "quick-dev","Flexible development - execute tech-specs OR direct instructions with optional planning.","bmm","_bmad/bmm/workflows/bmad-quick-flow/quick-dev/workflow.md"
 "quick-spec","Conversational spec engineering - ask questions, investigate code, produce implementation-ready tech-spec.","bmm","_bmad/bmm/workflows/bmad-quick-flow/quick-spec/workflow.md"
-"document-project","Analyzes and documents brownfield projects by scanning codebase, architecture, and patterns to create comprehensive reference documentation for AI-assisted development","bmm","_bmad/bmm/workflows/document-project/workflow.yaml"
+"document-project","Analyzes and documents established projects by scanning codebase, architecture, and patterns to create comprehensive reference documentation for AI-assisted development","bmm","_bmad/bmm/workflows/document-project/workflow.yaml"
 "generate-project-context","Creates a concise project-context.md file with critical rules and patterns that AI agents must follow when implementing code. Optimized for LLM context efficiency.","bmm","_bmad/bmm/workflows/generate-project-context/workflow.md"
 "qa-automate","Generate tests quickly for existing features using standard test patterns","bmm","_bmad/bmm/workflows/qa/automate/workflow.yaml"

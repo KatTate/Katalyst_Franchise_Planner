@@ -3,11 +3,11 @@ name: 'step-04-final-validation'
 description: 'Validate complete coverage of all requirements and ensure implementation readiness'
 
 # Path Definitions
-workflow_path: '{project-root}/_bmad/bmm/workflows/3-solutioning/create-epics-and-stories'
+installed_path: '{project-root}/_bmad/bmm/workflows/3-solutioning/create-epics-and-stories'
 
 # File References
 thisStepFile: './step-04-final-validation.md'
-workflowFile: '{workflow_path}/workflow.md'
+workflowFile: '{installed_path}/workflow.md'
 outputFile: '{planning_artifacts}/epics.md'
 
 # Task References
@@ -15,7 +15,7 @@ advancedElicitationTask: '{project-root}/_bmad/core/workflows/advanced-elicitati
 partyModeWorkflow: '{project-root}/_bmad/core/workflows/party-mode/workflow.md'
 
 # Template References
-epicsTemplate: '{workflow_path}/templates/epics-template.md'
+epicsTemplate: '{installed_path}/templates/epics-template.md'
 ---
 
 # Step 4: Final Validation

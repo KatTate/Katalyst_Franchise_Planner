@@ -44,7 +44,7 @@ input_file_patterns:
     whole: "{planning_artifacts}/*tech-spec*.md"
     load_strategy: "FULL_LOAD"
   document_project:
-    description: "Brownfield project documentation (optional)"
+    description: "Established project documentation (optional)"
     sharded: "{project_knowledge}/index.md"
     load_strategy: "INDEX_GUIDED"
 

@@ -99,7 +99,7 @@ Your choice [1/2/3]:
 
 - Reads files in critical directories based on project type
 - Scans: All critical paths from documentation requirements
-- Best for: Comprehensive documentation for brownfield PRD
+- Best for: Comprehensive documentation for established project PRD
 - File reading: Selective (key files in critical directories)
 
 **3. Exhaustive Scan** (30-120 minutes)
@@ -1076,7 +1076,7 @@ Enter number(s) separated by commas (e.g., "1,3,5"), or type 'all':
 **Next Steps:**
 
 1. Review the index.md to familiarize yourself with the documentation structure
-2. When creating a brownfield PRD, point the PRD workflow to: {{output_folder}}/index.md
+2. When creating an established project PRD, point the PRD workflow to: {{output_folder}}/index.md
 3. For UI-only features: Reference {{output_folder}}/architecture-{{ui_part_id}}.md
 4. For API-only features: Reference {{output_folder}}/architecture-{{api_part_id}}.md
 5. For full-stack features: Reference both part architectures + integration-architecture.md
@@ -1087,7 +1087,7 @@ Enter number(s) separated by commas (e.g., "1,3,5"), or type 'all':
 - Outstanding risks or follow-ups: {{open_risks}}
 - Recommended next checks before PR: {{next_checks}}
 
-**Brownfield PRD Command:**
+**Established Project PRD Command:**
 When ready to plan new features, run the PRD workflow and provide this index as input.
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━

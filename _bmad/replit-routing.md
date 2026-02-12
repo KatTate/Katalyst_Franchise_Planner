@@ -17,11 +17,11 @@ This file maps natural language trigger phrases to BMAD agents and workflows. Wh
 | "act as quick flow dev", "quick flow", "I need Barry", "solo dev", "quick build" | Barry — 🚀 Quick Flow Solo Dev | `_bmad/bmm/agents/quick-flow-solo-dev.md` |
 | "act as BMad", "BMad master", "start BMad", "begin", "initialize" | BMad Master | `_bmad/core/agents/bmad-master.md` |
 
-## Workflow Routing — Phase 0: Assessment (Brownfield)
+## Workflow Routing — Phase 0: Assessment (Established Project)
 
 | Trigger Phrases | Code | Workflow | File |
 |---|---|---|---|
-| "assess brownfield", "AB", "scan existing project", "brownfield assessment", "assess this project", "what do I have here?" | AB | Assess Brownfield | `_bmad/bmm/workflows/0-assess/assess-brownfield/workflow.md` |
+| "assess established project", "AB", "scan existing project", "established project assessment", "assess this project", "what do I have here?" | AB | Assess Established Project | `_bmad/bmm/workflows/0-assess/assess-brownfield/workflow.md` |
 
 ## Workflow Routing — Phase 1: Analysis
 

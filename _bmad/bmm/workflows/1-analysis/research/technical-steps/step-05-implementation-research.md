@@ -1,4 +1,4 @@
-# Technical Research Step 4: Implementation Research
+# Technical Research Step 5: Implementation Research
 
 ## MANDATORY EXECUTION RULES (READ FIRST):
 
@@ -15,9 +15,9 @@
 ## EXECUTION PROTOCOLS:
 
 - 🎯 Show web search analysis before presenting findings
-- ⚠️ Present [C] complete option after implementation research content generation
-- 💾 ONLY save when user chooses C (Complete)
-- 📖 Update frontmatter `stepsCompleted: [1, 2, 3, 4]` before completing workflow
+- ⚠️ Present [C] continue option after implementation research content generation
+- 💾 ONLY save when user chooses C (Continue)
+- 📖 Update frontmatter `stepsCompleted: [1, 2, 3, 4, 5]` before loading next step
 - 🚫 FORBIDDEN to complete workflow until C is selected
 
 ## CONTEXT BOUNDARIES:
@@ -25,7 +25,7 @@
 - Current document and frontmatter from previous steps are available
 - Focus on implementation approaches and technology adoption strategies
 - Web search capabilities with source verification are enabled
-- This is the final step in the technical research workflow
+- The next step is research synthesis and final document generation
 
 ## YOUR TASK:
 
@@ -169,16 +169,16 @@ Show the generated implementation research and present complete option:
 - Implementation approaches and technology adoption
 - Practical recommendations and implementation roadmap
 
-**Ready to complete the technical research report?**
-[C] Complete Research - Save final document and conclude
+**Ready to proceed to research synthesis?**
+[C] Continue - Save this to the document and move to research synthesis
 
 ### 7. Handle Complete Selection
 
-#### If 'C' (Complete Research):
+#### If 'C' (Continue):
 
 - Append the final content to the research document
-- Update frontmatter: `stepsCompleted: [1, 2, 3, 4]`
-- Complete the technical research workflow
+- Update frontmatter: `stepsCompleted: [1, 2, 3, 4, 5]`
+- Load: `./step-06-research-synthesis.md`
 
 ## APPEND TO DOCUMENT:
 
@@ -227,13 +227,8 @@ When 'C' is selected:
 - Technical research workflow status updated
 - Final implementation recommendations provided to user
 
-## NEXT STEPS:
+## NEXT STEP:
 
-Technical research workflow complete. User may:
+After user selects 'C' and content is saved to document, load `./step-06-research-synthesis.md` to synthesize all research into a comprehensive final document.
 
-- Use technical research to inform architecture decisions
-- Conduct additional research on specific technologies
-- Combine technical research with other research types for comprehensive insights
-- Move forward with implementation based on technical insights
-
-Congratulations on completing comprehensive technical research! 🎉
+Remember: Always emphasize current implementation data and rigorous source verification!

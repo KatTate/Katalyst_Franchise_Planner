@@ -1,7 +1,7 @@
-# Brownfield Assessment: {project_name}
+# Established Project Assessment: {project_name}
 
 **Date:** {date}
-**Assessed by:** BMad Method v6.0.0-Beta.7
+**Assessed by:** BMad Method v6.0.0-Beta.8
 
 ---
 

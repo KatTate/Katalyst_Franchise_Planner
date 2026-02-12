@@ -77,9 +77,9 @@ Fully read and Analyze the loaded project documents to understand architectural 
   - Offline capability requirements
   - Performance expectations (load times, interaction responsiveness)
 
-### 1.5. Existing Codebase and Environment Analysis (Brownfield Projects)
+### 1.5. Existing Codebase and Environment Analysis (Established Projects)
 
-If the project already has source code (brownfield), gather platform intelligence to inform architectural decisions:
+If the project already has source code (established project), gather platform intelligence to inform architectural decisions:
 
 **Database Schema Discovery:**
 - Check if a PostgreSQL database exists: look for DATABASE_URL in environment variables
@@ -111,7 +111,7 @@ If the project already has source code (brownfield), gather platform intelligenc
 - Check if deployment/publishing is configured and what type (static, autoscale, vm)
 - Note current deployment constraints that may influence architecture
 
-Present brownfield findings alongside document analysis — existing code patterns should be respected unless there's a strong reason to change them.
+Present established project findings alongside document analysis — existing code patterns should be respected unless there's a strong reason to change them.
 
 ### 2. Project Scale Assessment
 
@@ -182,7 +182,7 @@ Prepare the content to append to the document:
 
 {{known_constraints_dependencies}}
 
-### Existing Environment (Brownfield)
+### Existing Environment (Established Project)
 
 {{#if brownfield}}
 **Database:** {{database_status}} {{#if database_exists}}({{table_count}} tables){{/if}}

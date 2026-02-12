@@ -2,7 +2,7 @@
 name: 'step-03-generate'
 description: 'Build the implementation guidance — acceptance criteria and architectural context for the dev agent'
 
-workflow_path: '{project-root}/_bmad/bmm/workflows/bmad-quick-flow/quick-spec'
+installed_path: '{project-root}/_bmad/bmm/workflows/bmad-quick-flow/quick-spec'
 nextStepFile: './step-04-review.md'
 wipFile: '{implementation_artifacts}/tech-spec-wip.md'
 ---

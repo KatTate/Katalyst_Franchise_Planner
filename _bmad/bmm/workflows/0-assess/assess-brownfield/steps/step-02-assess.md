@@ -18,7 +18,7 @@
 
 ## YOUR TASK:
 
-Based on the brownfield scan AND the user's validated answers from Step 1, determine which BMAD phases the project has effectively already completed and where the user should enter the BMAD workflow.
+Based on the established project scan AND the user's validated answers from Step 1, determine which BMAD phases the project has effectively already completed and where the user should enter the BMAD workflow.
 
 ## ASSESSMENT CRITERIA:
 
