@@ -8,7 +8,7 @@ import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from "@/componen
 import { useSidebar } from "@/components/ui/sidebar";
 import { useAuth } from "@/hooks/use-auth";
 import { usePlan } from "@/hooks/use-plan";
-import { apiRequest } from "@/lib/queryClient";
+import { apiRequest, queryClient } from "@/lib/queryClient";
 import { PlanningHeader } from "@/components/planning/planning-header";
 import { InputPanel } from "@/components/planning/input-panel";
 import { DashboardPanel } from "@/components/planning/dashboard-panel";
@@ -26,11 +26,10 @@ export default function PlanningWorkspace() {
 
   // Load brand data for QuickStart overlay
   const brandId = plan?.brandId;
-  const { data: brandData } = useQuery<{ data: Brand }>({
+  const { data: brand } = useQuery<Brand>({
     queryKey: [`/api/brands/${brandId}`],
     enabled: !!brandId,
   });
-  const brand = brandData?.data ?? null;
 
   // Mode state — initialize from user's preferred tier
   const [activeMode, setActiveMode] = useState<ExperienceTier>(
@@ -64,6 +63,7 @@ export default function PlanningWorkspace() {
       saveTierRef.current = setTimeout(async () => {
         try {
           await apiRequest("PATCH", "/api/auth/me", { preferredTier: mode });
+          queryClient.invalidateQueries({ queryKey: ["/api/auth/me"] });
         } catch {
           // Non-critical — preference save failed silently
         }
@@ -123,7 +123,7 @@ export default function PlanningWorkspace() {
       <div data-testid="planning-workspace" className="flex flex-col h-full overflow-auto">
         <QuickStartOverlay
           planId={planId}
-          brand={brand}
+          brand={brand ?? null}
           onComplete={handleQuickStartComplete}
         />
       </div>

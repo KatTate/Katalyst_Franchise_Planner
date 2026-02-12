@@ -30,7 +30,7 @@ export function BreakEvenChart({ monthlyProjections }: BreakEvenChartProps) {
   const data = monthlyProjections.map((mp, i) => {
     const cumulative = monthlyProjections
       .slice(0, i + 1)
-      .reduce((sum, p) => sum + p.netCashFlow, 0);
+      .reduce((sum, p) => sum + p.operatingCashFlow, 0);
     return {
       month: `M${mp.month}`,
       monthNum: mp.month,
@@ -122,7 +122,7 @@ export function RevenueExpensesChart({ annualSummaries }: RevenueExpensesChartPr
   const data = annualSummaries.map((as) => ({
     year: `Year ${as.year}`,
     revenue: as.revenue / 100, // Convert cents to dollars
-    expenses: as.totalExpenses / 100,
+    expenses: (as.totalCogs + as.totalOpex) / 100,
   }));
 
   return (
