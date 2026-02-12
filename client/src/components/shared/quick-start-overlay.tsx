@@ -19,6 +19,7 @@ import {
   generateSentimentFrame,
   generateLeverHint,
   findHighestImpactInput,
+  createDefaultStartupCostItem,
 } from "@/lib/quick-start-helpers";
 import { updateFieldValue, buildPlanFinancialInputs, buildPlanStartupCosts } from "@shared/plan-initialization";
 import type { PlanFinancialInputs, StartupCostLineItem, EngineOutput } from "@shared/financial-engine";
@@ -109,7 +110,13 @@ export function QuickStartOverlay({ planId, brand, onComplete }: QuickStartOverl
       costs = buildPlanStartupCosts(brand.startupCostTemplate);
     }
 
-    if (!fi || !costs) return;
+    if (!fi) return;
+    if (!costs) costs = [];
+
+    if (costs.length === 0) {
+      const defaultInvestment = 15_000_00;
+      costs = [createDefaultStartupCostItem(defaultInvestment)];
+    }
 
     const monthlyAuvCents = fi.revenue.monthlyAuv.currentValue;
     const rentCents = fi.operatingCosts.rentMonthly.currentValue;
@@ -266,7 +273,8 @@ export function QuickStartOverlay({ planId, brand, onComplete }: QuickStartOverl
 
   const brandName = brand?.displayName || brand?.name || "franchise";
   const roiMetrics = preview?.roiMetrics;
-  const isNegativeROI = roiMetrics ? roiMetrics.fiveYearROIPct <= 0 : false;
+  const hasInvestment = roiMetrics ? roiMetrics.totalStartupInvestment > 0 : false;
+  const isNegativeROI = roiMetrics ? roiMetrics.fiveYearROIPct < 0 && hasInvestment : false;
 
   // Memoize sensitivity analysis — must be called before early returns (Rules of Hooks)
   const leverHint = useMemo(() => {
@@ -453,7 +461,7 @@ export function QuickStartOverlay({ planId, brand, onComplete }: QuickStartOverl
                     </p>
                     <p className="text-4xl font-bold font-mono tabular-nums">
                       <AnimatedValue
-                        value={formatROI(roiMetrics.fiveYearROIPct)}
+                        value={hasInvestment ? formatROI(roiMetrics.fiveYearROIPct) : "N/A"}
                         testId="quick-start-result-roi"
                       />
                     </p>
@@ -492,7 +500,9 @@ export function QuickStartOverlay({ planId, brand, onComplete }: QuickStartOverl
                     style={{ backgroundColor: "#A9A2AA20", color: "#A9A2AA" }}
                     data-testid="quick-start-sentiment"
                   >
-                    {generateSentimentFrame(roiMetrics.fiveYearROIPct, roiMetrics.breakEvenMonth)}
+                    {hasInvestment
+                      ? generateSentimentFrame(roiMetrics.fiveYearROIPct, roiMetrics.breakEvenMonth)
+                      : "Enter your planned investment amount to see your estimated return."}
                   </div>
 
                   {/* AC9: Negative ROI guidance */}
