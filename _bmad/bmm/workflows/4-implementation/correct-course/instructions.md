@@ -40,10 +40,13 @@
     This reveals what code areas the course correction will likely affect.
   </action>
 
-  <action>Identify natural rollback points in the git history.
+  <action>Identify natural rollback points.
     Look for commits that represent completed, stable states (e.g., story completions, passing reviews).
-    If the course correction involves reverting work, these stable points are candidates for rollback.
-    Note these commit hashes and what state they represent.
+    If the course correction involves reverting work, note that the platform creates automatic checkpoints
+    at key milestones. Recommend using the platform's rollback capability (which restores code, conversation
+    context, and optionally the database) rather than git-based reversion. Destructive git commands
+    (git reset, git checkout, git restore) may be blocked on the platform.
+    Note the stable commit descriptions and approximate timing so the user can identify the correct checkpoint.
   </action>
 
   <!-- Codebase Health Assessment -->
@@ -156,11 +159,11 @@
 
 - Present chosen path forward from checklist evaluation:
   - Direct Adjustment: Modify/add stories within existing plan
-  - Potential Rollback: Revert completed work to simplify resolution (include specific rollback points identified in Step 2)
+  - Potential Rollback: Revert completed work using the platform's checkpoint rollback capability to simplify resolution (reference stable states identified in Step 2)
   - MVP Review: Reduce scope or modify goals
 - Provide clear rationale for recommendation
 - Include risk assessment and scope impact
-- If rollback is recommended, reference the specific stable commit points identified during git analysis
+- If rollback is recommended, describe the target state so the user can identify the correct checkpoint in the platform's rollback UI. Note that rollback restores code and conversation context; database rollback is optional and must be explicitly selected.
 
 <action>Section 4: Detailed Change Proposals</action>
 

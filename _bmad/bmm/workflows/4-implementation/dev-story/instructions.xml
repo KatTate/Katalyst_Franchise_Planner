@@ -112,6 +112,14 @@
       - The agent decides the testing approach based on what makes sense
     </action>
 
+    <action>Document the testing approach in the task list or notes:
+      - What type of testing was performed (unit tests, visual verification, manual run, etc.)
+      - Which test files were created or modified
+      - Which ACs each test covers
+      This documentation enables the Code Review workflow to efficiently verify test coverage
+      without re-discovering the testing strategy.
+    </action>
+
     <action if="new dependencies required beyond what's listed in Dev Notes">ASK user for approval before adding</action>
     <action if="implementation conflicts with Dev Notes constraints">HALT and explain the conflict</action>
     <action if="acceptance criteria are ambiguous or contradictory">ASK user to clarify</action>
@@ -180,6 +188,7 @@
       - Agent Model Used
       - Completion Notes: brief summary of what was implemented and key decisions
       - File List: all files created, modified, or deleted (paths relative to repo root)
+      - Testing Summary: test approach used, test files created/modified, ACs covered by tests, all tests passing (yes/no)
       - LSP Status: clean / [N] errors found and fixed / [N] warnings remaining
       - Visual Verification: screenshots taken and verified (if user-facing story) / N/A
     </action>

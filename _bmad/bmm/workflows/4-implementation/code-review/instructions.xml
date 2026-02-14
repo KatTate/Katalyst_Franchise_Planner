@@ -10,7 +10,7 @@
   <critical>Dev Notes constraints are law — any violation is a finding</critical>
   <critical>Read EVERY file in the File List — verify implementation against story requirements</critical>
   <critical>Do not review files outside the application's source code. Always exclude _bmad/, _bmad-output/, and IDE config folders (.cursor/, .windsurf/, .claude/) from review</critical>
-  <critical>💡 REPLIT TIP: For best results, run code review in a fresh chat and ideally with a different LLM than the one that implemented the story</critical>
+  <critical>💡 REPLIT TIP: For best results, run code review in a fresh chat to maximize context and avoid implementation bias. A fresh context means the reviewer reads code cold without carrying the implementer's assumptions.</critical>
 
   <step n="1" goal="Load story and discover changes">
     <action>Use provided {{story_path}} or ask user which story file to review</action>
@@ -20,17 +20,21 @@
 
     <!-- Discover actual changes via git -->
     <check if="git repository exists">
-      <action>Run `git status --porcelain` to find uncommitted changes</action>
-      <action>Run `git diff --name-only` to see modified files</action>
-      <action>Run `git diff --cached --name-only` to see staged files</action>
+      <action>Run `git status --porcelain` to find any uncommitted changes</action>
+      <action>Run `git log --name-only --pretty=format: -1` to see files from the most recent commit</action>
+      <action>Run `git diff HEAD~1 --name-only` to see the diff from the last commit</action>
       <action>Compile list of actually changed files from git output</action>
+      <action>Note: On platforms with auto-commit (e.g., Replit), changes are already committed by the time
+        code review runs. Use git log rather than git diff to discover changes.</action>
     </check>
 
-    <!-- Cross-reference story File List vs git reality -->
-    <action>Compare story's File List with actual git changes</action>
-    <action>Note discrepancies:
-      - Files in git but not in story File List (undocumented changes)
-      - Files in story File List but no git changes (false claims)
+    <!-- Use story File List as primary source, git as cross-reference -->
+    <action>If the story's Dev Agent Record contains a File List, use it as the primary source of changed files.
+      Cross-reference with git to detect discrepancies:
+      - Files in story File List but NOT in recent git history → verify they were changed in earlier commits
+      - Files in recent git commits but NOT in story File List → undocumented changes
+      Use `git log --oneline -20` and scan for commits related to the story key to establish the full
+      commit range for this story's implementation.
     </action>
 
     <invoke-protocol name="discover_inputs" />

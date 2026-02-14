@@ -26,7 +26,9 @@ Validate that a story implementation is complete and ready for code review. This
 
 ## Testing & Quality
 
-- [ ] **Appropriate testing**: Implementation is tested in a way that matches the task type (infrastructure verified by running, business logic has tests, etc.)
+- [ ] **Appropriate testing**: Implementation is tested in a way that matches the task type (infrastructure verified by running, business logic has unit/integration tests, UI verified visually and functionally)
+- [ ] **Test evidence exists**: For business logic stories — at least one test file exists covering core ACs. For UI stories — visual verification was performed. For infrastructure — successful execution was confirmed.
+- [ ] **Testing documented**: Dev Agent Record includes a Testing Summary listing approach, test files, and AC coverage
 - [ ] **No regressions**: All existing tests still pass
 - [ ] **Code quality**: Implementation follows project coding standards and conventions
 

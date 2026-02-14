@@ -148,6 +148,8 @@
 <prompt>Evaluate Option 2: Potential Rollback</prompt>
 <action>Would reverting recently completed stories simplify addressing this issue?</action>
 <action>Which stories would need to be rolled back?</action>
+<action>Can the target state be reached via the platform's checkpoint rollback? (Preferred over manual git reversion.)</action>
+<action>If rollback includes database changes, note that database rollback must be explicitly opted into.</action>
 <action>Is the rollback effort justified by the simplification gained?</action>
 <action>Effort estimate: [High/Medium/Low]</action>
 <action>Risk level: [High/Medium/Low]</action>

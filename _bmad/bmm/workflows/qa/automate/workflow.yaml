@@ -28,13 +28,8 @@ variables:
 default_output_file: "{implementation_artifacts}/tests/test-summary.md"
 
 # Required tools
-required_tools:
-  - read_file # Read source code and existing tests
-  - write_file # Create test files
-  - create_directory # Create test directories
-  - list_files # Discover features
-  - search_repo # Find patterns
-  - glob # Find files
+# Note: This workflow uses standard platform tools (file read/write, search, glob, shell)
+# No special tool requirements beyond what the platform provides
 
 tags:
   - qa
