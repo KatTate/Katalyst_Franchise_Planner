@@ -14,7 +14,7 @@ Validate that a code review was thorough and that the story implementation meets
 
 ## Change Discovery
 
-- [ ] Git changes discovered and compared against story File List
+- [ ] Git changes discovered (using git log for committed changes, git status for uncommitted) and compared against story File List
 - [ ] Discrepancies between git reality and story claims documented
 - [ ] Comprehensive file list built from both sources
 

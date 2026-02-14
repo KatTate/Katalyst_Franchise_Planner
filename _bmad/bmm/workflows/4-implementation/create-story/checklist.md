@@ -43,6 +43,12 @@ Validate that a story file provides sufficient context for a dev agent to implem
 - [ ] **Dependencies listed**: Packages to install and packages already present (to avoid reinstalling)
 - [ ] **Environment variables documented**: Required env vars with context on where they come from
 
+## Dev Notes — Testing Expectations
+
+- [ ] **Testing approach noted**: Story includes brief guidance on what type of testing is expected
+- [ ] **Test framework identified**: If the project has a test framework, it's referenced
+- [ ] **Critical ACs flagged for test coverage**: ACs that should have automated tests are identified
+
 ## Dev Notes — References
 
 - [ ] **Source citations present**: Technical details cite source document paths and sections

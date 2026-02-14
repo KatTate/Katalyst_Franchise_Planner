@@ -222,6 +222,13 @@
       - This section ensures the dev agent knows a UI is expected and what it should contain
     </action>
 
+    <action>Write "Testing Expectations" (brief, directional — not a test plan):
+      - What type of testing is expected for this story (unit tests, integration tests, visual verification, etc.)
+      - If the project has an established test framework, note which one and where existing tests live
+      - If specific ACs should have automated test coverage, note which ones
+      - This section helps the dev agent prioritize testing effort appropriately
+    </action>
+
     <action>Write "Dependencies and Environment Variables":
       - Packages to install (and packages already present — DO NOT reinstall)
       - Environment variables needed

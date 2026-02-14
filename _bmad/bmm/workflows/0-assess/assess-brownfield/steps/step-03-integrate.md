@@ -30,10 +30,12 @@ Update the established project assessment document at `{output_file}` with:
 
 ### 2. Update replit.md Project State
 
-Read `{project-root}/replit.md` and update the **Project State** section:
+Read `{project-root}/replit.md` and update the **"Project Documentation"** section that appears AFTER the `<!-- BMAD-METHOD-END -->` marker. **Do NOT modify anything between the `<!-- BMAD-METHOD-START -->` and `<!-- BMAD-METHOD-END -->` markers** — that is protected BMad framework content.
+
+Add or update a **Project State** subsection within the Project Documentation area:
 
 ```
-## Project State
+### Project State
 
 - **Current Phase:** {{chosen_phase}} (entered via established project assessment)
 - **Project Type:** established

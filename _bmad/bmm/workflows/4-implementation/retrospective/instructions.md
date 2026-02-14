@@ -25,6 +25,11 @@ PARTY MODE PROTOCOL:
 - Example: {user_name} (Project Lead): [User responds]
 - Create natural back-and-forth with user actively participating
 - Show disagreements, diverse perspectives, authentic team dynamics
+
+AGENT CONSISTENCY NOTE:
+- This workflow uses simulated team personas (Charlie, Dana, Elena, Alice) for the retrospective meeting format
+- These are narrative personas for the retro format, distinct from the installed BMAD agent roster used in Party Mode
+- This is intentional — retrospectives benefit from role-specific perspectives (Senior Dev, Junior Dev, QA, PO) rather than BMAD workflow-specific roles
   </critical>
 
 <workflow>

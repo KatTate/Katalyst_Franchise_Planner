@@ -16,7 +16,9 @@ Check project for existing test framework:
 - If no framework exists:
   - Analyze source code to determine project type (React, Vue, Node API, etc.)
   - Search online for current recommended test framework for that stack
-  - Suggest the meta framework and use it (or ask user to confirm)
+  - Suggest the framework and get user confirmation
+  - Install the test framework using the platform's package management tools (not manual shell commands)
+  - Create initial test configuration files as needed (e.g., vitest.config.ts, jest.config.js, playwright.config.ts)
 
 ### Step 1: Identify Features
 
@@ -48,9 +50,13 @@ For UI features, generate tests that:
 
 ### Step 4: Run Tests
 
-Execute tests to verify they pass (use project's test command).
+Execute tests to verify they pass:
 
-If failures occur, fix them immediately.
+- Use the project's configured test command (e.g., `npm test`, `npx vitest`, `pytest`)
+- If the test command is not configured in package.json scripts, add it before running
+- If tests require a running server (E2E tests), ensure the development server workflow is running first
+- If failures occur, fix them immediately — iterate until all generated tests pass
+- Run any pre-existing tests to verify no regressions were introduced
 
 ### Step 5: Create Summary
 

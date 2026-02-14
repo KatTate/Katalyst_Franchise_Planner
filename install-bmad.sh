@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-# BMad Method v6.0.0-Beta.7 — Replit Install Script
+# BMad Method v6.0.0-Beta.8 — Replit Install Script
 #
 # Installs the BMad Method toolkit into a Replit project.
 # Safe to run on existing projects — preserves existing replit.md content.
@@ -10,7 +10,7 @@
 
 set -e
 
-BMAD_VERSION="6.0.0-Beta.7"
+BMAD_VERSION="6.0.0-Beta.8"
 BMAD_MARKER="<!-- BMAD-METHOD-START -->"
 BMAD_MARKER_END="<!-- BMAD-METHOD-END -->"
 
@@ -33,12 +33,12 @@ if [ ! -d "_bmad" ]; then
   exit 1
 fi
 
-echo "[1/6] Found _bmad/ toolkit directory"
+echo "[1/7] Found _bmad/ toolkit directory"
 
 # ─── Step 2: Create output directories ─────────────────────────────────────
 mkdir -p _bmad-output/planning-artifacts
 mkdir -p _bmad-output/implementation-artifacts
-echo "[2/6] Created _bmad-output/ directories"
+echo "[2/7] Created _bmad-output/ directories"
 
 # ─── Step 3: Detect project type ───────────────────────────────────────────
 IS_BROWNFIELD=false
@@ -83,80 +83,71 @@ done
 
 if [ "$STRONG_INDICATORS" -gt 0 ]; then
   IS_BROWNFIELD=true
-  echo "[3/6] Detected BROWNFIELD project ($STRONG_INDICATORS strong indicators found)"
+  echo "[3/7] Detected BROWNFIELD project ($STRONG_INDICATORS strong indicators found)"
 elif [ "$WEAK_INDICATORS" -gt 1 ]; then
   IS_BROWNFIELD=true
-  echo "[3/6] Detected BROWNFIELD project (multiple project indicators found)"
+  echo "[3/7] Detected BROWNFIELD project (multiple project indicators found)"
   echo "       NOTE: If this is actually a new project, tell the agent"
   echo "       \"this is a greenfield project\" and it will adjust."
 else
-  echo "[3/6] Detected GREENFIELD project (no existing project code found)"
+  echo "[3/7] Detected GREENFIELD project (no existing project code found)"
 fi
 
-# ─── Step 4: Handle replit.md ──────────────────────────────────────────────
+# ─── Step 4: Install Skills ───────────────────────────────────────────────
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+SKILLS_INSTALLED=0
 
-# Generate the BMAD section content
-generate_bmad_section() {
-  local project_type="greenfield"
-  if [ "$IS_BROWNFIELD" = true ]; then
-    project_type="brownfield"
-  fi
+RESOLVED_SCRIPT_DIR="$(cd "$SCRIPT_DIR" && pwd -P)"
+RESOLVED_CWD="$(pwd -P)"
 
-  cat << 'BMAD_SECTION_START'
+if [ "$RESOLVED_SCRIPT_DIR" = "$RESOLVED_CWD" ] && [ -d ".agents/skills/bmad-core" ]; then
+  SKILLS_INSTALLED=$(ls -1d .agents/skills/bmad-*/ 2>/dev/null | wc -l)
+  echo "[4/7] Found $SKILLS_INSTALLED BMAD skills already in place (same directory)"
+elif [ -d "$SCRIPT_DIR/.agents/skills" ]; then
+  mkdir -p .agents/skills
+  for skill_dir in "$SCRIPT_DIR"/.agents/skills/bmad-*/; do
+    if [ -d "$skill_dir" ]; then
+      skill_name=$(basename "$skill_dir")
+      rm -rf ".agents/skills/$skill_name"
+      cp -r "$skill_dir" ".agents/skills/$skill_name"
+      SKILLS_INSTALLED=$((SKILLS_INSTALLED + 1))
+    fi
+  done
+  echo "[4/7] Installed $SKILLS_INSTALLED BMAD skills to .agents/skills/"
+elif [ -d ".agents/skills/bmad-core" ]; then
+  SKILLS_INSTALLED=$(ls -1d .agents/skills/bmad-*/ 2>/dev/null | wc -l)
+  echo "[4/7] Found $SKILLS_INSTALLED existing BMAD skills (already in place)"
+else
+  echo "[4/7] WARNING: No BMAD skills found to install!"
+  echo "       Skills should be in .agents/skills/bmad-*/ alongside this script"
+  echo "       or already present in the target directory."
+  echo ""
+  echo "       *** BMAD uses skills-only activation. Without skills, workflows ***"
+  echo "       *** will NOT activate from user commands. Re-download from the  ***"
+  echo "       *** BMad repo to get the complete package with skills included. ***"
+fi
+
+# ─── Step 5: Handle replit.md ──────────────────────────────────────────────
+
+generate_bmad_protected_section() {
+  cat << 'BMAD_PROTECTED'
+<!-- PROTECTION NOTE FOR REPLIT AGENT: The content between BMAD-METHOD-START and BMAD-METHOD-END markers is part of the BMad Method framework and MUST NOT be modified, overwritten, or removed during any replit.md updates. When updating this file, only modify the "Project Documentation" section AFTER the BMAD-METHOD-END marker. Always preserve both sections intact. -->
+
 <!-- BMAD-METHOD-START -->
-# BMad Method v6.0.0-Beta.7 — Agent Configuration
+# BMad Method v6.0.0-Beta.8 — Agent Configuration
 
 ## IMPORTANT: How You Must Operate in This Project
 
-This is a **BMad Method** project. You MUST follow these rules in every conversation:
+This is a **BMad Method** project. BMAD workflows are activated through **Replit Agent Skills** installed in `.agents/skills/bmad-*/`. You MUST follow these rules in every conversation:
 
-1. **Check every user message against the routing tables below.** Trigger phrases are not exact-match-only — use intent matching. If the user's message contains or implies a trigger phrase, activate that route. Example: "should we do sprint planning for Epic 2?" contains the intent "sprint planning" and MUST activate the SP workflow with the Scrum Master persona.
-2. **When a route matches, load the referenced file and follow it.** Do not answer the question in your own words. Load the workflow or agent file and execute it.
-3. **For workflows:** First load `_bmad/core/tasks/workflow.xml` (the execution engine), then load the matched workflow file. Execute ALL steps IN ORDER. When a step says WAIT for user input, STOP and WAIT.
+1. **BMAD skills handle workflow activation.** When a user's message matches a BMAD skill trigger (e.g., "create PRD", "code review", "party mode"), the skill will activate and provide instructions for loading the correct workflow files. Follow those instructions exactly.
+2. **When a skill activates, load the referenced files and follow them.** Do not answer in your own words. Load the workflow or agent file specified in the skill and execute it.
+3. **For workflows:** The skill will instruct you to either load `_bmad/core/tasks/workflow.xml` (the execution engine) with a workflow YAML config, or load a workflow markdown file directly. Execute ALL steps IN ORDER. When a step says WAIT for user input, STOP and WAIT.
 4. **For agents:** Load the agent file, adopt that persona completely, and present the agent's menu.
 5. **Never skip, summarize, or improvise** workflow steps. Never auto-proceed past WAIT points.
-6. **If no route matches,** respond normally but remain aware that this is a BMAD project. If the user seems to be asking about project planning, development, or process, suggest the relevant BMAD workflow.
-7. **If unsure whether a route matches,** ask: "Would you like me to run the [workflow name] workflow for that?"
+6. **If no skill activates,** respond normally but remain aware that this is a BMAD project. If the user seems to be asking about project planning, development, or process, suggest the relevant BMAD workflow. Say "help" or "BH" anytime for guidance.
+7. **If unsure whether a BMAD workflow applies,** ask: "Would you like me to run the [workflow name] workflow for that?"
 
-BMAD_SECTION_START
-
-  # Inline the full routing table directly from the source file
-  if [ -f "_bmad/replit-routing.md" ]; then
-    # Skip the title line and intro paragraph, include from "## Agent Routing" onward
-    sed -n '/^## Agent Routing/,$p' "_bmad/replit-routing.md"
-    echo ""
-  else
-    # Fallback: abbreviated tables if routing file is missing
-    cat << 'ROUTING_FALLBACK'
-### Agent Routing
-
-| Trigger Phrases | Agent | File |
-|---|---|---|
-| "act as analyst", "Mary" | Business Analyst | `_bmad/bmm/agents/analyst.md` |
-| "act as PM", "John" | Product Manager | `_bmad/bmm/agents/pm.md` |
-| "act as architect", "Winston" | Architect | `_bmad/bmm/agents/architect.md` |
-| "act as UX designer", "Sally" | UX Designer | `_bmad/bmm/agents/ux-designer.md` |
-| "act as dev", "Amelia" | Developer | `_bmad/bmm/agents/dev.md` |
-| "act as QA", "Quinn" | QA Engineer | `_bmad/bmm/agents/qa.md` |
-| "act as SM", "Bob" | Scrum Master | `_bmad/bmm/agents/sm.md` |
-| "act as tech writer", "Paige" | Technical Writer | `_bmad/bmm/agents/tech-writer/tech-writer.md` |
-| "quick flow", "Barry" | Quick Flow Solo Dev | `_bmad/bmm/agents/quick-flow-solo-dev.md` |
-| "start BMad", "BMad master" | BMad Master | `_bmad/core/agents/bmad-master.md` |
-
-> Full routing table not found at `_bmad/replit-routing.md`. Re-run install to regenerate.
-
-ROUTING_FALLBACK
-  fi
-
-  # Project state section with dynamic project type
-  echo "## Project State"
-  echo ""
-  echo "- **Current Phase:** not started"
-  echo "- **Project Type:** $project_type"
-  echo "- **Completed Artifacts:** none yet"
-  echo ""
-
-  cat << 'BMAD_SECTION_END'
 ## BMad File Structure
 
 ```
@@ -171,8 +162,9 @@ _bmad/                    # BMad Method toolkit
 │   ├── data/             # Templates and context files
 │   └── teams/            # Team configurations for party mode
 ├── _config/              # Manifests, help catalog, customization
-├── _memory/              # Agent memory (tech writer standards)
-└── replit-routing.md     # Routing source (auto-inlined into replit.md on install)
+└── _memory/              # Agent memory (tech writer standards)
+
+.agents/skills/bmad-*/    # Replit Agent Skills (workflow activation)
 
 _bmad-output/             # Generated artifacts go here
 ├── planning-artifacts/   # Briefs, PRDs, architecture, UX docs
@@ -187,71 +179,94 @@ _bmad-output/             # Generated artifacts go here
 
 **IMPORTANT:** Do NOT embed the contents of BMad config files (config.yaml, etc.) into this replit.md. Only reference them by file path above. Read them from disk when needed.
 <!-- BMAD-METHOD-END -->
-BMAD_SECTION_END
+BMAD_PROTECTED
+}
+
+generate_project_docs_section() {
+  local project_type="greenfield"
+  if [ "$IS_BROWNFIELD" = true ]; then
+    project_type="brownfield"
+  fi
+
+  cat << BMAD_PROJECT_DOCS
+
+## Project Documentation
+
+> This section is safe for the Replit agent to update. Add project-specific information below.
+
+### Project State
+
+- **Current Phase:** not started
+- **Project Type:** $project_type
+- **Completed Artifacts:** none yet
+
+BMAD_PROJECT_DOCS
 }
 
 if [ -f "replit.md" ]; then
-  # Check if BMAD is already installed
   if grep -q "$BMAD_MARKER" replit.md 2>/dev/null; then
-    echo "[4/6] Updating existing BMAD section in replit.md..."
+    echo "[5/7] Updating existing BMAD section in replit.md..."
 
-    # Remove old BMAD section and replace with new one
-    # Create temp file with content before BMAD marker
-    sed -n "1,/$BMAD_MARKER/{ /$BMAD_MARKER/!p }" replit.md > replit.md.tmp
+    # Extract content BEFORE the BMAD start marker (e.g., nothing, or user preamble)
+    # But skip any old protection notes that are outside the markers
+    sed -n "1,/$BMAD_MARKER/{ /$BMAD_MARKER/!p }" replit.md > replit.md.before
+    # Remove lines that are just the protection note (avoid duplication)
+    grep -v "PROTECTION NOTE FOR REPLIT AGENT" replit.md.before > replit.md.tmp 2>/dev/null || echo -n "" > replit.md.tmp
+    rm -f replit.md.before
 
-    # Remove any blank lines at the end of the preserved content
     sed -i -e :a -e '/^\n*$/{$d;N;ba' -e '}' replit.md.tmp 2>/dev/null || true
 
-    # Add separator and new BMAD section
-    echo "" >> replit.md.tmp
-    echo "" >> replit.md.tmp
-    generate_bmad_section >> replit.md.tmp
+    # Write the protected BMAD section
+    generate_bmad_protected_section >> replit.md.tmp
 
-    # Check if there's content after the end marker and preserve it
+    # Preserve content after the end marker (user's Project Documentation)
     if grep -q "$BMAD_MARKER_END" replit.md 2>/dev/null; then
       AFTER_CONTENT=$(sed -n "/$BMAD_MARKER_END/,\${ /$BMAD_MARKER_END/!p }" replit.md)
       if [ -n "$AFTER_CONTENT" ]; then
-        echo "" >> replit.md.tmp
         echo "$AFTER_CONTENT" >> replit.md.tmp
+      else
+        generate_project_docs_section >> replit.md.tmp
       fi
+    else
+      generate_project_docs_section >> replit.md.tmp
     fi
 
     mv replit.md.tmp replit.md
     echo "         Preserved existing project content, updated BMAD section"
 
   else
-    echo "[4/6] Appending BMAD section to existing replit.md..."
+    echo "[5/7] Appending BMAD section to existing replit.md..."
 
-    # Preserve existing content and append BMAD section
     echo "" >> replit.md
     echo "" >> replit.md
     echo "---" >> replit.md
     echo "" >> replit.md
-    generate_bmad_section >> replit.md
+    generate_bmad_protected_section >> replit.md
+    generate_project_docs_section >> replit.md
     echo "         Preserved all existing content, added BMAD section at the end"
   fi
 
 else
-  echo "[4/6] Creating new replit.md..."
-  generate_bmad_section > replit.md
+  echo "[5/7] Creating new replit.md..."
+  generate_bmad_protected_section > replit.md
+  generate_project_docs_section >> replit.md
   echo "         Created fresh replit.md with BMAD configuration"
 fi
 
-# ─── Step 5: Copy update script ──────────────────────────────────────────
-SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+# ─── Step 6: Copy update script ──────────────────────────────────────────
 if [ -f "$SCRIPT_DIR/update-bmad.sh" ]; then
   cp "$SCRIPT_DIR/update-bmad.sh" ./update-bmad.sh 2>/dev/null || true
-  echo "[5/6] Copied update script (run 'bash update-bmad.sh' for future updates)"
+  echo "[6/7] Copied update script (run 'bash update-bmad.sh' for future updates)"
 else
-  echo "[5/6] Update script not found — you can download it from the BMad repo"
+  echo "[6/7] Update script not found — you can download it from the BMad repo"
 fi
 
-# ─── Step 6: Copy README ──────────────────────────────────────────────────
+# ─── Step 7: Copy README ──────────────────────────────────────────────────
 if [ -f "_bmad/README.md" ]; then
   cp "_bmad/README.md" "BMAD-README.md"
-  echo "[6/6] Copied BMAD-README.md (complete guide to using BMad in Replit)"
+  echo "[7/7] Copied BMAD-README.md (complete guide to using BMad in Replit)"
 else
-  echo "[6/6] README not found in toolkit — skipping"
+  echo "[7/7] README not found in toolkit — skipping"
 fi
 
 # ─── Summary ──────────────────────────────────────────────────────────────
@@ -264,11 +279,21 @@ echo " BMad Method installed successfully!"
 echo "=========================================="
 echo ""
 
+if [ "$SKILLS_INSTALLED" -gt 0 ]; then
+  echo "  Skills: $SKILLS_INSTALLED BMAD skills installed"
+  echo "  Activation: Skills handle all workflow discovery"
+else
+  echo "  Skills: NOT INSTALLED — workflows will not activate!"
+  echo "  Re-download from the BMad repo for the complete package."
+fi
+
+echo ""
+
 if [ "$IS_BROWNFIELD" = true ]; then
   echo "  Project type: BROWNFIELD (existing project detected)"
   echo ""
   echo "  Your first step should be:"
-  echo "    Say \"assess brownfield\" or \"AB\""
+  echo "    Say \"assess project\" or \"AP\""
   echo "    This will scan your project and find the best"
   echo "    entry point into the BMad planning workflow."
 else
@@ -281,7 +306,7 @@ fi
 
 echo ""
 echo "  Anytime you need help, just say:"
-echo "    \"what should I do next?\""
+echo "    \"what should I do next?\" or \"help\""
 echo ""
 echo "=========================================="
 echo ""
