@@ -2,6 +2,7 @@ import { Router, type Request, type Response } from "express";
 import { requireAuth, getEffectiveUser, requireReadOnlyImpersonation, isImpersonating } from "../middleware/auth";
 import { storage } from "../storage";
 import {
+  insertPlanSchema,
   planStartupCostsSchema,
   planFinancialInputsSchema,
   updatePlanSchema,
@@ -69,6 +70,26 @@ router.get(
       plans = await storage.getPlansByUser(effectiveUser.id);
     }
     return res.json(plans);
+  }
+);
+
+// POST /api/plans — create a new plan
+router.post(
+  "/",
+  requireAuth,
+  async (req: Request, res: Response) => {
+    const parsed = insertPlanSchema.safeParse(req.body);
+    if (!parsed.success) {
+      return res.status(400).json({
+        message: "Validation failed",
+        errors: parsed.error.errors.map((e) => ({
+          path: e.path.map(String),
+          message: e.message,
+        })),
+      });
+    }
+    const plan = await storage.createPlan(parsed.data);
+    return res.status(201).json(plan);
   }
 );
 

@@ -1,6 +1,6 @@
 # Test Automation Summary
 
-**Date:** 2026-02-12
+**Date:** 2026-02-15
 **Workflow:** Quinn QA - Automate (BMAD Method)
 **Framework:** Vitest 4.0.18 + Supertest 7.x (API), Playwright 1.58.2 (E2E)
 
@@ -10,6 +10,34 @@
 - **Config:** `vitest.config.ts` includes `shared/**/*.test.ts`, `server/**/*.test.ts`, `client/src/lib/**/*.test.ts`
 - **E2E Tests:** Playwright via `@playwright/test`; config at `playwright.config.ts`
 - **Pattern:** Mock-based isolation using `vi.mock()` for storage layer; Express test apps with injected auth middleware
+
+## Generated Tests (2026-02-15)
+
+### E2E Tests — New Files (Stories 4.1 & 4.2)
+
+- [x] `e2e/planning-workspace.spec.ts` - Planning Workspace, Mode Switcher & Dashboard (7 tests)
+  - Workspace renders with planning header and mode switcher
+  - Mode switcher shows all three modes and switches instantly
+  - Split view renders input panel and dashboard panel
+  - Dashboard panel shows 5 summary metric cards
+  - Dashboard panel renders break-even and revenue vs expenses charts
+  - Mode preference persists via API
+  - Quick start overlay shown when quickStartCompleted is false
+
+- [x] `e2e/forms-mode.spec.ts` - Forms Mode Section-Based Input (8 tests)
+  - Forms mode renders with completeness dashboard and four sections
+  - Sections show progress indicators
+  - Fields display brand default values with Brand Default badge
+  - Editing a field updates source badge to Your Entry
+  - Reset button reverts field to brand default
+  - Section collapse and expand preserves values
+  - Mode switching preserves form state
+  - Completeness dashboard updates when fields are edited
+  - Start here indicator shows for new plans with all brand defaults
+
+### Bug Fix During QA
+
+- **Missing POST /api/plans route:** Discovered during QA that the POST /api/plans endpoint for creating plans was missing from `server/routes/plans.ts`. The `storage.createPlan()` method existed but was never exposed via a route handler. Added the POST route with Zod validation using `insertPlanSchema`.
 
 ## Generated Tests (2026-02-12)
 
@@ -60,6 +88,10 @@
 - [x] `server/routes/admin.test.ts` - Admin operations (20 tests)
 - [x] `server/middleware/auth.test.ts` - Auth middleware (34 tests)
 - [x] `server/services/financial-service.test.ts` - Financial service (9 tests)
+- [x] `server/services/brand-validation-service.test.ts` - Brand validation (14 tests)
+- [x] `server/services/structured-logger.test.ts` - Structured logger (4 tests)
+- [x] `server/middleware/rbac.test.ts` - RBAC middleware (7 tests)
+- [x] `shared/schema.test.ts` - Schema validation (29 tests)
 
 ### Unit Tests
 - [x] `shared/financial-engine.test.ts` - Financial engine calculations (33 tests)
@@ -71,10 +103,11 @@
 | Category | Covered | Total | Notes |
 |----------|---------|-------|-------|
 | API route files | 8/8 | 100% | `financial-engine.ts` is empty stub (no routes to test) |
-| Middleware | 1/1 | 100% | Auth middleware fully tested |
-| Shared modules | 2/2 | 100% | Financial engine + plan initialization |
+| Middleware | 2/2 | 100% | Auth middleware + RBAC fully tested |
+| Shared modules | 3/3 | 100% | Financial engine + plan initialization + schema |
+| Services | 3/3 | 100% | Financial service + brand validation + structured logger |
 | Client utilities | 1/1 | 100% | Quick start helpers |
-| E2E specs | 5 files | 36 tests | Auth, dashboard, invitations, brands, API comprehensive |
+| E2E specs | 7 files | 51+ tests | Auth, dashboard, invitations, brands, API, planning workspace, forms mode |
 
 ### API Endpoint Coverage
 
@@ -85,7 +118,7 @@
 | Invitations | 4 | 4 | Full |
 | Onboarding | 3 | 3 | Full |
 | Users | 1 | 1 | Full |
-| Plans | 4 | 4 | Full |
+| Plans | 5 | 5 | Full (POST added 2026-02-15) |
 | Admin | 6+ | 5 | Good |
 | Financial Engine | 0 (empty router) | N/A | N/A |
 
@@ -100,20 +133,21 @@
 | Invitation management | Yes | Full |
 | Brand management | Yes | Full |
 | Onboarding | Partial (API level) | Needs franchisee user for UI |
-| Planning workspace | No | Needs plan data setup |
+| Planning workspace (4.1) | Yes | Full — mode switcher, split view, dashboard metrics, charts, quick start guard |
+| Forms mode (4.2) | Yes | Full — sections, progress, editing, reset, badges, mode switch state preservation |
 | Accept invitation | No | Requires invitation token flow |
 | Admin brand detail | No | Navigate from brands list |
 | Impersonation | Unit tests | Covered in admin.test.ts |
 
 ## Test Results
 
-### Vitest Results
+### Vitest Results (2026-02-15)
 ```
-Total test files: 12
-Total tests: 298
-Passed: 298
+Total test files: 16
+Total tests: 352
+Passed: 352
 Failed: 0
-Duration: ~4.3s
+Duration: ~5.7s
 ```
 
 ### E2E Results
@@ -133,13 +167,15 @@ npx playwright test
 # Run specific test file
 npx vitest run server/routes/auth.test.ts
 npx playwright test e2e/dashboard.spec.ts
+npx playwright test e2e/planning-workspace.spec.ts
+npx playwright test e2e/forms-mode.spec.ts
 ```
 
 ## Next Steps
 
-- Add E2E tests for planning workspace (requires plan creation setup)
 - Add E2E tests for accept-invitation flow (requires token generation)
 - Add E2E tests for admin brand detail page
 - Add E2E tests for onboarding UI (requires franchisee user creation via invitation flow)
 - Consider adding startup costs and financial metrics E2E tests
+- Add E2E tests for Quick Entry mode when Story 4.3 is implemented
 - Run tests in CI pipeline
