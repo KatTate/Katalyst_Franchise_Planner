@@ -11,6 +11,39 @@
 - **E2E Tests:** Playwright via `@playwright/test`; config at `playwright.config.ts`
 - **Pattern:** Mock-based isolation using `vi.mock()` for storage layer; Express test apps with injected auth middleware
 
+## Generated Tests (2026-02-15) — Story 4.4 QA
+
+### E2E Tests — Story 4.4: Quick Entry Mode Keyboard Navigation & Formatting (11 tests)
+
+- [x] `e2e/quick-entry-4-4.spec.ts` - Keyboard Navigation & Auto-Formatting (11 tests)
+  - AC1: Tab moves focus to next editable Value cell
+  - AC1: Shift+Tab moves focus to previous editable Value cell
+  - AC1: Tab wraps across category groups (Revenue → Operating Costs)
+  - AC2: Enter commits value and moves focus down to next editable cell
+  - AC3: Currency field shows formatted value on blur ($4,200.00) and raw value on focus (4200)
+  - AC3 additional: Currency formatting with comma separators for large values ($250,000)
+  - AC4: Percentage field shows formatted value on blur (23.0%) and raw value on focus
+  - AC5: Integer field displays as whole number, decimals rounded (84.6 → 85)
+  - AC6: Row virtualization — visible rows rendered in DOM
+  - AC7: Full keyboard-only workflow — Tab, type, Enter, Escape cycle without mouse
+  - AC8: Collapsed groups are skipped during keyboard navigation
+  - Escape cancels edit without committing — preserves original value
+
+**Acceptance Criteria Coverage:**
+
+| AC | Description | Test Coverage | Status |
+|----|-------------|---------------|--------|
+| AC1 | Tab/Shift+Tab navigation | 3 tests (forward, backward, cross-group wrap) | Covered |
+| AC2 | Enter commits and moves down | 1 test (commit + focus shift) | Covered |
+| AC3 | Currency auto-format | 2 tests (basic + large values) | Covered |
+| AC4 | Percentage auto-format | 1 test (blur/focus display) | Covered |
+| AC5 | Integer rounding | 1 test (84.6 → 85) | Covered |
+| AC6 | Row virtualization | 1 test (DOM row count check) | Covered |
+| AC7 | Full keyboard-only completion | 1 test (Tab/Enter/Escape workflow) | Covered |
+| AC8 | Collapsed groups skipped | 1 test (collapse + Tab skips group) | Covered |
+
+---
+
 ## Generated Tests (2026-02-15) — Story 3.1 QA
 
 ### Unit Tests — Story 3.1: Financial Engine Core & Plan Schema (16 new tests)
@@ -174,7 +207,7 @@
 | Shared modules | 3/3 | 100% | Financial engine + plan initialization + schema |
 | Services | 3/3 | 100% | Financial service + brand validation + structured logger |
 | Client utilities | 1/1 | 100% | Quick start helpers |
-| E2E specs | 8 files | 67+ tests | Auth, dashboard, invitations, brands, API, planning workspace, forms mode, quick entry mode |
+| E2E specs | 9 files | 77+ tests | Auth, dashboard, invitations, brands, API, planning workspace, forms mode, quick entry mode (4.3 + 4.4) |
 
 ### API Endpoint Coverage
 
@@ -203,6 +236,7 @@
 | Planning workspace (4.1) | Yes | Full — mode switcher, split view, dashboard metrics, charts, quick start guard |
 | Forms mode (4.2) | Yes | Full — sections, progress, editing, reset, badges, mode switch state preservation |
 | Quick entry mode (4.3) | Yes | Full — grid with category groups, collapse/expand, immediate edit on focus, commit/cancel, sticky metrics, reset to default, empty state, mode switch state preservation |
+| Quick entry keyboard & formatting (4.4) | Yes | Full — Tab/Shift+Tab/Enter navigation, currency/percentage/integer auto-formatting, row virtualization, collapsed group skip, full keyboard-only workflow |
 | Accept invitation | No | Requires invitation token flow |
 | Admin brand detail | No | Navigate from brands list |
 | Impersonation | Unit tests | Covered in admin.test.ts |
@@ -212,14 +246,16 @@
 ### Vitest Results (2026-02-15)
 ```
 Total test files: 16
-Total tests: 368
-Passed: 368
+Total tests: 380
+Passed: 380
 Failed: 0
-Duration: ~4.8s
+Duration: ~5.0s
 ```
 
 ### E2E Results
-All E2E scenarios verified passing via Playwright testing agent, including Story 4.3 Quick Entry mode (13 tests).
+All E2E scenarios verified passing via Playwright testing agent, including:
+- Story 4.3 Quick Entry mode (16 tests)
+- Story 4.4 Keyboard Navigation & Auto-Formatting (10 tests) — all 8 ACs verified
 
 **Local run note:** Direct `npx playwright test` requires system-level browser dependencies (`libglib-2.0.so.0` etc.) that must be provisioned in the CI/NixOS environment. The Replit test agent handles this automatically.
 
@@ -238,6 +274,7 @@ npx playwright test e2e/dashboard.spec.ts
 npx playwright test e2e/planning-workspace.spec.ts
 npx playwright test e2e/forms-mode.spec.ts
 npx playwright test e2e/quick-entry-mode.spec.ts
+npx playwright test e2e/quick-entry-4-4.spec.ts
 ```
 
 ## Next Steps
@@ -246,5 +283,4 @@ npx playwright test e2e/quick-entry-mode.spec.ts
 - Add E2E tests for admin brand detail page
 - Add E2E tests for onboarding UI (requires franchisee user creation via invitation flow)
 - Consider adding startup costs and financial metrics E2E tests
-- Add E2E tests for keyboard navigation and auto-formatting when Story 4.4 is implemented
 - Run tests in CI pipeline
