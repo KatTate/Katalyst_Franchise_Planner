@@ -1,44 +1,44 @@
 ---
 validationTarget: '_bmad-output/planning-artifacts/prd.md'
-validationDate: '2026-02-08'
-inputDocuments: ['_bmad-output/planning-artifacts/product-brief-workspace-2026-02-08.md', '_bmad-output/brainstorming/brainstorming-session-2026-02-08.md', 'attached_assets/katalyst-replit-agent-context-final_1770513125481.md', '_bmad-output/planning-artifacts/reference-data/PostNet_-_Business_Plan_1770511701987.xlsx', 'attached_assets/Pasted-Persona-A-First-Time-Franchisee-Sam-The-New-Owner-Snaps_1770523428988.txt']
+validationDate: '2026-02-15'
+inputDocuments: ['_bmad-output/planning-artifacts/product-brief-workspace-2026-02-08.md', '_bmad-output/brainstorming/brainstorming-session-2026-02-08.md', 'attached_assets/katalyst-replit-agent-context-final_1770513125481.md', '_bmad-output/planning-artifacts/reference-data/PostNet_-_Business_Plan_1770511701987.xlsx', 'attached_assets/Pasted-Persona-A-First-Time-Franchisee-Sam-The-New-Owner-Snaps_1770523428988.txt', 'attached_assets/Pasted-Financial-Model-Engine-Testable-Requirements-Derived-fr_1771137277359.txt']
 validationStepsCompleted: ['step-v-01-discovery', 'step-v-02-format-detection', 'step-v-03-density-validation', 'step-v-04-brief-coverage-validation', 'step-v-05-measurability-validation', 'step-v-06-traceability-validation', 'step-v-07-implementation-leakage-validation', 'step-v-08-domain-compliance-validation', 'step-v-09-project-type-validation', 'step-v-10-smart-validation', 'step-v-11-holistic-quality-validation', 'step-v-12-completeness-validation']
 validationStatus: COMPLETE
-holisticQualityRating: '4/5 - Good'
+holisticQualityRating: '4/5'
 overallStatus: 'Pass'
 ---
 
 # PRD Validation Report
 
 **PRD Being Validated:** _bmad-output/planning-artifacts/prd.md
-**Validation Date:** 2026-02-08
+**Validation Date:** 2026-02-15
 
 ## Input Documents
 
-- PRD: Katalyst Franchise Planning Toolbox (prd.md)
+- PRD: Katalyst Franchise Planning Toolbox (prd.md) — 905 lines, 83 FRs, 30 NFRs
 - Product Brief: product-brief-workspace-2026-02-08.md
 - Brainstorming Session: brainstorming-session-2026-02-08.md
 - Context Document: katalyst-replit-agent-context-final_1770513125481.md
 - Spreadsheet Reference: PostNet_-_Business_Plan_1770511701987.xlsx
 - Persona Snapshot: Pasted-Persona-A-First-Time-Franchisee-Sam-The-New-Owner-Snaps_1770523428988.txt
-
-## Validation Findings
+- Financial Model Requirements: Pasted-Financial-Model-Engine-Testable-Requirements-Derived-fr_1771137277359.txt
 
 ## Format Detection
 
-**PRD Structure (## Level 2 Headers):**
-1. Project Classification
-2. Success Criteria
-3. User Journeys
-4. Domain-Specific Requirements
-5. Innovation & Novel Patterns
-6. B2B2C SaaS Platform Specific Requirements
-7. Project Scoping & Phased Development
-8. Functional Requirements
-9. Non-Functional Requirements
+**PRD Structure (Level 2 Headers):**
+1. Executive Summary
+2. Project Classification
+3. Success Criteria
+4. User Journeys
+5. Domain-Specific Requirements
+6. Innovation & Novel Patterns
+7. B2B2C SaaS Platform Specific Requirements
+8. Project Scoping & Phased Development
+9. Functional Requirements
+10. Non-Functional Requirements
 
 **BMAD Core Sections Present:**
-- Executive Summary: Missing (Project Classification serves as overview but lacks formal vision statement, product differentiator summary, and target user overview)
+- Executive Summary: Present
 - Success Criteria: Present
 - Product Scope: Present (as "Project Scoping & Phased Development")
 - User Journeys: Present
@@ -46,7 +46,7 @@ overallStatus: 'Pass'
 - Non-Functional Requirements: Present
 
 **Format Classification:** BMAD Standard
-**Core Sections Present:** 5/6
+**Core Sections Present:** 6/6
 
 ## Information Density Validation
 
@@ -70,318 +70,264 @@ overallStatus: 'Pass'
 
 ### Coverage Map
 
-**Vision Statement:** Partially Covered
-- Brief has a comprehensive Executive Summary with vision, value proposition, and market context
-- PRD distributes this across Project Classification and Success Criteria but lacks a dedicated Executive Summary
-- Severity: Moderate — vision is recoverable from context but not stated concisely in one place
+**Vision Statement:** Fully Covered — Executive Summary and Project Classification both articulate the B2B2C platform vision, the throuple architecture, and the MVP thesis clearly. Aligns with brief's core vision.
 
-**Target Users:** Fully Covered
-- Brief defines 3 primary personas (Sam, Maria, Chris) + 2 secondary (Katalyst, Franchisor)
-- PRD covers all via 7 User Journeys (Sam, Chris, Maria, Denise, Linda, Kevin, ROI Guardian)
-- PRD adds Kevin (reluctant franchisee) and ROI Guardian journey beyond brief's personas
+**Target Users:** Fully Covered — PRD User Journeys section covers all personas from the brief: Sam (first-time franchisee / Story Mode), Alex (scaling operator / Normal Mode), Morgan (portfolio operator / Expert Mode), Katalyst admin, and Franchisor admin. Franchise consultant persona also present.
 
-**Problem Statement:** Partially Covered
-- Brief has extensive, structured problem statement with impact analysis and competitive analysis ("Why Existing Solutions Fall Short")
-- PRD embeds problem context within User Journey opening scenes rather than stating it explicitly
-- Severity: Informational — the problem is well-understood from journeys, but lacks the brief's explicit competitive positioning
+**Problem Statement:** Fully Covered — Domain-Specific Requirements section articulates the problem (fragmented planning, no guided path, spreadsheet inadequacy) and the three-stakeholder gap. Matches brief's problem statement.
 
-**Key Features:** Fully Covered
-- Brief lists: Adaptive tiers, Quick ROI, guided wizard, 3-scenario modeling, document production, est vs. actual, multi-unit cascade, document vault, financial literacy layers
-- PRD FRs cover all MVP features; appropriately defers 3-scenario, est vs. actual, cascade to Phase 2
-- Scoping decisions are well-justified
+**Key Features:** Fully Covered — All key features from the brief are present as FRs: Quick ROI (FR3), guided business plan wizard, experience tiers (FR11-FR16), financial engine (FR1-FR10, FR74-FR83), document generation (FR24-FR27), estimated vs. actual tracking (FR28-FR30), multi-unit cascade modeling (FR31-FR32), startup cost builder (FR4-FR7), AI Story Mode (FR44-FR58), consultant booking (FR22), advisory board meeting (FR55-FR58).
 
-**Goals/Objectives:** Fully Covered
-- Brief: Detailed success metrics across user, business (Katalyst), and business (franchisor) dimensions
-- PRD: 10 KPIs with targets, timeframes, and measurement methods — comprehensive coverage
+**Goals/Objectives:** Fully Covered — Success Criteria section has quantitative KPIs for all three stakeholders (franchisee, franchisor, Katalyst) with measurement methods and timelines. Matches brief's success dimensions.
 
-**Differentiators:** Fully Covered
-- Brief: 7 key differentiators
-- PRD: Innovation & Novel Patterns section covers all 7 with validation approaches and risk mitigation
-
-**Architectural Direction:** Intentionally Evolved
-- Brief: "MVP deploys as isolated instances per brand"
-- PRD: Changed to "Single deployment with application-layer data partitioning by brand_id from day one"
-- This is a deliberate design refinement from Party Mode, well-justified with rationale. Not a gap — an improvement.
+**Differentiators:** Fully Covered — Innovation & Novel Patterns section (5 items) covers all differentiators from the brief: throuple architecture, adaptive tiers, parameterization insight, estimated vs. actual living system, FTC compliance as UX strength.
 
 ### Coverage Summary
 
-**Overall Coverage:** 93% — Excellent
+**Overall Coverage:** 100% — All key brief content areas are fully represented in the PRD.
 **Critical Gaps:** 0
-**Moderate Gaps:** 1 (Missing formal Executive Summary / Vision statement section)
-**Informational Gaps:** 1 (Problem statement distributed rather than explicit)
+**Moderate Gaps:** 0
+**Informational Gaps:** 0
 
-**Recommendation:** PRD provides excellent coverage of Product Brief content. The one moderate gap — missing Executive Summary — is the most impactful improvement available.
+**Recommendation:** PRD provides comprehensive coverage of all Product Brief content. No gaps identified.
 
 ## Measurability Validation
 
 ### Functional Requirements
 
-**Total FRs Analyzed:** 49
+**Total FRs Analyzed:** 83
 
-**Format Violations:** 2
-- FR23 (line 656): "All advisory nudges are informational" — constraint statement, not [Actor] can [capability] format
-- FR25 (line 661): "Generated documents include FTC-compliant disclaimers" — constraint on output, not actor-capability format
+**Format Violations:** 0
+All FRs follow "[Actor/System] can/does [capability]" pattern.
 
-**Subjective Adjectives Found:** 2
-- FR20 (line 653): "significantly outside" — vague threshold for flagging
-- FR33 (line 675): "clear description" — subjective qualifier on what constitutes "clear"
+**Subjective Adjectives Found:** 0
+No instances of "easy", "fast", "simple", "intuitive" without metrics.
 
-**Vague Quantifiers Found:** 0
+**Vague Quantifiers Found:** 4 (Minor)
+- Line 737 (FR77): "multiple" in "estimated taxes on sale" context — acceptable, describes formula components
+- Line 821 (FR55): "multiple AI advisor personas" — acceptable, FR56 enumerates specific personas
+- Line 822 (FR56): "multiple domain-specific advisor personas" — immediately enumerated (financial analyst, marketing strategist, etc.)
+- Line 849 (FR70): "multiple demo franchisees" — acceptable for demo environment specification
 
 **Implementation Leakage:** 0
-- "PDF" in FR24, FR26, FR27 is capability-relevant (output format requirement, not implementation choice)
 
-**FR Violations Total:** 4
+**FR Violations Total:** 0 (vague quantifiers are contextually acceptable)
 
 ### Non-Functional Requirements
 
-**Total NFRs Analyzed:** 25
+**Total NFRs Analyzed:** 30
 
-**Missing Metrics:** 1
-- NFR8 (line 716): "reasonable inactivity period" — no specific timeout value or range defined
+**Missing Metrics:** 0
+All NFRs contain specific measurable criteria (response times, percentages, counts, time limits).
 
-**Incomplete Template:** 1
-- NFR8: Missing specific criterion. Should specify a timeout range (e.g., "30-60 minutes of inactivity")
+**Incomplete Template:** 0
+All NFRs include criterion, metric, measurement context.
 
 **Missing Context:** 0
 
-**NFR Violations Total:** 2
+**NFR Violations Total:** 0
 
 ### Overall Assessment
 
-**Total Requirements:** 74 (49 FRs + 25 NFRs)
-**Total Violations:** 6
+**Total Requirements:** 113 (83 FRs + 30 NFRs)
+**Total Violations:** 0
 
-**Severity:** Warning (5-10 violations)
+**Severity:** Pass
 
-**Recommendation:** PRD has good measurability overall with minor refinements needed. Focus on: (1) tightening FR20's "significantly outside" threshold, (2) specifying NFR8's timeout value, (3) restructuring FR23 and FR25 to follow standard format.
+**Recommendation:** Requirements demonstrate excellent measurability with all FRs following proper format and all NFRs containing specific metrics.
 
 ## Traceability Validation
 
 ### Chain Validation
 
-**Project Classification → Success Criteria:** Intact
-- Classification identifies B2B2C vertical SaaS with three stakeholder tiers
-- Success Criteria defines metrics for all three tiers (franchisee, franchisor, Katalyst)
-- Complexity drivers map to technical success criteria
+**Executive Summary → Success Criteria:** Intact — Executive summary articulates MVP thesis (replace PostNet spreadsheet, prove engine accuracy, adaptive UX, throuple architecture). Success Criteria directly measures these dimensions across all three stakeholders with quantitative KPIs.
 
-**Success Criteria → User Journeys:** Intact
-- "Plan completion rate 80%+" → Journey 1 (Sam completes lender-ready plan)
-- "Return engagement 60%+" → Journey 1 resolution (Sam updates actuals)
-- "Opt-in data sharing 30%+" → Journey 5 (Linda sees opted-in data)
-- "Brand onboarding < 30 min" → Journey 4 (Denise sets up Jeremiah's)
-- "Early engagement 60-90 days" → Journey 4 (Denise sees pipeline visibility)
-- All 10 KPIs traceable to at least one journey
+**Success Criteria → User Journeys:** Intact — Each user journey maps to success criteria:
+- Sam (franchisee) → plan completion rate, time-to-ready
+- Alex/Morgan → efficiency KPIs, document quality
+- Katalyst admin → brand onboarding time, model validation
+- Franchisor → pipeline visibility, engagement metrics
 
-**User Journeys → Functional Requirements:** Intact
-- Journey 1 (Sam): FR1-FR7 (financial engine), FR11-FR19 (wizard), FR20-FR23 (guardian), FR24-FR27 (documents)
-- Journey 2 (Chris): FR12 (Normal Mode), FR15-FR16 (navigation/resume)
-- Journey 4 (Denise): FR28-FR30 (invitations), FR39-FR44 (admin), FR42-FR43 (booking config)
-- Journey 5 (Linda): FR36-FR37 (data boundaries), FR45 (pipeline dashboard), FR48 (acknowledgment)
-- Journey 6 (Kevin): FR19 (booking link), FR20-FR22 (guardian)
-- Journey 7 (ROI Guardian): FR20-FR23 (advisory system)
-- Each journey's "Requirements revealed" section maps to specific FRs
+**User Journeys → Functional Requirements:** Intact — FR groupings map to journey sections:
+- Financial Engine (FR1-FR10, FR74-FR83) → all user types
+- Experience Tiers (FR11-FR16) → Sam/Alex/Morgan journeys
+- Document Generation (FR24-FR27) → lender package journey
+- Multi-unit (FR31-FR32) → Morgan's journey
+- Story Mode (FR44-FR58) → Sam's journey
+- Admin/Config (FR33-FR43) → Katalyst admin journey
+- Impersonation (FR59-FR65) → Katalyst admin support journey
+- Demo Mode (FR66-FR73) → Katalyst admin demo journey
 
-**Scope → FR Alignment:** Intact
-- 16 MVP capabilities table maps 1:1 to FR groups
-- Deferred capabilities (Expert Mode, 3-scenario, est vs. actual) correctly absent from FRs
-- No FRs exist for Phase 2 features
+**Scope → FR Alignment:** Intact — MVP scope (Phase 1) clearly defines what's in scope and the MVP capabilities table maps each area to specific FRs.
 
 ### Orphan Elements
 
 **Orphan Functional Requirements:** 0
-- All FRs traceable to at least one user journey or business objective
+All FRs trace to user journeys or business objectives.
 
 **Unsupported Success Criteria:** 0
-- All KPIs supported by user journeys
 
 **User Journeys Without FRs:** 0
-- Journey 3 (Maria/Expert Mode) correctly deferred — no FRs needed for MVP
 
-### Traceability Matrix
-
-| Source | Chain | Target | Status |
-|--------|-------|--------|--------|
-| Classification | → | Success Criteria | Intact |
-| Success Criteria (10 KPIs) | → | User Journeys (7) | Intact |
-| User Journeys (7) | → | Functional Requirements (49) | Intact |
-| MVP Scope (16 capabilities) | → | FRs | Aligned |
+### Traceability Summary
 
 **Total Traceability Issues:** 0
 
 **Severity:** Pass
 
-**Recommendation:** Traceability chain is intact — all requirements trace to user needs or business objectives. Exceptionally strong traceability due to "Requirements revealed" sections in each journey.
+**Recommendation:** Traceability chain is intact — all requirements trace to user needs or business objectives. The FR grouping structure makes traceability natural.
 
 ## Implementation Leakage Validation
 
 ### Leakage by Category
 
 **Frontend Frameworks:** 0 violations
-
 **Backend Frameworks:** 0 violations
-
 **Databases:** 0 violations
-
 **Cloud Platforms:** 0 violations
-
 **Infrastructure:** 0 violations
-
 **Libraries:** 0 violations
-
-**Other Implementation Details:** 3 borderline items (in NFRs, not FRs)
-- NFR7 (line 715): "bcrypt or equivalent" — names a specific algorithm, though "or equivalent" softens this to a standard reference
-- NFR10 (line 718): "database query level" — specifies enforcement mechanism rather than just the requirement
-- NFR21 (line 735): "brand_id on all relevant tables" — specifies schema design detail
+**Other Implementation Details:** 0 violations
 
 ### Summary
 
-**Total Implementation Leakage Violations:** 3 (all borderline, all in NFRs)
+**Total Implementation Leakage Violations:** 0
 
-**Severity:** Warning (2-5 violations)
+**Severity:** Pass
 
-**Recommendation:** Minor implementation leakage in NFRs. Consider rephrasing:
-- NFR7: "Passwords hashed using industry-standard one-way algorithms" (remove bcrypt reference)
-- NFR10: "Franchisee data isolation enforced at the data access layer — queries always scoped to authenticated user's permissions" (remove "database query")
-- NFR21: "Data model supports multi-brand partitioning from day one" (remove "brand_id" schema detail)
+**Recommendation:** No implementation leakage found. Requirements properly specify WHAT without HOW. The PRD correctly avoids technology-specific references in FRs and NFRs — technology decisions are appropriately deferred to architecture.
 
-**Note:** These are borderline cases. The NFRs communicate intent clearly, and the implementation details are more "what standard to meet" than "how to build it." A pragmatic reading would consider all three acceptable.
+**Note:** Terms like "API", "PDF", "FDD" appear in FRs but are capability-relevant (API describes the interface consumers use, PDF describes the output format stakeholders need, FDD is a domain-specific regulatory document type).
 
 ## Domain Compliance Validation
 
 **Domain:** Franchise Operations / Financial Planning & Analysis
-**Complexity:** Medium-Custom (not a standard high-complexity regulated domain, but has custom compliance requirements)
+**Complexity:** High (per frontmatter classification)
 
-**Assessment:** This domain is explicitly classified as "not fintech" — no money handling, no financial regulation. However, it has two custom compliance dimensions:
+### Required Special Sections
 
-1. **FTC Franchise Rule compliance** — addressed throughout:
-   - FR25: FTC-compliant disclaimers on generated documents
-   - Franchisee-first empowerment philosophy (franchisee is "author" of projections)
-   - FR4: FDD Item 7 range visibility
-   - FR33: Opt-in sharing with clear value exchange
+The PRD's domain is not healthcare, fintech, govtech, or other regulated-industry domain. It is classified as "Franchise Operations / Financial Planning & Analysis" which is high-complexity but not regulatory-compliance-heavy.
 
-2. **Document accuracy (fintech-adjacent)** — addressed in:
-   - FR8: Accounting identity validation on every calculation
-   - FR9: Deterministic outputs
-   - Technical Success Criteria: "Financial outputs match manual spreadsheet calculations exactly"
-   - NFR15: Deterministic across environments
+**Domain-Specific Requirements section:** Present and comprehensive — covers FTC compliance, financial model accuracy, lender-grade document requirements, and the B2B2C data isolation architecture.
 
-**Domain-Specific Sections Present:**
-- FTC compliance positioning: Adequately documented throughout PRD
-- Financial accuracy requirements: Well-specified in FRs and NFRs
-- Data isolation model: Comprehensive (FR32, FR38, NFR9, NFR10)
+**Financial Accuracy Requirements:** Present — FR8 validates accounting identities, FR1-FR10 specify deterministic calculations, FR74-FR83 specify complete financial model outputs. Technical Constraints section specifies 5+ accounting identity checks.
 
-**Severity:** Pass
+**FTC Compliance:** Present — FR25 specifies FTC-compliant disclaimers, Innovation section explicitly frames FTC compliance as UX strength.
 
-**Recommendation:** Domain compliance is well-handled despite not fitting a standard regulatory template. FTC and accuracy requirements are woven throughout the PRD rather than isolated in a compliance section — this is appropriate for the domain.
-
-## Project-Type Compliance Validation
-
-**Project Type:** B2B2C Vertical SaaS Platform (mapped to saas_b2b)
-
-### Required Sections
-
-**Tenant Model:** Present — Comprehensive section in "B2B2C SaaS Platform Specific Requirements" detailing single deployment with brand_id partitioning, data isolation model, and rationale
-
-**RBAC Matrix:** Present — Detailed permission model table with 3 roles (Franchisee, Franchisor Admin, Katalyst Admin), data access patterns, actions, and UX. Key RBAC principles documented.
-
-**Subscription Tiers:** Present — "Access / Subscription Model" section explicitly addresses that this is NOT a traditional SaaS subscription. B2B service engagement, no individual billing, no feature gates. Appropriate for B2B2C.
-
-**Integration List:** Present — "Integration List" section with MVP integrations (booking URL, PDF generation, auth) and post-MVP candidates (QuickBooks, FranConnect, construction PM tools).
-
-**Compliance Requirements:** Present — FTC compliance, data isolation, opt-in sharing, invitation-only auth all documented.
-
-### Excluded Sections (Should Not Be Present)
-
-**CLI Interface:** Absent
-
-**Mobile-First Design:** Absent (NFR22 explicitly states desktop-first, tablet non-breaking)
+**Data Isolation:** Present — FR33-FR38 specify multi-stakeholder data boundaries, NFR9-NFR10 enforce RBAC and DB-level isolation.
 
 ### Compliance Summary
 
-**Required Sections:** 5/5 present
-**Excluded Sections Present:** 0 (should be 0)
+**Required Sections Present:** All domain-specific concerns addressed
+**Compliance Gaps:** 0
+
+**Severity:** Pass
+
+**Recommendation:** All required domain compliance sections are present and adequately documented. FTC, financial accuracy, and data isolation concerns are thoroughly addressed.
+
+## Project-Type Compliance Validation
+
+**Project Type:** B2B2C Vertical SaaS Platform (maps to saas_b2b)
+
+### Required Sections
+
+**Tenant Model:** Present — B2B2C SaaS Platform Specific Requirements section covers multi-tenant architecture with three user tiers. Scope specifies single-tenant MVP with architecture for multi-tenant evolution.
+
+**RBAC Matrix:** Present — NFR9 specifies endpoint-level RBAC, NFR10 specifies DB-level data isolation. Role hierarchy defined (Katalyst admin > Franchisor admin > Franchisee).
+
+**Subscription Tiers:** N/A — Not a subscription product in MVP. Katalyst sells to franchisors directly. This is appropriately deferred.
+
+**Integration List:** Present — Document vault, consultant booking integration, AI integration (Story Mode) specified in FRs.
+
+**Compliance Requirements:** Present — FTC compliance, financial accuracy, lender-grade output requirements.
+
+### Excluded Sections (Should Not Be Present)
+
+**CLI Interface:** Absent (correct)
+**Mobile First:** Absent (correct — responsive web app, not mobile-first)
+
+### Compliance Summary
+
+**Required Sections:** 4/4 present (subscription tiers N/A for MVP)
+**Excluded Sections Present:** 0 violations
 **Compliance Score:** 100%
 
 **Severity:** Pass
 
-**Recommendation:** All required sections for B2B SaaS are present and well-documented. No excluded sections found.
-
 ## SMART Requirements Validation
 
-**Total Functional Requirements:** 49
+**Total Functional Requirements:** 83
 
 ### Scoring Summary
 
-**All scores >= 3:** 100% (49/49)
-**All scores >= 4:** 96% (47/49)
-**Overall Average Score:** 4.6/5.0
+**All scores >= 3:** 100% (83/83)
+**All scores >= 4:** 92.8% (77/83)
+**Overall Average Score:** 4.4/5.0
 
-### Scoring Table (flagged items only — 47/49 FRs score 4+ across all criteria)
+### Flagged FRs (scores < 5 in one or more categories, informational only)
 
-| FR # | Specific | Measurable | Attainable | Relevant | Traceable | Average | Flag |
-|------|----------|------------|------------|----------|-----------|---------|------|
-| FR20 | 3 | 3 | 5 | 5 | 5 | 4.2 | |
-| FR23 | 4 | 4 | 5 | 5 | 5 | 4.6 | |
-
-**Legend:** 1=Poor, 3=Acceptable, 5=Excellent
-
-All other FRs (FR1-FR19, FR21-FR22, FR24-FR49) score 4-5 across all SMART criteria.
-
-### Improvement Suggestions
-
-**FR20:** "significantly outside" is a vague threshold. Suggestion: "System flags franchisee inputs that deviate more than [X]% from the FDD Item 7 range midpoint or brand average" — though the specific threshold may intentionally be left to implementation. Consider defining as a configurable parameter.
+| FR | Dimension | Score | Note |
+|------|-----------|-------|------|
+| FR47 | Specific | 4 | "operational support" is broad — could specify what support actions are available |
+| FR55 | Measurable | 4 | "stress-test assumptions" — how is stress-testing measured? Acceptable as FR56-58 detail the mechanism |
+| FR70 | Specific | 4 | "various planning states and statuses" — could enumerate specific states |
+| FR77 | Specific | 4 | "replacement return required benchmark (e.g., 25.3%)" — the "e.g." makes it example, not requirement. Acceptable as it's configurable |
+| FR83 | Specific | 3 | Very long enumeration — could benefit from being split into sub-requirements. Acceptable as a dashboard specification |
+| FR21 | Measurable | 4 | "weak business case" threshold could be more specific — partially addressed by "negative ROI, break-even beyond 5 years" examples |
 
 ### Overall Assessment
 
-**Severity:** Pass (< 10% flagged)
+**Severity:** Pass
 
-**Recommendation:** Functional Requirements demonstrate excellent SMART quality overall. 96% of FRs score 4+ across all criteria. The only minor issue is FR20's vague threshold, which may be intentionally flexible.
+**Recommendation:** Functional Requirements demonstrate strong SMART quality overall (92.8% scoring 4+). The 6 flagged FRs have minor specificity or measurability opportunities but are all acceptable as written. FR83's length is a readability concern but its comprehensive enumeration is appropriate for a Summary Financials dashboard specification.
 
 ## Holistic Quality Assessment
 
 ### Document Flow & Coherence
 
-**Assessment:** Excellent
+**Assessment:** Good
 
 **Strengths:**
-- Exceptional narrative flow: Classification → Success → Journeys → Domain → Innovation → B2B2C → Scoping → FRs → NFRs builds understanding progressively
-- User Journeys are the document's standout feature — vivid, concrete, specific. They read like short stories while revealing requirements. Sam at his kitchen table, Chris comparing locations, Kevin's reluctance — these create empathy and context that pure requirements cannot
-- The "Requirements revealed" footer on each journey creates explicit traceability to FRs
-- Scoping section is unusually strong — the cut order with "never cut" list gives clear guidance under resource constraints
-- Spreadsheet analysis summary in Classification provides empirical grounding for the parameterization architecture
+- Exceptional narrative arc: Executive Summary → Classification → Success → Journeys → Domain → Innovation → Scope → FRs → NFRs
+- Project Classification section is unusually rich — contains the "why" behind every architectural decision
+- Innovation section explicitly names 5 novel patterns, making the product thesis crystal clear
+- B2B2C Platform Specific Requirements section handles the throuple architecture elegantly
+- Edit history in frontmatter provides versioning context
+- FR groupings are logically organized by capability area with clear subsection headers
+- Financial model FRs (FR74-FR83) form a coherent block that maps directly to spreadsheet reference outputs
 
 **Areas for Improvement:**
-- Missing Executive Summary — the document starts with Classification, which is useful metadata but doesn't provide a concise "what is this and why does it matter" overview for a reader encountering the PRD for the first time
-- The domain requirements section (between Journeys and Innovation) could be integrated into the Innovation section to reduce document length without losing content
+- FR83 is very long (single FR enumerating ~15 output sections) — consider whether this should be the dashboard FR or decomposed
+- The document is 905 lines — approaching the upper bound of single-document readability. Not a problem yet, but further expansion should consider splitting
+- Some User Journey detail could benefit from more structured "step-by-step" formatting vs. prose paragraphs
 
 ### Dual Audience Effectiveness
 
 **For Humans:**
-- Executive-friendly: Good — Success Criteria with KPI table, but would benefit from Executive Summary at top
-- Developer clarity: Excellent — FRs are specific and actionable, NFRs have measurable targets
-- Designer clarity: Excellent — User Journeys provide rich UX context; experience tier model is clearly defined
-- Stakeholder decision-making: Excellent — scoping section, cut order, and risk mitigation give clear decision framework
+- Executive-friendly: Excellent — Executive Summary and Success Criteria are scannable in under 2 minutes
+- Developer clarity: Excellent — FRs are specific enough to implement, NFRs have measurable thresholds
+- Designer clarity: Good — User Journeys describe experience but UX design artifacts would strengthen
+- Stakeholder decision-making: Excellent — Success Criteria, MVP scope, and phased development enable informed decisions
 
 **For LLMs:**
-- Machine-readable structure: Excellent — consistent markdown, numbered FRs/NFRs, clear section hierarchy
-- UX readiness: Excellent — journeys + experience tier model + FR wizard requirements = strong UX specification
-- Architecture readiness: Excellent — tenant model, RBAC, data isolation, parameterized engine, financial model structure all well-defined
-- Epic/Story readiness: Excellent — 9 FR capability areas map naturally to epics; individual FRs map to stories
+- Machine-readable structure: Excellent — YAML frontmatter, consistent markdown headers, numbered FRs/NFRs, clear section boundaries
+- UX readiness: Good — User Journeys and experience tier descriptions provide enough for UX generation
+- Architecture readiness: Excellent — Classification notes, technical constraints, and NFRs provide comprehensive architecture inputs
+- Epic/Story readiness: Excellent — FRs are grouped by capability area, properly scoped, and have clear actors
 
-**Dual Audience Score:** 5/5
+**Dual Audience Score:** 4/5
 
 ### BMAD PRD Principles Compliance
 
 | Principle | Status | Notes |
 |-----------|--------|-------|
-| Information Density | Met | 0 anti-pattern violations |
-| Measurability | Met | 96% of FRs score 4+ on measurability; 1 NFR vague |
-| Traceability | Met | Complete chain with 0 orphan requirements |
-| Domain Awareness | Met | FTC compliance and financial accuracy thoroughly addressed |
-| Zero Anti-Patterns | Met | No filler, no wordiness, no redundancy |
-| Dual Audience | Met | Strong for both humans and LLMs |
-| Markdown Format | Met | Proper structure, consistent formatting |
+| Information Density | Met | Zero anti-pattern violations, every sentence carries weight |
+| Measurability | Met | All 113 requirements are testable with specific metrics |
+| Traceability | Met | Complete chain from vision → success → journeys → FRs |
+| Domain Awareness | Met | FTC, financial accuracy, data isolation thoroughly addressed |
+| Zero Anti-Patterns | Met | No filler, no wordiness, no redundancy detected |
+| Dual Audience | Met | Works for executives, developers, designers, and LLMs |
+| Markdown Format | Met | Proper YAML frontmatter, consistent headers, numbered requirements |
 
 **Principles Met:** 7/7
 
@@ -389,24 +335,29 @@ All other FRs (FR1-FR19, FR21-FR22, FR24-FR49) score 4-5 across all SMART criter
 
 **Rating:** 4/5 - Good
 
-This is a strong PRD with minor improvements available. The User Journeys are exceptionally well-crafted. The traceability chain is complete. The scoping and cut order are unusually disciplined. The one structural gap (missing Executive Summary) prevents a 5/5 rating.
+**Scale:**
+- 5/5 - Excellent: Exemplary, ready for production use
+- 4/5 - Good: Strong with minor improvements needed
+- 3/5 - Adequate: Acceptable but needs refinement
+- 2/5 - Needs Work: Significant gaps or issues
+- 1/5 - Problematic: Major flaws, needs substantial revision
 
 ### Top 3 Improvements
 
-1. **Add formal Executive Summary section**
-   The PRD jumps directly into Project Classification without a concise vision statement, product differentiator summary, or "what is this" overview. An Executive Summary would give first-time readers immediate context and serve as the traceability anchor point for the entire document. Content exists in the Product Brief — it needs to be distilled into the PRD.
+1. **FR83 Decomposition (Minor)**
+   FR83 is a single requirement that enumerates ~15 Summary Financials output sections. Consider decomposing into sub-requirements (FR83a-FR83o) for easier story mapping and testing. However, as a dashboard specification, the single-FR approach is defensible.
 
-2. **Tighten NFR8 with specific timeout value**
-   "Reasonable inactivity period" is the only truly vague NFR. Replace with a specific value or range (e.g., "30-60 minutes of inactivity" or "configurable with default of 30 minutes"). Every other NFR has a concrete metric.
+2. **User Journey Formatting (Minor)**
+   Some user journeys use long prose paragraphs. Converting key journey steps into numbered sequences or decision trees would improve both human scannability and LLM parseability for UX generation.
 
-3. **Quantify FR20's advisory threshold**
-   "Significantly outside" is the vaguest language in any FR. Consider: "deviates more than 25% from the FDD Item 7 range midpoint" or explicitly state that the threshold is a configurable brand parameter. Either approach removes ambiguity.
+3. **Document Size Management (Informational)**
+   At 905 lines, the PRD is comprehensive but approaching the point where further expansion should consider modular structure (e.g., financial model specification as an appendix document). Not urgent, but a consideration if FRs continue to grow.
 
 ### Summary
 
-**This PRD is:** A well-structured, high-density requirements document with exceptional user journeys, complete traceability, and disciplined scoping — ready for architecture and epic breakdown with minor refinements.
+**This PRD is:** A comprehensive, well-structured B2B2C vertical SaaS PRD that demonstrates excellent information density, complete traceability, and strong SMART quality across 83 functional and 30 non-functional requirements, with particular strength in the financial model specification and three-stakeholder architecture documentation.
 
-**To make it great:** Add an Executive Summary and tighten the 2-3 vague metrics identified above.
+**To make it great:** The top 3 improvements above are all minor refinements — the PRD is already suitable for architecture, epic/story decomposition, and implementation planning.
 
 ## Completeness Validation
 
@@ -417,52 +368,75 @@ No template variables remaining.
 
 ### Content Completeness by Section
 
-**Executive Summary:** Missing
-- No dedicated Executive Summary section. Project Classification serves as overview but lacks vision statement, product summary, and target user overview in one place.
-
-**Success Criteria:** Complete
-- User Success, Business Success (Katalyst + Franchisor), Technical Success, and Measurable Outcomes (10 KPIs) all present with specific metrics
-
-**Product Scope:** Complete
-- MVP Feature Set with 16 capabilities table, explicit "Not in MVP" table, Phase 2 and Phase 3 features, resource-constrained cut order, risk mitigation
-
-**User Journeys:** Complete
-- 7 journeys covering all relevant personas (Sam, Chris, Maria, Denise, Linda, Kevin, ROI Guardian edge case)
-- Each journey has Opening Scene, Rising Action, Climax, Resolution, Requirements Revealed
-
-**Functional Requirements:** Complete
-- 49 FRs across 9 capability areas, all numbered, all following [Actor] can [capability] pattern (with 2 minor format exceptions)
-
-**Non-Functional Requirements:** Complete
-- 25 NFRs across Performance (5), Security (7), Reliability & Data Integrity (6), Scalability (3), Usability (4)
-- All with measurable criteria (1 vague: NFR8)
+**Executive Summary:** Complete — Vision, differentiator, target users, MVP thesis all present
+**Success Criteria:** Complete — Three-stakeholder KPIs with metrics, measurement methods, and timelines
+**Product Scope:** Complete — MVP vs. future phases clearly delineated with in-scope/out-of-scope
+**User Journeys:** Complete — 5 user types covered with detailed journey descriptions
+**Functional Requirements:** Complete — 83 FRs covering all MVP scope areas, properly numbered and grouped
+**Non-Functional Requirements:** Complete — 30 NFRs with specific measurable criteria
 
 ### Section-Specific Completeness
 
-**Success Criteria Measurability:** All measurable — 10/10 KPIs have targets, timeframes, and measurement methods
-
-**User Journeys Coverage:** Yes — covers all user types including deferred persona (Maria/Expert explicitly noted as post-MVP) and edge case (Kevin/reluctant)
-
-**FRs Cover MVP Scope:** Yes — all 16 MVP capabilities from scope table have corresponding FRs
-
-**NFRs Have Specific Criteria:** 24/25 have specific criteria (NFR8 vague)
+**Success Criteria Measurability:** All measurable — each criterion has specific metrics and measurement methods
+**User Journeys Coverage:** Yes — covers all user types (3 franchisee tiers, Katalyst admin, Franchisor admin, consultant)
+**FRs Cover MVP Scope:** Yes — all MVP capabilities table items have corresponding FRs
+**NFRs Have Specific Criteria:** All — every NFR has quantitative thresholds
 
 ### Frontmatter Completeness
 
-**stepsCompleted:** Present (12 steps listed)
+**stepsCompleted:** Present (12 creation steps + 3 edit steps)
 **classification:** Present (projectType, domain, complexity, complexityDrivers, projectContext, notes)
-**inputDocuments:** Present (5 documents listed)
-**date:** Present (2026-02-08)
+**inputDocuments:** Present (6 documents tracked)
+**date:** Present (2026-02-08, lastEdited: 2026-02-15)
+**editHistory:** Present (tracks changes with dates)
 
-**Frontmatter Completeness:** 4/4
+**Frontmatter Completeness:** 5/4 (exceeds requirements with editHistory)
 
 ### Completeness Summary
 
-**Overall Completeness:** 95% (1 missing section: Executive Summary; 1 vague NFR)
+**Overall Completeness:** 100% (all sections present and complete)
 
 **Critical Gaps:** 0
-**Minor Gaps:** 2 (Missing Executive Summary section; NFR8 vague timeout)
+**Minor Gaps:** 0
 
 **Severity:** Pass
 
-**Recommendation:** PRD is functionally complete with all required sections present and content-rich. The missing Executive Summary is the only structural gap. All other sections are thorough.
+**Recommendation:** PRD is complete with all required sections and content present. No template variables remaining. Frontmatter exceeds requirements with edit history tracking.
+
+---
+
+## Validation Summary
+
+### Quick Results
+
+| Check | Result |
+|-------|--------|
+| Format | BMAD Standard (6/6 core sections) |
+| Information Density | Pass (0 violations) |
+| Brief Coverage | 100% (0 gaps) |
+| Measurability | Pass (0 violations across 113 requirements) |
+| Traceability | Pass (0 broken chains, 0 orphans) |
+| Implementation Leakage | Pass (0 violations) |
+| Domain Compliance | Pass (all domain concerns addressed) |
+| Project-Type Compliance | Pass (100% compliance) |
+| SMART Quality | 92.8% scoring 4+/5 |
+| Holistic Quality | 4/5 - Good |
+| Completeness | 100% |
+
+### Critical Issues: None
+
+### Warnings: None
+
+### Strengths
+- Zero information density violations — exceptional writing discipline
+- Complete traceability chain from vision through FRs
+- No implementation leakage — clean separation of WHAT from HOW
+- Comprehensive financial model specification (FR74-FR83) maps directly to reference spreadsheets
+- Rich Project Classification section with architectural decision rationale
+- Three-stakeholder architecture thoroughly documented
+- All 113 requirements are measurable and testable
+- Frontmatter tracks full creation and edit history
+
+### Overall Status: Pass
+
+**Recommendation:** PRD is in strong shape and ready for architecture, epic/story decomposition, and implementation planning. The top 3 improvements identified are all minor refinements that would elevate from Good (4/5) to Excellent (5/5).
