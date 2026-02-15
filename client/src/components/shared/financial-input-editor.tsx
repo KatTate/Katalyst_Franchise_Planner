@@ -10,7 +10,7 @@ import type {
 } from "@shared/financial-engine";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
+import { SourceBadge } from "@/components/shared/source-badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   Tooltip,
@@ -51,7 +51,7 @@ export function FinancialInputEditor({ planId }: FinancialInputEditorProps) {
   const saveInputs = useCallback(
     async (updated: PlanFinancialInputs) => {
       try {
-        await updatePlan({ financialInputs: updated as any });
+        await updatePlan({ financialInputs: updated });
       } catch {
         // Error handled via mutation state
       }
@@ -431,13 +431,9 @@ function FieldRow({
       )}
 
       {/* Source badge */}
-      <Badge
-        variant={isUserEntry ? "default" : "secondary"}
-        className="text-xs justify-center"
-        data-testid={`badge-source-${fieldName}`}
-      >
-        {isUserEntry ? "Your Entry" : "Brand Default"}
-      </Badge>
+      <div data-testid={`badge-source-${fieldName}`}>
+        <SourceBadge source={field.source as "brand_default" | "user_entry" | "ai_populated"} />
+      </div>
 
       {/* Reset button */}
       <div className="flex justify-end">
