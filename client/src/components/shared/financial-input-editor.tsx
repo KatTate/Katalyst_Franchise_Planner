@@ -1,15 +1,13 @@
-import { useState, useCallback, useRef } from "react";
+import { useState, useCallback } from "react";
 import { usePlan } from "@/hooks/use-plan";
-import {
-  updateFieldValue,
-  resetFieldToDefault,
-} from "@shared/plan-initialization";
+import { useFieldEditing } from "@/hooks/use-field-editing";
 import type {
   PlanFinancialInputs,
   FinancialFieldValue,
 } from "@shared/financial-engine";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 import { SourceBadge } from "@/components/shared/source-badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
@@ -28,12 +26,9 @@ import {
   CATEGORY_LABELS,
   CATEGORY_ORDER,
   formatFieldValue,
-  parseFieldInput,
   getInputPlaceholder,
 } from "@/lib/field-metadata";
 import type { FieldMeta } from "@/lib/field-metadata";
-
-// ─── Component ───────────────────────────────────────────────────────────
 
 interface FinancialInputEditorProps {
   planId: string;
@@ -41,117 +36,26 @@ interface FinancialInputEditorProps {
 
 export function FinancialInputEditor({ planId }: FinancialInputEditorProps) {
   const { plan, isLoading, error, updatePlan, isSaving, saveError } = usePlan(planId);
-  const [editingField, setEditingField] = useState<string | null>(null);
-  const [editValue, setEditValue] = useState("");
-  const [focusedField, setFocusedField] = useState<string | null>(null);
-  const editCanceledRef = useRef(false);
-
   const financialInputs = plan?.financialInputs as PlanFinancialInputs | null | undefined;
 
   const saveInputs = useCallback(
-    async (updated: PlanFinancialInputs) => {
-      try {
-        await updatePlan({ financialInputs: updated });
-      } catch {
-        // Error handled via mutation state
-      }
+    (updated: PlanFinancialInputs) => {
+      updatePlan({ financialInputs: updated }).catch(() => {});
     },
     [updatePlan]
   );
 
-  const handleEditStart = useCallback(
-    (category: string, fieldName: string, field: FinancialFieldValue) => {
-      // Block new edits while a save is in-flight to prevent stale-snapshot overwrites
-      if (isSaving) return;
-
-      const meta = FIELD_METADATA[category]?.[fieldName];
-      if (!meta) return;
-
-      const key = `${category}.${fieldName}`;
-      setEditingField(key);
-
-      // Show raw value for editing
-      switch (meta.format) {
-        case "currency":
-          setEditValue(String(field.currentValue / 100));
-          break;
-        case "percentage":
-          setEditValue(String((field.currentValue * 100).toFixed(1)));
-          break;
-        case "integer":
-          setEditValue(String(field.currentValue));
-          break;
-      }
-    },
-    [isSaving]
-  );
-
-  const handleEditCommit = useCallback(() => {
-    if (!editingField || !financialInputs || editCanceledRef.current) {
-      editCanceledRef.current = false;
-      setEditingField(null);
-      setEditValue("");
-      return;
-    }
-
-    const [category, fieldName] = editingField.split(".");
-    const meta = FIELD_METADATA[category]?.[fieldName];
-    if (!meta) return;
-
-    const parsedValue = parseFieldInput(editValue, meta.format);
-    if (isNaN(parsedValue)) {
-      setEditingField(null);
-      setEditValue("");
-      return;
-    }
-
-    const categoryObj = financialInputs[category as keyof PlanFinancialInputs];
-    const field = categoryObj[fieldName as keyof typeof categoryObj] as FinancialFieldValue;
-
-    // Only save if value actually changed
-    if (parsedValue !== field.currentValue) {
-      const updatedField = updateFieldValue(field, parsedValue, new Date().toISOString());
-      const updatedInputs = {
-        ...financialInputs,
-        [category]: {
-          ...categoryObj,
-          [fieldName]: updatedField,
-        },
-      };
-      saveInputs(updatedInputs as PlanFinancialInputs);
-    }
-
-    setEditingField(null);
-    setEditValue("");
-  }, [editingField, editValue, financialInputs, saveInputs]);
-
-  const handleEditCancel = useCallback(() => {
-    editCanceledRef.current = true;
-    setEditingField(null);
-    setEditValue("");
-  }, []);
-
-  const handleReset = useCallback(
-    (category: string, fieldName: string) => {
-      if (!financialInputs || isSaving) return;
-
-      const categoryObj = financialInputs[category as keyof PlanFinancialInputs];
-      const field = categoryObj[fieldName as keyof typeof categoryObj] as FinancialFieldValue;
-      const resetField = resetFieldToDefault(field, new Date().toISOString());
-
-      const updatedInputs = {
-        ...financialInputs,
-        [category]: {
-          ...categoryObj,
-          [fieldName]: resetField,
-        },
-      };
-      saveInputs(updatedInputs as PlanFinancialInputs);
-    },
-    [financialInputs, isSaving, saveInputs]
-  );
-
-  // ─── Loading state ──────────────────────────────────────────────────────
+  const {
+    editingField,
+    editValue,
+    focusedField,
+    setEditValue,
+    setFocusedField,
+    handleEditStart,
+    handleEditCommit,
+    handleEditCancel,
+    handleReset,
+  } = useFieldEditing({ financialInputs, isSaving, onSave: saveInputs });
 
   if (isLoading) {
     return (
@@ -167,8 +71,6 @@ export function FinancialInputEditor({ planId }: FinancialInputEditorProps) {
       </Card>
     );
   }
-
-  // ─── Error state ────────────────────────────────────────────────────────
 
   if (error) {
     return (
@@ -186,8 +88,6 @@ export function FinancialInputEditor({ planId }: FinancialInputEditorProps) {
     );
   }
 
-  // ─── No inputs state ───────────────────────────────────────────────────
-
   if (!financialInputs) {
     return (
       <Card>
@@ -202,8 +102,6 @@ export function FinancialInputEditor({ planId }: FinancialInputEditorProps) {
       </Card>
     );
   }
-
-  // ─── Main render ────────────────────────────────────────────────────────
 
   return (
     <Card>
@@ -251,8 +149,6 @@ export function FinancialInputEditor({ planId }: FinancialInputEditorProps) {
   );
 }
 
-// ─── Category Section ────────────────────────────────────────────────────
-
 interface CategorySectionProps {
   category: string;
   label: string;
@@ -289,7 +185,7 @@ function CategorySection({
   return (
     <Collapsible open={isOpen} onOpenChange={setIsOpen}>
       <div className="border rounded-md" data-testid={`section-${category}`}>
-        <CollapsibleTrigger className="flex items-center justify-between w-full px-3 py-2 hover:bg-muted/50 rounded-t-md">
+        <CollapsibleTrigger className="flex items-center justify-between w-full px-3 py-2 hover-elevate rounded-t-md">
           <span className="text-sm font-semibold">{label}</span>
           <ChevronDown
             className={`h-4 w-4 text-muted-foreground transition-transform ${
@@ -299,7 +195,6 @@ function CategorySection({
         </CollapsibleTrigger>
         <CollapsibleContent>
           <div className="px-3 pb-2 space-y-0.5">
-            {/* Header row */}
             <div className="grid grid-cols-[1fr_140px_100px_80px] gap-2 px-2 py-1 text-xs font-medium text-muted-foreground border-b">
               <span>Field</span>
               <span>Value</span>
@@ -340,8 +235,6 @@ function CategorySection({
   );
 }
 
-// ─── Field Row ───────────────────────────────────────────────────────────
-
 interface FieldRowProps {
   fieldKey: string;
   category: string;
@@ -381,11 +274,10 @@ function FieldRow({
 
   return (
     <div
-      className={`grid grid-cols-[1fr_140px_100px_80px] gap-2 px-2 py-1.5 items-center rounded hover:bg-muted/50 text-sm ${
+      className={`grid grid-cols-[1fr_140px_100px_80px] gap-2 px-2 py-1.5 items-center rounded hover-elevate text-sm ${
         isUserEntry ? "bg-muted/30" : ""
       }`}
     >
-      {/* Label + brand default */}
       <div>
         <span className="truncate">{meta.label}</span>
         {defaultDisplay && (
@@ -403,7 +295,6 @@ function FieldRow({
         )}
       </div>
 
-      {/* Editable value */}
       {isEditing ? (
         <Input
           className="h-7 text-sm font-mono"
@@ -425,29 +316,29 @@ function FieldRow({
           onFocus={() => onFocusChange(fieldKey)}
           onBlur={() => onFocusChange(null)}
           data-testid={`field-input-${fieldName}`}
+          aria-label={`Edit ${meta.label}`}
         >
           {formatFieldValue(field.currentValue, meta.format)}
         </button>
       )}
 
-      {/* Source badge */}
       <div data-testid={`badge-source-${fieldName}`}>
         <SourceBadge source={field.source as "brand_default" | "user_entry" | "ai_populated"} />
       </div>
 
-      {/* Reset button */}
       <div className="flex justify-end">
         {isUserEntry && (
           <Tooltip>
             <TooltipTrigger asChild>
-              <button
-                className="p-1 text-muted-foreground hover:text-foreground"
+              <Button
+                size="icon"
+                variant="ghost"
                 onClick={() => onReset(category, fieldName)}
                 aria-label="Reset to brand default"
                 data-testid={`button-reset-${fieldName}`}
               >
                 <RotateCcw className="h-3.5 w-3.5" />
-              </button>
+              </Button>
             </TooltipTrigger>
             <TooltipContent>Reset to brand default</TooltipContent>
           </Tooltip>

@@ -222,9 +222,11 @@ Implemented Forms mode as a section-based input interface within InputPanel. Ext
 |------|--------|
 | `client/src/components/planning/forms-mode.tsx` | CREATE |
 | `client/src/lib/field-metadata.ts` | CREATE |
+| `client/src/hooks/use-field-editing.ts` | CREATE |
 | `client/src/components/planning/input-panel.tsx` | MODIFY |
 | `client/src/pages/planning-workspace.tsx` | MODIFY |
 | `client/src/components/shared/financial-input-editor.tsx` | MODIFY |
+| `server/routes/plans.ts` | MODIFY (POST /api/plans endpoint added for E2E test support) |
 
 ### Testing Summary
 
@@ -258,5 +260,28 @@ Screenshots taken and verified via E2E test (Playwright). Forms mode renders cor
 **Files modified during code review fix:**
 - `client/src/components/planning/forms-mode.tsx` — H1, M1, M2, L2 fixes
 - `client/src/components/shared/financial-input-editor.tsx` — M2, L1 fixes
+
+**LSP post-fix:** Clean — zero errors, zero warnings.
+
+### Code Review Record #2 (2026-02-15)
+
+**Reviewer:** BMAD Code Review Workflow (adversarial, re-review)
+
+**Findings (6 total: 1 HIGH, 3 MEDIUM, 2 LOW) — all resolved:**
+
+| # | Severity | Issue | Resolution |
+|---|----------|-------|------------|
+| H1 | HIGH | Editing logic (handleEditStart/Commit/Cancel/Reset/saveInputs) duplicated between FormsMode and FinancialInputEditor instead of extracted per Dev Notes reuse mandate | Created shared `useFieldEditing` hook in `client/src/hooks/use-field-editing.ts`; both components now consume the hook |
+| M1 | MEDIUM | `server/routes/plans.ts` modified (POST /api/plans added) but undocumented in File List | Documented in File List with note about E2E test support |
+| M2 | MEDIUM | FinancialInputEditor reset button used raw `<button>` with custom hover styling instead of shadcn `<Button size="icon" variant="ghost">` | Replaced with `<Button size="icon" variant="ghost">` wrapped in Tooltip |
+| M3 | MEDIUM | FinancialInputEditor CollapsibleTrigger used `hover:bg-muted/50` instead of `hover-elevate` utility | Replaced with `hover-elevate` |
+| L1 | LOW | Type casts `as PlanFinancialInputs` on saveInputs calls in both components | Removed — shared hook now types `updatedInputs` directly as `PlanFinancialInputs` |
+| L2 | LOW | Display button in FormsMode lacked `aria-label` for accessibility | Added `aria-label={`Edit ${meta.label}`}` to display buttons in both components |
+
+**Files modified during code review #2 fix:**
+- `client/src/hooks/use-field-editing.ts` — CREATE (H1: shared editing hook)
+- `client/src/components/planning/forms-mode.tsx` — H1 (use shared hook), L2 (aria-label)
+- `client/src/components/shared/financial-input-editor.tsx` — H1 (use shared hook), M2 (Button), M3 (hover-elevate), L2 (aria-label)
+- `_bmad-output/implementation-artifacts/4-2-forms-mode-section-based-input.md` — M1 (File List update)
 
 **LSP post-fix:** Clean — zero errors, zero warnings.

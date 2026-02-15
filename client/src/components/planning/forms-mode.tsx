@@ -1,9 +1,6 @@
-import { useState, useCallback, useRef, useMemo } from "react";
+import { useState, useCallback, useMemo } from "react";
 import { usePlan } from "@/hooks/use-plan";
-import {
-  updateFieldValue,
-  resetFieldToDefault,
-} from "@shared/plan-initialization";
+import { useFieldEditing } from "@/hooks/use-field-editing";
 import type {
   PlanFinancialInputs,
   FinancialFieldValue,
@@ -23,7 +20,6 @@ import {
   CATEGORY_LABELS,
   CATEGORY_ORDER,
   formatFieldValue,
-  parseFieldInput,
   getInputPlaceholder,
 } from "@/lib/field-metadata";
 import type { FieldMeta } from "@/lib/field-metadata";
@@ -68,10 +64,24 @@ export function FormsMode({ planId }: FormsModeProps) {
   const { plan, isLoading, error, updatePlan, isSaving, saveError } = usePlan(planId);
   const financialInputs = plan?.financialInputs as PlanFinancialInputs | null | undefined;
 
-  const [editingField, setEditingField] = useState<string | null>(null);
-  const [editValue, setEditValue] = useState("");
-  const [focusedField, setFocusedField] = useState<string | null>(null);
-  const editCanceledRef = useRef(false);
+  const saveInputs = useCallback(
+    (updated: PlanFinancialInputs) => {
+      updatePlan({ financialInputs: updated }).catch(() => {});
+    },
+    [updatePlan]
+  );
+
+  const {
+    editingField,
+    editValue,
+    focusedField,
+    setEditValue,
+    setFocusedField,
+    handleEditStart,
+    handleEditCommit,
+    handleEditCancel,
+    handleReset,
+  } = useFieldEditing({ financialInputs, isSaving, onSave: saveInputs });
 
   const sectionProgress = useMemo(
     () => (financialInputs ? computeSectionProgress(financialInputs) : []),
@@ -81,96 +91,6 @@ export function FormsMode({ planId }: FormsModeProps) {
   const showStartHere = useMemo(
     () => (financialInputs ? !hasAnyUserEdits(financialInputs) : false),
     [financialInputs]
-  );
-
-  const saveInputs = useCallback(
-    async (updated: PlanFinancialInputs) => {
-      try {
-        await updatePlan({ financialInputs: updated });
-      } catch {
-        // Error handled via mutation state
-      }
-    },
-    [updatePlan]
-  );
-
-  const handleEditStart = useCallback(
-    (category: string, fieldName: string, field: FinancialFieldValue) => {
-      if (isSaving) return;
-      const meta = FIELD_METADATA[category]?.[fieldName];
-      if (!meta) return;
-      const key = `${category}.${fieldName}`;
-      setEditingField(key);
-      switch (meta.format) {
-        case "currency":
-          setEditValue(String(field.currentValue / 100));
-          break;
-        case "percentage":
-          setEditValue(String((field.currentValue * 100).toFixed(1)));
-          break;
-        case "integer":
-          setEditValue(String(field.currentValue));
-          break;
-      }
-    },
-    [isSaving]
-  );
-
-  const handleEditCommit = useCallback(() => {
-    if (!editingField || !financialInputs || editCanceledRef.current) {
-      editCanceledRef.current = false;
-      setEditingField(null);
-      setEditValue("");
-      return;
-    }
-    const [category, fieldName] = editingField.split(".");
-    const meta = FIELD_METADATA[category]?.[fieldName];
-    if (!meta) return;
-    const parsedValue = parseFieldInput(editValue, meta.format);
-    if (isNaN(parsedValue)) {
-      setEditingField(null);
-      setEditValue("");
-      return;
-    }
-    const categoryObj = financialInputs[category as keyof PlanFinancialInputs];
-    const field = categoryObj[fieldName as keyof typeof categoryObj] as FinancialFieldValue;
-    if (parsedValue !== field.currentValue) {
-      const updatedField = updateFieldValue(field, parsedValue, new Date().toISOString());
-      const updatedInputs = {
-        ...financialInputs,
-        [category]: {
-          ...categoryObj,
-          [fieldName]: updatedField,
-        },
-      };
-      saveInputs(updatedInputs as PlanFinancialInputs);
-    }
-    setEditingField(null);
-    setEditValue("");
-  }, [editingField, editValue, financialInputs, saveInputs]);
-
-  const handleEditCancel = useCallback(() => {
-    editCanceledRef.current = true;
-    setEditingField(null);
-    setEditValue("");
-  }, []);
-
-  const handleReset = useCallback(
-    (category: string, fieldName: string) => {
-      if (!financialInputs || isSaving) return;
-      const categoryObj = financialInputs[category as keyof PlanFinancialInputs];
-      const field = categoryObj[fieldName as keyof typeof categoryObj] as FinancialFieldValue;
-      const resetField = resetFieldToDefault(field, new Date().toISOString());
-      const updatedInputs = {
-        ...financialInputs,
-        [category]: {
-          ...categoryObj,
-          [fieldName]: resetField,
-        },
-      };
-      saveInputs(updatedInputs as PlanFinancialInputs);
-    },
-    [financialInputs, isSaving, saveInputs]
   );
 
   if (isLoading) {
@@ -467,6 +387,7 @@ function FormField({
               onFocus={() => onFocusChange(fieldKey)}
               onBlur={() => onFocusChange(null)}
               data-testid={`field-input-${fieldName}`}
+              aria-label={`Edit ${meta.label}`}
             >
               {formatFieldValue(field.currentValue, meta.format)}
             </button>
