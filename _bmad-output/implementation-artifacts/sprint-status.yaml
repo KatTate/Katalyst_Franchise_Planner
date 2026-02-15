@@ -1,4 +1,5 @@
 # generated: 2026-02-09
+# updated: 2026-02-15 (Sprint Change Proposal approved — financial output layer)
 # project: Katalyst Growth Planner
 # project_key: NOKEY
 # tracking_system: file-system
@@ -34,10 +35,25 @@
 # - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
 
 generated: 2026-02-09
+updated: 2026-02-15
 project: Katalyst Growth Planner
 project_key: NOKEY
 tracking_system: file-system
 story_location: _bmad-output/implementation-artifacts
+
+# CHANGE LOG:
+# ===========
+# 2026-02-15: Sprint Change Proposal approved — Financial Statement Output Layer
+#   - New Epic 5: Financial Statement Views & Output Layer (10 stories)
+#   - New Epic 6: Document Generation & Vault (2 stories, elevated from old Epic 7)
+#   - New Epic 7: Per-Year Inputs & Multi-Plan Management (2 stories)
+#   - Old Epic 5 (Advisory Guardrails) renumbered to Epic 8
+#   - Old Epic 6 (AI Planning Advisor) renumbered to Epic 9
+#   - Old Epic 7 (Scenario & Docs) split: PDF→Epic 6, Scenario→Epic 10
+#   - Old Epic 8 (Data Sharing) renumbered to Epic 11
+#   - Old Epic 9 (Advisory Board) renumbered to Epic 12
+#   - Pre-implementation: resolve carried tech debt (CP-8)
+#   - See: sprint-change-proposal-2026-02-15.md
 
 development_status:
   # Epic 1: Auth, Onboarding & User Management
@@ -62,6 +78,7 @@ development_status:
   epic-2-retrospective: done
 
   # Epic 3: Financial Planning Engine
+  # Note: Engine extension needed (CP-2) — new inputs, output sections, audit checks
   epic-3: done
   3-1-financial-engine-core-plan-schema: done
   3-2-brand-default-integration-per-field-metadata: done
@@ -73,6 +90,7 @@ development_status:
   epic-3-retrospective: done
 
   # Epic 4: Forms & Quick Entry Experience
+  # Note: Conceptual correction needed (CP-3) — PlanFinancialInputs per-year, field alignment
   # Story 4.7 added mid-epic to close integration gaps (StartupCostBuilder mounting, Item 7 range metadata)
   epic-4: done
   4-1-planning-layout-dashboard-mode-switcher: done
@@ -84,26 +102,65 @@ development_status:
   4-7-integration-gaps-startup-cost-mounting: done  # closes FR4, FR5, FR6 user path
   epic-4-retrospective: done
 
-  # Epic 5: Advisory Guardrails & Smart Guidance
+  # ==========================================================================
+  # NEW EPICS (added via Sprint Change Proposal 2026-02-15)
+  # ==========================================================================
+
+  # Epic 5: Financial Statement Views & Output Layer [NEW]
+  # Render every spreadsheet output sheet as interactive views
+  # Dependencies: Epic 3 (engine), Epic 4 (planning workspace)
+  # Pre-req: CP-2 engine extension, CP-8 tech debt resolution
   epic-5: backlog
-  5-1-input-range-validation-advisory-nudges: backlog
-  5-2-weak-business-case-detection-actionable-guidance: backlog
+  5-1-pl-statement-view: backlog
+  5-2-balance-sheet-view: backlog
+  5-3-cash-flow-statement-view: backlog
+  5-4-summary-financials-view: backlog
+  5-5-roic-view: backlog
+  5-6-valuation-view: backlog
+  5-7-audit-integrity-checks-view: backlog
+  5-8-glossary-financial-term-reference: backlog
+  5-9-quick-entry-interactive-financial-statements: backlog
+  5-10-contextual-help-guidance-content: backlog
   epic-5-retrospective: optional
 
-  # Epic 6: AI Planning Advisor (Planning Assistant)
+  # Epic 6: Document Generation & Vault [ELEVATED from old Epic 7]
+  # PDF export + document history
+  # Dependencies: Epic 5 (statement views must exist to export)
   epic-6: backlog
-  6-1-llm-integration-conversation-api: backlog
-  6-2-split-screen-planning-assistant-interface: backlog
-  6-3-ai-value-extraction-field-population: backlog
-  6-4-graceful-degradation-mode-continuity: backlog
+  6-1-pdf-document-generation: backlog
+  6-2-document-history-downloads: backlog
   epic-6-retrospective: optional
 
-  # Epic 7: Scenario Comparison & Document Generation
+  # Epic 7: Per-Year Inputs & Multi-Plan Management [NEW]
+  # Year 1-5 input columns + plan CRUD
+  # Dependencies: CP-3 (PlanFinancialInputs restructuring)
   epic-7: backlog
-  7-1-scenario-management-comparison: backlog
-  7-2-pdf-document-generation: backlog
-  7-3-document-history-downloads: backlog
+  7-1-per-year-input-columns: backlog
+  7-2-plan-crud-navigation: backlog
   epic-7-retrospective: optional
+
+  # ==========================================================================
+  # RENUMBERED EPICS (from Sprint Change Proposal 2026-02-15)
+  # ==========================================================================
+
+  # Epic 8: Advisory Guardrails & Smart Guidance [was Epic 5]
+  epic-8: backlog
+  8-1-input-range-validation-advisory-nudges: backlog  # was 5-1
+  8-2-weak-business-case-detection-actionable-guidance: backlog  # was 5-2
+  epic-8-retrospective: optional
+
+  # Epic 9: AI Planning Advisor (Planning Assistant) [was Epic 6]
+  epic-9: backlog
+  9-1-llm-integration-conversation-api: backlog  # was 6-1
+  9-2-split-screen-planning-assistant-interface: backlog  # was 6-2
+  9-3-ai-value-extraction-field-population: backlog  # was 6-3
+  9-4-graceful-degradation-mode-continuity: backlog  # was 6-4
+  epic-9-retrospective: optional
+
+  # Epic 10: Scenario Comparison [was part of old Epic 7, deferred]
+  epic-10: backlog
+  10-1-scenario-management-comparison: backlog  # was 7-1
+  epic-10-retrospective: optional
 
   # Epic ST: Admin Support Tools — Impersonation & Demo Modes
   # Added via Sprint Change Proposal 2026-02-11
@@ -113,16 +170,16 @@ development_status:
   st-1-view-as-infrastructure-read-only-mode: done
   st-2-view-as-edit-mode-audit-logging: done
   st-3-franchisee-demo-mode-per-brand: done
-  st-4-franchisor-demo-mode-fictitious-brand: backlog  # blocked: depends on Epic 8 franchisor dashboard
+  st-4-franchisor-demo-mode-fictitious-brand: backlog  # blocked: depends on Epic 11 franchisor dashboard
   epic-st-retrospective: optional
 
-  # Epic 8: Data Sharing, Privacy & Pipeline Dashboards
-  epic-8: backlog
-  8-1-franchisee-data-sharing-controls: backlog
-  8-2-franchisor-pipeline-dashboard: backlog
-  8-3-katalyst-admin-cross-brand-dashboard: backlog
-  epic-8-retrospective: optional
+  # Epic 11: Data Sharing, Privacy & Pipeline Dashboards [was Epic 8]
+  epic-11: backlog
+  11-1-franchisee-data-sharing-controls: backlog  # was 8-1
+  11-2-franchisor-pipeline-dashboard: backlog  # was 8-2
+  11-3-katalyst-admin-cross-brand-dashboard: backlog  # was 8-3
+  epic-11-retrospective: optional
 
-  # Epic 9: Advisory Board Meeting (Phase 2 — Deferred)
-  epic-9: backlog
-  epic-9-retrospective: optional
+  # Epic 12: Advisory Board Meeting (Phase 2 — Deferred) [was Epic 9]
+  epic-12: backlog
+  epic-12-retrospective: optional
