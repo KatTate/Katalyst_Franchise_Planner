@@ -94,11 +94,34 @@ router.post("/login", (req: Request, res: Response, next: NextFunction) => {
   })(req, res, next);
 });
 
-router.get("/me", (req, res) => {
+router.get("/me", async (req, res) => {
   if (!req.isAuthenticated() || !req.user) {
     return res.status(401).json({ message: "Not authenticated" });
   }
-  return res.json(req.user);
+
+  const { getEffectiveUser, isDemoMode, isImpersonating } = await import("../middleware/auth");
+  const effectiveUser = await getEffectiveUser(req);
+  const inDemoMode = isDemoMode(req);
+  const inImpersonation = isImpersonating(req);
+
+  const response: Record<string, any> = { ...effectiveUser };
+
+  if (inDemoMode || inImpersonation) {
+    response._mode = {
+      demo: inDemoMode,
+      impersonating: inImpersonation,
+      demoBrandId: inDemoMode ? req.session.demo_mode_brand_id : undefined,
+      editEnabled: inImpersonation ? !!req.session.impersonation_edit_enabled : undefined,
+    };
+    response._realUser = {
+      id: req.user.id,
+      email: req.user.email,
+      role: req.user.role,
+      displayName: req.user.displayName,
+    };
+  }
+
+  return res.json(response);
 });
 
 const updateMeSchema = z.object({
@@ -118,19 +141,25 @@ router.patch("/me", async (req, res) => {
   }
 
   try {
-    const updated = await storage.updateUserPreferredTier(req.user.id, parsed.data.preferredTier);
+    const { getEffectiveUser } = await import("../middleware/auth");
+    const effectiveUser = await getEffectiveUser(req);
+    const updated = await storage.updateUserPreferredTier(effectiveUser.id, parsed.data.preferredTier);
 
-    // Update session with new preference
-    const sessionUser: Express.User = {
-      ...req.user,
-      preferredTier: updated.preferredTier,
-    };
-    req.login(sessionUser, (err) => {
-      if (err) {
-        return res.status(500).json({ error: { message: "Session update failed" } });
-      }
-      return res.json(sessionUser);
-    });
+    // Update session with new preference (only if not in demo/impersonation mode)
+    if (effectiveUser.id === req.user.id) {
+      const sessionUser: Express.User = {
+        ...req.user,
+        preferredTier: updated.preferredTier,
+      };
+      req.login(sessionUser, (err) => {
+        if (err) {
+          return res.status(500).json({ error: { message: "Session update failed" } });
+        }
+        return res.json(sessionUser);
+      });
+    } else {
+      return res.json({ ...effectiveUser, preferredTier: updated.preferredTier });
+    }
   } catch {
     return res.status(500).json({ error: { message: "Failed to update preferences" } });
   }

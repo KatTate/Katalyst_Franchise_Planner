@@ -38,12 +38,12 @@ export function DemoModeProvider({ children }: { children: React.ReactNode }) {
   const queryClient = useQueryClient();
   const [, setLocation] = useLocation();
 
-  const isAdmin = user?.role === "katalyst_admin";
+  const isRealAdmin = user?.role === "katalyst_admin" || user?._realUser?.role === "katalyst_admin";
 
   const { data: status, isLoading } = useQuery<DemoModeStatus>({
     queryKey: ["/api/admin/demo/status"],
     queryFn: getQueryFn({ on401: "returnNull" }),
-    enabled: !!isAdmin,
+    enabled: !!isRealAdmin,
     refetchOnWindowFocus: true,
     staleTime: 30_000,
   });
@@ -113,7 +113,7 @@ export function DemoModeProvider({ children }: { children: React.ReactNode }) {
     brandId: status?.active ? status.brandId : null,
     brandName: status?.active ? status.brandName : null,
     demoUserId: status?.active ? status.demoUserId : null,
-    isLoading: isAdmin ? isLoading : false,
+    isLoading: isRealAdmin ? isLoading : false,
     enterDemoMode,
     exitDemoMode,
     resetDemoData,

@@ -1,7 +1,7 @@
 import { Router, Request, Response } from "express";
 import { z } from "zod";
 import { storage } from "../storage";
-import { requireAuth } from "../middleware/auth";
+import { requireAuth, getEffectiveUser } from "../middleware/auth";
 
 const router = Router();
 
@@ -21,7 +21,8 @@ router.post(
   "/complete",
   requireAuth,
   async (req: Request, res: Response) => {
-    if (req.user!.role !== "franchisee") {
+    const effectiveUser = await getEffectiveUser(req);
+    if (effectiveUser.role !== "franchisee") {
       return res.status(403).json({ message: "Onboarding is only for franchisees" });
     }
 
@@ -68,7 +69,8 @@ router.post(
   "/select-tier",
   requireAuth,
   async (req: Request, res: Response) => {
-    if (req.user!.role !== "franchisee") {
+    const effectiveUser = await getEffectiveUser(req);
+    if (effectiveUser.role !== "franchisee") {
       return res.status(403).json({ message: "Onboarding is only for franchisees" });
     }
 
@@ -80,7 +82,7 @@ router.post(
       });
     }
 
-    await storage.updateUserOnboarding(req.user!.id, {
+    await storage.updateUserOnboarding(effectiveUser.id, {
       onboardingCompleted: true,
       preferredTier: parsed.data.preferred_tier,
     });
@@ -93,11 +95,12 @@ router.post(
   "/skip",
   requireAuth,
   async (req: Request, res: Response) => {
-    if (req.user!.role !== "franchisee") {
+    const effectiveUser = await getEffectiveUser(req);
+    if (effectiveUser.role !== "franchisee") {
       return res.status(403).json({ message: "Onboarding is only for franchisees" });
     }
 
-    await storage.updateUserOnboarding(req.user!.id, {
+    await storage.updateUserOnboarding(effectiveUser.id, {
       onboardingCompleted: true,
     });
 

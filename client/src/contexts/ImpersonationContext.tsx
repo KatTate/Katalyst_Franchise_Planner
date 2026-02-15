@@ -46,12 +46,12 @@ export function ImpersonationProvider({ children }: { children: React.ReactNode 
   const autoRevertTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [isTogglingEditMode, setIsTogglingEditMode] = useState(false);
 
-  const isAdmin = user?.role === "katalyst_admin";
+  const isRealAdmin = user?.role === "katalyst_admin" || user?._realUser?.role === "katalyst_admin";
 
   const { data: status, isLoading } = useQuery<ImpersonationStatus>({
     queryKey: ["/api/admin/impersonate/status"],
     queryFn: getQueryFn({ on401: "returnNull" }),
-    enabled: !!isAdmin,
+    enabled: !!isRealAdmin,
     refetchOnWindowFocus: true,
     staleTime: 30_000,
   });
@@ -171,7 +171,7 @@ export function ImpersonationProvider({ children }: { children: React.ReactNode 
     editingEnabled: status?.active ? status.editingEnabled : false,
     remainingMinutes: status?.active ? status.remainingMinutes : 0,
     returnBrandId: status?.active ? status.returnBrandId : null,
-    isLoading: isAdmin ? isLoading : false,
+    isLoading: isRealAdmin ? isLoading : false,
     isTogglingEditMode,
     startImpersonation,
     stopImpersonation,
