@@ -10,6 +10,9 @@ export interface AuthUser {
   profileImageUrl: string | null;
   onboardingCompleted: boolean;
   preferredTier: "planning_assistant" | "forms" | "quick_entry" | null;
+  bookingUrl?: string;
+  accountManagerId?: string;
+  accountManagerName?: string;
   _mode?: {
     demo: boolean;
     impersonating: boolean;

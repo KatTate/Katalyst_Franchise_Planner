@@ -18,8 +18,8 @@ interface PlanningHeaderProps {
 
 export function PlanningHeader({ planName, activeMode, onModeChange, saveStatus, onRetrySave }: PlanningHeaderProps) {
   const { user } = useAuth();
-  const bookingUrl = (user as any)?.bookingUrl as string | undefined;
-  const accountManagerName = (user as any)?.accountManagerName as string | undefined;
+  const bookingUrl = user?.bookingUrl;
+  const accountManagerName = user?.accountManagerName;
 
   return (
     <header className="flex items-center gap-3 px-3 py-2 border-b bg-background shrink-0">

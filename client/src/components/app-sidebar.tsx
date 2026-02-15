@@ -105,20 +105,20 @@ export function AppSidebar() {
           </SidebarGroup>
         </SidebarContent>
         <SidebarFooter>
-          {(user as any).bookingUrl && (
+          {user.bookingUrl && (
             <div className="px-3 pb-1">
               <Separator className="mb-2" />
               <Button
                 variant="ghost"
                 size="sm"
                 className="w-full justify-start gap-2 text-xs text-muted-foreground"
-                onClick={() => window.open((user as any).bookingUrl, '_blank', 'noopener,noreferrer')}
+                onClick={() => window.open(user.bookingUrl, '_blank', 'noopener,noreferrer')}
                 data-testid="button-sidebar-book-consultation"
               >
                 <CalendarCheck className="h-3.5 w-3.5" />
                 <span className="truncate">
-                  {(user as any).accountManagerName
-                    ? `Book with ${(user as any).accountManagerName}`
+                  {user.accountManagerName
+                    ? `Book with ${user.accountManagerName}`
                     : "Book Consultation"}
                 </span>
               </Button>

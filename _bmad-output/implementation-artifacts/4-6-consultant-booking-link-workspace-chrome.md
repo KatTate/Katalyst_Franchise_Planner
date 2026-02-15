@@ -1,6 +1,6 @@
 # Story 4.6: Consultant Booking Link & Workspace Chrome
 
-Status: ready-for-dev
+Status: review
 
 ## Story
 
@@ -144,10 +144,23 @@ The consultant booking link is identified as a cross-cutting UI concern: "Ever-p
 
 ### Agent Model Used
 
-{{agent_model_name_version}}
+Claude 4.6 Opus (Replit Agent)
 
 ### Completion Notes
 
+Prior implementation by a previous agent was evaluated against all acceptance criteria and found to be functionally correct. The key improvement made was adding proper TypeScript types (`bookingUrl`, `accountManagerId`, `accountManagerName`) to the `AuthUser` interface, eliminating all `(user as any)` type casts in `app-sidebar.tsx` and `planning-header.tsx`. The backend `/api/auth/me` endpoint was already correctly resolving and returning booking data.
+
 ### File List
 
+- `client/src/hooks/use-auth.ts` — MODIFIED: Added `bookingUrl`, `accountManagerId`, `accountManagerName` optional fields to `AuthUser` interface
+- `client/src/components/app-sidebar.tsx` — MODIFIED: Removed `(user as any)` casts, now uses typed `user.bookingUrl` and `user.accountManagerName`
+- `client/src/components/planning/planning-header.tsx` — MODIFIED: Removed `(user as any)` casts, now uses typed `user?.bookingUrl` and `user?.accountManagerName`
+
 ### Testing Summary
+
+- **Approach:** End-to-end Playwright testing
+- **ACs Covered:** AC 1 (sidebar booking link present and clickable), AC 2 (header booking button with tooltip), AC 3 (graceful hiding for users without booking URL), AC 4 (personalized "Book with Dev Admin" text)
+- **Test Scenarios:** (1) PostNet franchisee with bookingUrl — verified sidebar and header buttons visible with correct text; (2) Katalyst admin without bookingUrl — verified no booking button rendered
+- **All tests passing:** Yes
+- **LSP Status:** Clean — no errors or warnings in any modified files
+- **Visual Verification:** Screenshots taken via Playwright confirming correct rendering in sidebar footer and planning header
