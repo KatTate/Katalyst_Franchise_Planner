@@ -86,7 +86,7 @@ export function FormsMode({ planId }: FormsModeProps) {
   const saveInputs = useCallback(
     async (updated: PlanFinancialInputs) => {
       try {
-        await updatePlan({ financialInputs: updated as any });
+        await updatePlan({ financialInputs: updated });
       } catch {
         // Error handled via mutation state
       }
@@ -430,7 +430,7 @@ function FormField({
     field.brandDefault !== null ? formatFieldValue(field.brandDefault, meta.format) : null;
 
   return (
-    <div data-testid={`field-row-${fieldName}`} className="rounded-md border border-transparent hover:border-border px-3 py-2.5">
+    <div data-testid={`field-row-${fieldName}`} className="rounded-md px-3 py-2.5 hover-elevate">
       <div className="flex items-center gap-3">
         <label className="text-sm text-foreground min-w-0 flex-1 truncate">
           {meta.label}
@@ -482,7 +482,6 @@ function FormField({
             <Button
               size="icon"
               variant="ghost"
-              className="h-7 w-7"
               onClick={() => onReset(category, fieldName)}
               aria-label="Reset to brand default"
               data-testid={`button-reset-${fieldName}`}
@@ -490,12 +489,12 @@ function FormField({
               <RotateCcw className="h-3.5 w-3.5" />
             </Button>
           ) : (
-            <span className="invisible h-7 w-7" />
+            <span className="invisible h-9 w-9" />
           )}
         </div>
       </div>
 
-      {isFocused && !isEditing && (
+      {(isFocused || isEditing) && (
         <div
           className="mt-2 ml-0 pl-3 border-l-2 border-muted text-xs text-muted-foreground space-y-0.5 animate-in fade-in-0 slide-in-from-top-1 duration-200"
           data-testid={`field-metadata-${fieldName}`}

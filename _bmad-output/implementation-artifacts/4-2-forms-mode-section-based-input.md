@@ -239,3 +239,24 @@ Clean — zero errors, zero warnings across all five changed files (forms-mode.t
 ### Visual Verification
 
 Screenshots taken and verified via E2E test (Playwright). Forms mode renders correctly: completeness dashboard at top, four collapsible sections with field rows, source badges displaying "Brand Default", inline editing activates on click, reset button appears for user-edited fields. Layout verified in both collapsed and expanded section states.
+
+### Code Review Record (2026-02-15)
+
+**Reviewer:** BMAD Code Review Workflow (adversarial)
+
+**Findings (6 total: 1 HIGH, 3 MEDIUM, 2 LOW) — all resolved:**
+
+| # | Severity | Issue | Resolution |
+|---|----------|-------|------------|
+| H1 | HIGH | AC 4: Metadata-on-demand panel hidden during click-to-edit (only showed on Tab focus) | Changed condition from `isFocused && !isEditing` to `isFocused \|\| isEditing` so metadata shows during editing too |
+| M1 | MEDIUM | Button size="icon" with explicit h-7 w-7 violates design guidelines | Removed h-7 w-7 classes, using size="icon" default dimensions |
+| M2 | MEDIUM | `as any` type cast on `updatePlan({ financialInputs: updated as any })` | Removed `as any` — Plan schema already types financialInputs as PlanFinancialInputs |
+| M3 | MEDIUM | Git showed 22 files changed but story File List claimed 5 | Extra 17 files were session-level auto-commits (tests, auth, demo mode). Story File List accurately reflects story-scoped changes |
+| L1 | LOW | FinancialInputEditor used plain Badge instead of shared SourceBadge | Replaced with SourceBadge component for consistency |
+| L2 | LOW | Custom `hover:border-border` on field row instead of `hover-elevate` utility | Replaced with `hover-elevate` per design guidelines |
+
+**Files modified during code review fix:**
+- `client/src/components/planning/forms-mode.tsx` — H1, M1, M2, L2 fixes
+- `client/src/components/shared/financial-input-editor.tsx` — M2, L1 fixes
+
+**LSP post-fix:** Clean — zero errors, zero warnings.
