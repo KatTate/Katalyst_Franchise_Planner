@@ -20,7 +20,6 @@ import type {
 } from "@shared/financial-engine";
 import { SourceBadge } from "@/components/shared/source-badge";
 import {
-  MetricCard,
   formatROI,
   formatBreakEven,
 } from "@/components/shared/summary-metrics";
@@ -106,6 +105,17 @@ function formatRangeText(field: FinancialFieldValue, format: FormatType): string
   return `Typical range: ${minStr} – ${maxStr}`;
 }
 
+function getRawEditValue(field: FinancialFieldValue, format: FormatType): string {
+  switch (format) {
+    case "currency":
+      return String(field.currentValue / 100);
+    case "percentage":
+      return String((field.currentValue * 100).toFixed(1));
+    case "integer":
+      return String(field.currentValue);
+  }
+}
+
 function EditableCell({
   row,
   onCellEdit,
@@ -116,88 +126,82 @@ function EditableCell({
   const { field, format, category, fieldName } = row.original;
   if (!field || !format || !fieldName) return null;
 
-  const [isEditing, setIsEditing] = useState(false);
-  const [editValue, setEditValue] = useState("");
+  const [localValue, setLocalValue] = useState(() => getRawEditValue(field, format));
+  const [isFocused, setIsFocused] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
-
-  const startEdit = useCallback(() => {
-    if (!field || !format) return;
-    setIsEditing(true);
-    switch (format) {
-      case "currency":
-        setEditValue(String(field.currentValue / 100));
-        break;
-      case "percentage":
-        setEditValue(String((field.currentValue * 100).toFixed(1)));
-        break;
-      case "integer":
-        setEditValue(String(field.currentValue));
-        break;
-    }
-  }, [field, format]);
+  const committedRef = useRef(field.currentValue);
+  const skipBlurCommitRef = useRef(false);
 
   useEffect(() => {
-    if (isEditing && inputRef.current) {
-      inputRef.current.focus();
-      inputRef.current.select();
+    if (!isFocused) {
+      setLocalValue(getRawEditValue(field, format));
+      committedRef.current = field.currentValue;
     }
-  }, [isEditing]);
+  }, [field.currentValue, format, isFocused]);
+
+  const handleFocus = useCallback(() => {
+    setIsFocused(true);
+    requestAnimationFrame(() => {
+      inputRef.current?.select();
+    });
+  }, []);
 
   const commitEdit = useCallback(() => {
-    if (!format || !fieldName) return;
-    const parsedValue = parseFieldInput(editValue, format);
-    if (!isNaN(parsedValue) && parsedValue !== field!.currentValue) {
+    setIsFocused(false);
+    const parsedValue = parseFieldInput(localValue, format);
+    if (!isNaN(parsedValue) && parsedValue !== committedRef.current) {
+      committedRef.current = parsedValue;
       onCellEdit(category, fieldName, parsedValue);
+    } else {
+      setLocalValue(getRawEditValue(field, format));
     }
-    setIsEditing(false);
-    setEditValue("");
-  }, [editValue, format, fieldName, category, field, onCellEdit]);
+  }, [localValue, format, fieldName, category, field, onCellEdit]);
 
   const cancelEdit = useCallback(() => {
-    setIsEditing(false);
-    setEditValue("");
-  }, []);
+    skipBlurCommitRef.current = true;
+    setLocalValue(getRawEditValue(field, format));
+    setIsFocused(false);
+    inputRef.current?.blur();
+  }, [field, format]);
+
+  const handleBlur = useCallback(() => {
+    if (skipBlurCommitRef.current) {
+      skipBlurCommitRef.current = false;
+      return;
+    }
+    commitEdit();
+  }, [commitEdit]);
 
   const outOfRange = isOutOfRange(field);
 
-  if (isEditing) {
-    return (
-      <Input
-        ref={inputRef}
-        className="h-7 text-sm font-mono tabular-nums px-2 py-0"
-        value={editValue}
-        onChange={(e) => setEditValue(e.target.value)}
-        onBlur={commitEdit}
-        onKeyDown={(e) => {
-          if (e.key === "Enter") commitEdit();
-          if (e.key === "Escape") cancelEdit();
-        }}
-        placeholder={getInputPlaceholder(format)}
-        data-testid={`grid-input-${fieldName}`}
-      />
-    );
-  }
-
-  const displayValue = formatFieldValue(field.currentValue, format);
-  const cell = (
-    <button
-      className={`w-full text-left font-mono tabular-nums text-sm h-7 px-2 rounded-md cursor-text flex items-center transition-colors ${
-        outOfRange
-          ? "bg-[#A9A2AA]/10 hover:bg-[#A9A2AA]/20"
-          : "hover:bg-accent"
+  const input = (
+    <Input
+      ref={inputRef}
+      className={`h-7 text-sm font-mono tabular-nums px-2 py-0 ${
+        outOfRange ? "bg-[#A9A2AA]/10" : ""
       }`}
-      onClick={startEdit}
-      onFocus={startEdit}
+      value={localValue}
+      onChange={(e) => setLocalValue(e.target.value)}
+      onFocus={handleFocus}
+      onBlur={handleBlur}
+      onKeyDown={(e) => {
+        if (e.key === "Enter") {
+          e.preventDefault();
+          commitEdit();
+          skipBlurCommitRef.current = true;
+          inputRef.current?.blur();
+        }
+        if (e.key === "Escape") cancelEdit();
+      }}
+      placeholder={getInputPlaceholder(format)}
       data-testid={`grid-cell-${fieldName}`}
-    >
-      {displayValue}
-    </button>
+    />
   );
 
   if (outOfRange) {
     return (
       <Tooltip>
-        <TooltipTrigger asChild>{cell}</TooltipTrigger>
+        <TooltipTrigger asChild>{input}</TooltipTrigger>
         <TooltipContent
           className="text-xs"
           style={{ backgroundColor: "#A9A2AA", color: "#FFFFFF" }}
@@ -208,7 +212,7 @@ function EditableCell({
     );
   }
 
-  return cell;
+  return input;
 }
 
 export function QuickEntryMode({ planId }: QuickEntryModeProps) {
