@@ -73,13 +73,16 @@ development_status:
   epic-3-retrospective: optional
 
   # Epic 4: Forms & Quick Entry Experience
-  epic-4: done
+  # Reopened: Story 4.7 added to close integration gaps identified in UX spec audit
+  # (StartupCostBuilder not mounted, Forms metadata panel Item 7 range hardcoded)
+  epic-4: in-progress
   4-1-planning-layout-dashboard-mode-switcher: done
   4-2-forms-mode-section-based-input: done
   4-3-quick-entry-mode-grid-foundation: done
   4-4-quick-entry-mode-keyboard-navigation-formatting: done
   4-5-auto-save-session-recovery: done
   4-6-consultant-booking-link-workspace-chrome: done
+  4-7-integration-gaps-startup-cost-mounting: ready-for-dev  # closes FR4, FR5, FR6 user path
   epic-4-retrospective: optional
 
   # Epic 5: Advisory Guardrails & Smart Guidance
