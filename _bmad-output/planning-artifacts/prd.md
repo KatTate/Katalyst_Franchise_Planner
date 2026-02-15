@@ -1,7 +1,11 @@
 ---
-stepsCompleted: ['step-01-init', 'step-02-discovery', 'step-03-success', 'step-04-journeys', 'step-05-domain', 'step-06-innovation', 'step-07-project-type', 'step-08-scoping', 'step-09-functional', 'step-10-nonfunctional', 'step-11-polish', 'step-12-complete']
-inputDocuments: ['_bmad-output/planning-artifacts/product-brief-workspace-2026-02-08.md', '_bmad-output/brainstorming/brainstorming-session-2026-02-08.md', 'attached_assets/katalyst-replit-agent-context-final_1770513125481.md', '_bmad-output/planning-artifacts/reference-data/PostNet_-_Business_Plan_1770511701987.xlsx', 'attached_assets/Pasted-Persona-A-First-Time-Franchisee-Sam-The-New-Owner-Snaps_1770523428988.txt']
+stepsCompleted: ['step-01-init', 'step-02-discovery', 'step-03-success', 'step-04-journeys', 'step-05-domain', 'step-06-innovation', 'step-07-project-type', 'step-08-scoping', 'step-09-functional', 'step-10-nonfunctional', 'step-11-polish', 'step-12-complete', 'step-e-01-discovery', 'step-e-02-review', 'step-e-03-edit']
+inputDocuments: ['_bmad-output/planning-artifacts/product-brief-workspace-2026-02-08.md', '_bmad-output/brainstorming/brainstorming-session-2026-02-08.md', 'attached_assets/katalyst-replit-agent-context-final_1770513125481.md', '_bmad-output/planning-artifacts/reference-data/PostNet_-_Business_Plan_1770511701987.xlsx', 'attached_assets/Pasted-Persona-A-First-Time-Franchisee-Sam-The-New-Owner-Snaps_1770523428988.txt', 'attached_assets/Pasted-Financial-Model-Engine-Testable-Requirements-Derived-fr_1771137277359.txt']
 workflowType: 'prd'
+lastEdited: '2026-02-15'
+editHistory:
+  - date: '2026-02-15'
+    changes: 'Added complete financial model output requirements (tax modeling, valuation, ROIC, labor efficiency, payback period, burn metrics, summary financials), expanded input parameter specification, added Executive Summary, tightened NFR8 and FR20'
 briefCount: 1
 brainstormingCount: 1
 researchCount: 0
@@ -12,13 +16,24 @@ classification:
   complexity: 'high'
   complexityDrivers: ['parameterized financial engine with startup cost detail builder', 'multi-stakeholder data isolation (the throuple problem)', 'complex location lifecycle state management', 'FTC compliance content positioning', 'brand-parameterized UX/education/document layers']
   projectContext: 'greenfield'
-  notes: 'Not fintech — no money handling or financial regulation. Fintech-adjacent document accuracy requirements (lender-grade outputs). B2B2C distribution: Katalyst sells to franchisor, franchisor provides to franchisee. Three distinct user tiers with different UX needs. Primary complexity driver is configurability via parameterization, not regulation. Spreadsheet analysis of 4 brands (PostNet, Jeremiahs, Ubreakifix, Tint World) confirmed: identical model structure, only seed values differ (~15-20 parameters). Startup/construction cost detail builder is the one area requiring structural configuration (custom line items per brand).'
+  notes: 'Not fintech — no money handling or financial regulation. Fintech-adjacent document accuracy requirements (lender-grade outputs). B2B2C distribution: Katalyst sells to franchisor, franchisor provides to franchisee. Three distinct user tiers with different UX needs. Primary complexity driver is configurability via parameterization, not regulation. Spreadsheet analysis of 4 brands (PostNet, Jeremiahs, Ubreakifix, Tint World) confirmed: identical model structure, only seed values differ (~25-30 parameter definitions). Complete input parameter specification enumerated in Project Classification section. Startup/construction cost detail builder is the one area requiring structural configuration (custom line items per brand).'
 ---
 
 # Product Requirements Document - Katalyst Franchise Planning Toolbox
 
 **Author:** User
 **Date:** 2026-02-08
+**Last Edited:** 2026-02-15
+
+## Executive Summary
+
+Katalyst Franchise Planning Toolbox is a B2B2C vertical SaaS platform that replaces static spreadsheets with a guided, interactive financial planning experience for franchise owners. The platform serves three stakeholders from a single data layer: franchisees build lender-grade business plans, franchisors gain first-ever development pipeline visibility, and Katalyst (the platform operator) gains operational intelligence to deliver better consulting services.
+
+**Core differentiator:** A parameterized financial engine that produces identical-structure outputs across any franchise brand using only ~25-30 seed values — no per-brand formula logic, no structural variation. Combined with an AI-powered conversational planning interface (Story Mode), adaptive experience tiers (Story/Normal/Expert), and FTC-compliant content positioning where the franchisee is always the author of their projections.
+
+**Target users:** First-time franchisees (guided experience), scaling operators (form-based efficiency), portfolio operators (spreadsheet-speed direct input), Katalyst account managers (brand configuration and client guidance), and franchisor development teams (pipeline visibility).
+
+**MVP thesis:** Replace the PostNet spreadsheet with a better experience for one brand, proving the financial engine accuracy, the adaptive UX model, and the three-stakeholder ("throuple") data architecture. Success is measured by adoption and empowerment, not platform fee revenue.
 
 ## Project Classification
 
@@ -30,7 +45,7 @@ classification:
 **Key Classification Notes:**
 - Not fintech — no money handling, no financial regulation. Fintech-adjacent document accuracy requirements (lender-grade outputs must be mathematically correct) and FTC content positioning constraints
 - B2B2C, not B2B — buyer (franchisor) is not the primary user (franchisee). Three distinct user tiers (franchisee, franchisor admin, Katalyst admin) with completely different UX needs, essentially three different products sharing one data layer
-- Spreadsheet deep dive (4 brands) confirmed: the financial model is structurally identical across all brands. "Configuration" is really parameterization — ~15-20 seed values plugged into the same formula engine. No brand-specific formula logic, no different line items, no structural variation in the core financial model
+- Spreadsheet deep dive (4 brands) confirmed: the financial model is structurally identical across all brands. "Configuration" is really parameterization — ~25-30 seed value definitions (13 global parameters, 13 per-year assumption arrays, 8 investment/financing parameters) plugged into the same formula engine. No brand-specific formula logic, no different line items, no structural variation in the core financial model
 - The one area requiring structural configuration: startup/construction cost detail builder — brands have different expense categories for opening a location, and this is where the tool adds value beyond the current spreadsheets (which just lump startup costs into 2-3 investment numbers)
 
 **Spreadsheet Analysis Summary (4 brands):**
@@ -50,6 +65,61 @@ All brands share identical structure across all sheets: P&L Statement, Balance S
 | Equity/Debt Split | 20/80 | 20/80 | 20/80 | 20/80 |
 
 Identical across all: Payroll taxes (20%), Other OpEx (3%), Target pre-tax profit (15%), Shareholder salary adj ($55K), Debt term (144 mo), Interest rate (10.5%), Tax rate (21%), EBITDA multiple (5x).
+
+**Complete Financial Engine Input Parameter Specification:**
+
+The financial engine accepts three categories of inputs. This is the exhaustive list derived from spreadsheet analysis — every parameter the engine must accept to reproduce the reference spreadsheet outputs:
+
+*Global Parameters (constant across projection):*
+
+| Parameter | Type | Example (PostNet) |
+|-----------|------|-------------------|
+| Company Name | string | ABC Company |
+| Start of Business Operations | date | 8/1/2024 |
+| Financial Year End | date | 7/31/2025 |
+| Gross Sales / Average Unit Volume (AUV) | currency | $322,401 |
+| Time to Reach AUV | integer months | 14 |
+| Starting Month AUV % | percentage | 8.0% |
+| Corporation Tax Rate | percentage | 21.0% |
+| EBITDA Multiple | decimal | 5.0x |
+| Accounts Receivable Days | integer | 30 |
+| Accounts Payable Days — Materials | integer | 60 |
+| Inventory Days | integer | 60 |
+| Fixed Assets Depreciation Rate | percentage | 25.0% |
+| Tax Payment Delay | integer months | 9 |
+
+*Per-Year Assumptions (Years 1-5, each value independently configurable):*
+
+| Parameter | Type | PostNet Y1 | PostNet Y2 | PostNet Y3 | PostNet Y4 | PostNet Y5 |
+|-----------|------|------------|------------|------------|------------|------------|
+| Annual Growth Rate | % of Revenue | 13% | 13% | 10% | 8% | 8% |
+| Royalty Fee | % of Revenue | 5% | 5% | 5% | 5% | 5% |
+| Marketing/Ad Fund Fee | % of Revenue | 2% | 2% | 2% | 2% | 2% |
+| Materials COGs | % of Revenue | 30% | 30% | 30% | 30% | 30% |
+| Direct Labor Cost | % of Revenue | 17% | 17% | 17% | 17% | 17% |
+| Facilities | flat $ | $10,000 | $10,300 | $10,609 | $10,927 | $11,255 |
+| Marketing | % of Revenue | 5% | 3% | 2% | 2% | 2% |
+| Mgmt & Admin Salaries | flat $ | $0 | $51,700 | $58,134 | $63,526 | $68,798 |
+| Payroll Tax & Benefits | % of (Direct Labor + Mgmt Salaries) | 20% | 20% | 20% | 20% | 20% |
+| Other Operating Expenses | % of Revenue | 3% | 3% | 3% | 3% | 3% |
+| Target Pre-Tax Profit | % of Revenue | 15% | 15% | 15% | 15% | 15% |
+| Shareholder Salary Adjustment | flat $ (+=underpayed) | $55,000 | $0 | $0 | $0 | $0 |
+| Estimated Distributions | flat $ | $0 | $0 | $0 | $30,000 | $35,000 |
+
+*Investment & Financing (Year 1 only):*
+
+| Parameter | Type | PostNet |
+|-----------|------|---------|
+| Total Investment Required | currency | $256,507 |
+| CapEx Investments | currency | $132,132 |
+| Non-CapEx Investments | currency | $84,375 |
+| Working Capital / Additional Funds | currency | $40,000 |
+| Equity / Cash Injection | currency | $51,301 |
+| Debt | currency | $205,206 |
+| Debt Term | months | 144 |
+| Debt Interest Rate | percentage | 10.5% |
+
+Total parameter count: 13 global + 13 per-year x 5 years + 8 investment = 86 individual values, but only ~25-30 unique parameter definitions (per-year arrays count as one parameter each).
 
 ## Success Criteria
 
@@ -80,7 +150,7 @@ Identical across all: Payroll taxes (20%), Other OpEx (3%), Target pre-tax profi
 - 2-3 brands live with active franchisees
 - At least one documented instance of tool data informing a Katalyst service decision
 - 60-90 days earlier visibility into franchisee planning activity vs. today's post-lease-signing engagement
-- Brand onboarding requires configuring fewer than 20 parameters, completable in under 30 minutes by a Katalyst account manager
+- Brand onboarding requires configuring ~25-30 parameter definitions (13 global, 13 per-year arrays, 8 investment/financing), completable in under 30 minutes by a Katalyst account manager
 - Tool data quality sufficient to prove Katalyst's 30-50% construction timeline reduction
 
 **Franchisor:**
@@ -115,7 +185,7 @@ Identical across all: Payroll taxes (20%), Other OpEx (3%), Target pre-tax profi
 | Consultant booking click-through | 15%+ of sessions | Per brand, ongoing |
 | Time to lender-ready package | Baseline, then 50% reduction | 12 months |
 | Early engagement window | 60-90 days advance | 6 months |
-| Brand onboarding time | < 30 minutes, < 20 parameters | Per brand |
+| Brand onboarding time | < 30 minutes, ~25-30 parameter definitions | Per brand |
 | Model validation | 4/4 brand parameter sets pass | Pre-launch |
 
 ## User Journeys
@@ -340,10 +410,13 @@ In another session, Sam tries to generate his lender package but hasn't complete
 1. **Known-good spreadsheet validation:** Model outputs must match all four brand spreadsheets (PostNet, Jeremiah's, Ubreakifix, Tint World) with exact parameter sets. Automated regression tests compare tool output to known-correct spreadsheet outputs
 2. **Edge case parameter testing:** Extreme inputs (0% growth, 80% COGS, $0 investment, maximum values) must not produce nonsensical outputs (negative revenue, division by zero, NaN). Model must degrade gracefully at boundaries
 3. **Built-in accounting identity checks:** Internal consistency checks that must always hold regardless of inputs:
-   - Balance sheet must balance (Assets = Liabilities + Equity)
+   - Balance sheet must balance (Assets = Liabilities + Equity) for every period
    - P&L net income must equal cash flow starting point (before adjustments)
-   - ROIC must derive correctly from net income and invested capital
+   - ROIC must derive correctly from after-tax net income and total invested capital (equity + debt + sweat equity + retained earnings)
    - Depreciation must equal CapEx * depreciation rate
+   - Tax payable on balance sheet must reconcile with tax expense and payment delay timing
+   - Valuation must derive from adjusted EBITDA (EBITDA minus shareholder salary adjustment) times EBITDA multiple
+   - Retained earnings must equal cumulative net income less cumulative distributions
    - These are accounting identities — if they fail, the model is wrong regardless of what the inputs are
    - Mirrors the Audit sheet functionality in the existing spreadsheets
 
@@ -410,7 +483,7 @@ This product has several genuinely innovative aspects — not technological brea
 
 2. **Adaptive experience tiers on a shared financial engine** — Story/Normal/Expert modes are not different products. They're different presentation layers over the same calculation engine, producing equally rigorous outputs. This is distinct from "beginner/advanced" feature gating — the output quality doesn't degrade in Story Mode.
 
-3. **Configuration via parameterization** — The spreadsheet analysis revealed that brand "configuration" is really just ~15-20 seed values, not structural model changes. This insight enables a simpler, more reliable architecture than a fully configurable financial engine. The one exception (startup cost detail builder) is handled as a template pattern, not a schema-definition pattern.
+3. **Configuration via parameterization** — The spreadsheet analysis revealed that brand "configuration" is really just ~25-30 seed value definitions (13 global, 13 per-year arrays, 8 investment/financing), not structural model changes. This insight enables a simpler, more reliable architecture than a fully configurable financial engine. The one exception (startup cost detail builder) is handled as a template pattern, not a schema-definition pattern.
 
 4. **Estimated vs. actual as a living system** — Most planning tools produce a static document. This tool creates a baseline that evolves — the plan becomes an operational tracking system. This is uncommon in franchise planning and creates the return engagement that distinguishes a platform from a calculator.
 
@@ -554,7 +627,7 @@ The ever-present booking link is configurable at the **franchisee-to-account-man
 
 | Capability | MVP Scope | Rationale |
 |-----------|-----------|-----------|
-| Financial Engine | Full 5-year monthly model with all accounting identity checks | This is the product. No shortcuts here. |
+| Financial Engine | Full 5-year monthly model with all accounting identity checks, complete P&L (including tax with loss carry-forward), balance sheet (with retained earnings and tax payable), cash flow, ROIC, valuation, labor efficiency ratios, breakeven/burn metrics, and payback period analysis | This is the product. No shortcuts here. Complete Summary Financials output matching reference spreadsheets. |
 | Startup Cost Detail Builder | Full — configurable line items, CapEx/non-CapEx classification, Item 7 ranges | Critical for accurate financial projections |
 | Three Experience Tiers | Story Mode (AI Planning Advisor conversation), Normal Mode (form-based), Expert Mode (spreadsheet-style direct input). All three tiers write to the same financial input state. | Three fundamentally different interaction paradigms serving three persona types (Sam/Chris/Maria), unified by one engine. Expert Mode also serves as engine validation interface. |
 | Real-time Calculations | Live-updating summary financial dashboard as franchisee edits inputs (via any tier) | Core UX differentiator vs. spreadsheet |
@@ -655,9 +728,19 @@ This section defines THE CAPABILITY CONTRACT for the entire product. UX designer
 - **FR5:** Franchisee can add, remove, and reorder custom startup cost line items beyond the brand template defaults
 - **FR6:** Franchisee can classify each custom startup cost line item as CapEx (depreciable) or non-CapEx (expensed)
 - **FR7:** Franchisee can view live-updating summary financial metrics (total investment, projected revenue, ROI, break-even) as they edit inputs
-- **FR8:** System validates accounting identities on every calculation (balance sheet balances, P&L-to-cash-flow consistency, depreciation-to-CapEx consistency, ROIC derivation)
+- **FR8:** System validates accounting identities on every calculation: balance sheet balances (Assets = Liabilities + Equity), P&L-to-cash-flow consistency (Net Income + Depreciation + WC changes = Operating CF), depreciation-to-CapEx consistency (total depreciation = CapEx over depreciation period), ROIC derivation (ROIC = Pre-Tax Net Income / Total Invested Capital), tax payable flows correctly to balance sheet and cash flow with payment delay, and valuation derives from adjusted EBITDA
 - **FR9:** System produces deterministic outputs — identical inputs always produce identical financial projections
 - **FR10:** System computes financial projections using a single parameterized model that accepts brand-specific seed values without requiring structural changes per brand
+- **FR74:** System calculates corporation tax on profits at the brand's configured tax rate (e.g., 21%) with loss carry-forward — losses in one year reduce taxable income in future years, producing both Pre-Tax Net Income and After-Tax Net Income per period
+- **FR75:** System applies tax payment delay (configurable in months, e.g., 9 months) — tax liability accrues when earned but cash payment is deferred, creating a Tax Payable current liability on the balance sheet and affecting cash flow timing
+- **FR76:** System accepts a per-year shareholder salary adjustment input (flat $ amount per year, e.g., $55,000 in Year 1 when owner takes no salary, $0 in subsequent years) and computes Adjusted Net Profit Before Tax (Net PBT minus Shareholder Salary Adjustment) — this feeds ROIC, valuation, and payback period calculations
+- **FR77:** System computes EBITDA-based valuation using a configurable EBITDA multiple (e.g., 5.0x): Adjusted Net Operating Income (EBITDA minus Shareholder Salary Adjustment) multiplied by EBITDA Multiple, estimated taxes on sale (tax rate applied to estimated value), net after-tax proceeds from sale, and replacement return required benchmark (e.g., 25.3%)
+- **FR78:** System computes full Returns on Invested Capital (ROIC) per year: Total Cash Invested (Equity + Debt, constant), Total Sweat Equity (cumulative shareholder salary adjustment, constant), Retained Earnings (cumulative net income less distributions), Total Invested Capital (Cash Invested + Sweat Equity + Retained Earnings), After-Tax Net Income, and ROIC % (After-Tax Net Income / Total Invested Capital)
+- **FR79:** System computes Labor Efficiency Ratios per year: Direct LER (Revenue / Direct Labor Cost), Admin LER Forecasted (Revenue / Mgmt & Admin Salaries) vs Admin LER Benchmark (2.0), Adjusted Total LER (Revenue / (Direct Labor + Adjusted Mgmt/Admin Wages)) vs benchmark (2.0), and Salary Cap at the configured target pre-tax profit percentage with (Over)/Under cap calculation
+- **FR80:** System computes breakeven burn metrics: Total Expenses (cumulative operating expenses from operations start until breakeven month), CapEx (total capital expenditure), and Total Burn (Total Expenses + CapEx)
+- **FR81:** System computes payback period analysis per year: Pre-Tax Net Income, Pre-Tax Net Income with expensing Sweat Equity (Net Income minus shareholder salary adjustment), cumulative cash generated including sweat equity adjustment, and identifies the payback year (when cumulative cash generated turns positive)
+- **FR82:** System tracks and outputs Retained Earnings as a distinct balance sheet line item per period — cumulative Net Income less cumulative Distributions, visible separately from Total Equity
+- **FR83:** Franchisee can view a Summary Financials dashboard presenting all key outputs in a single view organized by section: Labor Efficiency (Direct LER, Admin LER, Adjusted Total LER, Salary Cap), Balance Sheet (Assets, Cash, Liabilities, Total Net Assets, Total Liabilities and Equity, Retained Earnings), Cash Flow (Closing Cash Balance), Working Capital (AR Closing, AP Closing, Inventory Closing), Debt (Closing Balance, Interest Expense), Capital Expenditure (Total Expenditure, Total Depreciation, Total Net Book Value), Breakeven Analysis (Breakeven Date, Months to Breakeven, Total Expenses, CapEx, Total Burn), Payback Period Analysis (with and without sweat equity, cumulative cash, payback year), Returns on Invested Capital (Total Cash Invested, Sweat Equity, Retained Earnings, Total Invested Capital, After-Tax Net Income, ROIC %), and Valuation (EBITDA Multiple, Estimated Value, Adj Net Operating Income, Replacement Return Required)
 
 ### 2. Guided Planning Experience
 
@@ -676,7 +759,7 @@ This section defines THE CAPABILITY CONTRACT for the entire product. UX designer
 
 ### 3. Advisory & Guardrails
 
-- **FR20:** System flags franchisee inputs that fall significantly outside the FDD Item 7 range or brand averages with advisory nudges (non-blocking)
+- **FR20:** System flags franchisee inputs that deviate more than 25% from the FDD Item 7 range midpoint or brand average with advisory nudges (non-blocking) — the deviation threshold is a configurable brand parameter
 - **FR21:** System identifies when a franchisee's overall business case is weak (e.g., negative ROI, break-even beyond 5 years) and provides specific guidance on which inputs to reconsider
 - **FR22:** System suggests consultant booking when flagging weak business cases or outlier inputs
 - **FR23:** All advisory nudges are informational — the system never blocks a franchisee from proceeding with their chosen values
@@ -707,7 +790,7 @@ This section defines THE CAPABILITY CONTRACT for the entire product. UX designer
 
 ### 7. Brand Configuration & Administration
 
-- **FR39:** Katalyst admin can create and configure a new franchise brand with its financial parameter set (~15-20 seed values)
+- **FR39:** Katalyst admin can create and configure a new franchise brand with its financial parameter set (~25-30 seed value definitions as enumerated in the Project Classification input parameter specification)
 - **FR40:** Katalyst admin can define the startup cost template for a brand, including default line items with CapEx/non-CapEx classification and Item 7 ranges
 - **FR41:** Katalyst admin can validate a brand configuration by running the financial model against known-good spreadsheet outputs
 - **FR42:** Katalyst admin can assign an account manager (with their booking URL) to each franchisee
@@ -782,7 +865,7 @@ _Scope: Katalyst admins only. Franchisors and franchisees never see or access th
 
 - **NFR6:** All data transmitted over HTTPS/TLS — no unencrypted connections
 - **NFR7:** Passwords hashed using industry-standard algorithms (bcrypt or equivalent) — never stored in plaintext (applies to franchisee accounts if password-based auth is used; Katalyst admins authenticate via Google OAuth)
-- **NFR8:** Session tokens expire after a reasonable inactivity period, with configurable timeout
+- **NFR8:** Session tokens expire after 60 minutes of inactivity by default, with configurable timeout (range: 15-120 minutes)
 - **NFR9:** Every API endpoint enforces role-based access control — no endpoint returns data the requesting user's role should not see. During admin impersonation (FR59-FR65), RBAC is enforced using the impersonated user's role and scope, not the admin's; the admin's real identity is preserved separately for audit purposes.
 - **NFR10:** Franchisee data isolation enforced at the database query level — queries always scoped to the authenticated user's permissions, not filtered after retrieval. During admin impersonation, queries are scoped to the impersonated user's data boundaries; the admin does not gain broader data access than the impersonated user would have.
 - **NFR11:** Invitation tokens are single-use, time-limited, and cryptographically secure
