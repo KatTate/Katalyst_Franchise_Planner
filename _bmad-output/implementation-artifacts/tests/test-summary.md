@@ -172,6 +172,41 @@ Full end-to-end flow verified:
 
 ---
 
+## Generated Tests (2026-02-15) — Story 4.7 QA
+
+### E2E Tests — Story 4.7: Integration Gaps — Startup Cost Mounting & Forms Metadata (12 tests)
+
+- [x] `e2e/story-4-7-integration-gaps.spec.ts` — Integration Gaps E2E (12 tests)
+  - AC1: StartupCostBuilder section visible in Forms mode
+  - AC1: StartupCostBuilder section is collapsible in Forms mode
+  - AC1: StartupCostBuilder section appears after existing financial categories in Forms mode
+  - AC2: StartupCostBuilder section visible in Quick Entry mode
+  - AC2: StartupCostBuilder section is collapsible in Quick Entry mode
+  - AC2: Quick Entry startup costs section appears below the grid
+  - AC3: Forms metadata panel shows Item 7 range with real data ($3,500 – $5,500)
+  - AC3: Forms metadata panel shows N/A when no Item 7 range data
+  - AC4: Completeness dashboard includes Startup Costs entry in Forms mode
+  - AC4: Startup Costs count displays with "items" label
+  - All: Forms mode shows all five category sections plus startup costs
+  - All: Mode switching preserves startup cost sections (Forms → Quick Entry → Forms)
+
+### API Tests — Story 4.7
+
+N/A — Story 4.7 is a pure frontend integration task. No server-side changes were made. Startup cost API endpoints are already tested in `e2e/story-3-3-startup-costs.spec.ts` (10 tests).
+
+**Acceptance Criteria Coverage:**
+
+| AC | Description | Test Coverage | Status |
+|----|-------------|---------------|--------|
+| AC1 | StartupCostBuilder mounted in Forms mode | 3 tests (visibility, collapsibility, ordering after startupCapital) | Fully Covered |
+| AC2 | StartupCostBuilder mounted in Quick Entry mode | 3 tests (visibility, collapsibility, position below grid) | Fully Covered |
+| AC3 | Forms metadata panel shows real Item 7 range data | 2 tests (formatted currency display, N/A fallback) | Fully Covered |
+| AC4 | Completeness dashboard includes Startup Costs | 2 tests (visibility, "items" label format) | Fully Covered |
+
+**Test Results:** All 12 tests passed via Playwright testing agent. All 4 acceptance criteria fully verified through E2E browser tests.
+
+---
+
 ## Generated Tests (2026-02-15) — Story 3.1 QA
 
 ### Unit Tests — Story 3.1: Financial Engine Core & Plan Schema (16 new tests)
@@ -335,7 +370,7 @@ Full end-to-end flow verified:
 | Shared modules | 3/3 | 100% | Financial engine + plan initialization + schema |
 | Services | 3/3 | 100% | Financial service + brand validation + structured logger |
 | Client utilities | 1/1 | 100% | Quick start helpers |
-| E2E specs | 10 files | 85+ tests | Auth, dashboard, invitations, brands, API, planning workspace, forms mode, quick entry mode (4.3 + 4.4), auto-save (4.5) |
+| E2E specs | 11 files | 97+ tests | Auth, dashboard, invitations, brands, API, planning workspace, forms mode, quick entry mode (4.3 + 4.4), auto-save (4.5), integration gaps (4.7) |
 
 ### API Endpoint Coverage
 
@@ -366,6 +401,7 @@ Full end-to-end flow verified:
 | Quick entry mode (4.3) | Yes | Full — grid with category groups, collapse/expand, immediate edit on focus, commit/cancel, sticky metrics, reset to default, empty state, mode switch state preservation |
 | Quick entry keyboard & formatting (4.4) | Yes | Full — Tab/Shift+Tab/Enter navigation, currency/percentage/integer auto-formatting, row virtualization, collapsed group skip, full keyboard-only workflow |
 | Auto-save & session recovery (4.5) | Yes | Full — save indicator (4 states), debounced auto-save, session recovery, mode persistence, 409 conflict detection, retry logic, beforeunload warning |
+| Integration gaps (4.7) | Yes | Full — StartupCostBuilder in Forms + Quick Entry modes, collapsible sections, Item 7 range metadata display, completeness dashboard startup cost count, mode switching |
 | Accept invitation | No | Requires invitation token flow |
 | Admin brand detail | No | Navigate from brands list |
 | Impersonation | Unit tests | Covered in admin.test.ts |
@@ -406,6 +442,7 @@ npx playwright test e2e/forms-mode.spec.ts
 npx playwright test e2e/quick-entry-mode.spec.ts
 npx playwright test e2e/quick-entry-4-4.spec.ts
 npx playwright test e2e/auto-save-4-5.spec.ts
+npx playwright test e2e/story-4-7-integration-gaps.spec.ts
 ```
 
 ## Next Steps
@@ -413,5 +450,5 @@ npx playwright test e2e/auto-save-4-5.spec.ts
 - Add E2E tests for accept-invitation flow (requires token generation)
 - Add E2E tests for admin brand detail page
 - Add E2E tests for onboarding UI (requires franchisee user creation via invitation flow)
-- Consider adding startup costs and financial metrics E2E tests
+- Add E2E tests for StartupCostBuilder CRUD operations within Forms/Quick Entry contexts
 - Run tests in CI pipeline
