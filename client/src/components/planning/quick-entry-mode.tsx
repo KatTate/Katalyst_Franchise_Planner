@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef } from "react";
+import { useState, useCallback, useEffect, useMemo, useRef } from "react";
 import {
   useReactTable,
   getCoreRowModel,
@@ -23,6 +23,12 @@ import {
 import { EditableCell } from "./editable-cell";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
+import { StartupCostBuilder } from "@/components/shared/startup-cost-builder";
 import { ChevronDown, RotateCcw, AlertCircle } from "lucide-react";
 import {
   FIELD_METADATA,
@@ -421,6 +427,10 @@ export function QuickEntryMode({ planId, queueSave }: QuickEntryModeProps) {
             )}
           </tbody>
         </table>
+
+        <div className="px-3 py-3" data-testid="quick-entry-startup-costs">
+          <QuickEntryStartupCostSection planId={planId} />
+        </div>
       </div>
 
       {!queueSave && isSaving && (
@@ -526,5 +536,36 @@ function CompactMetric({
         {value}
       </p>
     </div>
+  );
+}
+
+function QuickEntryStartupCostSection({ planId }: { planId: string }) {
+  const [isOpen, setIsOpen] = useState(true);
+
+  return (
+    <Collapsible open={isOpen} onOpenChange={setIsOpen}>
+      <div data-testid="qe-section-startupCosts">
+        <CollapsibleTrigger asChild>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="flex items-center gap-1.5 font-semibold text-sm w-full justify-start"
+            data-testid="group-toggle-startupCosts"
+          >
+            <ChevronDown
+              className={`h-3.5 w-3.5 text-muted-foreground transition-transform duration-200 ${
+                isOpen ? "" : "-rotate-90"
+              }`}
+            />
+            Startup Costs
+          </Button>
+        </CollapsibleTrigger>
+        <CollapsibleContent>
+          <div className="pt-2">
+            <StartupCostBuilder planId={planId} />
+          </div>
+        </CollapsibleContent>
+      </div>
+    </Collapsible>
   );
 }

@@ -22,6 +22,9 @@ import {
   formatFieldValue,
   getInputPlaceholder,
 } from "@/lib/field-metadata";
+import { formatCents } from "@/lib/format-currency";
+import { useStartupCosts } from "@/hooks/use-startup-costs";
+import { StartupCostBuilder } from "@/components/shared/startup-cost-builder";
 import type { FieldMeta } from "@/lib/field-metadata";
 
 interface FormsModeProps {
@@ -110,6 +113,8 @@ export function FormsMode({ planId, queueSave }: FormsModeProps) {
     handleReset,
   } = useFieldEditing({ financialInputs, isSaving: queueSave ? false : isSaving, onSave: saveInputs });
 
+  const { costs: startupCosts } = useStartupCosts(planId);
+
   const sectionProgress = useMemo(
     () => (financialInputs ? computeSectionProgress(financialInputs) : []),
     [financialInputs]
@@ -155,7 +160,7 @@ export function FormsMode({ planId, queueSave }: FormsModeProps) {
   return (
     <div data-testid="forms-mode-container" className="h-full flex flex-col overflow-hidden">
       <div className="sticky top-0 z-10 bg-background border-b px-4 py-3">
-        <PlanCompleteness sections={sectionProgress} />
+        <PlanCompleteness sections={sectionProgress} startupCostCount={startupCosts.length} />
       </div>
 
       <div ref={scrollContainerRef} className="flex-1 overflow-auto px-4 py-4 space-y-3">
@@ -182,6 +187,8 @@ export function FormsMode({ planId, queueSave }: FormsModeProps) {
           />
         ))}
 
+        <StartupCostSection planId={planId} defaultOpen={true} />
+
         {!queueSave && isSaving && (
           <p className="text-xs text-muted-foreground text-center pt-1" data-testid="status-saving">
             Saving...
@@ -198,7 +205,7 @@ export function FormsMode({ planId, queueSave }: FormsModeProps) {
   );
 }
 
-function PlanCompleteness({ sections }: { sections: SectionProgress[] }) {
+function PlanCompleteness({ sections, startupCostCount }: { sections: SectionProgress[]; startupCostCount: number }) {
   const totalEdited = sections.reduce((sum, s) => sum + s.edited, 0);
   const totalFields = sections.reduce((sum, s) => sum + s.total, 0);
 
@@ -210,7 +217,7 @@ function PlanCompleteness({ sections }: { sections: SectionProgress[] }) {
           {totalEdited}/{totalFields} fields customized
         </span>
       </div>
-      <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+      <div className="grid grid-cols-2 gap-2 sm:grid-cols-5">
         {sections.map((section) => {
           const pct = section.total > 0 ? (section.edited / section.total) * 100 : 0;
           return (
@@ -234,6 +241,23 @@ function PlanCompleteness({ sections }: { sections: SectionProgress[] }) {
             </div>
           );
         })}
+        <div
+          className="flex flex-col gap-1"
+          data-testid="section-progress-startupCosts"
+        >
+          <div className="flex items-center justify-between">
+            <span className="text-xs text-muted-foreground truncate">Startup Costs</span>
+            <span className="text-xs font-medium tabular-nums">
+              {startupCostCount} items
+            </span>
+          </div>
+          <div className="h-1.5 rounded-full bg-muted overflow-hidden">
+            <div
+              className="h-full rounded-full bg-primary transition-all duration-300"
+              style={{ width: startupCostCount > 0 ? "100%" : "0%" }}
+            />
+          </div>
+        </div>
       </div>
     </div>
   );
@@ -460,10 +484,46 @@ function FormField({
           {defaultDisplay && (
             <p>Brand default: <span className="font-mono tabular-nums">{defaultDisplay}</span></p>
           )}
-          <p>Item 7 range: <span className="italic">No range data</span></p>
+          <p>Item 7 range: {field.item7Range ? (
+            <span className="font-mono tabular-nums">{formatCents(field.item7Range.min)} – {formatCents(field.item7Range.max)}</span>
+          ) : (
+            <span className="italic">N/A</span>
+          )}</p>
           <p>Source: {field.source === "brand_default" ? "Brand Default" : field.source === "user_entry" ? "Your Entry" : "AI-Populated"}</p>
         </div>
       )}
     </div>
+  );
+}
+
+function StartupCostSection({ planId, defaultOpen }: { planId: string; defaultOpen: boolean }) {
+  const [isOpen, setIsOpen] = useState(defaultOpen);
+  const { costs } = useStartupCosts(planId);
+
+  return (
+    <Collapsible open={isOpen} onOpenChange={setIsOpen}>
+      <div className="border rounded-md" data-testid="section-startupCosts">
+        <CollapsibleTrigger className="flex items-center justify-between gap-2 w-full px-4 py-3 hover-elevate rounded-t-md">
+          <div className="flex items-center gap-2 min-w-0">
+            <span className="text-sm font-semibold truncate">Startup Costs</span>
+          </div>
+          <div className="flex items-center gap-2 shrink-0">
+            <span className="text-xs text-muted-foreground tabular-nums">
+              {costs.length} items
+            </span>
+            <ChevronDown
+              className={`h-4 w-4 text-muted-foreground transition-transform duration-200 ${
+                isOpen ? "" : "-rotate-90"
+              }`}
+            />
+          </div>
+        </CollapsibleTrigger>
+        <CollapsibleContent>
+          <div className="px-4 pb-4">
+            <StartupCostBuilder planId={planId} />
+          </div>
+        </CollapsibleContent>
+      </div>
+    </Collapsible>
   );
 }

@@ -1,6 +1,6 @@
 # Story 4.7: Integration Gaps — Startup Cost Mounting & Forms Metadata
 
-Status: ready-for-dev
+Status: review
 
 ## Story
 
@@ -141,9 +141,29 @@ so that I can customize my startup costs, see FDD ranges alongside my estimates,
 ## Dev Agent Record
 
 ### Agent Model Used
+Claude 4.6 Opus (Replit Agent)
 
 ### Completion Notes
+Implemented all four acceptance criteria for Story 4.7 as a pure frontend integration task:
+- **AC1:** Mounted `StartupCostBuilder` in Forms mode as a collapsible "Startup Costs" section after the existing financial category sections. Follows the same Collapsible pattern with ChevronDown rotation. Shows item count in the section header.
+- **AC2:** Mounted `StartupCostBuilder` in Quick Entry mode below the TanStack Table grid (outside the virtualized area). Used a collapsible section with Button/ghost styling matching the grid's category group headers.
+- **AC3:** Fixed the metadata panel in Forms mode to conditionally display Item 7 range data using `formatCents()` when `field.item7Range` exists, or "N/A" when it doesn't. Replaced the hardcoded "No range data" text.
+- **AC4:** Added "Startup Costs" entry to the Forms mode completeness dashboard showing the count of startup cost line items (e.g., "8 items"). Updated grid from 4 to 5 columns to accommodate.
+
+Key decisions:
+- Used `useStartupCosts(planId)` in FormsMode to get the startup cost count for the completeness dashboard
+- Placed the StartupCostBuilder section in Quick Entry mode inside the scroll container but outside the virtualized table, as specified in the dev notes
+- No modifications to `StartupCostBuilder` component internals were needed
+- No server-side changes were needed
 
 ### File List
+- `client/src/components/planning/forms-mode.tsx` — MODIFIED: Added imports (formatCents, useStartupCosts, StartupCostBuilder), fixed Item 7 range metadata display, added startup cost count to completeness dashboard, added StartupCostSection component
+- `client/src/components/planning/quick-entry-mode.tsx` — MODIFIED: Added imports (useState, Collapsible, StartupCostBuilder), added QuickEntryStartupCostSection below grid, added startup costs div in render
+- `_bmad-output/implementation-artifacts/4-7-integration-gaps-startup-cost-mounting.md` — MODIFIED: Status updates and Dev Agent Record
 
 ### Testing Summary
+- **Test approach:** E2E testing via Playwright
+- **ACs covered:** AC1 (StartupCostBuilder in Forms mode with collapsible section), AC2 (StartupCostBuilder in Quick Entry mode below grid), AC3 (Item 7 range display shows "N/A" instead of "No range data"), AC4 (completeness dashboard shows "X items" for startup costs)
+- **All tests passing:** Yes
+- **LSP Status:** Clean — no errors or warnings
+- **Visual Verification:** E2E screenshots verified all UI elements rendered correctly in both Forms and Quick Entry modes
