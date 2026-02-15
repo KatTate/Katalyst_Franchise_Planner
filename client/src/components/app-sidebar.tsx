@@ -42,9 +42,11 @@ export function AppSidebar() {
 
   if (!user) return null;
 
-  const isAdmin = user.role === "katalyst_admin" || user.role === "franchisor";
-  const isKatalystAdmin = user.role === "katalyst_admin";
-  const hasBrandContext = !!brand && !isKatalystAdmin;
+  const realRole = user._realUser?.role ?? user.role;
+  const isRealAdmin = realRole === "katalyst_admin" || realRole === "franchisor";
+  const isRealKatalystAdmin = realRole === "katalyst_admin";
+  const isEffectiveKatalystAdmin = user.role === "katalyst_admin";
+  const hasBrandContext = !!brand && !isEffectiveKatalystAdmin;
   const brandLabel = hasBrandContext
     ? (brand.displayName || brand.name)
     : "Katalyst Growth Planner";
@@ -53,12 +55,13 @@ export function AppSidebar() {
   const hideAdminNav = isImpersonating || isDemoMode;
   const navItems = [
     { title: "Dashboard", url: "/", icon: Home, visible: true },
-    { title: "Brands", url: "/admin/brands", icon: Building2, visible: isKatalystAdmin && !hideAdminNav },
-    { title: "Invitations", url: "/admin/invitations", icon: Mail, visible: isAdmin && !hideAdminNav },
+    { title: "Brands", url: "/admin/brands", icon: Building2, visible: isRealKatalystAdmin && !hideAdminNav },
+    { title: "Invitations", url: "/admin/invitations", icon: Mail, visible: isRealAdmin && !hideAdminNav },
   ].filter((item) => item.visible);
 
-  const initials = user.displayName
-    ? user.displayName
+  const displayUser = user._realUser ?? user;
+  const initials = displayUser.displayName
+    ? displayUser.displayName
         .split(" ")
         .map((n) => n[0])
         .join("")
@@ -117,16 +120,16 @@ export function AppSidebar() {
           <div className="flex items-center gap-2 p-2">
             <Avatar className="h-8 w-8">
               {user.profileImageUrl && (
-                <AvatarImage src={user.profileImageUrl} alt={user.displayName || user.email} />
+                <AvatarImage src={user.profileImageUrl} alt={displayUser.displayName || user.email} />
               )}
               <AvatarFallback data-testid="text-sidebar-avatar">{initials}</AvatarFallback>
             </Avatar>
             <div className="flex-1 min-w-0">
               <p className="text-sm font-medium truncate" data-testid="text-sidebar-user-name">
-                {user.displayName || user.email}
+                {displayUser.displayName || user.email}
               </p>
               <p className="text-xs text-muted-foreground truncate" data-testid="text-sidebar-user-role">
-                {user.role.replace(/_/g, " ")}
+                {realRole.replace(/_/g, " ")}
               </p>
             </div>
             <Button

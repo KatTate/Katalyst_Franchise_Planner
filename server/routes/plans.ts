@@ -52,6 +52,26 @@ async function requirePlanAccess(req: Request, res: Response): Promise<Plan | nu
   return plan;
 }
 
+// GET /api/plans — list plans for current effective user
+router.get(
+  "/",
+  requireAuth,
+  async (req: Request, res: Response) => {
+    const effectiveUser = await getEffectiveUser(req);
+    let plans;
+    if (effectiveUser.role === "katalyst_admin") {
+      plans = [];
+    } else if (effectiveUser.role === "franchisor") {
+      plans = effectiveUser.brandId
+        ? await storage.getPlansByBrand(effectiveUser.brandId)
+        : [];
+    } else {
+      plans = await storage.getPlansByUser(effectiveUser.id);
+    }
+    return res.json(plans);
+  }
+);
+
 // GET /api/plans/:planId — return complete plan object
 router.get(
   "/:planId",
