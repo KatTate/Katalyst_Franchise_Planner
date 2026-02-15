@@ -32,6 +32,8 @@ project_context: "**/project-context.md"
 
 default_output_file: "{story_dir}/{{story_key}}.md"
 
+web_bundle: false
+
 # Smart input file references - Simplified for enhanced approach
 # The epics+stories file should contain everything needed with source hints
 input_file_patterns:
