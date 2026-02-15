@@ -1,6 +1,6 @@
 # Story 4.5: Auto-Save & Session Recovery
 
-Status: review
+Status: done
 
 ## Story
 
@@ -176,22 +176,37 @@ Claude 4.6 Opus (Replit Agent)
 
 ### Completion Notes
 
-Implemented debounced auto-save (2-second idle), save status indicator (saved/saving/unsaved/error states), beforeunload warning, 409 conflict detection with toast notification, exponential backoff retry (3 retries), and mode switch protection during in-flight saves. Optimistic updates applied immediately in queueSave for responsive UI. Session recovery works via server-persisted plan data and user preferredTier.
+Implemented debounced auto-save (2-second idle), save status indicator (saved/saving/unsaved/error/retrying states), beforeunload warning, 409 conflict detection with toast notification and Reload button, exponential backoff retry (3 retries), and mode switch protection during in-flight and pending saves. Optimistic updates applied immediately in queueSave for responsive UI. Session recovery works via server-persisted plan data, user preferredTier, and localStorage-persisted active section.
 
 Key decisions:
 - Conflict detection uses `_expectedUpdatedAt` field in request body (not a header) to pass the client's known updatedAt timestamp
 - Auto-save wrapper (`usePlanAutoSave`) builds on top of existing `usePlan` hook without modifying it
 - FormsMode and QuickEntryMode receive `queueSave` as optional prop, falling back to immediate `updatePlan` when not provided
 - `isSaving` guard in `useFieldEditing` bypassed when auto-save is active to keep editing non-blocking
+- `hasUnsavedChanges` uses React state (not just ref) so UI consumers get reactive updates
+- Mode switch flushes pending debounced saves before switching, not just blocking during active saves
+- Active section persisted in localStorage and restored on FormsMode mount (best-effort, per dev notes)
+
+### Code Review Notes (2026-02-15)
+
+Adversarial code review found 3 HIGH, 4 MEDIUM, 2 LOW issues. All HIGH and MEDIUM issues were fixed:
+
+- **H1 (FIXED):** `hasUnsavedChanges` was ref-based and non-reactive — converted to state
+- **H2 (FIXED):** Active section restoration was missing for AC3/6 — added localStorage persistence in FormsMode
+- **M1 (FIXED):** Retry state showed "Saving..." instead of "Save failed — retrying..." — added new "retrying" SaveStatus
+- **M2 (KEPT):** Double optimistic update in queueSave + usePlan.onMutate — kept as-is, needed for immediate UI during debounce
+- **M3 (FIXED):** 409 conflict toast missing "Reload" action button — added via createElement(ToastAction)
+- **M4 (FIXED):** Mode switch during pending (debounced but not in-flight) save — added flushSave() that fires immediately
+- **L2 (FIXED):** Redundant isSaving/saveError indicators in FormsMode/QuickEntryMode — hidden when auto-save active
 
 ### File List
 
-- `client/src/hooks/use-plan-auto-save.ts` — CREATED: Auto-save hook with debounce, retry, beforeunload, conflict handling
-- `client/src/components/planning/save-indicator.tsx` — CREATED: 4-state save indicator component
+- `client/src/hooks/use-plan-auto-save.ts` — CREATED: Auto-save hook with debounce, retry, beforeunload, conflict handling, flushSave
+- `client/src/components/planning/save-indicator.tsx` — CREATED: 5-state save indicator component (saved/saving/retrying/unsaved/error)
 - `client/src/components/planning/planning-header.tsx` — MODIFIED: Replaced "Draft" placeholder with SaveIndicator
-- `client/src/pages/planning-workspace.tsx` — MODIFIED: Integrated usePlanAutoSave, mode switch protection, queueSave prop passing
+- `client/src/pages/planning-workspace.tsx` — MODIFIED: Integrated usePlanAutoSave, mode switch protection with flushSave, queueSave prop passing
 - `client/src/components/planning/input-panel.tsx` — MODIFIED: Pass queueSave prop to FormsMode/QuickEntryMode
-- `client/src/components/planning/forms-mode.tsx` — MODIFIED: Use queueSave for debounced saves, bypass isSaving guard
+- `client/src/components/planning/forms-mode.tsx` — MODIFIED: Use queueSave for debounced saves, bypass isSaving guard, active section persistence
 - `client/src/components/planning/quick-entry-mode.tsx` — MODIFIED: Use queueSave for debounced saves, bypass isSaving guard
 - `server/routes/plans.ts` — MODIFIED: Added 409 conflict detection, lastAutoSave timestamp update
 

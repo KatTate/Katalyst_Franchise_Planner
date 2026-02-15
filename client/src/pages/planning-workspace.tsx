@@ -21,7 +21,7 @@ export default function PlanningWorkspace() {
   const params = useParams<{ planId: string }>();
   const planId = params.planId!;
   const { user } = useAuth();
-  const { plan, isLoading: planLoading, error: planError, saveStatus, queueSave, retrySave, isSaving } = usePlanAutoSave(planId);
+  const { plan, isLoading: planLoading, error: planError, saveStatus, queueSave, retrySave, flushSave, isSaving, hasUnsavedChanges } = usePlanAutoSave(planId);
   const { setOpen } = useSidebar();
 
   const brandId = plan?.brandId;
@@ -68,17 +68,33 @@ export default function PlanningWorkspace() {
   const pendingModeRef = useRef<ExperienceTier | null>(null);
 
   useEffect(() => {
-    if (!isSaving && pendingModeRef.current) {
+    if (!isSaving && !hasUnsavedChanges && pendingModeRef.current) {
       const nextMode = pendingModeRef.current;
       pendingModeRef.current = null;
       setActiveMode(nextMode);
+      try { localStorage.setItem(`plan-mode-${planId}`, nextMode); } catch {}
+
+      if (saveTierRef.current) clearTimeout(saveTierRef.current);
+      saveTierRef.current = setTimeout(async () => {
+        try {
+          await apiRequest("PATCH", "/api/auth/me", { preferredTier: nextMode });
+          queryClient.invalidateQueries({ queryKey: ["/api/auth/me"] });
+        } catch {
+        }
+      }, 500);
     }
-  }, [isSaving]);
+  }, [isSaving, hasUnsavedChanges, planId]);
 
   const handleModeChange = useCallback(
     (mode: ExperienceTier) => {
       if (isSaving) {
         pendingModeRef.current = mode;
+        return;
+      }
+
+      if (hasUnsavedChanges) {
+        pendingModeRef.current = mode;
+        flushSave();
         return;
       }
 
@@ -94,7 +110,7 @@ export default function PlanningWorkspace() {
         }
       }, 500);
     },
-    [isSaving]
+    [isSaving, hasUnsavedChanges, flushSave]
   );
 
   const handleQuickStartComplete = useCallback(() => {

@@ -29,6 +29,16 @@ export function SaveIndicator({ status, onRetry }: SaveIndicatorProps) {
         </div>
       );
 
+    case "retrying":
+      return (
+        <div className="flex items-center gap-1.5" data-testid="status-auto-save">
+          <Loader2 className="h-3.5 w-3.5 text-muted-foreground animate-spin" />
+          <span className="text-xs text-muted-foreground whitespace-nowrap" data-testid="text-save-status">
+            Save failed — retrying...
+          </span>
+        </div>
+      );
+
     case "unsaved":
       return (
         <div className="flex items-center gap-1.5" data-testid="status-auto-save">

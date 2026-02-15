@@ -1,10 +1,11 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { createElement, useCallback, useEffect, useRef, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { usePlan, planKey } from "@/hooks/use-plan";
 import { useToast } from "@/hooks/use-toast";
+import { ToastAction } from "@/components/ui/toast";
 import type { Plan } from "@shared/schema";
 
-export type SaveStatus = "saved" | "saving" | "unsaved" | "error";
+export type SaveStatus = "saved" | "saving" | "unsaved" | "error" | "retrying";
 export type ConflictState = "none" | "conflict";
 
 interface UsePlanAutoSaveReturn {
@@ -15,6 +16,7 @@ interface UsePlanAutoSaveReturn {
   conflictState: ConflictState;
   queueSave: (data: Partial<Plan>) => void;
   retrySave: () => void;
+  flushSave: () => void;
   hasUnsavedChanges: boolean;
   isSaving: boolean;
 }
@@ -30,6 +32,7 @@ export function usePlanAutoSave(planId: string): UsePlanAutoSaveReturn {
 
   const [saveStatus, setSaveStatus] = useState<SaveStatus>("saved");
   const [conflictState, setConflictState] = useState<ConflictState>("none");
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const pendingDataRef = useRef<Partial<Plan> | null>(null);
   const debounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const retryCountRef = useRef(0);
@@ -61,6 +64,7 @@ export function usePlanAutoSave(planId: string): UsePlanAutoSaveReturn {
       }
       pendingDataRef.current = null;
       hasUnsavedRef.current = false;
+      setHasUnsavedChanges(false);
       retryCountRef.current = 0;
       setSaveStatus("saved");
       isSavingRef.current = false;
@@ -74,16 +78,22 @@ export function usePlanAutoSave(planId: string): UsePlanAutoSaveReturn {
         setConflictState("conflict");
         pendingDataRef.current = null;
         hasUnsavedRef.current = false;
+        setHasUnsavedChanges(false);
         retryCountRef.current = MAX_RETRIES;
         toast({
           title: "Plan updated elsewhere",
           description: "This plan was updated in another tab or device. Please reload to see the latest version.",
           variant: "destructive",
+          action: createElement(
+            ToastAction as any,
+            { altText: "Reload page", onClick: () => window.location.reload() },
+            "Reload"
+          ) as any,
         });
       } else if (retryCountRef.current < MAX_RETRIES) {
         retryCountRef.current += 1;
         const delay = BASE_RETRY_MS * Math.pow(2, retryCountRef.current - 1);
-        setSaveStatus("saving");
+        setSaveStatus("retrying");
         retryTimerRef.current = setTimeout(() => {
           isSavingRef.current = false;
           executeSave(data);
@@ -103,6 +113,7 @@ export function usePlanAutoSave(planId: string): UsePlanAutoSaveReturn {
       ? { ...pendingDataRef.current, ...data }
       : data;
     hasUnsavedRef.current = true;
+    setHasUnsavedChanges(true);
     setSaveStatus("unsaved");
     retryCountRef.current = 0;
 
@@ -124,6 +135,17 @@ export function usePlanAutoSave(planId: string): UsePlanAutoSaveReturn {
       }
     }, DEBOUNCE_MS);
   }, [executeSave, conflictState, queryClient, planId]);
+
+  const flushSave = useCallback(() => {
+    if (debounceTimerRef.current) {
+      clearTimeout(debounceTimerRef.current);
+      debounceTimerRef.current = null;
+    }
+    const toSave = pendingDataRef.current;
+    if (toSave && !isSavingRef.current) {
+      executeSave(toSave);
+    }
+  }, [executeSave]);
 
   const retrySave = useCallback(() => {
     retryCountRef.current = 0;
@@ -172,7 +194,8 @@ export function usePlanAutoSave(planId: string): UsePlanAutoSaveReturn {
     conflictState,
     queueSave,
     retrySave,
-    hasUnsavedChanges: hasUnsavedRef.current || saveStatus === "unsaved",
-    isSaving: saveStatus === "saving",
+    flushSave,
+    hasUnsavedChanges,
+    isSaving: saveStatus === "saving" || saveStatus === "retrying",
   };
 }

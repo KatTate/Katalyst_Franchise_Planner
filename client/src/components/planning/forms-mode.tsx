@@ -1,4 +1,4 @@
-import { useState, useCallback, useMemo } from "react";
+import { useState, useCallback, useMemo, useEffect, useRef } from "react";
 import { usePlan } from "@/hooks/use-plan";
 import { useFieldEditing } from "@/hooks/use-field-editing";
 import type {
@@ -64,6 +64,28 @@ function hasAnyUserEdits(financialInputs: PlanFinancialInputs): boolean {
 export function FormsMode({ planId, queueSave }: FormsModeProps) {
   const { plan, isLoading, error, updatePlan, isSaving, saveError } = usePlan(planId);
   const financialInputs = plan?.financialInputs as PlanFinancialInputs | null | undefined;
+
+  const sectionStorageKey = `plan-active-section-${planId}`;
+  const getStoredSection = (): string | null => {
+    try { return localStorage.getItem(sectionStorageKey); } catch { return null; }
+  };
+  const storedSection = useRef(getStoredSection());
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+
+  const handleSectionInteract = useCallback((category: string) => {
+    try { localStorage.setItem(sectionStorageKey, category); } catch {}
+  }, [sectionStorageKey]);
+
+  useEffect(() => {
+    if (!financialInputs || !storedSection.current) return;
+    const el = document.querySelector(`[data-testid="section-${storedSection.current}"]`);
+    if (el && scrollContainerRef.current) {
+      requestAnimationFrame(() => {
+        el.scrollIntoView({ block: "start", behavior: "instant" as ScrollBehavior });
+      });
+    }
+    storedSection.current = null;
+  }, [financialInputs]);
 
   const saveInputs = useCallback(
     (updated: PlanFinancialInputs) => {
@@ -136,7 +158,7 @@ export function FormsMode({ planId, queueSave }: FormsModeProps) {
         <PlanCompleteness sections={sectionProgress} />
       </div>
 
-      <div className="flex-1 overflow-auto px-4 py-4 space-y-3">
+      <div ref={scrollContainerRef} className="flex-1 overflow-auto px-4 py-4 space-y-3">
         {CATEGORY_ORDER.map((category, index) => (
           <FormSection
             key={category}
@@ -154,17 +176,18 @@ export function FormsMode({ planId, queueSave }: FormsModeProps) {
             onEditCancel={handleEditCancel}
             onReset={handleReset}
             onFocusChange={setFocusedField}
+            onSectionInteract={handleSectionInteract}
             showStartHere={showStartHere && index === 0}
             defaultOpen={showStartHere ? index === 0 : true}
           />
         ))}
 
-        {isSaving && (
+        {!queueSave && isSaving && (
           <p className="text-xs text-muted-foreground text-center pt-1" data-testid="status-saving">
             Saving...
           </p>
         )}
-        {saveError && (
+        {!queueSave && saveError && (
           <div className="flex items-center gap-2 text-destructive text-sm justify-center" data-testid="status-save-error">
             <AlertCircle className="h-4 w-4" />
             <span>Save failed. Your changes will be retried on next edit.</span>
@@ -231,6 +254,7 @@ interface FormSectionProps {
   onEditCancel: () => void;
   onReset: (category: string, fieldName: string) => void;
   onFocusChange: (key: string | null) => void;
+  onSectionInteract: (category: string) => void;
   showStartHere: boolean;
   defaultOpen: boolean;
 }
@@ -250,13 +274,21 @@ function FormSection({
   onEditCancel,
   onReset,
   onFocusChange,
+  onSectionInteract,
   showStartHere,
   defaultOpen,
 }: FormSectionProps) {
   const [isOpen, setIsOpen] = useState(defaultOpen);
 
+  const handleOpenChange = useCallback((open: boolean) => {
+    setIsOpen(open);
+    if (open) {
+      onSectionInteract(category);
+    }
+  }, [category, onSectionInteract]);
+
   return (
-    <Collapsible open={isOpen} onOpenChange={setIsOpen}>
+    <Collapsible open={isOpen} onOpenChange={handleOpenChange}>
       <div
         className={`border rounded-md ${showStartHere ? "ring-2 ring-primary/30" : ""}`}
         data-testid={`section-${category}`}

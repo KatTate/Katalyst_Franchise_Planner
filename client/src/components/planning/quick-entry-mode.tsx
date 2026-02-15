@@ -423,14 +423,14 @@ export function QuickEntryMode({ planId, queueSave }: QuickEntryModeProps) {
         </table>
       </div>
 
-      {isSaving && (
+      {!queueSave && isSaving && (
         <div className="px-3 py-1 border-t bg-background">
           <p className="text-xs text-muted-foreground text-center" data-testid="status-saving">
             Saving...
           </p>
         </div>
       )}
-      {saveError && (
+      {!queueSave && saveError && (
         <div className="px-3 py-1 border-t bg-background">
           <div className="flex items-center gap-2 text-destructive text-xs justify-center" data-testid="status-save-error">
             <AlertCircle className="h-3 w-3" />
