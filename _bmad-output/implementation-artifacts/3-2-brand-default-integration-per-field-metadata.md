@@ -115,6 +115,19 @@ so that I start by refining a reasonable plan rather than building from scratch 
 
 **No database migration needed.** JSONB type annotations are TypeScript-only; the database column remains `jsonb`.
 
+### Testing Expectations
+
+- **Unit tests required** for all pure functions in `shared/plan-initialization.ts`: `buildPlanFinancialInputs()`, `buildPlanStartupCosts()`, `unwrapForEngine()`, `updateFieldValue()`, `resetFieldToDefault()`
+- **Test framework:** Vitest (existing project test framework; tests live alongside source files as `*.test.ts`)
+- **Existing test suite:** `shared/financial-engine.test.ts` — all existing engine tests must continue to pass (regression guard)
+- **Critical ACs requiring automated coverage:**
+  - AC1: Brand default initialization with per-field metadata structure
+  - AC3: Unwrap produces valid `EngineInput` that the engine can compute from
+  - AC4/AC5: Field update and reset preserve/restore metadata correctly
+  - AC6: Round-trip identity checks (init → unwrap → engine produces valid results)
+  - AC7: PostNet reference value validation within tolerance
+- **Integration test:** Confirm `buildPlanFinancialInputs()` → `unwrapForEngine()` → `calculateProjections()` pipeline produces valid engine output matching PostNet reference data
+
 ### References
 
 - Architecture: `_bmad-output/planning-artifacts/architecture.md` — Decision 15 (Engine Design), Per-field metadata pattern, Number Format Rules
@@ -163,6 +176,20 @@ Clean — no errors in new/modified files. Pre-existing Drizzle ORM type issues 
 
 ### Visual Verification
 N/A — this story is infrastructure/data-layer only (developer role), no UI components.
+
+### Testing Summary
+
+- **66 new tests** in `shared/plan-initialization.test.ts` covering:
+  - Field initialization with brand default metadata (AC1)
+  - Startup cost template mapping with dollar-to-cents conversion (AC2)
+  - Engine unwrap with single-to-array expansion, facilities aggregation, equity derivation (AC3)
+  - Field update: source tracking, `isCustom` flag, `lastModifiedAt` (AC4)
+  - Field reset to brand default (AC5)
+  - Round-trip identity checks: init → unwrap → engine produces valid output (AC6)
+  - PostNet reference validation: Y1-Y5 revenue, EBITDA, cumulative cash flow, ROI, startup investment within tolerance (AC7)
+  - Edge cases: empty startup costs, zero values, missing brand param data
+- **33 existing engine tests** in `shared/financial-engine.test.ts` — all passing (no regressions)
+- **Total: 99 tests passing**
 
 ### File List
 | File | Action | Notes |
