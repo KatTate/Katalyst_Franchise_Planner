@@ -16,7 +16,7 @@ const SOURCE_CONFIG: Record<FieldSource, { label: string; testId: string; classN
   ai_populated: {
     label: "AI-Populated",
     testId: "source-badge-ai-populated",
-    className: "border-transparent",
+    className: "bg-[#A9A2AA]/20 text-[#A9A2AA] dark:bg-[#A9A2AA]/15 dark:text-[#C4BFC5] border-transparent",
   },
 };
 
@@ -30,7 +30,6 @@ export function SourceBadge({ source }: SourceBadgeProps) {
     <Badge
       variant="outline"
       className={`text-[10px] px-1.5 py-0 h-4 font-normal rounded-md ${config.className}`}
-      style={source === "ai_populated" ? { backgroundColor: "#A9A2AA20", color: "#A9A2AA" } : undefined}
       data-testid={config.testId}
     >
       {config.label}

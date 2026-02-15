@@ -16,8 +16,8 @@ export function PlanningHeader({ planName, activeMode, onModeChange }: PlanningH
       <div className="flex-1" />
       <ModeSwitcher activeMode={activeMode} onModeChange={onModeChange} />
       <div className="flex-1" />
-      {/* Save status placeholder — implemented in Story 4.5 */}
-      <span className="text-xs text-muted-foreground whitespace-nowrap">All changes saved</span>
+      {/* Save status placeholder — auto-save implemented in Story 4.5 */}
+      <span className="text-xs text-muted-foreground whitespace-nowrap">Draft</span>
     </header>
   );
 }

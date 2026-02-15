@@ -15,12 +15,16 @@ export function ModeSwitcher({ activeMode, onModeChange }: ModeSwitcherProps) {
   return (
     <div
       data-testid="mode-switcher"
+      role="tablist"
+      aria-label="Planning mode"
       className="inline-flex items-center rounded-xl bg-muted p-1 gap-0.5"
     >
       {MODES.map((mode) => (
         <button
           key={mode.value}
           data-testid={mode.testId}
+          role="tab"
+          aria-selected={activeMode === mode.value}
           onClick={() => onModeChange(mode.value)}
           className={`
             px-4 py-1.5 text-sm font-medium rounded-lg transition-colors duration-150

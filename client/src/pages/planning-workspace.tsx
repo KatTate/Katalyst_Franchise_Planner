@@ -26,7 +26,7 @@ export default function PlanningWorkspace() {
   // Load brand data for QuickStart overlay
   const brandId = plan?.brandId;
   const { data: brand } = useQuery<Brand>({
-    queryKey: [`/api/brands/${brandId}`],
+    queryKey: ["/api/brands", brandId],
     enabled: !!brandId,
   });
 
@@ -34,6 +34,15 @@ export default function PlanningWorkspace() {
   const [activeMode, setActiveMode] = useState<ExperienceTier>(
     user?.preferredTier ?? "forms"
   );
+
+  // Re-sync mode when user data arrives asynchronously (e.g., direct navigation)
+  const hasUserSynced = useRef(false);
+  useEffect(() => {
+    if (user?.preferredTier && !hasUserSynced.current) {
+      setActiveMode(user.preferredTier as ExperienceTier);
+      hasUserSynced.current = true;
+    }
+  }, [user?.preferredTier]);
 
   // Track whether we've initialized sidebar state
   const sidebarInitialized = useRef(false);
@@ -137,11 +146,15 @@ export default function PlanningWorkspace() {
       <div className="flex-1 min-h-0">
         <ResizablePanelGroup direction="horizontal">
           <ResizablePanel defaultSize={40} minSize={30}>
-            <InputPanel activeMode={activeMode} planId={planId} />
+            <div className="h-full" style={{ minWidth: 360 }}>
+              <InputPanel activeMode={activeMode} planId={planId} />
+            </div>
           </ResizablePanel>
           <ResizableHandle withHandle />
           <ResizablePanel defaultSize={60} minSize={40}>
-            <DashboardPanel planId={planId} />
+            <div className="h-full" style={{ minWidth: 480 }}>
+              <DashboardPanel planId={planId} />
+            </div>
           </ResizablePanel>
         </ResizablePanelGroup>
       </div>

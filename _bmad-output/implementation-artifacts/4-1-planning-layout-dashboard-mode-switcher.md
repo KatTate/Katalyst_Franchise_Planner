@@ -342,3 +342,31 @@ N/A — no running web server available in this environment. UI components verif
 - Build: Vite build succeeds (1,151 KB JS)
 - Tests: 298 passed, 0 failed, 12 test files
 - TSC: Pre-existing infrastructure warnings only, no new errors
+
+---
+
+**Reviewer:** Claude Opus 4.6 (adversarial code review, round 2)
+**Date:** 2026-02-15
+**Outcome:** All HIGH and MEDIUM issues fixed. 1 LOW deferred (break-even chart dual-fill). Story status remains done.
+
+**Findings Resolved (6 fixed):**
+
+1. **[HIGH] Brand query key uses string interpolation instead of array segments** — `queryKey: [`/api/brands/${brandId}`]` prevents proper cache invalidation. Fixed to `queryKey: ["/api/brands", brandId]` per project conventions.
+
+2. **[MEDIUM] Mode preference not re-synced when user data loads asynchronously** — `useState(user?.preferredTier ?? "forms")` only reads once during initial render. If auth query resolves after mount, mode defaults to "forms" regardless of saved preference. Fixed by adding a `useEffect` with `hasUserSynced` ref that syncs `activeMode` with `user.preferredTier` once user data arrives, without overwriting user-initiated mode changes.
+
+3. **[MEDIUM] Split view lacks pixel-based minimum width safety net** — `minSize` percentages (30/40) can't guarantee 360px/480px pixel minimums at all viewport widths. Added CSS `min-width: 360px` and `min-width: 480px` wrapper divs inside the ResizablePanel children as a pixel floor.
+
+4. **[MEDIUM] SourceBadge AI-Populated variant uses hardcoded inline styles** — Replaced `style={{ backgroundColor: "#A9A2AA20", color: "#A9A2AA" }}` with Tailwind classes `bg-[#A9A2AA]/20 text-[#A9A2AA] dark:bg-[#A9A2AA]/15 dark:text-[#C4BFC5]` for dark mode compatibility and design system consistency.
+
+5. **[LOW] "All changes saved" placeholder misleading before auto-save** — Changed to "Draft" since auto-save isn't implemented until Story 4.5.
+
+6. **[LOW] Mode switcher lacks ARIA semantics** — Added `role="tablist"`, `aria-label="Planning mode"`, `role="tab"`, and `aria-selected` attributes for screen reader accessibility.
+
+**Remaining Notes (not fixed, acceptable):**
+
+- **[LOW] Break-even chart single-fill gradient for both positive and negative regions** — AC8 describes separate fills for positive (primary 20%) and negative (red 10%) regions. Recharts' `Area` component doesn't natively split fills at a reference line; implementing this requires a `ComposedChart` with two clipped Area series. Deferred to polish pass.
+
+**Post-Fix Verification:**
+- LSP: 0 errors, 0 warnings across all 8 reviewed files
+- All fixes are non-breaking (no API or schema changes)
