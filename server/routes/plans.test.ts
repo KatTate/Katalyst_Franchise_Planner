@@ -473,6 +473,90 @@ describe("Plans Routes", () => {
     });
   });
 
+  describe("PATCH /api/plans/:planId — Auto-Save & Conflict Detection (Story 4.5)", () => {
+    it("returns 409 when _expectedUpdatedAt does not match current plan updatedAt", async () => {
+      const planWithTimestamp = {
+        ...mockPlan,
+        updatedAt: new Date("2026-02-15T10:00:00Z"),
+      };
+      (storage.getPlan as any).mockResolvedValue(planWithTimestamp);
+
+      const app = createApp(franchiseeUser);
+      const res = await request(app).patch("/api/plans/p1").send({
+        name: "Stale Update",
+        _expectedUpdatedAt: "2026-02-15T09:00:00Z",
+      });
+      expect(res.status).toBe(409);
+      expect(res.body.code).toBe("CONFLICT");
+      expect(res.body.serverUpdatedAt).toBe("2026-02-15T10:00:00.000Z");
+    });
+
+    it("allows save when _expectedUpdatedAt matches current plan updatedAt", async () => {
+      const planWithTimestamp = {
+        ...mockPlan,
+        updatedAt: new Date("2026-02-15T10:00:00Z"),
+      };
+      (storage.getPlan as any).mockResolvedValue(planWithTimestamp);
+      (storage.updatePlan as any).mockImplementation((_id: string, data: any) => ({
+        ...planWithTimestamp,
+        ...data,
+      }));
+
+      const app = createApp(franchiseeUser);
+      const res = await request(app).patch("/api/plans/p1").send({
+        name: "Fresh Update",
+        _expectedUpdatedAt: "2026-02-15T10:00:00.000Z",
+      });
+      expect(res.status).toBe(200);
+      expect(res.body.data.name).toBe("Fresh Update");
+    });
+
+    it("skips conflict check when _expectedUpdatedAt is not provided", async () => {
+      (storage.getPlan as any).mockResolvedValue({
+        ...mockPlan,
+        updatedAt: new Date("2026-02-15T10:00:00Z"),
+      });
+      (storage.updatePlan as any).mockImplementation((_id: string, data: any) => ({
+        ...mockPlan,
+        ...data,
+      }));
+
+      const app = createApp(franchiseeUser);
+      const res = await request(app).patch("/api/plans/p1").send({ name: "No Conflict Check" });
+      expect(res.status).toBe(200);
+    });
+
+    it("updates lastAutoSave timestamp on successful PATCH", async () => {
+      (storage.getPlan as any).mockResolvedValue(mockPlan);
+      (storage.updatePlan as any).mockImplementation((_id: string, data: any) => {
+        expect(data).toHaveProperty("lastAutoSave");
+        expect(data.lastAutoSave).toBeInstanceOf(Date);
+        return { ...mockPlan, ...data };
+      });
+
+      const app = createApp(franchiseeUser);
+      const res = await request(app).patch("/api/plans/p1").send({ name: "Auto-Saved" });
+      expect(res.status).toBe(200);
+      expect(storage.updatePlan).toHaveBeenCalled();
+    });
+
+    it("returns 409 with descriptive message for concurrent edits", async () => {
+      const planWithTimestamp = {
+        ...mockPlan,
+        updatedAt: new Date("2026-02-15T12:00:00Z"),
+      };
+      (storage.getPlan as any).mockResolvedValue(planWithTimestamp);
+
+      const app = createApp(franchiseeUser);
+      const res = await request(app).patch("/api/plans/p1").send({
+        financialInputs: validFinancialInputs,
+        _expectedUpdatedAt: "2026-02-15T11:00:00Z",
+      });
+      expect(res.status).toBe(409);
+      expect(res.body.message).toContain("updated in another tab");
+    });
+  });
+
   describe("Franchisor access scoping (Story 3.2)", () => {
     it("allows franchisor to view plan within their brand", async () => {
       (storage.getPlan as any).mockResolvedValue(mockPlan);
