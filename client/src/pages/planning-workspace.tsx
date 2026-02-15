@@ -54,7 +54,7 @@ export default function PlanningWorkspace() {
 
   const sidebarInitialized = useRef(false);
   useEffect(() => {
-    setOpen(activeMode !== "planning_assistant");
+    setOpen(false);
     sidebarInitialized.current = true;
   }, [activeMode, setOpen]);
 
