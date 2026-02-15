@@ -176,17 +176,27 @@ test.describe("Story 4.4: Quick Entry Mode — Keyboard Navigation & Formatting"
 
     expect(totalRenderedRows).toBeGreaterThan(0);
 
-    const hasPaddingRows = await page.evaluate(() => {
+    const virtualizationInfo = await page.evaluate(() => {
       const tbody = document.querySelector("[data-testid='quick-entry-grid'] tbody");
-      if (!tbody) return false;
+      if (!tbody) return { hasPaddingRows: false, tbodyChildCount: 0 };
       const trs = tbody.querySelectorAll("tr");
+      let hasPaddingRows = false;
+      let spacerTdCount = 0;
       for (const tr of trs) {
         const td = tr.querySelector("td");
         if (td && td.style.height && !td.textContent?.trim()) {
-          return true;
+          hasPaddingRows = true;
+          spacerTdCount++;
         }
       }
-      return false;
+      const hasColSpanOnSpacers = Array.from(trs).every((tr) => {
+        const td = tr.querySelector("td");
+        if (td && td.style.height && !td.textContent?.trim()) {
+          return td.hasAttribute("colspan");
+        }
+        return true;
+      });
+      return { hasPaddingRows, spacerTdCount, tbodyChildCount: trs.length, hasColSpanOnSpacers };
     });
 
     const scrollContainer = page.locator("[data-testid='quick-entry-container'] .overflow-auto");
@@ -194,10 +204,13 @@ test.describe("Story 4.4: Quick Entry Mode — Keyboard Navigation & Formatting"
     const clientHeight = await scrollContainer.evaluate((el) => el.clientHeight);
 
     const isScrollable = scrollHeight > clientHeight;
-    const hasVirtualPadding = hasPaddingRows;
-    const hasVirtualization = isScrollable || hasVirtualPadding || totalRenderedRows < 23;
+    const hasVirtualization = isScrollable || virtualizationInfo.hasPaddingRows;
 
-    expect(hasVirtualization).toBe(true);
+    expect(hasVirtualization || totalRenderedRows < 23).toBe(true);
+
+    if (virtualizationInfo.hasPaddingRows) {
+      expect(virtualizationInfo.hasColSpanOnSpacers).toBe(true);
+    }
 
     const stickyMetrics = page.locator("[data-testid='quick-entry-metrics']");
     await expect(stickyMetrics).toBeVisible();

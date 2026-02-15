@@ -12,7 +12,6 @@ import {
   parseFieldInput,
   getInputPlaceholder,
 } from "@/lib/field-metadata";
-import { formatCents } from "@/lib/format-currency";
 
 export interface EditableCellProps {
   field: FinancialFieldValue;
@@ -35,13 +34,7 @@ function getRawEditValue(field: FinancialFieldValue, format: FormatType): string
 }
 
 function getFormattedDisplayValue(field: FinancialFieldValue, format: FormatType): string {
-  switch (format) {
-    case "currency":
-      return formatCents(field.currentValue, true);
-    case "percentage":
-    case "integer":
-      return formatFieldValue(field.currentValue, format);
-  }
+  return formatFieldValue(field.currentValue, format, format === "currency");
 }
 
 function isOutOfRange(field: FinancialFieldValue): boolean {
@@ -87,14 +80,7 @@ export function EditableCell({
 
   const commitValue = useCallback((): void => {
     setIsFocused(false);
-    let parsedValue: number;
-    if (format === "integer") {
-      const cleaned = localValue.replace(/[^0-9.\-]/g, "").trim();
-      const num = parseFloat(cleaned);
-      parsedValue = isNaN(num) || num < 0 ? NaN : Math.round(num);
-    } else {
-      parsedValue = parseFieldInput(localValue, format);
-    }
+    const parsedValue = parseFieldInput(localValue, format);
     if (!isNaN(parsedValue) && parsedValue !== committedRef.current) {
       committedRef.current = parsedValue;
       onCellEdit(category, fieldName, parsedValue);

@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useRef } from "react";
+import { useCallback, useEffect, useMemo, useRef } from "react";
 import {
   useReactTable,
   getCoreRowModel,
@@ -303,7 +303,9 @@ export function QuickEntryMode({ planId }: QuickEntryModeProps) {
     [navigableFields, rowVirtualizer]
   );
 
-  navigateRef.current = handleNavigate;
+  useEffect(() => {
+    navigateRef.current = handleNavigate;
+  }, [handleNavigate]);
 
   const virtualRows = rowVirtualizer.getVirtualItems();
   const paddingTop = virtualRows.length > 0 ? virtualRows[0]?.start ?? 0 : 0;
@@ -372,7 +374,7 @@ export function QuickEntryMode({ planId }: QuickEntryModeProps) {
           <tbody>
             {paddingTop > 0 && (
               <tr>
-                <td style={{ height: `${paddingTop}px`, padding: 0 }} />
+                <td colSpan={columns.length} style={{ height: `${paddingTop}px`, padding: 0 }} />
               </tr>
             )}
             {virtualRows.map((virtualRow) => {
@@ -409,7 +411,7 @@ export function QuickEntryMode({ planId }: QuickEntryModeProps) {
             })}
             {paddingBottom > 0 && (
               <tr>
-                <td style={{ height: `${paddingBottom}px`, padding: 0 }} />
+                <td colSpan={columns.length} style={{ height: `${paddingBottom}px`, padding: 0 }} />
               </tr>
             )}
           </tbody>

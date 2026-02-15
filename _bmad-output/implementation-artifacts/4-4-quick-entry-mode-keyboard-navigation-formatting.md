@@ -242,10 +242,28 @@ EditableCell extracted to separate file for maintainability (175 lines).
 
 | File | Action | Lines |
 |------|--------|-------|
-| `client/src/components/planning/quick-entry-mode.tsx` | MODIFIED | ~523 lines |
-| `client/src/components/planning/editable-cell.tsx` | CREATED | ~175 lines |
+| `client/src/components/planning/quick-entry-mode.tsx` | MODIFIED | ~527 lines |
+| `client/src/components/planning/editable-cell.tsx` | CREATED | ~168 lines |
+| `client/src/lib/field-metadata.ts` | MODIFIED | ~88 lines |
+| `e2e/quick-entry-4-4.spec.ts` | CREATED | ~345 lines |
 
 ### Testing Summary
 
 - All 380 existing Vitest unit tests pass with no regressions
 - E2E Playwright verification: auto-formatting displays correctly ($5,000.00, 15.0%), keyboard navigation (Tab/Enter) works across cells, collapsed groups skip during navigation, group toggle collapse/expand works correctly
+
+### Code Review Notes (2026-02-15)
+
+**Issues Found:** 2 High, 4 Medium, 2 Low — all HIGH and MEDIUM fixed.
+
+**Fixed:**
+- H1: Integer `commitValue` bypassed `parseFieldInput` with custom logic. Fixed: updated `parseFieldInput` to use `parseFloat` + `Math.round` (rounding per AC5), and `commitValue` now delegates to `parseFieldInput` for all formats.
+- H2: Currency display in `getFormattedDisplayValue` diverged from `formatFieldValue` by directly calling `formatCents(value, true)`. Fixed: added `showDecimals` param to `formatFieldValue`, removed `formatCents` import from editable-cell, now uses `formatFieldValue(value, format, true)`.
+- M2: Padding spacer `<tr>` had single `<td>` in 7-column table. Fixed: added `colSpan={columns.length}`.
+- M3: `navigateRef.current` was assigned as side effect during render. Fixed: wrapped in `useEffect`.
+- M4: AC6 e2e test had weak virtualization check. Strengthened: now verifies colSpan on spacer rows and separates scrollability from padding detection.
+- M1: Story File List missing `e2e/quick-entry-4-4.spec.ts` and `field-metadata.ts`. Fixed: updated File List.
+
+**Not fixed (LOW):**
+- L1: Hardcoded Gurple color `#A9A2AA` not theme-aware — deferred to Epic 5 advisory nudge styling.
+- L2: No `data-testid` on scroll container — minor, test works via CSS selector.

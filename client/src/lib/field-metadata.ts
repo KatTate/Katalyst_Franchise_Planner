@@ -46,10 +46,10 @@ export const CATEGORY_LABELS: Record<string, string> = {
 
 export const CATEGORY_ORDER = ["revenue", "operatingCosts", "financing", "startupCapital"];
 
-export function formatFieldValue(value: number, format: FormatType): string {
+export function formatFieldValue(value: number, format: FormatType, showDecimals = false): string {
   switch (format) {
     case "currency":
-      return formatCents(value);
+      return formatCents(value, showDecimals);
     case "percentage":
       return `${(value * 100).toFixed(1)}%`;
     case "integer":
@@ -68,9 +68,10 @@ export function parseFieldInput(input: string, format: FormatType): number {
       return num / 100;
     }
     case "integer": {
-      const num = parseInt(input, 10);
+      const cleaned = input.replace(/[^0-9.\-]/g, "").trim();
+      const num = parseFloat(cleaned);
       if (isNaN(num) || num < 0) return NaN;
-      return num;
+      return Math.round(num);
     }
   }
 }
