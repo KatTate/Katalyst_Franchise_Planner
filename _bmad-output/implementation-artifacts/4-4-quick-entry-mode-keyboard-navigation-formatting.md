@@ -1,6 +1,6 @@
 # Story 4.4: Quick Entry Mode — Keyboard Navigation & Formatting
 
-Status: ready-for-dev
+Status: in-progress
 
 ## Story
 
