@@ -579,4 +579,325 @@ describe("Plans Routes", () => {
       expect(res.status).toBe(200);
     });
   });
+
+  describe("Story 3.3 — Startup Cost Customization", () => {
+    const templateItem = {
+      id: "00000000-0000-4000-8000-000000000001",
+      name: "Equipment & Signage",
+      amount: 12605700,
+      capexClassification: "capex",
+      isCustom: false,
+      source: "brand_default",
+      brandDefaultAmount: 12605700,
+      item7RangeLow: 10000000,
+      item7RangeHigh: 15000000,
+      sortOrder: 0,
+    };
+
+    const customItem = {
+      id: "00000000-0000-4000-8000-000000000099",
+      name: "Insurance Deposit",
+      amount: 500000,
+      capexClassification: "non_capex" as const,
+      isCustom: true,
+      source: "user_entry",
+      brandDefaultAmount: null,
+      item7RangeLow: null,
+      item7RangeHigh: null,
+      sortOrder: 1,
+    };
+
+    describe("PUT /api/plans/:planId/startup-costs — Add custom item", () => {
+      it("accepts a mix of template and custom items", async () => {
+        (storage.getPlan as any).mockResolvedValue(mockPlan);
+        (storage.updateStartupCosts as any).mockResolvedValue([templateItem, customItem]);
+
+        const app = createApp(franchiseeUser);
+        const res = await request(app)
+          .put("/api/plans/p1/startup-costs")
+          .send([templateItem, customItem]);
+        expect(res.status).toBe(200);
+        expect(res.body).toHaveLength(2);
+        expect(res.body[1].isCustom).toBe(true);
+        expect(res.body[1].source).toBe("user_entry");
+        expect(res.body[1].brandDefaultAmount).toBeNull();
+      });
+
+      it("rejects custom item with non-null brandDefaultAmount", async () => {
+        const badCustom = { ...customItem, brandDefaultAmount: 100 };
+        (storage.getPlan as any).mockResolvedValue(mockPlan);
+
+        const app = createApp(franchiseeUser);
+        const res = await request(app)
+          .put("/api/plans/p1/startup-costs")
+          .send([badCustom]);
+        expect(res.status).toBe(400);
+      });
+
+      it("rejects template item with null brandDefaultAmount", async () => {
+        const badTemplate = { ...templateItem, brandDefaultAmount: null };
+        (storage.getPlan as any).mockResolvedValue(mockPlan);
+
+        const app = createApp(franchiseeUser);
+        const res = await request(app)
+          .put("/api/plans/p1/startup-costs")
+          .send([badTemplate]);
+        expect(res.status).toBe(400);
+      });
+    });
+
+    describe("PUT /api/plans/:planId/startup-costs — Edit amount", () => {
+      it("accepts edited template item with user_entry source", async () => {
+        const edited = { ...templateItem, amount: 15000000, source: "user_entry" };
+        (storage.getPlan as any).mockResolvedValue(mockPlan);
+        (storage.updateStartupCosts as any).mockResolvedValue([edited]);
+
+        const app = createApp(franchiseeUser);
+        const res = await request(app)
+          .put("/api/plans/p1/startup-costs")
+          .send([edited]);
+        expect(res.status).toBe(200);
+        expect(res.body[0].amount).toBe(15000000);
+        expect(res.body[0].source).toBe("user_entry");
+        expect(res.body[0].brandDefaultAmount).toBe(12605700);
+      });
+
+      it("rejects negative amounts", async () => {
+        const negative = { ...templateItem, amount: -100 };
+        (storage.getPlan as any).mockResolvedValue(mockPlan);
+
+        const app = createApp(franchiseeUser);
+        const res = await request(app)
+          .put("/api/plans/p1/startup-costs")
+          .send([negative]);
+        expect(res.status).toBe(400);
+      });
+
+      it("rejects non-integer amounts", async () => {
+        const fractional = { ...templateItem, amount: 123.45 };
+        (storage.getPlan as any).mockResolvedValue(mockPlan);
+
+        const app = createApp(franchiseeUser);
+        const res = await request(app)
+          .put("/api/plans/p1/startup-costs")
+          .send([fractional]);
+        expect(res.status).toBe(400);
+      });
+    });
+
+    describe("PUT /api/plans/:planId/startup-costs — Remove custom item", () => {
+      it("accepts array without removed custom item", async () => {
+        (storage.getPlan as any).mockResolvedValue(mockPlan);
+        (storage.updateStartupCosts as any).mockResolvedValue([templateItem]);
+
+        const app = createApp(franchiseeUser);
+        const res = await request(app)
+          .put("/api/plans/p1/startup-costs")
+          .send([templateItem]);
+        expect(res.status).toBe(200);
+        expect(res.body).toHaveLength(1);
+      });
+
+      it("accepts empty array", async () => {
+        (storage.getPlan as any).mockResolvedValue(mockPlan);
+        (storage.updateStartupCosts as any).mockResolvedValue([]);
+
+        const app = createApp(franchiseeUser);
+        const res = await request(app)
+          .put("/api/plans/p1/startup-costs")
+          .send([]);
+        expect(res.status).toBe(200);
+        expect(res.body).toHaveLength(0);
+      });
+    });
+
+    describe("PUT /api/plans/:planId/startup-costs — Reorder", () => {
+      it("accepts reordered items with updated sortOrder", async () => {
+        const item2 = { ...templateItem, id: "00000000-0000-4000-8000-000000000002", name: "Franchise Fee", sortOrder: 1, brandDefaultAmount: 3500000, amount: 3500000 };
+        const reordered = [
+          { ...item2, sortOrder: 0 },
+          { ...templateItem, sortOrder: 1 },
+        ];
+        (storage.getPlan as any).mockResolvedValue(mockPlan);
+        (storage.updateStartupCosts as any).mockResolvedValue(reordered);
+
+        const app = createApp(franchiseeUser);
+        const res = await request(app)
+          .put("/api/plans/p1/startup-costs")
+          .send(reordered);
+        expect(res.status).toBe(200);
+        expect(res.body[0].name).toBe("Franchise Fee");
+        expect(res.body[0].sortOrder).toBe(0);
+        expect(res.body[1].sortOrder).toBe(1);
+      });
+    });
+
+    describe("PUT /api/plans/:planId/startup-costs — Validation constraints", () => {
+      it("rejects item with empty name", async () => {
+        const noName = { ...templateItem, name: "" };
+        (storage.getPlan as any).mockResolvedValue(mockPlan);
+
+        const app = createApp(franchiseeUser);
+        const res = await request(app)
+          .put("/api/plans/p1/startup-costs")
+          .send([noName]);
+        expect(res.status).toBe(400);
+      });
+
+      it("rejects item with name exceeding 100 characters", async () => {
+        const longName = { ...templateItem, name: "x".repeat(101) };
+        (storage.getPlan as any).mockResolvedValue(mockPlan);
+
+        const app = createApp(franchiseeUser);
+        const res = await request(app)
+          .put("/api/plans/p1/startup-costs")
+          .send([longName]);
+        expect(res.status).toBe(400);
+      });
+
+      it("rejects item with invalid capexClassification", async () => {
+        const bad = { ...templateItem, capexClassification: "invalid" };
+        (storage.getPlan as any).mockResolvedValue(mockPlan);
+
+        const app = createApp(franchiseeUser);
+        const res = await request(app)
+          .put("/api/plans/p1/startup-costs")
+          .send([bad]);
+        expect(res.status).toBe(400);
+      });
+
+      it("rejects item with invalid source", async () => {
+        const bad = { ...templateItem, source: "hacked" };
+        (storage.getPlan as any).mockResolvedValue(mockPlan);
+
+        const app = createApp(franchiseeUser);
+        const res = await request(app)
+          .put("/api/plans/p1/startup-costs")
+          .send([bad]);
+        expect(res.status).toBe(400);
+      });
+
+      it("rejects item where item7RangeLow > item7RangeHigh", async () => {
+        const bad = { ...templateItem, item7RangeLow: 20000000, item7RangeHigh: 10000000 };
+        (storage.getPlan as any).mockResolvedValue(mockPlan);
+
+        const app = createApp(franchiseeUser);
+        const res = await request(app)
+          .put("/api/plans/p1/startup-costs")
+          .send([bad]);
+        expect(res.status).toBe(400);
+      });
+
+      it("accepts item with non-UUID id format rejected", async () => {
+        const bad = { ...templateItem, id: "not-a-uuid" };
+        (storage.getPlan as any).mockResolvedValue(mockPlan);
+
+        const app = createApp(franchiseeUser);
+        const res = await request(app)
+          .put("/api/plans/p1/startup-costs")
+          .send([bad]);
+        expect(res.status).toBe(400);
+      });
+    });
+
+    describe("PUT /api/plans/:planId/startup-costs — RBAC", () => {
+      it("returns 403 for non-owner franchisee", async () => {
+        (storage.getPlan as any).mockResolvedValue(mockPlan);
+        const app = createApp(otherFranchisee);
+        const res = await request(app)
+          .put("/api/plans/p1/startup-costs")
+          .send([templateItem]);
+        expect(res.status).toBe(403);
+      });
+
+      it("returns 401 when unauthenticated", async () => {
+        const app = createApp();
+        const res = await request(app)
+          .put("/api/plans/p1/startup-costs")
+          .send([templateItem]);
+        expect(res.status).toBe(401);
+      });
+
+      it("returns 404 for non-existent plan", async () => {
+        (storage.getPlan as any).mockResolvedValue(undefined);
+        const app = createApp(franchiseeUser);
+        const res = await request(app)
+          .put("/api/plans/p1/startup-costs")
+          .send([templateItem]);
+        expect(res.status).toBe(404);
+      });
+
+      it("denies franchisor from different brand", async () => {
+        (storage.getPlan as any).mockResolvedValue(mockPlan);
+        const app = createApp(otherBrandFranchisor);
+        const res = await request(app)
+          .put("/api/plans/p1/startup-costs")
+          .send([templateItem]);
+        expect(res.status).toBe(403);
+      });
+
+      it("allows same-brand franchisor access", async () => {
+        (storage.getPlan as any).mockResolvedValue(mockPlan);
+        (storage.updateStartupCosts as any).mockResolvedValue([templateItem]);
+        const app = createApp(franchisorUser);
+        const res = await request(app)
+          .put("/api/plans/p1/startup-costs")
+          .send([templateItem]);
+        expect(res.status).toBe(200);
+      });
+    });
+
+    describe("POST /api/plans/:planId/startup-costs/reset — RBAC", () => {
+      it("returns 403 for non-owner franchisee", async () => {
+        (storage.getPlan as any).mockResolvedValue(mockPlan);
+        const app = createApp(otherFranchisee);
+        const res = await request(app).post("/api/plans/p1/startup-costs/reset");
+        expect(res.status).toBe(403);
+      });
+
+      it("returns 401 when unauthenticated", async () => {
+        const app = createApp();
+        const res = await request(app).post("/api/plans/p1/startup-costs/reset");
+        expect(res.status).toBe(401);
+      });
+
+      it("returns 404 for non-existent plan", async () => {
+        (storage.getPlan as any).mockResolvedValue(undefined);
+        const app = createApp(franchiseeUser);
+        const res = await request(app).post("/api/plans/p1/startup-costs/reset");
+        expect(res.status).toBe(404);
+      });
+
+      it("calls storage with planId and brandId", async () => {
+        (storage.getPlan as any).mockResolvedValue(mockPlan);
+        (storage.resetStartupCostsToDefaults as any).mockResolvedValue([]);
+
+        const app = createApp(franchiseeUser);
+        await request(app).post("/api/plans/p1/startup-costs/reset");
+        expect(storage.resetStartupCostsToDefaults).toHaveBeenCalledWith("p1", "b1");
+      });
+    });
+
+    describe("GET /api/plans/:planId/startup-costs — RBAC", () => {
+      it("returns 403 for non-owner franchisee", async () => {
+        (storage.getPlan as any).mockResolvedValue(mockPlan);
+        const app = createApp(otherFranchisee);
+        const res = await request(app).get("/api/plans/p1/startup-costs");
+        expect(res.status).toBe(403);
+      });
+
+      it("returns 401 when unauthenticated", async () => {
+        const app = createApp();
+        const res = await request(app).get("/api/plans/p1/startup-costs");
+        expect(res.status).toBe(401);
+      });
+
+      it("returns 404 for non-existent plan", async () => {
+        (storage.getPlan as any).mockResolvedValue(undefined);
+        const app = createApp(franchiseeUser);
+        const res = await request(app).get("/api/plans/p1/startup-costs");
+        expect(res.status).toBe(404);
+      });
+    });
+  });
 });
