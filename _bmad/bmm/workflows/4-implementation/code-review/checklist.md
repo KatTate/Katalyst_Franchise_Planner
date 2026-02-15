@@ -51,7 +51,10 @@ Validate that a code review was thorough and that the story implementation meets
 ## Review Outcome
 
 - [ ] Findings categorized by severity (HIGH/MEDIUM/LOW)
+- [ ] Minimum 3 findings identified (adversarial review standard)
 - [ ] User presented with resolution options
+- [ ] Review notes appended to story Dev Agent Record
+- [ ] Change Log updated with review entry
 - [ ] Story status updated based on outcome
 - [ ] Sprint status synced (if sprint tracking enabled)
 - [ ] Story file saved with review results

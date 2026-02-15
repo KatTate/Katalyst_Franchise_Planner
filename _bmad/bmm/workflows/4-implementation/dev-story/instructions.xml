@@ -4,11 +4,15 @@
   <critical>Communicate all responses in {communication_language} and language MUST be tailored to {user_skill_level}</critical>
   <critical>Generate all documents in {document_output_language}</critical>
   <critical>User skill level ({user_skill_level}) affects conversation style ONLY, not code quality.</critical>
-  <critical>💡 REPLIT TIP: For best results, run this workflow in a fresh chat to maximize available context.</critical>
+  <critical>Execute ALL steps in exact order; do NOT skip steps. This workflow has 11 steps. You are NOT done until step 11 is complete.</critical>
+  <critical>Absolutely DO NOT stop because of "milestones", "significant progress", or "session boundaries". Continue in a single execution
+    until the story is COMPLETE (all ACs satisfied) UNLESS a HALT condition is triggered or the USER gives other instruction.</critical>
+  <critical>Do NOT schedule a "next session" or request review pauses unless a HALT condition applies. Only Step 11 decides completion.</critical>
+  <critical>REPLIT TIP: For best results, run this workflow in a fresh chat to maximize available context.</critical>
 
   <step n="1" goal="Load story file as authoritative context">
-    <check if="{{story_path}} is provided">
-      <action>Use {{story_path}} directly</action>
+    <check if="{{story_file}} is provided">
+      <action>Use {{story_file}} directly</action>
       <action>Read COMPLETE story file</action>
       <action>Extract story_key from filename or metadata</action>
       <goto anchor="context_loaded" />
@@ -18,7 +22,14 @@
     <check if="{{sprint_status}} file exists">
       <critical>MUST read COMPLETE sprint-status.yaml file from start to end to preserve order</critical>
       <action>Load the FULL file: {{sprint_status}}</action>
-      <action>Find the FIRST story where status equals "ready-for-dev" or "in-progress"</action>
+      <action>Read ALL lines from beginning to end - do not skip any content</action>
+      <action>Parse the development_status section completely to understand story order</action>
+
+      <action>Find the FIRST story (by reading in order from top to bottom) where:
+        - Key matches pattern: number-number-name (e.g., "1-2-user-auth")
+        - NOT an epic key (epic-X) or retrospective (epic-X-retrospective)
+        - Status value equals "ready-for-dev" or "in-progress"
+      </action>
 
       <check if="no ready-for-dev or in-progress story found">
         <output>📋 No stories ready for development.
@@ -57,10 +68,22 @@
     <action>Treat Acceptance Criteria as the DEFINITION OF DONE — every AC must be satisfied</action>
   </step>
 
-  <step n="2" goal="Load project context and mark story in-progress">
-    <action>Load {project_context} for coding standards and project-wide patterns (if exists)</action>
+  <step n="2" goal="Load project context">
+    <critical>Load all available context to inform implementation</critical>
 
-    <!-- Check for review continuation -->
+    <action>Load {project_context} for coding standards and project-wide patterns (if exists)</action>
+    <action>Extract developer guidance from Dev Notes: architecture requirements, previous learnings, technical specifications</action>
+    <action>Use enhanced story context to inform implementation decisions and approaches</action>
+    <output>✅ **Context Loaded**
+      Story and project context available for implementation
+    </output>
+  </step>
+
+  <step n="3" goal="Detect review continuation">
+    <critical>Determine if this is a fresh start or continuation after code review</critical>
+
+    <action>Check story status and look for any review feedback appended to the story file</action>
+
     <check if="story status is 'in-progress' or story file contains review feedback from a previous code review">
       <action>Look for any review notes, action items, or feedback sections appended to the story file</action>
       <action>If review feedback exists with unresolved items, prioritize addressing those first</action>
@@ -72,16 +95,36 @@
     <check if="story status is 'ready-for-dev' and no prior review feedback exists">
       <output>🚀 **Starting Implementation:** {{story_key}}</output>
     </check>
-
-    <!-- Update sprint status -->
-    <check if="{{sprint_status}} file exists">
-      <action>Update story status to "in-progress" if currently "ready-for-dev"</action>
-    </check>
-
-    <action>Update story file Status to "in-progress"</action>
   </step>
 
-  <step n="3" goal="Plan and implement">
+  <step n="4" goal="Mark story in-progress and update sprint status">
+    <action>Update story file Status to "in-progress"</action>
+
+    <check if="{{sprint_status}} file exists">
+      <action>Load the FULL file: {{sprint_status}}</action>
+      <action>Read all development_status entries to find {{story_key}}</action>
+
+      <check if="current status == 'ready-for-dev'">
+        <action>Update development_status[{{story_key}}] = "in-progress"</action>
+        <action>Save file, preserving ALL comments and structure</action>
+        <output>🚀 Starting work on story {{story_key}}
+          Sprint status updated: ready-for-dev → in-progress
+        </output>
+      </check>
+
+      <check if="current status == 'in-progress'">
+        <output>⏯️ Resuming work on story {{story_key}}
+          Story is already marked in-progress
+        </output>
+      </check>
+    </check>
+
+    <check if="{{sprint_status}} file does NOT exist">
+      <output>ℹ️ No sprint status file — tracking progress in story file only</output>
+    </check>
+  </step>
+
+  <step n="5" goal="Plan implementation approach">
     <critical>Create your own implementation plan from the acceptance criteria and dev notes.
       Use the platform's native task management to track your work. Do NOT write a task list
       into the story file.</critical>
@@ -101,7 +144,30 @@
       those deliverables are REQUIRED outputs.</critical>
 
     <action>Create an implementation plan based on acceptance criteria and dev notes</action>
-    <action>Implement the plan, following all Dev Notes constraints</action>
+    <action>Break the plan into discrete tasks in the platform's task management</action>
+
+    <action if="new dependencies required beyond what's listed in Dev Notes">ASK user for approval before adding</action>
+    <action if="acceptance criteria are ambiguous or contradictory">ASK user to clarify before proceeding</action>
+  </step>
+
+  <step n="6" goal="Implement the plan">
+    <critical>Execute your implementation plan task by task. Do NOT skip ahead to later steps
+      until the implementation work is substantially complete.</critical>
+
+    <action>Implement each task in your plan, following all Dev Notes constraints</action>
+    <action>Handle error conditions and edge cases as specified in dev notes</action>
+    <action>Ensure code follows architecture patterns and coding standards from Dev Notes and project context</action>
+
+    <action if="implementation conflicts with Dev Notes constraints">HALT and explain the conflict</action>
+    <action if="3 consecutive implementation failures occur">HALT and request guidance</action>
+    <action if="required configuration is missing">HALT: "Cannot proceed without necessary configuration"</action>
+
+    <critical>Execute continuously without unnecessary pauses. Do NOT propose to stop for review
+      until you have completed implementation AND reached Step 8.</critical>
+  </step>
+
+  <step n="7" goal="Test implementation">
+    <critical>This is a separate step from implementation. Do NOT skip this step.</critical>
 
     <action>Test appropriately for the task type:
       - Schema, config, and infrastructure tasks: verify by running them
@@ -112,23 +178,30 @@
       - The agent decides the testing approach based on what makes sense
     </action>
 
-    <action>Document the testing approach in the task list or notes:
+    <action>Run all existing tests to ensure no regressions</action>
+    <action>Run any new tests to verify implementation correctness</action>
+
+    <check if="regression tests fail">
+      <action>Fix regressions before proceeding — do not leave broken tests</action>
+    </check>
+
+    <check if="new tests fail">
+      <action>Fix implementation until tests pass — do not proceed with failing tests</action>
+    </check>
+
+    <action>Document the testing approach:
       - What type of testing was performed (unit tests, visual verification, manual run, etc.)
       - Which test files were created or modified
       - Which ACs each test covers
-      This documentation enables the Code Review workflow to efficiently verify test coverage
-      without re-discovering the testing strategy.
+      This documentation enables the Code Review workflow to efficiently verify test coverage.
     </action>
-
-    <action if="new dependencies required beyond what's listed in Dev Notes">ASK user for approval before adding</action>
-    <action if="implementation conflicts with Dev Notes constraints">HALT and explain the conflict</action>
-    <action if="acceptance criteria are ambiguous or contradictory">ASK user to clarify</action>
   </step>
 
-  <step n="4" goal="Verify against acceptance criteria">
-    <critical>Every acceptance criterion must be verified. This is the definition of done.</critical>
+  <step n="8" goal="Verify ALL acceptance criteria are satisfied">
+    <critical>Every acceptance criterion must be verified. This is the definition of done.
+      Do NOT proceed past this step until every AC is confirmed satisfied.</critical>
 
-    <action>Walk through each acceptance criterion and verify it is satisfied</action>
+    <action>Walk through each acceptance criterion one by one and verify it is satisfied</action>
 
     <critical>USER-FACING DELIVERY CHECK: If the story's "As a..." role is an end user,
       verify that every AC can be satisfied by a user interacting with the UI — not just by
@@ -136,21 +209,17 @@
       viewing tables) but no UI exists for those actions, the story is NOT done. Build the UI
       before marking complete.</critical>
 
-    <action>Run all existing tests to ensure no regressions</action>
-    <action>Run any new tests to verify implementation correctness</action>
-
     <check if="any acceptance criterion is NOT satisfied">
-      <action>Fix the implementation until all ACs pass</action>
+      <action>Go back and fix the implementation until all ACs pass</action>
+      <action>Re-run relevant tests after fixes</action>
       <action>If unable to satisfy an AC, HALT and explain what's blocking</action>
-    </check>
-
-    <check if="regression tests fail">
-      <action>Fix regressions before proceeding — do not leave broken tests</action>
     </check>
   </step>
 
-  <step n="4.5" goal="Post-implementation platform verification">
-    <!-- LSP Diagnostics — Verify No New Errors -->
+  <step n="9" goal="Platform verification">
+    <critical>This step is NOT optional. Complete all platform checks before proceeding.</critical>
+
+    <!-- LSP Diagnostics -->
     <action>Run LSP diagnostics on all files that were created or modified during this story.
       Check for:
       - Type errors or unresolved references introduced by the implementation
@@ -170,7 +239,8 @@
 
     <!-- Visual Verification for UI Stories -->
     <check if="story's 'As a...' role is an end user OR story has UI/UX Deliverables section">
-      <action>If the application has a running web server, take screenshots of the pages/views that were built or modified by this story.
+      <action>If the application has a running web server, take screenshots of the pages/views
+        that were built or modified by this story.
         Navigate to the routes referenced in the acceptance criteria.
         Verify that:
         - The UI elements described in the ACs are visible and properly rendered
@@ -181,7 +251,11 @@
     </check>
   </step>
 
-  <step n="5" goal="Update story file and sprint status">
+  <step n="10" goal="Update story file and sprint status">
+    <critical>THIS STEP IS MANDATORY. You MUST update the story file and sprint status.
+      Failing to complete this step means the workflow is NOT finished.
+      Do NOT skip this step under any circumstances.</critical>
+
     <action>Update story file Status to "review"</action>
 
     <action>Update Dev Agent Record:
@@ -195,6 +269,7 @@
 
     <!-- Update sprint status -->
     <check if="{{sprint_status}} file exists">
+      <critical>You MUST update sprint status. This is NOT optional.</critical>
       <action>Load the FULL file: {{sprint_status}}</action>
       <action>Update development_status[{{story_key}}] = "review"</action>
       <action>Save file, preserving ALL comments and structure</action>
@@ -203,7 +278,9 @@
     <action>Use the platform's architect/review tool to review the implementation for quality</action>
   </step>
 
-  <step n="6" goal="Communicate completion">
+  <step n="11" goal="Communicate completion">
+    <critical>This is the FINAL step. The workflow is complete ONLY after this step executes.</critical>
+
     <action>Summarize what was implemented: story key, key changes, files modified</action>
 
     <action>Based on {user_skill_level}, offer to explain:

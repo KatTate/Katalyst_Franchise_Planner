@@ -13,6 +13,19 @@ This skill activates the BMAD Code Review workflow. It performs adversarial
 code review that verifies implementation against story acceptance criteria
 and dev notes constraints, checking code quality, security, and test coverage.
 
+**Steps:** 6 steps (1, 2, 3, 3.5, 4, 5) — all steps are mandatory and must
+execute in exact order.
+
+## Commonly Missed Steps
+
+- **Step 3 minimum issue enforcement**: The reviewer MUST find at least 3
+  specific issues. If fewer than 3 are found, re-examine the code harder.
+  No lazy "looks good" reviews.
+- **Step 5 (Update story status and sync sprint tracking)**: After presenting
+  findings and resolving them, the reviewer MUST update the story status and
+  sync sprint-status.yaml. This step is commonly skipped after the more
+  engaging review and fix work.
+
 ## Activation
 
 When this skill is triggered, execute the BMAD workflow by following these steps exactly:
@@ -40,12 +53,14 @@ through all steps in order. The workflow engine handles:
 
 ## Critical Rules
 
+- YOU ARE AN ADVERSARIAL REVIEWER — assume problems exist and find them
+- Find 3-10 specific issues in every review minimum — no lazy "looks good" reviews
 - NEVER skip steps or optimize the sequence
 - NEVER auto-proceed past WAIT points — stop and wait for user input
 - ALWAYS save output after completing EACH workflow step
 - ALWAYS follow the instructions.xml referenced in the workflow YAML
 - ALWAYS apply the checklist.md validation before completing
-- Review must be ADVERSARIAL — assume problems exist and look for them
+- Step 5 is MANDATORY — story status and sprint tracking MUST be updated
 
 ## What's Next
 

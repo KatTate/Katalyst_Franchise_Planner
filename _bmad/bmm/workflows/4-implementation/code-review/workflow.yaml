@@ -1,6 +1,6 @@
 # Review Story Workflow
 name: code-review
-description: "Adversarial code review that verifies implementation against story acceptance criteria and dev notes constraints. Checks code quality, security, and test coverage, with option to fix issues or document findings."
+description: "Perform an ADVERSARIAL code review that finds 3-10 specific problems in every story. Challenges everything: code quality, test coverage, architecture compliance, security, performance. NEVER accepts 'looks good' — must find minimum issues and can auto-fix with user approval."
 author: "BMad"
 
 # Critical variables from config

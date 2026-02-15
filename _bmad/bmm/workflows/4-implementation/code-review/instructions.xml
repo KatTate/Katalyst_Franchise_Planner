@@ -5,9 +5,12 @@
   <critical>Generate all documents in {document_output_language}</critical>
 
   <critical>🔥 YOU ARE AN ADVERSARIAL CODE REVIEWER — Find what's wrong or missing! 🔥</critical>
-  <critical>Your purpose: Validate implementation against the story's acceptance criteria and dev notes constraints</critical>
+  <critical>Your purpose: Validate story file claims against actual implementation</critical>
+  <critical>Challenge everything: Are ACs really implemented? Do claimed changes match git reality?</critical>
+  <critical>Find 3-10 specific issues in every review minimum — no lazy "looks good" reviews — YOU are better than the dev agent that wrote this</critical>
   <critical>Acceptance Criteria are the definition of done — every AC must be verifiably satisfied</critical>
   <critical>Dev Notes constraints are law — any violation is a finding</critical>
+  <critical>Acceptance Criteria not implemented = HIGH severity finding</critical>
   <critical>Read EVERY file in the File List — verify implementation against story requirements</critical>
   <critical>Do not review files outside the application's source code. Always exclude _bmad/, _bmad-output/, and IDE config folders (.cursor/, .windsurf/, .claude/) from review</critical>
   <critical>💡 REPLIT TIP: For best results, run code review in a fresh chat to maximize context and avoid implementation bias. A fresh context means the reviewer reads code cold without carrying the implementer's assumptions.</critical>
@@ -41,7 +44,7 @@
     <action>Load {project_context} for coding standards (if exists)</action>
   </step>
 
-  <step n="2" goal="Build review plan">
+  <step n="2" goal="Build review attack plan">
     <action>Extract ALL Acceptance Criteria from story</action>
     <action>Extract ALL Dev Notes constraints (architecture patterns, anti-patterns, hard constraints)</action>
     <action>From Dev Agent Record → File List, compile list of claimed changes</action>
@@ -55,7 +58,7 @@
     </action>
   </step>
 
-  <step n="3" goal="Execute review">
+  <step n="3" goal="Execute adversarial review">
     <critical>VALIDATE EVERY CLAIM — Check git reality vs story claims</critical>
 
     <!-- Git vs Story Discrepancies -->
@@ -92,6 +95,18 @@
       4. **Code Quality**: Complex functions, magic numbers, poor naming, code duplication
       5. **Test Quality**: Are tests meaningful assertions or placeholders?
     </action>
+
+    <check if="total_issues_found lt 3">
+      <critical>NOT LOOKING HARD ENOUGH — Find more problems!</critical>
+      <action>Re-examine code for:
+        - Edge cases and null handling
+        - Architecture violations and Dev Notes non-compliance
+        - Documentation gaps
+        - Integration issues
+        - Dependency problems
+      </action>
+      <action>Find at least 3 more specific, actionable issues</action>
+    </check>
   </step>
 
   <step n="3.5" goal="Platform intelligence scan — LSP, architect analysis, and visual verification">
@@ -132,6 +147,8 @@
 
   <step n="4" goal="Present findings and resolve">
     <action>Categorize findings: HIGH (must fix), MEDIUM (should fix), LOW (nice to fix)</action>
+    <action>Set {{fixed_count}} = 0</action>
+    <action>Set {{action_count}} = 0</action>
 
     <output>**🔍 Code Review Findings, {user_name}**
 

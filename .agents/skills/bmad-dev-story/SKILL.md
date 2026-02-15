@@ -10,7 +10,7 @@ description: >
 
 This skill activates the BMAD Dev Story workflow. The agent plans its own
 implementation approach from the story's acceptance criteria and dev notes,
-then builds, and tests the code.
+then builds, tests, verifies, and updates all tracking artifacts.
 
 ## Activation
 
@@ -39,12 +39,29 @@ through all steps in order. The workflow engine handles:
 
 ## Critical Rules
 
-- NEVER skip steps or optimize the sequence
+- This workflow has **11 steps**. You are NOT done until step 11 is complete.
+- NEVER skip steps or optimize the sequence — every step exists for a reason
 - NEVER auto-proceed past WAIT points — stop and wait for user input
-- ALWAYS save output after completing EACH workflow step
 - ALWAYS follow the instructions.xml referenced in the workflow YAML
 - ALWAYS apply the checklist.md validation before completing
 - The agent plans its OWN implementation approach from acceptance criteria — do not use pre-scripted task checklists
+- Steps 10 and 11 (update story/sprint status, communicate completion) are MANDATORY — these are the steps most commonly skipped and must always be executed
+- Do NOT stop after implementation. You MUST continue through testing, verification, documentation updates, and completion communication.
+
+## Step Summary
+
+For reference, the 11 steps in this workflow are:
+1. Load story file
+2. Load project context
+3. Detect review continuation
+4. Mark story in-progress (update sprint status)
+5. Plan implementation approach
+6. Implement the plan
+7. Test implementation
+8. Verify ALL acceptance criteria
+9. Platform verification (LSP, git, screenshots)
+10. **Update story file AND sprint status** ← commonly missed
+11. **Communicate completion** ← commonly missed
 
 ## What's Next
 
