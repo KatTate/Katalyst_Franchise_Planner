@@ -165,6 +165,19 @@ interface FinancialInputs {
 
 **Database migration:** After adding the `plans` table to `shared/schema.ts`, run `npm run db:push` to sync the schema.
 
+### Testing Expectations
+
+- **Unit tests expected** for the pure financial engine — this is a computation-heavy module where correctness is critical
+- **Test framework:** vitest (used by this project)
+- **Critical ACs for automated test coverage:**
+  - AC3 (determinism) — identical inputs must produce identical outputs
+  - AC6 (calculation order) — verify the 10-step execution order produces correct results
+  - AC7 (accounting identity checks) — balance sheet balances, P&L-to-cash-flow consistency, depreciation-to-CapEx consistency
+  - AC4 (brand-agnostic) — engine produces valid results for different brand parameter sets
+  - AC8 (summary metrics) — total startup investment, projected annual revenue, ROI%, break-even month are present and reasonable
+- **No integration or E2E tests needed** — this story is engine + schema only with no API routes or UI
+- **Validation against reference data** — engine outputs should be compared against PostNet reference spreadsheet values where available (formal validation deferred to Story 3.7)
+
 ### References
 
 - Architecture: `_bmad-output/planning-artifacts/architecture.md` — Decision 15 (Engine Design), Decision 2 (Number Precision), Financial Engine Purity Enforcement, Schema Patterns, Number Format Rules, Naming Patterns
@@ -272,3 +285,9 @@ Claude Opus 4.6 (claude-opus-4-6) via Claude Code CLI
 | `shared/financial-engine.ts` | CREATED | Pure engine: `FinancialFieldValue`, `FinancialInputs`, `StartupCostLineItem`, `EngineInput`, `MonthlyProjection`, `AnnualSummary`, `ROIMetrics`, `IdentityCheckResult`, `EngineOutput` interfaces + `calculateProjections()` |
 | `shared/financial-engine.test.ts` | CREATED | 33 vitest tests — structure, determinism, revenue, COGS, opex, depreciation, loans, working capital, identity checks, ROI, edge cases |
 | `server/storage.ts` | MODIFIED | Added plan CRUD to IStorage interface + DatabaseStorage (createPlan, getPlan, getPlansByUser, getPlansByBrand, updatePlan, deletePlan) |
+
+### Testing Summary
+- **33 vitest tests passing** across `shared/financial-engine.test.ts`
+- **Coverage areas:** engine output structure, determinism (AC3), revenue calculations, COGS computation, operating expenses, depreciation schedules, loan amortization, working capital, accounting identity checks (AC7), ROI metrics (AC8), edge cases (zero loan, zero depreciation)
+- **Reference validation:** PostNet spreadsheet values validated within 10% tolerance for Y1-Y5 revenue, EBITDA, and cumulative cash flow
+- **No integration/E2E tests** — story is engine + schema only, no API or UI to test
