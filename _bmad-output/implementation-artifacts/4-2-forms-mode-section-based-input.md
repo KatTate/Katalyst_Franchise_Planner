@@ -1,6 +1,6 @@
 # Story 4.2: Forms Mode — Section-Based Input
 
-Status: review
+Status: done
 
 ## Story
 
