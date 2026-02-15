@@ -54,9 +54,11 @@ export default function PlanningWorkspace() {
 
   const sidebarInitialized = useRef(false);
   useEffect(() => {
-    setOpen(false);
-    sidebarInitialized.current = true;
-  }, [activeMode, setOpen]);
+    if (!sidebarInitialized.current) {
+      setOpen(false);
+      sidebarInitialized.current = true;
+    }
+  }, [setOpen]);
 
   const saveTierRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   useEffect(() => {
