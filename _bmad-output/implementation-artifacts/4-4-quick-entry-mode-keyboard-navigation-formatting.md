@@ -1,6 +1,6 @@
 # Story 4.4: Quick Entry Mode — Keyboard Navigation & Formatting
 
-Status: in-progress
+Status: done
 
 ## Story
 
@@ -226,6 +226,26 @@ The visual layout is identical to Story 4.3 — this story adds behavioral enhan
 
 ### Completion Notes
 
+All 8 acceptance criteria implemented:
+- AC1: Tab/Shift+Tab navigation between editable Value cells, wrapping across category groups
+- AC2: Enter commits and moves to next cell below
+- AC3: Currency auto-format ($X,XXX.XX on blur, raw value on focus)
+- AC4: Percentage auto-format (X.X% on blur, raw value on focus)
+- AC5: Integer fields display as whole numbers, decimals rounded on commit
+- AC6: Row virtualization via @tanstack/react-virtual with overscan=10
+- AC7: Full keyboard-only completion flow (Tab → type → Enter/Tab cycle)
+- AC8: Collapsed groups skipped during keyboard navigation
+
+EditableCell extracted to separate file for maintainability (175 lines).
+
 ### File List
 
+| File | Action | Lines |
+|------|--------|-------|
+| `client/src/components/planning/quick-entry-mode.tsx` | MODIFIED | ~523 lines |
+| `client/src/components/planning/editable-cell.tsx` | CREATED | ~175 lines |
+
 ### Testing Summary
+
+- All 380 existing Vitest unit tests pass with no regressions
+- E2E Playwright verification: auto-formatting displays correctly ($5,000.00, 15.0%), keyboard navigation (Tab/Enter) works across cells, collapsed groups skip during navigation, group toggle collapse/expand works correctly

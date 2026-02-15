@@ -1,13 +1,13 @@
-import { useState, useCallback, useMemo, useRef, useEffect } from "react";
+import { useCallback, useMemo, useRef } from "react";
 import {
   useReactTable,
   getCoreRowModel,
   getExpandedRowModel,
   flexRender,
   type ColumnDef,
-  type Row,
   type CellContext,
 } from "@tanstack/react-table";
+import { useVirtualizer } from "@tanstack/react-virtual";
 import { usePlan } from "@/hooks/use-plan";
 import { usePlanOutputs } from "@/hooks/use-plan-outputs";
 import { useFieldEditing } from "@/hooks/use-field-editing";
@@ -20,22 +20,15 @@ import {
   formatROI,
   formatBreakEven,
 } from "@/components/shared/summary-metrics";
-import { Input } from "@/components/ui/input";
+import { EditableCell } from "./editable-cell";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
 import { ChevronDown, RotateCcw, AlertCircle } from "lucide-react";
 import {
   FIELD_METADATA,
   CATEGORY_LABELS,
   CATEGORY_ORDER,
   formatFieldValue,
-  parseFieldInput,
-  getInputPlaceholder,
 } from "@/lib/field-metadata";
 import type { FormatType } from "@/lib/field-metadata";
 import { formatCents } from "@/lib/format-currency";
@@ -90,132 +83,12 @@ function buildGridRows(financialInputs: PlanFinancialInputs): GridRow[] {
   });
 }
 
-function isOutOfRange(field: FinancialFieldValue): boolean {
-  if (!field.item7Range) return false;
-  return field.currentValue < field.item7Range.min || field.currentValue > field.item7Range.max;
-}
-
-function formatRangeText(field: FinancialFieldValue, format: FormatType): string {
-  if (!field.item7Range) return "";
-  const minStr = formatFieldValue(field.item7Range.min, format);
-  const maxStr = formatFieldValue(field.item7Range.max, format);
-  return `Typical range: ${minStr} – ${maxStr}`;
-}
-
-function getRawEditValue(field: FinancialFieldValue, format: FormatType): string {
-  switch (format) {
-    case "currency":
-      return String(field.currentValue / 100);
-    case "percentage":
-      return String((field.currentValue * 100).toFixed(1));
-    case "integer":
-      return String(field.currentValue);
-  }
-}
-
-function EditableCell({
-  row,
-  onCellEdit,
-}: {
-  row: Row<GridRow>;
-  onCellEdit: (category: string, fieldName: string, value: number) => void;
-}) {
-  const { field, format, category, fieldName } = row.original;
-  if (!field || !format || !fieldName) return null;
-
-  const [localValue, setLocalValue] = useState(() => getRawEditValue(field, format));
-  const [isFocused, setIsFocused] = useState(false);
-  const inputRef = useRef<HTMLInputElement>(null);
-  const committedRef = useRef(field.currentValue);
-  const skipBlurCommitRef = useRef(false);
-
-  useEffect(() => {
-    if (!isFocused) {
-      setLocalValue(getRawEditValue(field, format));
-      committedRef.current = field.currentValue;
-    }
-  }, [field.currentValue, format, isFocused]);
-
-  const handleFocus = useCallback(() => {
-    setIsFocused(true);
-    requestAnimationFrame(() => {
-      inputRef.current?.select();
-    });
-  }, []);
-
-  const commitEdit = useCallback(() => {
-    setIsFocused(false);
-    const parsedValue = parseFieldInput(localValue, format);
-    if (!isNaN(parsedValue) && parsedValue !== committedRef.current) {
-      committedRef.current = parsedValue;
-      onCellEdit(category, fieldName, parsedValue);
-    } else {
-      setLocalValue(getRawEditValue(field, format));
-    }
-  }, [localValue, format, fieldName, category, field, onCellEdit]);
-
-  const cancelEdit = useCallback(() => {
-    skipBlurCommitRef.current = true;
-    setLocalValue(getRawEditValue(field, format));
-    setIsFocused(false);
-    inputRef.current?.blur();
-  }, [field, format]);
-
-  const handleBlur = useCallback(() => {
-    if (skipBlurCommitRef.current) {
-      skipBlurCommitRef.current = false;
-      return;
-    }
-    commitEdit();
-  }, [commitEdit]);
-
-  const outOfRange = isOutOfRange(field);
-
-  const input = (
-    <Input
-      ref={inputRef}
-      className={`h-7 text-sm font-mono tabular-nums px-2 py-0 ${
-        outOfRange ? "bg-[#A9A2AA]/10" : ""
-      }`}
-      value={localValue}
-      onChange={(e) => setLocalValue(e.target.value)}
-      onFocus={handleFocus}
-      onBlur={handleBlur}
-      onKeyDown={(e) => {
-        if (e.key === "Enter") {
-          e.preventDefault();
-          commitEdit();
-          skipBlurCommitRef.current = true;
-          inputRef.current?.blur();
-        }
-        if (e.key === "Escape") cancelEdit();
-      }}
-      placeholder={getInputPlaceholder(format)}
-      data-testid={`grid-cell-${fieldName}`}
-    />
-  );
-
-  if (outOfRange) {
-    return (
-      <Tooltip>
-        <TooltipTrigger asChild>{input}</TooltipTrigger>
-        <TooltipContent
-          className="text-xs"
-          style={{ backgroundColor: "#A9A2AA", color: "#FFFFFF" }}
-        >
-          {formatRangeText(field, format)}
-        </TooltipContent>
-      </Tooltip>
-    );
-  }
-
-  return input;
-}
-
 export function QuickEntryMode({ planId }: QuickEntryModeProps) {
   const { plan, isLoading, error, updatePlan, isSaving, saveError } = usePlan(planId);
   const { output, isLoading: outputsLoading, isFetching } = usePlanOutputs(planId);
   const financialInputs = plan?.financialInputs as PlanFinancialInputs | null | undefined;
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const navigateRef = useRef<(fieldName: string, direction: "next" | "prev" | "down") => void>(() => {});
 
   const saveInputs = useCallback(
     (updated: PlanFinancialInputs) => {
@@ -229,6 +102,13 @@ export function QuickEntryMode({ planId }: QuickEntryModeProps) {
     isSaving,
     onSave: saveInputs,
   });
+
+  const stableNavigate = useCallback(
+    (fieldName: string, direction: "next" | "prev" | "down") => {
+      navigateRef.current(fieldName, direction);
+    },
+    []
+  );
 
   const gridRows = useMemo(
     () => (financialInputs ? buildGridRows(financialInputs) : []),
@@ -273,9 +153,7 @@ export function QuickEntryMode({ planId }: QuickEntryModeProps) {
         size: 180,
         cell: ({ row }: CellContext<GridRow, unknown>) => {
           if (row.original.isGroupHeader) return null;
-          return (
-            <span className="text-sm">{row.original.label}</span>
-          );
+          return <span className="text-sm">{row.original.label}</span>;
         },
       },
       {
@@ -284,7 +162,18 @@ export function QuickEntryMode({ planId }: QuickEntryModeProps) {
         size: 150,
         cell: ({ row }: CellContext<GridRow, unknown>) => {
           if (row.original.isGroupHeader) return null;
-          return <EditableCell row={row} onCellEdit={handleFieldUpdate} />;
+          const { field, format, category, fieldName } = row.original;
+          if (!field || !format || !fieldName) return null;
+          return (
+            <EditableCell
+              field={field}
+              format={format}
+              category={category}
+              fieldName={fieldName}
+              onCellEdit={handleFieldUpdate}
+              onNavigate={stableNavigate}
+            />
+          );
         },
       },
       {
@@ -350,7 +239,7 @@ export function QuickEntryMode({ planId }: QuickEntryModeProps) {
         },
       },
     ],
-    [handleFieldUpdate, handleReset]
+    [handleFieldUpdate, handleReset, stableNavigate]
   );
 
   const table = useReactTable({
@@ -363,6 +252,65 @@ export function QuickEntryMode({ planId }: QuickEntryModeProps) {
       expanded: true,
     },
   });
+
+  const flatRows = table.getRowModel().rows;
+
+  const rowVirtualizer = useVirtualizer({
+    count: flatRows.length,
+    getScrollElement: () => scrollContainerRef.current,
+    estimateSize: () => 33,
+    overscan: 10,
+  });
+
+  const navigableFields = useMemo(() => {
+    return flatRows
+      .map((row, index) => ({ row, index }))
+      .filter(({ row }) => !row.original.isGroupHeader && row.original.fieldName)
+      .map(({ row, index }) => ({ fieldName: row.original.fieldName!, rowIndex: index }));
+  }, [flatRows]);
+
+  const handleNavigate = useCallback(
+    (currentFieldName: string, direction: "next" | "prev" | "down") => {
+      const currentIdx = navigableFields.findIndex((f) => f.fieldName === currentFieldName);
+      if (currentIdx === -1) return;
+
+      let targetIdx: number;
+      if (direction === "prev") {
+        targetIdx = currentIdx > 0 ? currentIdx - 1 : navigableFields.length - 1;
+      } else {
+        targetIdx = currentIdx < navigableFields.length - 1 ? currentIdx + 1 : 0;
+      }
+
+      const target = navigableFields[targetIdx];
+      rowVirtualizer.scrollToIndex(target.rowIndex, { align: "auto" });
+
+      requestAnimationFrame(() => {
+        const input = document.querySelector(
+          `[data-field-name="${target.fieldName}"]`
+        ) as HTMLInputElement;
+        if (input) {
+          input.focus();
+        } else {
+          requestAnimationFrame(() => {
+            const el = document.querySelector(
+              `[data-field-name="${target.fieldName}"]`
+            ) as HTMLInputElement;
+            el?.focus();
+          });
+        }
+      });
+    },
+    [navigableFields, rowVirtualizer]
+  );
+
+  navigateRef.current = handleNavigate;
+
+  const virtualRows = rowVirtualizer.getVirtualItems();
+  const paddingTop = virtualRows.length > 0 ? virtualRows[0]?.start ?? 0 : 0;
+  const paddingBottom =
+    virtualRows.length > 0
+      ? rowVirtualizer.getTotalSize() - (virtualRows[virtualRows.length - 1]?.end ?? 0)
+      : 0;
 
   if (isLoading) {
     return (
@@ -402,7 +350,7 @@ export function QuickEntryMode({ planId }: QuickEntryModeProps) {
         <StickyMetrics output={output} isLoading={outputsLoading} isFetching={isFetching} />
       </div>
 
-      <div className="flex-1 overflow-auto">
+      <div ref={scrollContainerRef} className="flex-1 overflow-auto">
         <table className="w-full border-collapse text-sm" data-testid="quick-entry-grid">
           <thead className="sticky top-0 z-[5] bg-muted">
             {table.getHeaderGroups().map((headerGroup) => (
@@ -422,21 +370,32 @@ export function QuickEntryMode({ planId }: QuickEntryModeProps) {
             ))}
           </thead>
           <tbody>
-            {table.getRowModel().rows.map((row) => {
+            {paddingTop > 0 && (
+              <tr>
+                <td style={{ height: `${paddingTop}px`, padding: 0 }} />
+              </tr>
+            )}
+            {virtualRows.map((virtualRow) => {
+              const row = flatRows[virtualRow.index];
               const isGroup = row.original.isGroupHeader;
               return (
                 <tr
                   key={row.id}
                   className={`border-b transition-colors ${
-                    isGroup
-                      ? "bg-muted/50 hover-elevate"
-                      : "hover-elevate"
+                    isGroup ? "bg-muted/50 hover-elevate" : "hover-elevate"
                   }`}
-                  data-testid={isGroup ? `grid-group-${row.original.category}` : `grid-row-${row.original.fieldName}`}
+                  data-testid={
+                    isGroup
+                      ? `grid-group-${row.original.category}`
+                      : `grid-row-${row.original.fieldName}`
+                  }
                 >
                   {isGroup ? (
                     <td className="px-2 py-1.5" colSpan={columns.length}>
-                      {flexRender(row.getVisibleCells()[0].column.columnDef.cell, row.getVisibleCells()[0].getContext())}
+                      {flexRender(
+                        row.getVisibleCells()[0].column.columnDef.cell,
+                        row.getVisibleCells()[0].getContext()
+                      )}
                     </td>
                   ) : (
                     row.getVisibleCells().map((cell) => (
@@ -448,6 +407,11 @@ export function QuickEntryMode({ planId }: QuickEntryModeProps) {
                 </tr>
               );
             })}
+            {paddingBottom > 0 && (
+              <tr>
+                <td style={{ height: `${paddingBottom}px`, padding: 0 }} />
+              </tr>
+            )}
           </tbody>
         </table>
       </div>
