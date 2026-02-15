@@ -151,12 +151,15 @@ Claude Opus 4.6 (claude-opus-4-6) via Claude Code CLI
 **Implementation (2026-02-10):**
 - Updated `FinancialFieldValue` interface: added `lastModifiedAt`, `isCustom` fields; changed `"manual"` source to `"user_entry"` per AC requirements
 - Added `PlanFinancialInputs` interface — wrapped financial inputs for plan JSONB persistence, mirroring brand parameter categories with per-field metadata
-- Created `shared/plan-initialization.ts` with 5 pure functions:
-  - `buildPlanFinancialInputs()`: BrandParameters → PlanFinancialInputs (with dollars→cents conversion)
-  - `buildPlanStartupCosts()`: StartupCostTemplate → StartupCostLineItem[] (with dollars→cents conversion)
-  - `unwrapForEngine()`: PlanFinancialInputs + StartupCostLineItem[] → EngineInput (expanding single values to 5-year arrays, combining fixed costs into facilitiesAnnual with 3% escalation, deriving equityPct from loanAmount/totalInvestment)
-  - `updateFieldValue()`: immutable field update with source tracking
-  - `resetFieldToDefault()`: immutable reset to brand default
+- Created `shared/plan-initialization.ts` with 5 core functions + 7 startup cost helpers:
+  - Core (Story 3.2 scope):
+    - `buildPlanFinancialInputs()`: BrandParameters → PlanFinancialInputs (with dollars→cents conversion, defensive null checking)
+    - `buildPlanStartupCosts()`: StartupCostTemplate → StartupCostLineItem[] (with dollars→cents conversion)
+    - `unwrapForEngine()`: PlanFinancialInputs + StartupCostLineItem[] → EngineInput (expanding single values to 5-year arrays, combining fixed costs into facilitiesAnnual with 3% escalation, deriving equityPct from loanAmount/totalInvestment)
+    - `updateFieldValue()`: immutable field update with source tracking
+    - `resetFieldToDefault()`: immutable reset to brand default
+  - Startup cost helpers (forward-looking for Story 3.3):
+    - `addCustomStartupCost()`, `removeStartupCost()`, `updateStartupCostAmount()`, `resetStartupCostToDefault()`, `reorderStartupCosts()`, `getStartupCostTotals()`, `migrateStartupCosts()`
 - Updated `plans.financialInputs` JSONB type annotation from engine `FinancialInputs` to `PlanFinancialInputs`
 - 66 new tests covering all functions, edge cases, round-trip edit/reset, engine integration, and PostNet reference validation (AC7)
 - All 99 tests passing (66 new + 33 existing engine tests)
@@ -199,8 +202,8 @@ N/A — this story is infrastructure/data-layer only (developer role), no UI com
 | File | Action | Notes |
 |------|--------|-------|
 | `shared/financial-engine.ts` | MODIFIED | Updated `FinancialFieldValue` (added lastModifiedAt, isCustom; "manual"→"user_entry"). Added `PlanFinancialInputs` interface. |
-| `shared/plan-initialization.ts` | CREATED | Plan initialization bridge: `buildPlanFinancialInputs()`, `buildPlanStartupCosts()`, `unwrapForEngine()`, `updateFieldValue()`, `resetFieldToDefault()` |
-| `shared/plan-initialization.test.ts` | CREATED | 66 tests: field initialization, startup cost mapping, engine unwrap, field update/reset, engine integration, PostNet reference validation (AC7), edge cases |
+| `shared/plan-initialization.ts` | CREATED | Plan initialization bridge: 5 core functions (`buildPlanFinancialInputs`, `buildPlanStartupCosts`, `unwrapForEngine`, `updateFieldValue`, `resetFieldToDefault`) + 7 startup cost helpers (`addCustomStartupCost`, `removeStartupCost`, `updateStartupCostAmount`, `resetStartupCostToDefault`, `reorderStartupCosts`, `getStartupCostTotals`, `migrateStartupCosts`) |
+| `shared/plan-initialization.test.ts` | CREATED | 98 tests: field initialization, startup cost mapping, engine unwrap, field update/reset, startup cost CRUD operations, engine integration, PostNet reference validation (AC7), edge cases |
 | `shared/schema.ts` | MODIFIED | Changed `financialInputs` JSONB type annotation from `FinancialInputs` to `PlanFinancialInputs` |
 | `_bmad-output/implementation-artifacts/3-2-brand-default-integration-per-field-metadata.md` | CREATED | Story file with detailed dev notes and AC |
 
@@ -256,3 +259,30 @@ N/A — this story is infrastructure/data-layer only (developer role), no UI com
 
 **L4: `sprint-status.yaml` changed in git but not in story File List**
 - Expected workflow housekeeping, not a code issue.
+
+---
+
+**Reviewer:** Claude Opus 4.6 (Replit Agent — adversarial code review, second pass)
+**Date:** 2026-02-15
+**Verdict:** DONE — 0 HIGH, 3 MEDIUM (all fixed), 2 LOW (documented)
+
+### Second Review Findings
+
+#### MEDIUM — Fixed
+
+**M1: Sprint status tracking inconsistency** *(FIXED)*
+- sprint-status.yaml said "review" while story file said "done". Synced to "done".
+
+**M2: No defensive null checking on brandParams** *(FIXED)*
+- `buildPlanFinancialInputs()` accessed deeply nested brand parameter properties without null guards, violating dev notes constraint "DO NOT throw errors — return reasonable defaults." Added `safeValue()` helper with optional chaining and fallback defaults throughout.
+
+**M3: Scope creep — 7 undocumented startup cost helpers** *(FIXED — documented)*
+- Implementation included `addCustomStartupCost`, `removeStartupCost`, `updateStartupCostAmount`, `resetStartupCostToDefault`, `reorderStartupCosts`, `getStartupCostTotals`, `migrateStartupCosts` beyond the 5 functions specified in dev notes. Updated File List and Completion Notes to acknowledge these as forward-looking Story 3.3 helpers.
+
+#### LOW — Documented (no action needed)
+
+**L1: `item7Range` always null for financial input fields**
+- AC1 metadata structure includes `item7Range`. All financial input fields have `item7Range: null` because Item 7 data applies to startup cost items only. Known placeholder.
+
+**L2: `otherMonthly → otherOpexPct` lossy edge case with zero revenue**
+- When `otherMonthlyCents > 0` but `annualGrossSales = 0`, fallback `DEFAULT_OTHER_OPEX_PCT = 0.03` results in $0 actual cost in the engine. Documented known limitation.

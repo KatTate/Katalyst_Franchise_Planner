@@ -54,6 +54,11 @@ function dollarsToCents(dollars: number): number {
   return Math.round(dollars * 100);
 }
 
+/** Safely extract .value from a brand parameter field, returning fallback if missing */
+function safeValue(field: { value: number } | null | undefined, fallback: number = 0): number {
+  return field?.value ?? fallback;
+}
+
 /** Create a FinancialFieldValue with brand default source */
 function makeField(
   value: number,
@@ -84,31 +89,31 @@ export function buildPlanFinancialInputs(
 
   return {
     revenue: {
-      monthlyAuv: makeField(dollarsToCents(bp.revenue.monthly_auv.value)),
-      year1GrowthRate: makeField(bp.revenue.year1_growth_rate.value),
-      year2GrowthRate: makeField(bp.revenue.year2_growth_rate.value),
-      startingMonthAuvPct: makeField(bp.revenue.starting_month_auv_pct.value),
+      monthlyAuv: makeField(dollarsToCents(safeValue(bp?.revenue?.monthly_auv))),
+      year1GrowthRate: makeField(safeValue(bp?.revenue?.year1_growth_rate)),
+      year2GrowthRate: makeField(safeValue(bp?.revenue?.year2_growth_rate)),
+      startingMonthAuvPct: makeField(safeValue(bp?.revenue?.starting_month_auv_pct, 0.08)),
     },
     operatingCosts: {
-      cogsPct: makeField(bp.operating_costs.cogs_pct.value),
-      laborPct: makeField(bp.operating_costs.labor_pct.value),
-      rentMonthly: makeField(dollarsToCents(bp.operating_costs.rent_monthly.value)),
-      utilitiesMonthly: makeField(dollarsToCents(bp.operating_costs.utilities_monthly.value)),
-      insuranceMonthly: makeField(dollarsToCents(bp.operating_costs.insurance_monthly.value)),
-      marketingPct: makeField(bp.operating_costs.marketing_pct.value),
-      royaltyPct: makeField(bp.operating_costs.royalty_pct.value),
-      adFundPct: makeField(bp.operating_costs.ad_fund_pct.value),
-      otherMonthly: makeField(dollarsToCents(bp.operating_costs.other_monthly.value)),
+      cogsPct: makeField(safeValue(bp?.operating_costs?.cogs_pct)),
+      laborPct: makeField(safeValue(bp?.operating_costs?.labor_pct)),
+      rentMonthly: makeField(dollarsToCents(safeValue(bp?.operating_costs?.rent_monthly))),
+      utilitiesMonthly: makeField(dollarsToCents(safeValue(bp?.operating_costs?.utilities_monthly))),
+      insuranceMonthly: makeField(dollarsToCents(safeValue(bp?.operating_costs?.insurance_monthly))),
+      marketingPct: makeField(safeValue(bp?.operating_costs?.marketing_pct)),
+      royaltyPct: makeField(safeValue(bp?.operating_costs?.royalty_pct)),
+      adFundPct: makeField(safeValue(bp?.operating_costs?.ad_fund_pct)),
+      otherMonthly: makeField(dollarsToCents(safeValue(bp?.operating_costs?.other_monthly))),
     },
     financing: {
-      loanAmount: makeField(dollarsToCents(bp.financing.loan_amount.value)),
-      interestRate: makeField(bp.financing.interest_rate.value),
-      loanTermMonths: makeField(bp.financing.loan_term_months.value),
-      downPaymentPct: makeField(bp.financing.down_payment_pct.value),
+      loanAmount: makeField(dollarsToCents(safeValue(bp?.financing?.loan_amount))),
+      interestRate: makeField(safeValue(bp?.financing?.interest_rate)),
+      loanTermMonths: makeField(safeValue(bp?.financing?.loan_term_months)),
+      downPaymentPct: makeField(safeValue(bp?.financing?.down_payment_pct)),
     },
     startupCapital: {
-      workingCapitalMonths: makeField(bp.startup_capital.working_capital_months.value),
-      depreciationYears: makeField(bp.startup_capital.depreciation_years.value),
+      workingCapitalMonths: makeField(safeValue(bp?.startup_capital?.working_capital_months)),
+      depreciationYears: makeField(safeValue(bp?.startup_capital?.depreciation_years)),
     },
   };
 }
