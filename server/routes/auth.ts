@@ -177,14 +177,14 @@ router.get("/me", async (req, res) => {
   const response: Record<string, any> = { ...effectiveUser };
 
   const fullUser = await storage.getUser(effectiveUser.id);
-  if (fullUser?.bookingUrl) {
-    response.bookingUrl = fullUser.bookingUrl;
-  }
-  if (fullUser?.accountManagerId) {
-    response.accountManagerId = fullUser.accountManagerId;
-    const manager = await storage.getUser(fullUser.accountManagerId);
-    if (manager?.displayName) {
-      response.accountManagerName = manager.displayName;
+  if (fullUser) {
+    if (fullUser.bookingUrl) {
+      response.bookingUrl = fullUser.bookingUrl;
+    }
+    if (fullUser.accountManagerId) {
+      response.accountManagerId = fullUser.accountManagerId;
+      const manager = await storage.getUser(fullUser.accountManagerId);
+      response.accountManagerName = manager?.displayName ?? null;
     }
   }
 

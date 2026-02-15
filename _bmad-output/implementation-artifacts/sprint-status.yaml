@@ -73,13 +73,13 @@ development_status:
   epic-3-retrospective: optional
 
   # Epic 4: Forms & Quick Entry Experience
-  epic-4: in-progress
+  epic-4: done
   4-1-planning-layout-dashboard-mode-switcher: done
   4-2-forms-mode-section-based-input: done
   4-3-quick-entry-mode-grid-foundation: done
   4-4-quick-entry-mode-keyboard-navigation-formatting: done
   4-5-auto-save-session-recovery: done
-  4-6-consultant-booking-link-workspace-chrome: review
+  4-6-consultant-booking-link-workspace-chrome: done
   epic-4-retrospective: optional
 
   # Epic 5: Advisory Guardrails & Smart Guidance

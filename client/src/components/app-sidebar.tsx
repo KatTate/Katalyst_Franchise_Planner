@@ -105,7 +105,7 @@ export function AppSidebar() {
           </SidebarGroup>
         </SidebarContent>
         <SidebarFooter>
-          {user.bookingUrl && (
+          {user.bookingUrl && user.accountManagerId && (
             <div className="px-3 pb-1">
               <Separator className="mb-2" />
               <Button

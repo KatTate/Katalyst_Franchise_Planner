@@ -19,6 +19,7 @@ interface PlanningHeaderProps {
 export function PlanningHeader({ planName, activeMode, onModeChange, saveStatus, onRetrySave }: PlanningHeaderProps) {
   const { user } = useAuth();
   const bookingUrl = user?.bookingUrl;
+  const accountManagerId = user?.accountManagerId;
   const accountManagerName = user?.accountManagerName;
 
   return (
@@ -28,7 +29,7 @@ export function PlanningHeader({ planName, activeMode, onModeChange, saveStatus,
       <div className="flex-1" />
       <ModeSwitcher activeMode={activeMode} onModeChange={onModeChange} />
       <div className="flex-1" />
-      {bookingUrl && (
+      {bookingUrl && accountManagerId && (
         <Tooltip>
           <TooltipTrigger asChild>
             <Button
