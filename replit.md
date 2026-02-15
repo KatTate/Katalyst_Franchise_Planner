@@ -70,6 +70,7 @@ When the user triggers an agent or workflow, the AI MUST load the referenced fil
 - **Onboarding:** A guided 3-question flow is provided to recommend appropriate user tiers (Planning Assistant, Forms, or Quick Entry).
 - **BMad File Structure:** The project's internal file structure includes `_bmad/` for the BMad Method toolkit, `_bmad-output/` for generated artifacts, `_config/` for manifests, and `_memory/` for agent memory.
 - **Financial Engine:** A pure TypeScript computation engine (`shared/financial-engine.ts`) processes `FinancialInputs` to generate 60-month projections covering Profit & Loss, cash flow, balance sheet, and ROI. All currency values are stored in cents, calculations are pre-tax, and utilize simple monthly growth.
+- **Quick Entry Mode:** Spreadsheet-style grid built on `@tanstack/react-table` (`client/src/components/planning/quick-entry-mode.tsx`). Features collapsible category groups, inline cell editing, sticky summary metrics, per-field source badges, brand default display, reset-to-default, and Gurple (#A9A2AA) out-of-range advisory indicators with tooltips. Reuses field metadata from `client/src/lib/field-metadata.ts`.
 
 **Feature Specifications:**
 - **Invitation Management:** Provides both UI and API capabilities for creating, monitoring, and copying invitation links.
