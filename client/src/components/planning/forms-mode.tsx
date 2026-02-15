@@ -27,6 +27,8 @@ import { useStartupCosts } from "@/hooks/use-startup-costs";
 import { StartupCostBuilder } from "@/components/shared/startup-cost-builder";
 import type { FieldMeta } from "@/lib/field-metadata";
 
+type StartupCostCountCallback = (count: number) => void;
+
 interface FormsModeProps {
   planId: string;
   queueSave?: (data: any) => void;
@@ -113,7 +115,7 @@ export function FormsMode({ planId, queueSave }: FormsModeProps) {
     handleReset,
   } = useFieldEditing({ financialInputs, isSaving: queueSave ? false : isSaving, onSave: saveInputs });
 
-  const { costs: startupCosts } = useStartupCosts(planId);
+  const [startupCostCount, setStartupCostCount] = useState(0);
 
   const sectionProgress = useMemo(
     () => (financialInputs ? computeSectionProgress(financialInputs) : []),
@@ -160,7 +162,7 @@ export function FormsMode({ planId, queueSave }: FormsModeProps) {
   return (
     <div data-testid="forms-mode-container" className="h-full flex flex-col overflow-hidden">
       <div className="sticky top-0 z-10 bg-background border-b px-4 py-3">
-        <PlanCompleteness sections={sectionProgress} startupCostCount={startupCosts.length} />
+        <PlanCompleteness sections={sectionProgress} startupCostCount={startupCostCount} />
       </div>
 
       <div ref={scrollContainerRef} className="flex-1 overflow-auto px-4 py-4 space-y-3">
@@ -187,7 +189,7 @@ export function FormsMode({ planId, queueSave }: FormsModeProps) {
           />
         ))}
 
-        <StartupCostSection planId={planId} defaultOpen={true} />
+        <StartupCostSection planId={planId} defaultOpen={true} onCountChange={setStartupCostCount} />
 
         {!queueSave && isSaving && (
           <p className="text-xs text-muted-foreground text-center pt-1" data-testid="status-saving">
@@ -250,12 +252,6 @@ function PlanCompleteness({ sections, startupCostCount }: { sections: SectionPro
             <span className="text-xs font-medium tabular-nums">
               {startupCostCount} items
             </span>
-          </div>
-          <div className="h-1.5 rounded-full bg-muted overflow-hidden">
-            <div
-              className="h-full rounded-full bg-primary transition-all duration-300"
-              style={{ width: startupCostCount > 0 ? "100%" : "0%" }}
-            />
           </div>
         </div>
       </div>
@@ -496,9 +492,13 @@ function FormField({
   );
 }
 
-function StartupCostSection({ planId, defaultOpen }: { planId: string; defaultOpen: boolean }) {
+function StartupCostSection({ planId, defaultOpen, onCountChange }: { planId: string; defaultOpen: boolean; onCountChange?: StartupCostCountCallback }) {
   const [isOpen, setIsOpen] = useState(defaultOpen);
   const { costs } = useStartupCosts(planId);
+
+  useEffect(() => {
+    onCountChange?.(costs.length);
+  }, [costs.length, onCountChange]);
 
   return (
     <Collapsible open={isOpen} onOpenChange={setIsOpen}>

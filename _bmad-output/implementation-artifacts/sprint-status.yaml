@@ -82,7 +82,7 @@ development_status:
   4-4-quick-entry-mode-keyboard-navigation-formatting: done
   4-5-auto-save-session-recovery: done
   4-6-consultant-booking-link-workspace-chrome: done
-  4-7-integration-gaps-startup-cost-mounting: ready-for-dev  # closes FR4, FR5, FR6 user path
+  4-7-integration-gaps-startup-cost-mounting: done  # closes FR4, FR5, FR6 user path
   epic-4-retrospective: optional
 
   # Epic 5: Advisory Guardrails & Smart Guidance

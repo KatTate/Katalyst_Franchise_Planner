@@ -1,6 +1,6 @@
 # Story 4.7: Integration Gaps — Startup Cost Mounting & Forms Metadata
 
-Status: review
+Status: done
 
 ## Story
 
@@ -151,14 +151,17 @@ Implemented all four acceptance criteria for Story 4.7 as a pure frontend integr
 - **AC4:** Added "Startup Costs" entry to the Forms mode completeness dashboard showing the count of startup cost line items (e.g., "8 items"). Updated grid from 4 to 5 columns to accommodate.
 
 Key decisions:
-- Used `useStartupCosts(planId)` in FormsMode to get the startup cost count for the completeness dashboard
+- StartupCostSection uses `useStartupCosts(planId)` internally and reports count to parent via `onCountChange` callback — avoids redundant hook call in FormsMode parent
 - Placed the StartupCostBuilder section in Quick Entry mode inside the scroll container but outside the virtualized table, as specified in the dev notes
 - No modifications to `StartupCostBuilder` component internals were needed
 - No server-side changes were needed
+- Startup costs completeness dashboard entry shows text count only (no progress bar) — progress bars will be added in a future story when proportional completion tracking is implemented
 
 ### File List
-- `client/src/components/planning/forms-mode.tsx` — MODIFIED: Added imports (formatCents, useStartupCosts, StartupCostBuilder), fixed Item 7 range metadata display, added startup cost count to completeness dashboard, added StartupCostSection component
+- `client/src/components/planning/forms-mode.tsx` — MODIFIED: Added imports (formatCents, useStartupCosts, StartupCostBuilder), fixed Item 7 range metadata display, added startup cost count to completeness dashboard via callback pattern, added StartupCostSection component
 - `client/src/components/planning/quick-entry-mode.tsx` — MODIFIED: Added imports (useState, Collapsible, StartupCostBuilder), added QuickEntryStartupCostSection below grid, added startup costs div in render
+- `e2e/story-4-7-integration-gaps.spec.ts` — NEW: E2E tests for all ACs
+- `_bmad-output/implementation-artifacts/tests/test-summary.md` — MODIFIED: Added story 4.7 test results
 - `_bmad-output/implementation-artifacts/4-7-integration-gaps-startup-cost-mounting.md` — MODIFIED: Status updates and Dev Agent Record
 
 ### Testing Summary
