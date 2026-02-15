@@ -295,6 +295,7 @@ Key decisions:
 | File | Action |
 |------|--------|
 | `client/src/components/planning/quick-entry-mode.tsx` | MODIFIED — Rewrote EditableCell from click-to-edit to always-editable input, added `getRawEditValue` helper, removed unused `MetricCard` import |
+| `client/src/components/planning/input-panel.tsx` | MODIFIED — Added Quick Entry mode rendering (`<QuickEntryMode planId={planId} />` when `activeMode === "quick_entry"`) |
 
 ### Testing Summary
 
@@ -310,3 +311,77 @@ Clean — no errors or warnings
 ### Visual Verification
 
 Pending — will be verified via E2E test
+
+---
+
+## Code Review Record
+
+### Reviewer
+
+Claude 4.6 Opus (Replit Agent) — Adversarial Code Review
+
+### Discovery Inputs
+
+- `_bmad-output/planning-artifacts/architecture.md` — Component hierarchy (Decision 9), state management (Decision 8), TanStack patterns
+- `_bmad-output/planning-artifacts/ux-design-specification.md` — Expert Mode density (sm/md), Gurple advisory (10-20% opacity), focus indicators, Roboto Mono for financial figures
+- `_bmad-output/implementation-artifacts/4-2-forms-mode-section-based-input.md` — Prior code review findings (type cast discipline, shared hooks)
+
+### Findings (7 total: 1 HIGH, 4 MEDIUM, 2 LOW)
+
+#### H1 — Race condition: handleCellEdit missing isSaving guard (FIXED)
+
+**Severity:** HIGH
+**Location:** `quick-entry-mode.tsx` → `handleCellEdit()`
+**Issue:** `handleCellEdit` lacked the `isSaving` guard present in `handleReset`. Rapid cell edits during an in-flight save could overwrite the stale `financialInputs` snapshot, losing the prior edit.
+**Fix:** Replaced local `handleCellEdit` with `handleFieldUpdate` from `useFieldEditing` hook, which includes `isSaving` guard.
+
+#### M1 — Dev Agent Record File List incomplete (FIXED)
+
+**Severity:** MEDIUM
+**Location:** Story file → Dev Agent Record → File List
+**Issue:** Missing `input-panel.tsx` from the file list. Story 4.3 modified `InputPanel` to render `<QuickEntryMode>` but the record only listed `quick-entry-mode.tsx`.
+**Fix:** Added `input-panel.tsx` to file list.
+
+#### M2 — Code duplication: handleCellEdit and handleReset duplicate hook logic (FIXED)
+
+**Severity:** MEDIUM
+**Location:** `quick-entry-mode.tsx` → `handleCellEdit()`, `handleReset()`
+**Issue:** Both functions duplicated the update/reset pattern already provided by `useFieldEditing` hook. The hook was created specifically to share this logic across modes.
+**Fix:** Added `handleFieldUpdate` to `useFieldEditing` hook for pre-parsed value updates. QuickEntryMode now uses `handleFieldUpdate` and `handleReset` from the hook.
+
+#### M3 — Raw HTML button for group toggle (FIXED)
+
+**Severity:** MEDIUM
+**Location:** `quick-entry-mode.tsx` → category column cell renderer
+**Issue:** Used raw `<button>` element instead of shadcn `<Button>` component, violating the design system requirement per UDG component_use rules.
+**Fix:** Replaced with `<Button variant="ghost" size="sm">`.
+
+#### M4 — Reintroduced `as PlanFinancialInputs` type casts (FIXED)
+
+**Severity:** MEDIUM
+**Location:** `quick-entry-mode.tsx` → `handleCellEdit()`, `handleReset()` spread objects
+**Issue:** Story 4.2 code review (M2) specifically removed `as any` casts. Story 4.3 reintroduced `as PlanFinancialInputs` casts on spread objects, per Dev Notes warning to "minimize assertions on spread objects."
+**Fix:** Eliminated by delegating to `useFieldEditing` hook which types spread objects properly as `PlanFinancialInputs`.
+
+#### L1 — Unused `planId` parameter in StickyMetrics (FIXED)
+
+**Severity:** LOW
+**Location:** `quick-entry-mode.tsx` → `StickyMetrics` props
+**Issue:** `planId` prop declared and passed but never used in the component body.
+**Fix:** Removed `planId` from StickyMetrics props and call site.
+
+#### L2 — Outdated saveInputs error handling pattern (FIXED)
+
+**Severity:** LOW
+**Location:** `quick-entry-mode.tsx` → `saveInputs()` function
+**Issue:** Used `async/try-catch` with empty catch block. The `.catch(() => {})` pattern is more concise and conventional for mutation error suppression.
+**Fix:** Changed to `updatePlan({ financialInputs: updated }).catch(() => {})`.
+
+### Fixes Applied
+
+All 7 findings fixed in a single commit:
+- Extended `useFieldEditing` hook with `handleFieldUpdate` method
+- Refactored `QuickEntryMode` to consume `handleFieldUpdate` and `handleReset` from hook
+- Replaced raw `<button>` with shadcn `<Button>` for group toggle
+- Removed unused `planId` from `StickyMetrics`
+- Simplified `saveInputs` to `.catch()` pattern

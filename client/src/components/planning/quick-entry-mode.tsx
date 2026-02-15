@@ -10,10 +10,7 @@ import {
 } from "@tanstack/react-table";
 import { usePlan } from "@/hooks/use-plan";
 import { usePlanOutputs } from "@/hooks/use-plan-outputs";
-import {
-  updateFieldValue,
-  resetFieldToDefault,
-} from "@shared/plan-initialization";
+import { useFieldEditing } from "@/hooks/use-field-editing";
 import type {
   PlanFinancialInputs,
   FinancialFieldValue,
@@ -221,53 +218,17 @@ export function QuickEntryMode({ planId }: QuickEntryModeProps) {
   const financialInputs = plan?.financialInputs as PlanFinancialInputs | null | undefined;
 
   const saveInputs = useCallback(
-    async (updated: PlanFinancialInputs) => {
-      try {
-        await updatePlan({ financialInputs: updated });
-      } catch {
-        // Error handled via mutation state
-      }
+    (updated: PlanFinancialInputs) => {
+      updatePlan({ financialInputs: updated }).catch(() => {});
     },
     [updatePlan]
   );
 
-  const handleCellEdit = useCallback(
-    (category: string, fieldName: string, parsedValue: number) => {
-      if (!financialInputs) return;
-      const categoryObj = financialInputs[category as keyof PlanFinancialInputs];
-      const field = categoryObj[fieldName as keyof typeof categoryObj] as FinancialFieldValue;
-      if (parsedValue !== field.currentValue) {
-        const updatedField = updateFieldValue(field, parsedValue, new Date().toISOString());
-        const updatedInputs = {
-          ...financialInputs,
-          [category]: {
-            ...categoryObj,
-            [fieldName]: updatedField,
-          },
-        };
-        saveInputs(updatedInputs as PlanFinancialInputs);
-      }
-    },
-    [financialInputs, saveInputs]
-  );
-
-  const handleReset = useCallback(
-    (category: string, fieldName: string) => {
-      if (!financialInputs || isSaving) return;
-      const categoryObj = financialInputs[category as keyof PlanFinancialInputs];
-      const field = categoryObj[fieldName as keyof typeof categoryObj] as FinancialFieldValue;
-      const resetField = resetFieldToDefault(field, new Date().toISOString());
-      const updatedInputs = {
-        ...financialInputs,
-        [category]: {
-          ...categoryObj,
-          [fieldName]: resetField,
-        },
-      };
-      saveInputs(updatedInputs as PlanFinancialInputs);
-    },
-    [financialInputs, isSaving, saveInputs]
-  );
+  const { handleFieldUpdate, handleReset } = useFieldEditing({
+    financialInputs,
+    isSaving,
+    onSave: saveInputs,
+  });
 
   const gridRows = useMemo(
     () => (financialInputs ? buildGridRows(financialInputs) : []),
@@ -283,8 +244,10 @@ export function QuickEntryMode({ planId }: QuickEntryModeProps) {
         cell: ({ row }: CellContext<GridRow, unknown>) => {
           if (row.original.isGroupHeader) {
             return (
-              <button
-                className="flex items-center gap-1.5 font-semibold text-sm w-full"
+              <Button
+                variant="ghost"
+                size="sm"
+                className="flex items-center gap-1.5 font-semibold text-sm w-full justify-start"
                 onClick={() => row.toggleExpanded()}
                 data-testid={`group-toggle-${row.original.category}`}
               >
@@ -294,7 +257,7 @@ export function QuickEntryMode({ planId }: QuickEntryModeProps) {
                   }`}
                 />
                 {row.original.label}
-              </button>
+              </Button>
             );
           }
           return (
@@ -321,7 +284,7 @@ export function QuickEntryMode({ planId }: QuickEntryModeProps) {
         size: 150,
         cell: ({ row }: CellContext<GridRow, unknown>) => {
           if (row.original.isGroupHeader) return null;
-          return <EditableCell row={row} onCellEdit={handleCellEdit} />;
+          return <EditableCell row={row} onCellEdit={handleFieldUpdate} />;
         },
       },
       {
@@ -387,7 +350,7 @@ export function QuickEntryMode({ planId }: QuickEntryModeProps) {
         },
       },
     ],
-    [handleCellEdit, handleReset]
+    [handleFieldUpdate, handleReset]
   );
 
   const table = useReactTable({
@@ -436,7 +399,7 @@ export function QuickEntryMode({ planId }: QuickEntryModeProps) {
   return (
     <div data-testid="quick-entry-container" className="h-full flex flex-col overflow-hidden">
       <div className="sticky top-0 z-10 bg-background border-b px-3 py-2">
-        <StickyMetrics planId={planId} output={output} isLoading={outputsLoading} isFetching={isFetching} />
+        <StickyMetrics output={output} isLoading={outputsLoading} isFetching={isFetching} />
       </div>
 
       <div className="flex-1 overflow-auto">
@@ -509,12 +472,10 @@ export function QuickEntryMode({ planId }: QuickEntryModeProps) {
 }
 
 function StickyMetrics({
-  planId,
   output,
   isLoading,
   isFetching,
 }: {
-  planId: string;
   output: ReturnType<typeof usePlanOutputs>["output"];
   isLoading: boolean;
   isFetching: boolean;

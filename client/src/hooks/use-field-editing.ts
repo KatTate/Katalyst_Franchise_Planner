@@ -85,6 +85,26 @@ export function useFieldEditing({ financialInputs, isSaving, onSave }: UseFieldE
     setEditValue("");
   }, []);
 
+  const handleFieldUpdate = useCallback(
+    (category: string, fieldName: string, parsedValue: number) => {
+      if (!financialInputs || isSaving) return;
+      const categoryObj = financialInputs[category as keyof PlanFinancialInputs];
+      const field = categoryObj[fieldName as keyof typeof categoryObj] as FinancialFieldValue;
+      if (parsedValue !== field.currentValue) {
+        const updatedField = updateFieldValue(field, parsedValue, new Date().toISOString());
+        const updatedInputs: PlanFinancialInputs = {
+          ...financialInputs,
+          [category]: {
+            ...categoryObj,
+            [fieldName]: updatedField,
+          },
+        };
+        onSave(updatedInputs);
+      }
+    },
+    [financialInputs, isSaving, onSave]
+  );
+
   const handleReset = useCallback(
     (category: string, fieldName: string) => {
       if (!financialInputs || isSaving) return;
@@ -112,6 +132,7 @@ export function useFieldEditing({ financialInputs, isSaving, onSave }: UseFieldE
     handleEditStart,
     handleEditCommit,
     handleEditCancel,
+    handleFieldUpdate,
     handleReset,
   };
 }
