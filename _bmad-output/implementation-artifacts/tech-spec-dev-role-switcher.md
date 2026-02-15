@@ -2,8 +2,8 @@
 title: 'Dev Role Switcher — One-Click Dev Login by Role'
 slug: 'dev-role-switcher'
 created: '2026-02-15'
-status: 'review'
-stepsCompleted: [1, 2, 3]
+status: 'ready-for-dev'
+stepsCompleted: [1, 2, 3, 4]
 tech_stack: ['React', 'Express', 'PostgreSQL', 'Passport.js', 'Drizzle ORM', 'Vitest', 'Supertest', 'TanStack Query', 'wouter', 'shadcn/ui']
 files_to_modify: ['server/routes/auth.ts', 'server/storage.ts', 'client/src/pages/login.tsx', 'server/routes/auth.test.ts']
 code_patterns: ['upsert-by-email for synthetic users', 'isDemo flag on demo users', 'dev mode guard via missing Google OAuth env vars', 'IStorage interface + DatabaseStorage class', 'session user shape: {id, email, role, brandId, displayName, profileImageUrl, onboardingCompleted, preferredTier}']
