@@ -62,20 +62,19 @@ development_status:
   epic-2-retrospective: done
 
   # Epic 3: Financial Planning Engine
-  epic-3: in-progress
+  epic-3: done
   3-1-financial-engine-core-plan-schema: done
   3-2-brand-default-integration-per-field-metadata: done
-  3-3-startup-cost-computation-custom-line-items: review
-  3-4-live-summary-metrics-accounting-validation: review
-  3-5-financial-input-api-per-field-reset: review
-  3-6-quick-roi-first-90-second-experience: review
-  3-7-brand-configuration-validation: review  # relocated from Epic 2 Story 2.5
-  epic-3-retrospective: optional
+  3-3-startup-cost-computation-custom-line-items: done
+  3-4-live-summary-metrics-accounting-validation: done
+  3-5-financial-input-api-per-field-reset: done
+  3-6-quick-roi-first-90-second-experience: done
+  3-7-brand-configuration-validation: done  # relocated from Epic 2 Story 2.5
+  epic-3-retrospective: done
 
   # Epic 4: Forms & Quick Entry Experience
-  # Reopened: Story 4.7 added to close integration gaps identified in UX spec audit
-  # (StartupCostBuilder not mounted, Forms metadata panel Item 7 range hardcoded)
-  epic-4: in-progress
+  # Story 4.7 added mid-epic to close integration gaps (StartupCostBuilder mounting, Item 7 range metadata)
+  epic-4: done
   4-1-planning-layout-dashboard-mode-switcher: done
   4-2-forms-mode-section-based-input: done
   4-3-quick-entry-mode-grid-foundation: done
@@ -83,7 +82,7 @@ development_status:
   4-5-auto-save-session-recovery: done
   4-6-consultant-booking-link-workspace-chrome: done
   4-7-integration-gaps-startup-cost-mounting: done  # closes FR4, FR5, FR6 user path
-  epic-4-retrospective: optional
+  epic-4-retrospective: done
 
   # Epic 5: Advisory Guardrails & Smart Guidance
   epic-5: backlog
