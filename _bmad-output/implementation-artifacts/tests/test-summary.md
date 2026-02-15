@@ -11,7 +11,54 @@
 - **E2E Tests:** Playwright via `@playwright/test`; config at `playwright.config.ts`
 - **Pattern:** Mock-based isolation using `vi.mock()` for storage layer; Express test apps with injected auth middleware
 
-## Generated Tests (2026-02-15)
+## Generated Tests (2026-02-15) — Story 3.1 QA
+
+### Unit Tests — Story 3.1: Financial Engine Core & Plan Schema (16 new tests)
+
+- [x] `shared/financial-engine.test.ts` - Financial engine expanded from 33 to 49 tests (+16 new)
+
+**New test groups added:**
+
+**ROI Metrics - Summary Completeness (AC8)** — 4 tests:
+  - fiveYearROIPct is a finite number
+  - fiveYearCumulativeCashFlow is present
+  - totalStartupInvestment is positive when startup costs exist
+  - breakEvenMonth is null or a positive integer <= 60
+
+**P&L Calculation Chain (AC6)** — 6 tests:
+  - grossProfit = revenue + totalCogs (COGS are negative)
+  - totalCogs = materialsCogs + royalties + adFund
+  - ebitda = contributionMargin + totalOpex
+  - contributionMargin = grossProfit + directLabor
+  - preTaxIncome = ebitda + depreciation + interestExpense
+  - operating cash flow includes working capital changes
+
+**Brand-Agnostic Engine (AC4)** — 5 tests:
+  - produces valid structure for a completely different brand
+  - all identity checks pass for alternate brand
+  - alternate brand has different financial profile than PostNet
+  - alternate brand ROI metrics are valid
+  - alternate brand is deterministic
+
+**Module Purity (AC5)** — 1 test:
+  - financial-engine.ts has zero import statements (pure TypeScript)
+
+**Acceptance Criteria Coverage:**
+
+| AC | Description | Test Coverage | Status |
+|----|-------------|---------------|--------|
+| AC1 | Plans table schema | `shared/schema.test.ts` (29 tests) | Covered |
+| AC2 | Engine returns 60 monthly projections | Basic Structure (3 tests) | Covered |
+| AC3 | Determinism | Determinism test + brand-agnostic determinism | Covered |
+| AC4 | Brand-agnostic | NEW: 5 brand-agnostic tests with alt brand | Covered |
+| AC5 | Pure TypeScript module | NEW: import-free verification | Covered |
+| AC6 | 10-step calculation order | NEW: 6 P&L chain tests | Covered |
+| AC7 | Accounting identity checks | 4 identity check tests | Covered |
+| AC8 | Summary metrics | NEW: 4 ROI completeness tests | Covered |
+
+---
+
+## Generated Tests (2026-02-15) — Story 4.3 QA
 
 ### E2E Tests — Story 4.3: Quick Entry Mode Grid Foundation (16 tests)
 
@@ -114,7 +161,7 @@
 - [x] `shared/schema.test.ts` - Schema validation (29 tests)
 
 ### Unit Tests
-- [x] `shared/financial-engine.test.ts` - Financial engine calculations (33 tests)
+- [x] `shared/financial-engine.test.ts` - Financial engine calculations (49 tests)
 - [x] `shared/plan-initialization.test.ts` - Plan initialization logic (98 tests)
 - [x] `client/src/lib/quick-start-helpers.test.ts` - Quick start helpers (34 tests)
 
@@ -165,8 +212,8 @@
 ### Vitest Results (2026-02-15)
 ```
 Total test files: 16
-Total tests: 352
-Passed: 352
+Total tests: 368
+Passed: 368
 Failed: 0
 Duration: ~4.8s
 ```

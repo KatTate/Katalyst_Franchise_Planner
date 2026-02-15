@@ -377,7 +377,6 @@ describe("Financial Engine", () => {
           (mp) => mp.year === y + 1
         );
         const monthlySum = yearMonths.reduce((s, mp) => s + mp.revenue, 0);
-        // Allow small rounding tolerance
         expect(
           Math.abs(result.annualSummaries[y].revenue - monthlySum)
         ).toBeLessThan(100);
@@ -385,10 +384,173 @@ describe("Financial Engine", () => {
     });
 
     it("ending cash increases from Year 1 to Year 5", () => {
-      // PostNet reference: cash grows over time
       expect(result.annualSummaries[4].endingCash).toBeGreaterThan(
         result.annualSummaries[0].endingCash
       );
+    });
+  });
+
+  describe("ROI Metrics - Summary Completeness (AC8)", () => {
+    it("fiveYearROIPct is a finite number", () => {
+      expect(Number.isFinite(result.roiMetrics.fiveYearROIPct)).toBe(true);
+    });
+
+    it("fiveYearCumulativeCashFlow is present", () => {
+      expect(typeof result.roiMetrics.fiveYearCumulativeCashFlow).toBe("number");
+      expect(Number.isFinite(result.roiMetrics.fiveYearCumulativeCashFlow)).toBe(true);
+    });
+
+    it("totalStartupInvestment is positive when startup costs exist", () => {
+      expect(result.roiMetrics.totalStartupInvestment).toBeGreaterThan(0);
+    });
+
+    it("breakEvenMonth is null or a positive integer <= 60", () => {
+      const bem = result.roiMetrics.breakEvenMonth;
+      if (bem !== null) {
+        expect(bem).toBeGreaterThan(0);
+        expect(bem).toBeLessThanOrEqual(60);
+        expect(Number.isInteger(bem)).toBe(true);
+      }
+    });
+  });
+
+  describe("P&L Calculation Chain (AC6)", () => {
+    it("grossProfit = revenue + totalCogs (COGS are negative)", () => {
+      result.monthlyProjections.forEach((mp) => {
+        expect(Math.abs(mp.grossProfit - (mp.revenue + mp.totalCogs))).toBeLessThan(2);
+      });
+    });
+
+    it("totalCogs = materialsCogs + royalties + adFund", () => {
+      result.monthlyProjections.forEach((mp) => {
+        const computed = mp.materialsCogs + mp.royalties + mp.adFund;
+        expect(Math.abs(mp.totalCogs - computed)).toBeLessThan(2);
+      });
+    });
+
+    it("ebitda = contributionMargin + totalOpex", () => {
+      result.monthlyProjections.forEach((mp) => {
+        const computed = mp.contributionMargin + mp.totalOpex;
+        expect(Math.abs(mp.ebitda - computed)).toBeLessThan(2);
+      });
+    });
+
+    it("contributionMargin = grossProfit + directLabor", () => {
+      result.monthlyProjections.forEach((mp) => {
+        const computed = mp.grossProfit + mp.directLabor;
+        expect(Math.abs(mp.contributionMargin - computed)).toBeLessThan(2);
+      });
+    });
+
+    it("preTaxIncome = ebitda + depreciation + interestExpense", () => {
+      result.monthlyProjections.forEach((mp) => {
+        const computed = mp.ebitda + mp.depreciation + mp.interestExpense;
+        expect(Math.abs(mp.preTaxIncome - computed)).toBeLessThan(2);
+      });
+    });
+
+    it("operating cash flow includes working capital changes", () => {
+      for (let i = 1; i < result.monthlyProjections.length; i++) {
+        const mp = result.monthlyProjections[i];
+        const prev = result.monthlyProjections[i - 1];
+        const changeAR = -(mp.accountsReceivable - prev.accountsReceivable);
+        const changeInv = -(mp.inventory - prev.inventory);
+        const changeAP = mp.accountsPayable - prev.accountsPayable;
+        const expected = mp.preTaxIncome + Math.abs(mp.depreciation) + changeAR + changeInv + changeAP;
+        expect(Math.abs(mp.operatingCashFlow - expected)).toBeLessThan(2);
+      }
+    });
+  });
+
+  describe("Brand-Agnostic Engine (AC4)", () => {
+    const altBrandInputs: FinancialInputs = {
+      revenue: {
+        annualGrossSales: 50000000,
+        monthsToReachAuv: 6,
+        startingMonthAuvPct: 0.50,
+        growthRates: [0.05, 0.04, 0.03, 0.02, 0.02],
+      },
+      operatingCosts: {
+        cogsPct: [0.25, 0.25, 0.25, 0.25, 0.25],
+        laborPct: [0.20, 0.20, 0.20, 0.20, 0.20],
+        royaltyPct: [0.06, 0.06, 0.06, 0.06, 0.06],
+        adFundPct: [0.01, 0.01, 0.01, 0.01, 0.01],
+        marketingPct: [0.03, 0.03, 0.03, 0.03, 0.03],
+        otherOpexPct: [0.02, 0.02, 0.02, 0.02, 0.02],
+        payrollTaxPct: [0.15, 0.15, 0.15, 0.15, 0.15],
+        facilitiesAnnual: [2400000, 2472000, 2546160, 2622545, 2701221],
+        managementSalariesAnnual: [3600000, 3708000, 3819240, 3933817, 4051832],
+      },
+      financing: {
+        totalInvestment: 40000000,
+        equityPct: 0.30,
+        interestRate: 0.08,
+        termMonths: 120,
+      },
+      startup: {
+        depreciationRate: 0.20,
+      },
+      workingCapitalAssumptions: {
+        arDays: 15,
+        apDays: 45,
+        inventoryDays: 30,
+      },
+      distributions: [0, 0, 2000000, 2500000, 3000000],
+      taxRate: 0.25,
+    };
+
+    const altStartupCosts: StartupCostLineItem[] = [
+      { id: "a1", name: "Equipment", amount: 20000000, capexClassification: "capex", isCustom: false, source: "brand_default", brandDefaultAmount: 20000000, item7RangeLow: null, item7RangeHigh: null, sortOrder: 0 },
+      { id: "a2", name: "Supplies", amount: 5000000, capexClassification: "non_capex", isCustom: false, source: "brand_default", brandDefaultAmount: 5000000, item7RangeLow: null, item7RangeHigh: null, sortOrder: 1 },
+      { id: "a3", name: "Working Capital", amount: 3000000, capexClassification: "working_capital", isCustom: false, source: "brand_default", brandDefaultAmount: 3000000, item7RangeLow: null, item7RangeHigh: null, sortOrder: 2 },
+    ];
+
+    const altInput: EngineInput = {
+      financialInputs: altBrandInputs,
+      startupCosts: altStartupCosts,
+    };
+
+    const altResult = calculateProjections(altInput);
+
+    it("produces valid structure for a completely different brand", () => {
+      expect(altResult.monthlyProjections).toHaveLength(60);
+      expect(altResult.annualSummaries).toHaveLength(5);
+    });
+
+    it("all identity checks pass for alternate brand", () => {
+      altResult.identityChecks.forEach((check) => {
+        expect(check.passed).toBe(true);
+      });
+    });
+
+    it("alternate brand has different financial profile than PostNet", () => {
+      expect(altResult.annualSummaries[0].revenue).not.toBe(result.annualSummaries[0].revenue);
+      expect(altResult.roiMetrics.totalStartupInvestment).not.toBe(result.roiMetrics.totalStartupInvestment);
+    });
+
+    it("alternate brand ROI metrics are valid", () => {
+      expect(Number.isFinite(altResult.roiMetrics.fiveYearROIPct)).toBe(true);
+      expect(altResult.roiMetrics.totalStartupInvestment).toBe(28000000);
+    });
+
+    it("alternate brand is deterministic", () => {
+      const r1 = calculateProjections(altInput);
+      const r2 = calculateProjections(altInput);
+      expect(JSON.stringify(r1)).toBe(JSON.stringify(r2));
+    });
+  });
+
+  describe("Module Purity (AC5)", () => {
+    it("financial-engine.ts has zero import statements (pure TypeScript)", () => {
+      const fs = require("fs");
+      const engineSource = fs.readFileSync(
+        require("path").resolve(__dirname, "financial-engine.ts"),
+        "utf-8"
+      );
+      const importLines = engineSource
+        .split("\n")
+        .filter((line: string) => /^\s*import\s/.test(line));
+      expect(importLines).toHaveLength(0);
     });
   });
 });
