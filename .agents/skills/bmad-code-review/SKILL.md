@@ -13,14 +13,23 @@ This skill activates the BMAD Code Review workflow. It performs adversarial
 code review that verifies implementation against story acceptance criteria
 and dev notes constraints, checking code quality, security, and test coverage.
 
-**Steps:** 6 steps (1, 2, 3, 3.5, 4, 5) — all steps are mandatory and must
-execute in exact order.
+## Workflow Steps (6 Total)
+
+1. **Load story and discover changes** — load story file, discover git changes, cross-reference File List vs git reality
+2. **Build review attack plan** — extract ACs, Dev Notes constraints, create review plan
+3. **Execute adversarial review** — validate every claim, check ACs, Dev Notes compliance, code quality deep dive
+4. **⚠️ Step 3.5: Platform intelligence scan** — LSP diagnostics, architect sub-agent analysis, visual verification for UI stories
+5. **Present findings and resolve** — categorize findings, present to user, fix or document issues
+6. **⚠️ Step 5: Update story status and sync sprint tracking** — determine new status, update story file, sync sprint-status.yaml
 
 ## Commonly Missed Steps
 
 - **Step 3 minimum issue enforcement**: The reviewer MUST find at least 3
   specific issues. If fewer than 3 are found, re-examine the code harder.
   No lazy "looks good" reviews.
+- **Step 3.5 (Platform intelligence scan)**: Agents skip LSP diagnostics,
+  architect analysis, and visual verification. These platform checks catch
+  issues that manual code reading misses.
 - **Step 5 (Update story status and sync sprint tracking)**: After presenting
   findings and resolving them, the reviewer MUST update the story status and
   sync sprint-status.yaml. This step is commonly skipped after the more

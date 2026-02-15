@@ -38,22 +38,92 @@ router.post("/logout", (req, res) => {
   });
 });
 
+function isDevMode(): boolean {
+  return !process.env.GOOGLE_CLIENT_ID || !process.env.GOOGLE_CLIENT_SECRET;
+}
+
 router.get("/dev-enabled", (_req, res) => {
-  const devMode = !process.env.GOOGLE_CLIENT_ID || !process.env.GOOGLE_CLIENT_SECRET;
-  return res.json({ devMode });
+  return res.json({ devMode: isDevMode() });
 });
 
+router.get("/dev-brands", async (_req, res) => {
+  if (!isDevMode()) {
+    return res.status(403).json({ message: "Dev brands disabled when Google OAuth is configured" });
+  }
+  const allBrands = await storage.getBrands();
+  const sorted = allBrands
+    .map((b) => ({ id: b.id, name: b.name, displayName: b.displayName }))
+    .sort((a, b) => a.name.localeCompare(b.name));
+  return res.json(sorted);
+});
+
+const devLoginSchema = z.object({
+  role: z.enum(["katalyst_admin", "franchisee", "franchisor"]).optional(),
+  brandId: z.string().optional(),
+}).optional();
+
 router.post("/dev-login", async (req, res) => {
-  if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
+  if (!isDevMode()) {
     return res.status(403).json({ message: "Dev login disabled when Google OAuth is configured" });
   }
 
   try {
-    const user = await storage.upsertUserFromGoogle({
-      email: "dev@katgroupinc.com",
-      displayName: "Dev Admin",
-      profileImageUrl: null,
+    const parsed = devLoginSchema.safeParse(req.body);
+    if (!parsed.success) {
+      return res.status(400).json({ message: "Invalid request body", errors: parsed.error.flatten().fieldErrors });
+    }
+
+    const body = parsed.data;
+    const role = body?.role || "katalyst_admin";
+
+    if (role === "katalyst_admin") {
+      const user = await storage.upsertUserFromGoogle({
+        email: "dev@katgroupinc.com",
+        displayName: "Dev Admin",
+        profileImageUrl: null,
+      });
+
+      const sessionUser: Express.User = {
+        id: user.id,
+        email: user.email,
+        role: user.role,
+        brandId: user.brandId,
+        displayName: user.displayName,
+        profileImageUrl: user.profileImageUrl,
+        onboardingCompleted: user.onboardingCompleted,
+        preferredTier: user.preferredTier,
+      };
+
+      return req.login(sessionUser, (err) => {
+        if (err) {
+          return res.status(500).json({ message: "Login failed" });
+        }
+        return res.json(sessionUser);
+      });
+    }
+
+    if (!body?.brandId) {
+      return res.status(400).json({ message: "brandId is required for franchisee and franchisor roles" });
+    }
+
+    const brand = await storage.getBrand(body.brandId);
+    if (!brand) {
+      return res.status(404).json({ message: "Brand not found" });
+    }
+
+    const user = await storage.upsertDevUser({
+      role,
+      brandSlug: brand.slug,
+      brandId: brand.id,
+      brandDisplayName: brand.displayName || brand.name,
     });
+
+    if (role === "franchisee") {
+      const existingPlans = await storage.getPlansByUser(user.id);
+      if (existingPlans.length === 0) {
+        await storage.createDemoPlan(user.id, brand.id, brand);
+      }
+    }
 
     const sessionUser: Express.User = {
       id: user.id,

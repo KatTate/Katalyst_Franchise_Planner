@@ -19,14 +19,28 @@ When this skill is triggered, load and follow the workflow directly:
 
 Read fully and follow: `_bmad/core/workflows/brainstorming/workflow.md`
 
-The workflow uses step-file architecture and handles:
-- Configuration loading from `_bmad/core/config.yaml`
-- Session setup and technique discovery
-- Technique selection (user-selected, AI-recommended, random, or progressive)
-- Technique execution with anti-bias protocols
-- Idea organization and session output
-- Brain techniques loaded from CSV data file
-- Output to brainstorming directory
+The workflow uses step-file architecture with configuration loading from `_bmad/core/config.yaml`.
+Brain techniques loaded from CSV data file. Output to brainstorming directory.
+
+## Workflow Steps (8 Step Files Total)
+
+1. **Step 1: Session Setup** — Check for existing session, initialize document, gather session context, present technique approach selection (4 options)
+2. **Step 1b: Continue** — (Conditional) Handle continuation of existing session with progress analysis
+3. **Step 2a: User-Selected Techniques** — Browse technique library by category, select from 36+ techniques
+4. **Step 2b: AI-Recommended Techniques** — Context-analyzed technique recommendations matched to session goals
+5. **Step 2c: Random Selection** — Serendipitous technique discovery with intelligent random selection
+6. **Step 2d: Progressive Flow** — 4-phase systematic journey from exploration to action planning
+7. **Step 3: Technique Execution** — Interactive facilitation with anti-bias protocols, aim for 100+ ideas, energy checkpoints
+8. **Step 4: Idea Organization** — Theme identification, prioritization, action planning, session documentation
+
+## Commonly Missed Steps
+
+- ⚠️ **Step 1 Existing Session Check:** Agents skip checking for existing brainstorming document — MUST check FIRST and route to Step 1b if found
+- ⚠️ **Step 3 Anti-Bias Domain Pivot:** Agents cluster ideas semantically — MUST consciously shift creative domain every 10 ideas
+- ⚠️ **Step 3 Quantity Target:** Agents move to organization too early — aim for 100+ ideas MINIMUM before suggesting Step 4
+- ⚠️ **Step 3 Energy Checkpoints:** Agents skip periodic check-ins — MUST check energy after every 4-5 exchanges
+- ⚠️ **Step 4 Action Planning:** Agents skip creating concrete next steps — MUST develop actionable plans for prioritized ideas, not just organize themes
+- ⚠️ **Technique Approach Menus:** Agents auto-select approach — MUST HALT and wait for user to choose 1-4
 
 ## Critical Rules
 
@@ -34,8 +48,11 @@ The workflow uses step-file architecture and handles:
 - NEVER auto-proceed past WAIT points — stop and wait for user input
 - ALWAYS read each step file completely before taking action
 - Keep the user in GENERATIVE EXPLORATION mode as long as possible
-- Shift creative domain every 10 ideas to combat sequential bias
+- Shift creative domain every 10 ideas to combat sequential bias (Anti-Bias Protocol)
 - Aim for 100+ ideas before organizing — the magic happens in ideas 50-100
+- NEVER suggest organization until user explicitly requests it OR 100+ ideas AND 45+ minutes
+- Default is to KEEP EXPLORING — only move to organization when user explicitly requests it
+- Use IDEA FORMAT TEMPLATE: [Category #X]: Title / Concept / Novelty
 
 ## What's Next
 

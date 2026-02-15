@@ -4,9 +4,20 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
-import { AlertCircle, Monitor, LogIn } from "lucide-react";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import { AlertCircle, Monitor, LogIn, Store, Briefcase, Shield } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useForm } from "react-hook-form";
@@ -21,6 +32,12 @@ const loginSchema = z.object({
 
 type LoginFormValues = z.infer<typeof loginSchema>;
 
+interface DevBrand {
+  id: string;
+  name: string;
+  displayName: string | null;
+}
+
 export default function LoginPage() {
   const { isAuthenticated, isLoading } = useAuth();
   const [, setLocation] = useLocation();
@@ -28,10 +45,22 @@ export default function LoginPage() {
   const error = params.get("error");
   const expired = params.get("expired");
   const [loginError, setLoginError] = useState<string | null>(null);
+  const [selectedBrandId, setSelectedBrandId] = useState<string>("");
 
   const { data: devStatus } = useQuery<{ devMode: boolean }>({
     queryKey: ["/api/auth/dev-enabled"],
   });
+
+  const { data: devBrands } = useQuery<DevBrand[]>({
+    queryKey: ["/api/auth/dev-brands"],
+    enabled: !!devStatus?.devMode,
+  });
+
+  useEffect(() => {
+    if (devBrands && devBrands.length > 0 && !selectedBrandId) {
+      setSelectedBrandId(devBrands[0].id);
+    }
+  }, [devBrands, selectedBrandId]);
 
   const form = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
@@ -58,8 +87,8 @@ export default function LoginPage() {
   });
 
   const devLoginMutation = useMutation({
-    mutationFn: async () => {
-      const res = await apiRequest("POST", "/api/auth/dev-login");
+    mutationFn: async (body?: { role: string; brandId?: string }) => {
+      const res = await apiRequest("POST", "/api/auth/dev-login", body || undefined);
       return res.json();
     },
     onSuccess: () => {
@@ -80,6 +109,9 @@ export default function LoginPage() {
       </div>
     );
   }
+
+  const hasBrands = devBrands && devBrands.length > 0;
+  const brandButtonsDisabled = !hasBrands;
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-background p-4">
@@ -119,19 +151,122 @@ export default function LoginPage() {
           )}
 
           {devStatus?.devMode ? (
-            <>
-              <Button
-                onClick={() => devLoginMutation.mutate()}
-                disabled={devLoginMutation.isPending}
-                data-testid="button-dev-login"
-              >
-                <Monitor className="h-4 w-4 mr-2" />
-                {devLoginMutation.isPending ? "Signing in..." : "Dev Login (Admin)"}
-              </Button>
-              <p className="text-xs text-center text-muted-foreground">
-                Development mode — Google OAuth not configured
+            <div className="flex flex-col gap-3" data-testid="section-dev-mode">
+              <p className="text-xs font-medium text-muted-foreground text-center uppercase tracking-wide">
+                Development Mode
               </p>
-            </>
+
+              {devBrands && devBrands.length > 0 && (
+                <Select
+                  value={selectedBrandId}
+                  onValueChange={setSelectedBrandId}
+                  data-testid="select-dev-brand"
+                >
+                  <SelectTrigger data-testid="select-dev-brand-trigger">
+                    <SelectValue placeholder="Select a brand" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {devBrands.map((brand) => (
+                      <SelectItem
+                        key={brand.id}
+                        value={brand.id}
+                        data-testid={`select-dev-brand-option-${brand.id}`}
+                      >
+                        {brand.displayName || brand.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
+
+              <div className="flex flex-col gap-2">
+                <Button
+                  onClick={() => devLoginMutation.mutate(undefined)}
+                  disabled={devLoginMutation.isPending}
+                  variant="outline"
+                  data-testid="button-dev-login-admin"
+                >
+                  <Shield className="h-4 w-4 mr-2" />
+                  {devLoginMutation.isPending ? "Signing in..." : "Dev Login (Admin)"}
+                </Button>
+
+                {brandButtonsDisabled ? (
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <span className="w-full" tabIndex={0}>
+                        <Button
+                          disabled
+                          variant="outline"
+                          className="w-full"
+                          data-testid="button-dev-login-franchisee"
+                        >
+                          <Store className="h-4 w-4 mr-2" />
+                          Dev Login (Franchisee)
+                        </Button>
+                      </span>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>Create a brand first</p>
+                    </TooltipContent>
+                  </Tooltip>
+                ) : (
+                  <Button
+                    onClick={() =>
+                      devLoginMutation.mutate({
+                        role: "franchisee",
+                        brandId: selectedBrandId,
+                      })
+                    }
+                    disabled={devLoginMutation.isPending}
+                    variant="outline"
+                    data-testid="button-dev-login-franchisee"
+                  >
+                    <Store className="h-4 w-4 mr-2" />
+                    {devLoginMutation.isPending ? "Signing in..." : "Dev Login (Franchisee)"}
+                  </Button>
+                )}
+
+                {brandButtonsDisabled ? (
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <span className="w-full" tabIndex={0}>
+                        <Button
+                          disabled
+                          variant="outline"
+                          className="w-full"
+                          data-testid="button-dev-login-franchisor"
+                        >
+                          <Briefcase className="h-4 w-4 mr-2" />
+                          Dev Login (Franchisor)
+                        </Button>
+                      </span>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>Create a brand first</p>
+                    </TooltipContent>
+                  </Tooltip>
+                ) : (
+                  <Button
+                    onClick={() =>
+                      devLoginMutation.mutate({
+                        role: "franchisor",
+                        brandId: selectedBrandId,
+                      })
+                    }
+                    disabled={devLoginMutation.isPending}
+                    variant="outline"
+                    data-testid="button-dev-login-franchisor"
+                  >
+                    <Briefcase className="h-4 w-4 mr-2" />
+                    {devLoginMutation.isPending ? "Signing in..." : "Dev Login (Franchisor)"}
+                  </Button>
+                )}
+              </div>
+
+              <p className="text-xs text-center text-muted-foreground">
+                Google OAuth not configured
+              </p>
+            </div>
           ) : (
             <>
               <Button

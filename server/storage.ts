@@ -100,6 +100,13 @@ export interface IStorage {
   createDemoPlan(userId: string, brandId: string, brand: import("@shared/schema").Brand): Promise<Plan>;
   resetDemoPlan(planId: string, brandId: string): Promise<Plan | undefined>;
 
+  upsertDevUser(params: {
+    role: "franchisee" | "franchisor";
+    brandSlug: string;
+    brandId: string;
+    brandDisplayName: string;
+  }): Promise<User>;
+
   createBrandValidationRun(run: InsertBrandValidationRun): Promise<BrandValidationRun>;
   getBrandValidationRuns(brandId: string): Promise<BrandValidationRun[]>;
   getBrandValidationRun(runId: string): Promise<BrandValidationRun | undefined>;
@@ -542,6 +549,31 @@ export class DatabaseStorage implements IStorage {
   async getBrandValidationRun(runId: string): Promise<BrandValidationRun | undefined> {
     const [run] = await db.select().from(brandValidationRuns).where(eq(brandValidationRuns.id, runId)).limit(1);
     return run;
+  }
+
+  async upsertDevUser(params: {
+    role: "franchisee" | "franchisor";
+    brandSlug: string;
+    brandId: string;
+    brandDisplayName: string;
+  }): Promise<User> {
+    const email = `dev-${params.role}-${params.brandSlug}@katgroupinc.com`;
+    const existing = await this.getUserByEmail(email);
+    if (existing) {
+      return existing;
+    }
+    const displayName = `Dev ${params.role === "franchisee" ? "Franchisee" : "Franchisor"} (${params.brandDisplayName})`;
+    const [created] = await db
+      .insert(users)
+      .values({
+        email,
+        role: params.role,
+        brandId: params.brandId,
+        displayName,
+        onboardingCompleted: true,
+      })
+      .returning();
+    return created;
   }
 }
 

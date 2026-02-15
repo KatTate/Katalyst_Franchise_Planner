@@ -18,11 +18,23 @@ When this skill is triggered, load and follow the workflow directly:
 
 Read fully and follow: `_bmad/bmm/workflows/2-plan-workflows/create-prd/workflow-edit-prd.md`
 
-The workflow uses step-file architecture and handles:
+The workflow uses step-file architecture with steps in `steps-e/` directory.
 - Configuration loading from `_bmad/bmm/config.yaml`
 - PRD file discovery and loading
-- Edit steps for review, targeted editing, and completion
 - Output: updated PRD file
+
+## Workflow Steps (4 Steps + 1 Conditional Branch)
+
+1. **step-e-01-discovery** — Discover and load the PRD to edit, detect format (BMAD standard vs legacy)
+   - ↳ **step-e-01b-legacy-conversion** — Legacy conversion handler (conditional: auto-loaded if non-BMAD PRD detected)
+2. **step-e-02-review** — Review the PRD and identify areas for improvement
+3. **step-e-03-edit** — Apply targeted edits based on review findings
+4. **step-e-04-complete** — Complete edit workflow, offer validation or additional edits
+
+## Commonly Missed Steps
+
+- ⚠️ **step-e-04-complete** — Agents may consider editing "done" after step e-03 edits are applied without presenting the completion summary and validation options. This step offers seamless integration with the validation workflow.
+- ⚠️ **step-e-01-discovery format detection** — The PRD format detection (BMAD standard vs legacy) determines workflow routing. Skipping proper detection can lead to incorrect editing approaches.
 
 ## Critical Rules
 
@@ -30,6 +42,8 @@ The workflow uses step-file architecture and handles:
 - NEVER auto-proceed past WAIT points — stop and wait for user input
 - ALWAYS read each step file completely before taking action
 - ALWAYS follow step-file architecture: load one step at a time, never look ahead
+- ALWAYS halt at menus and wait for user selection
+- The edit-validate cycle is iterative — user can edit, validate, edit again
 
 ## What's Next
 

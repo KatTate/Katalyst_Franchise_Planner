@@ -18,11 +18,34 @@ When this skill is triggered, load and follow the workflow directly:
 
 Read fully and follow: `_bmad/bmm/workflows/2-plan-workflows/create-prd/workflow-validate-prd.md`
 
-The workflow uses step-file architecture and handles:
+The workflow uses step-file architecture with steps in `steps-v/` directory.
 - Configuration loading from `_bmad/bmm/config.yaml`
 - PRD file discovery and loading
-- Validation steps for completeness, clarity, and cohesion
-- Output validation report
+- Output: validation report
+
+## Workflow Steps (13 Steps + 1 Conditional Branch)
+
+1. **step-v-01-discovery** — Discover and load the PRD to validate, detect format
+2. **step-v-02-format-detection** — Format classification and structure analysis
+   - ↳ **step-v-02b-parity-check** — Parity check handler (conditional: auto-loaded for variant/legacy formats)
+3. **step-v-03-density-validation** — Information density validation (wordiness, filler, conciseness)
+4. **step-v-04-brief-coverage-validation** — Product brief coverage validation
+5. **step-v-05-measurability-validation** — Measurability validation (quantified success criteria)
+6. **step-v-06-traceability-validation** — Traceability validation (requirements linkage)
+7. **step-v-07-implementation-leakage-validation** — Implementation leakage detection (technology in requirements)
+8. **step-v-08-domain-compliance-validation** — Domain compliance validation
+9. **step-v-09-project-type-validation** — Project-type compliance validation
+10. **step-v-10-smart-validation** — SMART requirements validation
+11. **step-v-11-holistic-quality-validation** — Holistic quality assessment and rating
+12. **step-v-12-completeness-validation** — Completeness validation
+13. **step-v-13-report-complete** — Final report compilation, summary, and next steps
+
+## Commonly Missed Steps
+
+- ⚠️ **step-v-07-implementation-leakage** — Agents may skip leakage detection since it requires checking FRs/NFRs for technology-specific language. This is a critical quality gate.
+- ⚠️ **step-v-11-holistic-quality** — The holistic assessment provides the overall quality rating. Skipping it means no overall score.
+- ⚠️ **step-v-13-report-complete** — Final report step that compiles all findings and presents actionable options (edit, review, fix). Must not be skipped.
+- ⚠️ **Each validation step must be executed sequentially** — agents may try to batch multiple validations together. Each step must complete fully before the next begins.
 
 ## Critical Rules
 
@@ -30,7 +53,9 @@ The workflow uses step-file architecture and handles:
 - NEVER auto-proceed past WAIT points — stop and wait for user input
 - ALWAYS read each step file completely before taking action
 - ALWAYS follow step-file architecture: load one step at a time, never look ahead
+- ALWAYS halt at menus and wait for user selection
 - Recommend using a different high-quality LLM for validation if available
+- Each validation step must produce findings independently — do not batch
 
 ## What's Next
 

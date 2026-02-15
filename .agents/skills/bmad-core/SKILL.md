@@ -18,8 +18,11 @@ When the user wants to get started or meet the BMad Master:
 
 Read fully and follow: `_bmad/core/agents/bmad-master.md`
 
-This loads the BMad Master persona who greets the user, explains the system,
-and presents the main menu of available workflows and tasks.
+This loads the BMad Master persona who:
+- Loads config from `_bmad/core/config.yaml`
+- Greets the user and explains the system
+- Presents the main menu: List Tasks (LT), List Workflows (LW), Party Mode (PM), Chat (CH)
+- Waits for user selection before executing anything
 
 ## What's Next / Help
 
@@ -40,6 +43,7 @@ the trigger phrase. All BMAD workflows have their own dedicated skills:
 
 | Code | Say | Workflow |
 |------|-----|----------|
+| AB | "assess project" | Brownfield project assessment |
 | BP | "brainstorm" | Brainstorming session |
 | MR | "market research" | Market research |
 | DR | "domain research" | Domain research |
@@ -66,6 +70,16 @@ the trigger phrase. All BMAD workflows have their own dedicated skills:
 | AR | "adversarial review" | Critical document review |
 | GPC | "generate project context" | Project context scan |
 | DP | "document project" | Project documentation |
+| TW | "tech writer" | Technical writing agent |
+
+## Commonly Missed Items
+
+- ⚠️ **Config Loading (BMad Master):** Agents skip loading `_bmad/core/config.yaml` during activation — MUST load config BEFORE any output to resolve user_name and output paths
+- ⚠️ **Help Artifact Scanning:** When running help, agents give generic advice instead of scanning `_bmad-output/` for existing artifacts — MUST check what's already been produced to give accurate recommendations
+- ⚠️ **Auto-Executing Menu Items:** BMad Master agents auto-execute menu items on activation — MUST present menu and WAIT for user selection
+- ⚠️ **Phase Ordering in Help:** Agents recommend random workflows instead of following phase/sequence ordering from `bmad-help.csv` — MUST respect required workflow gates (e.g., PRD before Architecture)
+- ⚠️ **Routing to Skills:** Agents try to execute workflows inline instead of routing to the correct trigger phrase — MUST guide the user to say the trigger phrase so the dedicated skill activates
+- ⚠️ **New Chat Recommendation:** Agents let users continue in the same chat for context-heavy workflows — MUST recommend starting a new chat for major workflows (PRD, architecture, epics)
 
 ## Critical Rules
 
@@ -73,3 +87,6 @@ the trigger phrase. All BMAD workflows have their own dedicated skills:
 - When a route matches, load the referenced file — do not answer in your own words
 - If unsure whether a route matches, ask: "Would you like me to run the [workflow] for that?"
 - Recommend starting a new chat for context-heavy workflows (PRD, architecture, epics)
+- NEVER auto-execute menu items — wait for user selection
+- ALWAYS load config.yaml before producing any output
+- For help requests, ALWAYS scan `_bmad-output/` to determine project state before recommending

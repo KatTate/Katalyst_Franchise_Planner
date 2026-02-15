@@ -27,6 +27,22 @@ The workflow handles:
 - Conversation orchestration with 2-3 relevant agents per topic
 - Graceful exit handling
 
+## Workflow Steps (3 Steps + Mode Variant)
+
+1. **Step 1: Agent Loading & Initialization** — Load agent manifest CSV, extract complete agent data, build roster with merged personalities, present party activation, mode selection
+2. **Step 2: Discussion Orchestration** — Two variants based on mode selection:
+   - **Classic Mode** (`step-02-discussion-orchestration.md`): Single-agent role-play — orchestrator voices all personas in one response
+   - **Sub-Agent Mode** (`step-02-subagent-orchestration.md`): Each persona runs as independent sub-agent with separate reasoning
+3. **Step 3: Graceful Exit** — Agent farewells in character, session highlight summary, workflow completion
+
+## Commonly Missed Steps
+
+- ⚠️ **Step 1 Mode Selection:** Agents skip offering Classic vs Sub-Agent mode choice — MUST present mode selection and HALT
+- ⚠️ **Step 2 Agent Selection:** Agents use the same agents every round — MUST rotate agent participation for diverse perspectives
+- ⚠️ **Step 2 Direct Questions:** Agents continue responding after an agent asks the user a direct question — MUST HALT immediately and wait for user response
+- ⚠️ **Step 2 Character Consistency:** Agents break character or use generic voices — MUST use each agent's documented communicationStyle from manifest
+- ⚠️ **Step 3 Graceful Exit:** Agents exit abruptly — MUST generate in-character farewells and session summary
+
 ## Critical Rules
 
 - NEVER skip the mode selection step — let the user choose Classic or Sub-Agent mode
@@ -34,8 +50,10 @@ The workflow handles:
 - ALWAYS select 2-3 most relevant agents per topic based on expertise
 - ALWAYS rotate agent participation for diverse perspectives
 - ALWAYS halt and wait when an agent asks the user a direct question
+- ALWAYS end response round after a direct question to user — do not continue
 - NEVER break character for any agent during the discussion
-- Exit triggers: "exit", "goodbye", "end party", "quit"
+- NEVER exit without graceful agent farewells (Step 3)
+- Exit triggers: "*exit", "goodbye", "end party", "quit"
 
 ## When to Use
 

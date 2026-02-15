@@ -180,12 +180,14 @@
       <action>Update File List in story Dev Agent Record if files changed</action>
       <action>Add review summary to Dev Agent Record → Completion Notes</action>
       <action>Set {{fixed_count}} = number of issues fixed</action>
+      <critical>🛑 STOP AND READ: You have finished fixing issues but you are NOT done with the workflow. Step 5 (update story status and sync sprint tracking) is MANDATORY and MUST be executed next. DO NOT present results to the user, DO NOT end the conversation, DO NOT consider this workflow complete until Step 5 is fully executed. Proceed to Step 5 NOW.</critical>
     </check>
 
     <check if="user chooses 2">
       <action>Append a "Code Review Notes" section to the story file with all findings</action>
       <action>Format each finding with severity, description, file reference, and suggested fix</action>
       <action>Set {{action_count}} = number of review notes added</action>
+      <critical>🛑 You are NOT done. Step 5 (update story status and sync sprint tracking) is MANDATORY. Proceed to Step 5 NOW.</critical>
     </check>
 
     <check if="user chooses 3">
@@ -195,6 +197,7 @@
   </step>
 
   <step n="5" goal="Update story status and sync sprint tracking">
+    <critical>🛑 THIS STEP IS MANDATORY — The workflow is NOT complete without it. You MUST execute this step regardless of what happened in Step 4. If you fixed issues, if you added review notes, or if the user examined details — this step MUST run before the workflow ends.</critical>
     <!-- Determine new status based on review outcome -->
     <check if="all HIGH issues resolved AND all ACs verified as satisfied">
       <action>Set {{new_status}} = "done"</action>

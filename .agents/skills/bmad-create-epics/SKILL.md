@@ -20,14 +20,23 @@ When this skill is triggered, load and follow the workflow directly:
 
 Read fully and follow: `_bmad/bmm/workflows/3-solutioning/create-epics-and-stories/workflow.md`
 
-The workflow uses step-file architecture and handles:
+The workflow uses step-file architecture with steps in `steps/` directory.
 - Configuration loading from `_bmad/bmm/config.yaml`
-- Step 1: Validate prerequisites (PRD + Architecture required, UX recommended)
-- Step 2: Design epics
-- Step 3: Create stories with acceptance criteria
-- Step 4: Final validation
-- Template application from the workflow's templates directory
+- Template: `_bmad/bmm/workflows/3-solutioning/create-epics-and-stories/templates/epics-template.md`
 - Output to planning artifacts directory
+
+## Workflow Steps (4 Total)
+
+1. **step-01-validate-prerequisites** — Validate required documents exist (PRD + Architecture required, UX recommended), extract all FRs, NFRs, and additional requirements
+2. **step-02-design-epics** — Design epic structure organized by user value, establish dependencies and ordering
+3. **step-03-create-stories** — Create detailed stories with acceptance criteria, technical context, and FR traceability
+4. **step-04-final-validation** — Validate complete FR coverage, architecture compliance, story dependencies, and epic independence
+
+## Commonly Missed Steps
+
+- ⚠️ **step-04-final-validation** — Agents may consider stories "done" after step-03 creation without running the validation checks. This step catches missing FR coverage, forward dependencies, and incorrect epic ordering.
+- ⚠️ **step-01 requirements extraction** — Agents may rush to epic design without fully extracting ALL FRs, NFRs, and additional requirements from Architecture/UX documents. Complete extraction is critical.
+- ⚠️ **step-04 dependency validation** — Within final validation, the dependency check (no forward dependencies, each epic independently valuable) is commonly skipped but prevents implementation blockers.
 
 ## Critical Rules
 
@@ -37,6 +46,9 @@ The workflow uses step-file architecture and handles:
 - ALWAYS follow step-file architecture: load one step at a time, never look ahead
 - ALWAYS update frontmatter stepsCompleted before loading next step
 - PRD and Architecture documents MUST exist before starting this workflow
+- Every FR must be covered by at least one story — no gaps allowed
+- Stories must not have forward dependencies — only depend on PREVIOUS stories
+- Database tables/entities created only when first needed, not all upfront
 
 ## What's Next
 
