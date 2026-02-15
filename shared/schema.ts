@@ -173,8 +173,8 @@ export type Invitation = typeof invitations.$inferSelect;
 
 export const plans = pgTable("plans", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  userId: varchar("user_id").references(() => users.id).notNull(),
-  brandId: varchar("brand_id").references(() => brands.id).notNull(),
+  userId: varchar("user_id").references(() => users.id, { onDelete: "cascade" }).notNull(),
+  brandId: varchar("brand_id").references(() => brands.id, { onDelete: "cascade" }).notNull(),
   name: text("name").notNull(),
   financialInputs: jsonb("financial_inputs").$type<import("./financial-engine").PlanFinancialInputs>(),
   startupCosts: jsonb("startup_costs").$type<import("./financial-engine").StartupCostLineItem[]>(),

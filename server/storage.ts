@@ -321,7 +321,7 @@ export class DatabaseStorage implements IStorage {
   async updatePlan(id: string, data: UpdatePlan): Promise<Plan> {
     const [updated] = await db
       .update(plans)
-      .set({ ...data, updatedAt: new Date() })
+      .set({ ...data, updatedAt: new Date() } as any)
       .where(eq(plans.id, id))
       .returning();
     return updated;

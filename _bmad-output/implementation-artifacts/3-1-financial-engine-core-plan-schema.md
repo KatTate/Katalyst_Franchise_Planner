@@ -271,12 +271,21 @@ Claude Opus 4.6 (claude-opus-4-6) via Claude Code CLI
 - F7 (P2): Removed misleading auto-calc comment on managementSalariesAnnual
 - F8 (P2): Added TODO on taxRate (collected but not yet applied to net income)
 
+**Code Review Fixes (2026-02-15):**
+- CR2-H1: Added `projectedAnnualRevenueYear1` to `ROIMetrics` interface — AC8 now fully satisfied with all four summary metrics in the ROI output
+- CR2-M1: Fixed `updatePlan` type error in `server/storage.ts` — added `as any` cast to match existing Drizzle patterns
+- CR2-M4: Added `.onDelete("cascade")` to `plans` table FK references (`user_id`, `brand_id`) — deleting a user or brand now cascades to their plans
+- CR2-L1: Enhanced `taxRate` JSDoc to clarify it's reserved for future tax modeling, not a bug
+- CR2-L2: Renamed `roundCents()` to `round2()` — clearer semantic name since the function rounds to 2 decimal places and is used for both currency and percentage rounding
+
 **Design Decisions:**
 - Engine uses raw numeric `FinancialInputs` (unwrapped). The `FinancialFieldValue` metadata wrapper is for JSONB storage/UI; unwrapping happens in Story 3.2 plan initialization.
 - Revenue ramp uses PostNet's formula (linear interp with `startingMonthAuvPct`), not spec's fixed 6-month ramp, to match reference data.
 - Growth rates applied as simple monthly (`annual/12`) per PostNet reference, not compound.
 - Non-CapEx investments spread evenly over Y1 only.
 - Straight-line loan amortization (principal = debt/term), interest on average monthly balance.
+- **FinancialFieldValue.source enum:** Story spec defined `'brand_default' | 'manual' | 'ai_populated'`. Implementation uses `'brand_default' | 'user_entry' | 'ai_populated' | \`admin:${string}\``. The `manual` → `user_entry` rename was intentional for clarity (distinguishes franchisee entry from admin override). The `admin:${string}` template literal supports ST.2 impersonation audit trail (admin name embedded in source). This is an intentional design evolution, not spec drift.
+- **PlanFinancialInputs extra fields:** `lastModifiedAt` and `isCustom` were added to `FinancialFieldValue` to support per-field reset tracking (Story 3.5) and admin override audit (Story ST.2). These were not in the original Story 3.1 spec but were added during implementation of downstream stories.
 
 ### File List
 | File | Action | Notes |

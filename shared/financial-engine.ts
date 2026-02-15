@@ -122,7 +122,10 @@ export interface FinancialInputs {
   };
   /** Annual owner distributions in cents [Y1..Y5] */
   distributions: [number, number, number, number, number];
-  /** Corporation tax rate (decimal, e.g. 0.21 = 21%) — TODO: apply to compute after-tax net income */
+  /** Corporation tax rate (decimal, e.g. 0.21 = 21%).
+   *  Reserved for future tax modeling. Currently collected for downstream
+   *  consumers but NOT applied to engine calculations — all P&L metrics
+   *  are pre-tax, matching the PostNet reference model convention. */
   taxRate: number;
 }
 
@@ -228,6 +231,7 @@ export interface ROIMetrics {
   /** Month number (1-60) when cumulative cash flow turns positive, or null if never */
   breakEvenMonth: number | null;
   totalStartupInvestment: number;
+  projectedAnnualRevenueYear1: number;
   fiveYearCumulativeCashFlow: number;
   fiveYearROIPct: number;
 }
@@ -249,10 +253,11 @@ export interface EngineOutput {
 
 // ─── Helpers ────────────────────────────────────────────────────────────
 
-/** Round to nearest cent (values are in cents, rounds to 2 sub-cent decimal places
- *  to minimize cumulative rounding error across 60-month projections).
+/** Round to 2 decimal places. For currency values (stored in cents), this rounds
+ *  to sub-cent precision to minimize cumulative rounding error across 60-month
+ *  projections. Also used for percentage rounding (e.g. grossProfitPct).
  *  Normalizes -0 to 0. */
-function roundCents(value: number): number {
+function round2(value: number): number {
   const result = Math.round(value * CENTS_PRECISION) / CENTS_PRECISION;
   return result === 0 ? 0 : result;
 }
@@ -290,15 +295,15 @@ export function calculateProjections(input: EngineInput): EngineOutput {
   const totalStartupInvestment = capexTotal + nonCapexTotal + workingCapital;
 
   // ── Step 2: Financing ─────────────────────────────────────────────
-  const debtAmount = roundCents(fi.financing.totalInvestment * (1 - fi.financing.equityPct));
-  const equityAmount = roundCents(fi.financing.totalInvestment * fi.financing.equityPct);
+  const debtAmount = round2(fi.financing.totalInvestment * (1 - fi.financing.equityPct));
+  const equityAmount = round2(fi.financing.totalInvestment * fi.financing.equityPct);
   const monthlyPrincipal = fi.financing.termMonths > 0
-    ? roundCents(debtAmount / fi.financing.termMonths)
+    ? round2(debtAmount / fi.financing.termMonths)
     : 0;
 
   // ── Step 3: Depreciation ──────────────────────────────────────────
-  const annualDepreciation = roundCents(capexTotal * fi.startup.depreciationRate);
-  const monthlyDepreciation = roundCents(annualDepreciation / MONTHS_PER_YEAR);
+  const annualDepreciation = round2(capexTotal * fi.startup.depreciationRate);
+  const monthlyDepreciation = round2(annualDepreciation / MONTHS_PER_YEAR);
   const depreciationYears = fi.startup.depreciationRate > 0
     ? Math.round(1 / fi.startup.depreciationRate)
     : 0;
@@ -327,45 +332,45 @@ export function calculateProjections(input: EngineInput): EngineOutput {
       } else {
         auvPct = m / fi.revenue.monthsToReachAuv;
       }
-      revenue = roundCents(auvPct * monthlyAuv);
+      revenue = round2(auvPct * monthlyAuv);
     } else {
       // Post-ramp: compound monthly growth
       const growthRate = fi.revenue.growthRates[yi];
       const monthlyGrowthRate = growthRate / MONTHS_PER_YEAR;
-      revenue = roundCents(prevRevenue * (1 + monthlyGrowthRate));
+      revenue = round2(prevRevenue * (1 + monthlyGrowthRate));
       auvPct = monthlyAuv > 0 ? revenue / monthlyAuv : 0;
     }
 
     // ── COGS ──────────────────────────────────────────────────────
-    const materialsCogs = roundCents(-revenue * fi.operatingCosts.cogsPct[yi]);
-    const royalties = roundCents(-revenue * fi.operatingCosts.royaltyPct[yi]);
-    const adFund = roundCents(-revenue * fi.operatingCosts.adFundPct[yi]);
-    const totalCogs = roundCents(materialsCogs + royalties + adFund);
-    const grossProfit = roundCents(revenue + totalCogs); // totalCogs is negative
+    const materialsCogs = round2(-revenue * fi.operatingCosts.cogsPct[yi]);
+    const royalties = round2(-revenue * fi.operatingCosts.royaltyPct[yi]);
+    const adFund = round2(-revenue * fi.operatingCosts.adFundPct[yi]);
+    const totalCogs = round2(materialsCogs + royalties + adFund);
+    const grossProfit = round2(revenue + totalCogs); // totalCogs is negative
 
     // ── Operating Expenses ────────────────────────────────────────
-    const directLabor = roundCents(-revenue * fi.operatingCosts.laborPct[yi]);
-    const contributionMargin = roundCents(grossProfit + directLabor);
+    const directLabor = round2(-revenue * fi.operatingCosts.laborPct[yi]);
+    const contributionMargin = round2(grossProfit + directLabor);
 
-    const facilities = roundCents(-fi.operatingCosts.facilitiesAnnual[yi] / MONTHS_PER_YEAR);
-    const marketingExp = roundCents(-revenue * fi.operatingCosts.marketingPct[yi]);
-    const managementSalaries = roundCents(-fi.operatingCosts.managementSalariesAnnual[yi] / MONTHS_PER_YEAR);
+    const facilities = round2(-fi.operatingCosts.facilitiesAnnual[yi] / MONTHS_PER_YEAR);
+    const marketingExp = round2(-revenue * fi.operatingCosts.marketingPct[yi]);
+    const managementSalaries = round2(-fi.operatingCosts.managementSalariesAnnual[yi] / MONTHS_PER_YEAR);
     const payrollBase = Math.abs(directLabor) + Math.abs(managementSalaries);
-    const payrollTaxBenefits = roundCents(-payrollBase * fi.operatingCosts.payrollTaxPct[yi]);
-    const otherOpex = roundCents(-revenue * fi.operatingCosts.otherOpexPct[yi]);
+    const payrollTaxBenefits = round2(-payrollBase * fi.operatingCosts.payrollTaxPct[yi]);
+    const otherOpex = round2(-revenue * fi.operatingCosts.otherOpexPct[yi]);
 
     // Non-CapEx spread over Year 1 only
     const nonCapexMonthly = (yi === 0)
-      ? roundCents(-nonCapexTotal / MONTHS_PER_YEAR)
+      ? round2(-nonCapexTotal / MONTHS_PER_YEAR)
       : 0;
 
-    const totalOpex = roundCents(
+    const totalOpex = round2(
       facilities + marketingExp + managementSalaries +
       payrollTaxBenefits + otherOpex + nonCapexMonthly
     );
 
     // ── EBITDA ────────────────────────────────────────────────────
-    const ebitda = roundCents(contributionMargin + totalOpex);
+    const ebitda = round2(contributionMargin + totalOpex);
 
     // ── Depreciation ──────────────────────────────────────────────
     const monthInLifespan = m;
@@ -383,21 +388,21 @@ export function calculateProjections(input: EngineInput): EngineOutput {
     if (loanBalance > 0 && fi.financing.termMonths > 0) {
       principalPayment = Math.min(monthlyPrincipal, loanBalance);
       const closingBeforePayment = loanOpening - principalPayment;
-      interestExpense = roundCents(
+      interestExpense = round2(
         -((loanOpening + closingBeforePayment) / 2) * fi.financing.interestRate / MONTHS_PER_YEAR
       );
-      loanBalance = roundCents(closingBeforePayment);
+      loanBalance = round2(closingBeforePayment);
     }
 
     // ── Pre-Tax Income ────────────────────────────────────────────
-    const preTaxIncome = roundCents(ebitda + depThisMonth + interestExpense);
+    const preTaxIncome = round2(ebitda + depThisMonth + interestExpense);
 
     // ── Balance Sheet Items ───────────────────────────────────────
     const dim = daysInMonth();
-    const accountsReceivable = roundCents((revenue / dim) * fi.workingCapitalAssumptions.arDays);
-    const inventoryVal = roundCents((Math.abs(materialsCogs) / dim) * fi.workingCapitalAssumptions.inventoryDays);
-    const accountsPayable = roundCents((Math.abs(materialsCogs) / dim) * fi.workingCapitalAssumptions.apDays);
-    const netFixedAssets = roundCents(capexTotal - accumulatedDepreciation);
+    const accountsReceivable = round2((revenue / dim) * fi.workingCapitalAssumptions.arDays);
+    const inventoryVal = round2((Math.abs(materialsCogs) / dim) * fi.workingCapitalAssumptions.inventoryDays);
+    const accountsPayable = round2((Math.abs(materialsCogs) / dim) * fi.workingCapitalAssumptions.apDays);
+    const netFixedAssets = round2(capexTotal - accumulatedDepreciation);
 
     // ── Operating Cash Flow ───────────────────────────────────────
     const prevAR = m > 1 ? monthly[m - 2].accountsReceivable : 0;
@@ -408,7 +413,7 @@ export function calculateProjections(input: EngineInput): EngineOutput {
     const changeInv = -(inventoryVal - prevInv);
     const changeAP = accountsPayable - prevAP;
 
-    const operatingCashFlow = roundCents(
+    const operatingCashFlow = round2(
       preTaxIncome + Math.abs(depThisMonth) + changeAR + changeInv + changeAP
     );
 
@@ -461,14 +466,14 @@ export function calculateProjections(input: EngineInput): EngineOutput {
 
     const revenue = yearMonths.reduce((s, mp) => s + mp.revenue, 0);
     const totalCogs = yearMonths.reduce((s, mp) => s + mp.totalCogs, 0);
-    const grossProfit = roundCents(revenue + totalCogs);
+    const grossProfit = round2(revenue + totalCogs);
     const directLabor = yearMonths.reduce((s, mp) => s + mp.directLabor, 0);
-    const contributionMargin = roundCents(grossProfit + directLabor);
+    const contributionMargin = round2(grossProfit + directLabor);
     const totalOpex = yearMonths.reduce((s, mp) => s + mp.totalOpex, 0);
-    const ebitda = roundCents(contributionMargin + totalOpex);
+    const ebitda = round2(contributionMargin + totalOpex);
     const depreciation = yearMonths.reduce((s, mp) => s + mp.depreciation, 0);
     const interest = yearMonths.reduce((s, mp) => s + mp.interestExpense, 0);
-    const preTaxIncome = roundCents(ebitda + depreciation + interest);
+    const preTaxIncome = round2(ebitda + depreciation + interest);
     const opCashFlow = yearMonths.reduce((s, mp) => s + mp.operatingCashFlow, 0);
 
     // Financing cash flows for the year
@@ -480,43 +485,43 @@ export function calculateProjections(input: EngineInput): EngineOutput {
     const equityIssuance = y === 0 ? equityAmount : 0;
 
     const financingCF = debtDrawdown + debtRepaymentCF + distributions + equityIssuance;
-    const cfBeforeFinancing = roundCents(opCashFlow + capexCF);
-    const netCashFlow = roundCents(cfBeforeFinancing + financingCF);
-    cumulativeCash = roundCents(cumulativeCash + netCashFlow);
+    const cfBeforeFinancing = round2(opCashFlow + capexCF);
+    const netCashFlow = round2(cfBeforeFinancing + financingCF);
+    cumulativeCash = round2(cumulativeCash + netCashFlow);
 
     // Retained earnings
-    cumulativeRetainedEarnings = roundCents(cumulativeRetainedEarnings + preTaxIncome - fi.distributions[y]);
+    cumulativeRetainedEarnings = round2(cumulativeRetainedEarnings + preTaxIncome - fi.distributions[y]);
 
     // Balance sheet
-    const totalCurrentAssets = roundCents(
+    const totalCurrentAssets = round2(
       cumulativeCash + lastMonth.accountsReceivable + lastMonth.inventory
     );
-    const totalAssets = roundCents(totalCurrentAssets + lastMonth.netFixedAssets);
-    const totalLiabilities = roundCents(lastMonth.accountsPayable + lastMonth.loanClosingBalance);
-    const totalEquity = roundCents(equityAmount + cumulativeRetainedEarnings);
+    const totalAssets = round2(totalCurrentAssets + lastMonth.netFixedAssets);
+    const totalLiabilities = round2(lastMonth.accountsPayable + lastMonth.loanClosingBalance);
+    const totalEquity = round2(equityAmount + cumulativeRetainedEarnings);
 
     annualSummaries.push({
       year: y + 1,
-      revenue: roundCents(revenue),
-      totalCogs: roundCents(totalCogs),
-      grossProfit: roundCents(grossProfit),
-      grossProfitPct: revenue !== 0 ? roundCents(grossProfit / revenue) : 0,
-      directLabor: roundCents(directLabor),
-      contributionMargin: roundCents(contributionMargin),
-      contributionMarginPct: revenue !== 0 ? roundCents(contributionMargin / revenue) : 0,
-      totalOpex: roundCents(totalOpex),
-      ebitda: roundCents(ebitda),
-      ebitdaPct: revenue !== 0 ? roundCents(ebitda / revenue) : 0,
-      depreciation: roundCents(depreciation),
-      interestExpense: roundCents(interest),
-      preTaxIncome: roundCents(preTaxIncome),
-      preTaxIncomePct: revenue !== 0 ? roundCents(preTaxIncome / revenue) : 0,
-      totalAssets: roundCents(totalAssets),
-      totalLiabilities: roundCents(totalLiabilities),
-      totalEquity: roundCents(totalEquity),
-      operatingCashFlow: roundCents(opCashFlow),
-      netCashFlow: roundCents(netCashFlow),
-      endingCash: roundCents(cumulativeCash),
+      revenue: round2(revenue),
+      totalCogs: round2(totalCogs),
+      grossProfit: round2(grossProfit),
+      grossProfitPct: revenue !== 0 ? round2(grossProfit / revenue) : 0,
+      directLabor: round2(directLabor),
+      contributionMargin: round2(contributionMargin),
+      contributionMarginPct: revenue !== 0 ? round2(contributionMargin / revenue) : 0,
+      totalOpex: round2(totalOpex),
+      ebitda: round2(ebitda),
+      ebitdaPct: revenue !== 0 ? round2(ebitda / revenue) : 0,
+      depreciation: round2(depreciation),
+      interestExpense: round2(interest),
+      preTaxIncome: round2(preTaxIncome),
+      preTaxIncomePct: revenue !== 0 ? round2(preTaxIncome / revenue) : 0,
+      totalAssets: round2(totalAssets),
+      totalLiabilities: round2(totalLiabilities),
+      totalEquity: round2(totalEquity),
+      operatingCashFlow: round2(opCashFlow),
+      netCashFlow: round2(netCashFlow),
+      endingCash: round2(cumulativeCash),
     });
   }
 
@@ -532,23 +537,24 @@ export function calculateProjections(input: EngineInput): EngineOutput {
     const yearIdx = yearIndex(m + 1);
     const monthlyDistribution = fi.distributions[yearIdx] / MONTHS_PER_YEAR;
     cumulativeNetCash += monthly[m].operatingCashFlow - monthly[m].loanPrincipalPayment - monthlyDistribution;
-    monthly[m].cumulativeNetCashFlow = roundCents(cumulativeNetCash);
+    monthly[m].cumulativeNetCashFlow = round2(cumulativeNetCash);
     if (cumulativeNetCash >= 0 && breakEvenMonth === null) {
       breakEvenMonth = m + 1;
     }
   }
 
-  const fiveYearCumulativeCashFlow = roundCents(
+  const fiveYearCumulativeCashFlow = round2(
     annualSummaries.reduce((s, a) => s + a.netCashFlow, 0)
   );
 
   const fiveYearROIPct = totalStartupInvestment !== 0
-    ? roundCents(fiveYearCumulativeCashFlow / totalStartupInvestment)
+    ? round2(fiveYearCumulativeCashFlow / totalStartupInvestment)
     : 0;
 
   const roiMetrics: ROIMetrics = {
     breakEvenMonth,
-    totalStartupInvestment: roundCents(totalStartupInvestment),
+    totalStartupInvestment: round2(totalStartupInvestment),
+    projectedAnnualRevenueYear1: round2(annualSummaries[0].revenue),
     fiveYearCumulativeCashFlow,
     fiveYearROIPct,
   };
@@ -564,7 +570,7 @@ export function calculateProjections(input: EngineInput): EngineOutput {
       name: `Balance sheet balances (Year ${annual.year})`,
       passed: diff <= tolerance,
       expected: annual.totalAssets,
-      actual: roundCents(annual.totalLiabilities + annual.totalEquity),
+      actual: round2(annual.totalLiabilities + annual.totalEquity),
       tolerance,
     });
   }
@@ -573,12 +579,12 @@ export function calculateProjections(input: EngineInput): EngineOutput {
   if (depreciationYears > 0) {
     const totalDepreciation = monthly.reduce((s, mp) => s + Math.abs(mp.depreciation), 0);
     const expectedDepreciation = capexTotal;
-    const depDiff = Math.abs(roundCents(totalDepreciation) - expectedDepreciation);
+    const depDiff = Math.abs(round2(totalDepreciation) - expectedDepreciation);
     identityChecks.push({
       name: "Total depreciation equals CapEx",
       passed: depDiff <= tolerance,
       expected: expectedDepreciation,
-      actual: roundCents(totalDepreciation),
+      actual: round2(totalDepreciation),
       tolerance,
     });
   }
@@ -615,8 +621,8 @@ export function calculateProjections(input: EngineInput): EngineOutput {
     const changeInv = -(lastMonthOfYear.inventory - priorInv);
     const changeAP = lastMonthOfYear.accountsPayable - priorAP;
 
-    const expectedOCF = roundCents(netIncome + dep + changeAR + changeInv + changeAP);
-    const actualOCF = roundCents(annual.operatingCashFlow);
+    const expectedOCF = round2(netIncome + dep + changeAR + changeInv + changeAP);
+    const actualOCF = round2(annual.operatingCashFlow);
     const diff = Math.abs(expectedOCF - actualOCF);
 
     identityChecks.push({
