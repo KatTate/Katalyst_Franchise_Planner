@@ -1,6 +1,6 @@
 # Story 4.2: Forms Mode — Section-Based Input
 
-Status: in-progress
+Status: review
 
 ## Story
 
@@ -210,8 +210,24 @@ The Forms mode replaces the current placeholder card in `InputPanel` when the mo
 
 ### Agent Model Used
 
+Claude 4.6 Opus (Replit Agent)
+
 ### Completion Notes
+
+Implemented Forms mode as a section-based input interface within InputPanel. Extracted shared field metadata (FIELD_METADATA, CATEGORY_ORDER, CATEGORY_LABELS, format/parse helpers) into `client/src/lib/field-metadata.ts` to eliminate duplication between FormsMode and FinancialInputEditor. FormsMode component provides: plan completeness dashboard (sticky, shows per-section edit counts), four collapsible sections driven by metadata, inline click-to-edit fields with format-appropriate display, SourceBadge integration for attribution, reset-to-default per field, metadata-on-demand panels on focus, and a "Start Here" indicator for new plans. State shared across all input modes via `usePlan` hook.
 
 ### File List
 
+| File | Action |
+|------|--------|
+| `client/src/components/planning/forms-mode.tsx` | CREATE |
+| `client/src/lib/field-metadata.ts` | CREATE |
+| `client/src/components/planning/input-panel.tsx` | MODIFY |
+| `client/src/pages/planning-workspace.tsx` | MODIFY |
+| `client/src/components/shared/financial-input-editor.tsx` | MODIFY |
+
 ### Testing Summary
+
+- **Unit tests (Vitest):** All 352 existing tests pass with zero regressions. No new unit tests added (format/parse helpers already covered by existing FinancialInputEditor tests; extracted module preserves identical logic).
+- **E2E tests (Playwright):** Verified via run_test: Forms mode renders with all four sections, fields display brand defaults with correct source badges, inline editing commits and updates badge to "User Entry", section collapse/expand preserves values, reset-to-default reverts to brand default, visual layout verified via screenshot.
+- **AC Coverage:** AC 1 (sections), AC 2 (completeness dashboard), AC 3 (fields with badges), AC 4 (metadata on focus), AC 5 (brand defaults), AC 6 (Start Here), AC 7 (edit updates badge), AC 8 (reset), AC 9 (completeness updates), AC 10 (collapse preserves), AC 11 (mode switch preserves via shared state), AC 12 (Tab/Enter keyboard nav via native HTML).
