@@ -1,0 +1,352 @@
+Financial Model Engine — Testable Requirements
+Derived from the PostNet and Ubreakifix Business Plan spreadsheets. Each requirement is written so you can feed inputs into the engine and assert specific outputs.
+
+1. INPUT ASSUMPTIONS (Data the engine must accept)
+1.1 Global Parameters
+
+Company Name (string)
+Start of Business Operations (date, e.g. 8/1/2024)
+Financial Year End (date, e.g. 7/31/2025)
+Gross Sales / Average Unit Volume (AUV) (currency, e.g. $322,401 PostNet, $526,994 Ubreakifix)
+Time to Reach AUV (integer months, e.g. 14 or 18)
+Starting Month AUV % (percentage, e.g. 8.0% or 30.0%)
+Corporation Tax Rate (percentage, e.g. 21.0%)
+EBITDA Multiple (decimal, e.g. 5.0x)
+Accounts Receivable Days (integer, e.g. 30)
+Accounts Payable Days — Materials (integer, e.g. 60)
+Inventory Days (integer, e.g. 60)
+Fixed Assets Depreciation Rate (percentage, e.g. 25.0%)
+Tax Payment Delay (integer months, e.g. 9)
+
+1.2 Per-Year Assumptions (Years 1–5)
+
+Revenue: Annual Growth Rate (% of Revenue)
+Franchise Fees: Royalty Fee (% of Revenue), Marketing/Ad Fund Fee (% of Revenue)
+Operating Expenses: Materials COGs (% of Revenue), Direct Labor Cost (% of Revenue), Facilities (),Marketing(), Marketing (% of Revenue), Management & Admin Salaries (
+),Marketing(), Payroll Taxes & Benefits (% of Direct Labor Cost + Mgmt/Admin Salaries), Other Operating Expenses (% of Revenue)
+
+P&L Calculations: Target Pre-tax Profit (% of Revenue), Shareholder salary adjustment ($ or 0)
+
+1.3 Investment & Financing (Year 1 only)
+
+Total Investment Required (),brokeninto:CapExInvestments(), broken into: CapEx Investments (
+),brokeninto:CapExInvestments(), Non-CapEx Investments (),WorkingCapital/AdditionalFunds(), Working Capital / Additional Funds (
+),WorkingCapital/AdditionalFunds()
+
+Equity / Cash Injection ($)
+Debt ($)
+Debt Term (months, e.g. 144)
+Debt Interest Rate (percentage, e.g. 10.5%)
+
+1.4 Distributions (Per-Year)
+
+Estimated Distributions from the Company ($ per year, years 1–5)
+
+
+2. REVENUE RAMP-UP MODEL
+2.1 Two-Phase Revenue Calculation
+The model uses a two-phase approach controlled by the "Time to Reach AUV" parameter:
+
+Phase 1 — Ramp Up: From operations start until the AUV target month is reached. Monthly revenue = (Ramp_Up_% × AUV) / 12, where Ramp_Up_% interpolates linearly from Starting Month AUV % to 100% over the ramp-up period.
+Phase 2 — Growth: After AUV is reached. Monthly revenue = AUV / 12 × (1 + Annual_Growth_Rate / 12).
+
+2.2 Testable Assertions
+
+Given AUV=$322,401, Starting AUV%=8%, Time to Reach AUV=14 months → Month 1 revenue should be approximately $2,149 (8% × $322,401 / 12).
+Year 1 annual revenue must equal the sum of 12 monthly revenue values (from the operations start date through fiscal year end).
+After ramp-up completes, the annual growth rates from Input Assumptions (13%, 13%, 10%, 8%, 8%) should drive year-over-year growth.
+PostNet Year 1 total revenue = $161,738; Year 5 = $448,684. Ubreakifix Year 1 = $190,009; these are the known-good outputs.
+
+
+3. PROFIT & LOSS STATEMENT
+3.1 Cost of Goods Sold
+
+Materials = Revenue × Materials COGs %
+Royalties = Revenue × Royalty Fee %
+Ad Fund / Brand Fund = Revenue × Marketing/Ad Fund %
+Total COGS = Materials + Royalties + Ad Fund
+
+3.2 Gross Profit
+
+Gross Profit = Revenue − Total COGS
+Gross Profit % should equal 1 − (Materials% + Royalty% + Ad Fund%). For PostNet: 1 − (30% + 5% + 2%) = 63.0%.
+
+3.3 Direct Labor
+
+Direct Labor = Revenue × Direct Labor Cost %
+Direct LER (Labor Efficiency Ratio) = Revenue / Direct Labor (e.g., 3.7 for PostNet)
+
+3.4 Contribution Margin
+
+Contribution Margin = Gross Profit − Direct Labor
+Contribution Margin as % of GP should be consistent (e.g., 46.0% of GP for PostNet; 73.0% for PostNet's "as % of GP" row).
+
+3.5 Operating Expenses (OPEX)
+
+Facilities = flat $ amount per year (from assumptions), allocated monthly as Annual $ / 12
+Marketing = Revenue × Marketing %
+Management & Admin Salaries = flat $ per year (allocated monthly; $0 in Year 1 if shareholder is unpaid, then increases in subsequent years)
+Payroll Taxes & Benefits = (Direct Labor + Mgmt/Admin Salaries) × Payroll Tax %
+Other Operating Expenses = Revenue × Other OpEx %
+Non-CapEx Investments = one-time charge in Year 1 only (monthly: full amount allocated to the months of operations)
+Total OPEX = sum of all operating expense line items
+
+3.6 Net Operating Income (EBITDA)
+
+EBITDA = Contribution Margin − Total OPEX
+PostNet Year 1 EBITDA = ($38,414); Year 5 = $74,892
+
+3.7 Depreciation & Amortization
+
+Annual depreciation = CapEx × Fixed Assets Depreciation Rate
+PostNet: $132,132 × 25% = $33,033/year for 4 years, then $0 when fully depreciated
+
+3.8 Interest Expense
+
+Calculated monthly on the declining debt balance
+Annual interest rate / 12 = monthly rate
+PostNet: 10.5% annual → 0.875%/month on remaining principal
+
+3.9 Net Profit Before Tax
+
+Net PBT = EBITDA − Depreciation − Interest Expense
+PostNet Year 1 = ($92,096); Year 5 = $61,426
+
+3.10 Adjusted Net Profit Before Tax
+
+Adj Net PBT = Net PBT − Shareholder Salary Adjustment
+If shareholder takes no salary (adjustment = $55,000 in Year 1), then Adj Net PBT = Net PBT − $55,000
+In years where adjustment = $0, Adj Net PBT = Net PBT
+
+3.11 Corporation Tax
+
+Applied at the Corporation Tax Rate (21%) on profits
+Loss carry-forward: losses in one year reduce taxable income in future years
+Tax Payment Delay: tax liability is paid with a delay (e.g., 9 months)
+
+
+4. BALANCE SHEET
+4.1 Current Assets
+
+Cash = derived from Cash Flow Statement ending cash balance
+Accounts Receivable = Revenue × (AR Days / 365), calculated monthly as Monthly Revenue × AR Days / 30
+Inventory = COGS × (Inventory Days / 365), calculated monthly as Monthly COGS × Inventory Days / 60
+Other Current Assets = similar working capital calculation
+
+4.2 Fixed Assets
+
+Equipment = CapEx investment amount (constant across years)
+Accumulated Depreciation increases each year by the annual depreciation amount
+Net Book Value = Equipment − Accumulated Depreciation. When fully depreciated, NBV = $0.
+
+4.3 Current Liabilities
+
+Accounts Payable = Materials Cost × (AP Days / 365), calculated monthly
+Tax Payable = deferred tax amounts based on payment delay
+
+4.4 Long-Term Liabilities
+
+Notes Payable = remaining debt principal balance (declining over time with repayments)
+
+4.5 Capital / Equity
+
+Common Stock = Equity injection amount (constant)
+Retained Earnings = cumulative Net Income less Distributions
+Total Liabilities + Equity must equal Total Assets (balance sheet must balance)
+
+4.6 Testable Assertions
+
+PostNet Year 1 Total Assets = $160,861; Year 5 = $129,445
+Total Assets = Total Liabilities + Shareholders' Equity for every period
+A/R DSO should be based on trailing 2 months of sales
+
+
+5. CASH FLOW STATEMENT
+5.1 Operating Cash Flows
+
+Start with Net Income
+Add back: Depreciation (non-cash)
+Adjust for working capital changes: ΔAccounts Receivable, ΔInventory, ΔOther Current Assets, ΔAccounts Payable, ΔTax Payable
+Net Cash from Operations = Net Income + Depreciation + Working Capital Changes
+
+5.2 Investing Cash Flows
+
+Purchase of Fixed Assets = CapEx (Year 1 only for initial setup)
+Net Cash from Investing = −CapEx
+
+5.3 Financing Cash Flows
+
+Debt Drawdown (Year 1)
+Debt Repayment (monthly, consistent amount)
+Line of Credit (if applicable)
+Interest Expense (already captured in P&L but also shown here)
+Distributions to owners
+Equity Issuance (Year 1)
+Net Cash from Financing = Drawdown − Repayments − Distributions + Equity Issuance
+
+5.4 Net Cash Flow
+
+Net Cash Flow = Operating + Investing + Financing
+Ending Cash = Beginning Cash + Net Cash Flow
+PostNet Year 1 Ending Cash = $25,369; Year 5 = $68,979
+
+
+6. DEBT SCHEDULE
+6.1 Primary Debt (Debt 1)
+
+Opening Balance, Drawdown, Repayment, Closing Balance tracked monthly
+Monthly repayment = Debt Amount / Debt Term Months (straight-line amortization, e.g. $205,206 / 144 months = ~$1,425/month for PostNet)
+Interest Expense calculated monthly on opening balance: Opening Balance × (Annual Rate / 12)
+PostNet Debt 1: Opening = $205,206; monthly repayment = $17,100/year ÷ 12
+
+6.2 Support for Multiple Debt Tranches
+
+The model supports up to 3 debt instruments (Debt 1, Debt 2, Debt 3)
+Each with independent opening balance, drawdown, repayment, and interest calculations
+Total Interest = sum of interest across all debt tranches
+
+
+7. CAPITAL EXPENDITURE & DEPRECIATION
+7.1 CapEx Schedule (Per Year, Years 1–5)
+
+Opening NBV, Expenditure, Depreciation, Closing NBV tracked per year
+Depreciation = Expenditure × Depreciation Rate
+Closing NBV = Opening NBV + Expenditure − Depreciation
+Total Expenditure, Total Depreciation, and Total Net Book Value are summed across all year-layers
+
+7.2 Testable Assertions
+
+PostNet: CapEx = $132,132. At 25% depreciation: Year 1 depreciation = $33,033; NBV Year 1 = $99,099; fully depreciated by Year 4 (NBV = $0).
+
+
+8. WORKING CAPITAL MODEL
+8.1 Accounts Receivable
+
+Monthly AR Closing = Monthly Revenue × (AR Days / 30)
+AR Days sourced from Input Assumptions (e.g., 30 days)
+
+8.2 Accounts Payable
+
+Separate payable calculations for: Materials, Ad Fund/Brand Fund, Royalties, and Labor + Payroll
+Each uses its own AP Days parameter
+AP Closing = Monthly Expense × (AP Days / 30)
+Total AP = sum of all payable sub-components
+
+8.3 Inventory
+
+Monthly Inventory Closing = Monthly COGS × (Inventory Days / 30)
+
+8.4 Net Working Capital
+
+Working Capital = AR + Inventory − AP
+PostNet Year 1 Working Capital = $22,843
+
+
+9. RETURNS ON INVESTED CAPITAL (ROIC)
+9.1 Invested Capital
+
+Outside Cash (Equity Injected) — constant across years
+Total Loans (Debt Injected) — constant across years
+Total Cash Invested = Equity + Debt
+Total Sweat Equity = additional non-cash investment (constant, e.g., $55,000)
+Retained Earnings (less distributions) — cumulative
+Total Invested Capital = Total Cash Invested + Sweat Equity + Retained Earnings
+
+9.2 ROIC Calculation
+
+ROIC = Pre-Tax Net Income / Total Invested Capital
+PostNet Year 1 ROIC = (67.0%); Year 5 = 24.8%
+
+9.3 Core Capital Metrics
+
+Average Total Core Capital per Month
+Months of Core Capital = how many months of operating expenses the core capital covers
+Excess Core Capital = surplus above a 2-month opex target
+
+
+10. VALUATION
+10.1 EBITDA-Based Valuation
+
+Uses EBITDA Multiple from assumptions (e.g., 5.0x)
+Gross Sales × multiple is NOT the method — it uses Adj Net Operating Income × EBITDA Multiple
+Revenue (Gross Sales) shown for context
+Net Operating Income = EBITDA from P&L
+Shareholder salary adjustment applied
+Adj Net Operating Income = Net Operating Income − Salary Adjustment (if applicable)
+Adj Net Operating Income as % of Revenue shown
+
+10.2 Estimated Business Value
+
+Estimated Value = Adj Net Operating Income × EBITDA Multiple
+Estimated taxes on sale (21% of estimated value)
+Net After-Tax Proceeds from Sale = Estimated Value − Taxes on Sale
+Replacement return required (benchmark, e.g., 25.3%)
+Business Annual ROIC for comparison
+
+
+11. BREAKEVEN ANALYSIS
+11.1 Breakeven Point
+
+Defined as the operational month where cumulative net operating cash flow turns positive
+Breakeven Date = specific month/year (e.g., Oct-25 for PostNet)
+Number of Months to Breakeven (e.g., 15 months for PostNet)
+
+11.2 Burn Metrics
+
+Total Expenses = cumulative operating expenses until breakeven
+CapEx = total capital expenditure
+Total Burn = Total Expenses + CapEx (e.g., PostNet: $82,532 + $132,132 = $214,664)
+
+
+12. LABOR EFFICIENCY
+12.1 Direct LER
+
+Direct LER = Revenue / Direct Labor Cost (target: 3.7 for PostNet across all years)
+
+12.2 Admin LER
+
+Admin LER Forecasted = Revenue / Mgmt & Admin Salaries
+Admin LER Benchmark = 2.0 (constant target)
+Difference = Forecasted − Benchmark
+
+12.3 Adjusted Total LER
+
+Adj Total LER = Revenue / (Direct Labor + Adjusted Mgmt/Admin Wages)
+Benchmark = 2.0; Difference tracked
+
+12.4 Salary Cap
+
+Salary Cap @ target pre-tax profit % (e.g., 15%)
+(Over)/Under cap = Salary Cap − Adjusted Total Wages
+
+
+13. MONTHLY vs. ANNUAL AGGREGATION
+13.1 Time Structure
+
+The engine must compute all values at a monthly granularity for 60 months (5 fiscal years)
+Annual figures = sum of 12 monthly values within each fiscal year
+Fiscal year boundaries are defined by the Financial Year End date (e.g., 7/31 means Year 1 = Aug-24 through Jul-25)
+
+13.2 Column Structure
+
+Monthly columns are labeled by month-year (Aug-24, Sep-24, …, Jul-29)
+Annual columns labeled Year 1 through Year 5 with fiscal year date ranges
+
+
+14. CROSS-BRAND CONSISTENCY
+14.1 Same Structure, Different Inputs
+
+The engine must produce correct outputs for any franchise brand by changing only the Input Assumptions
+PostNet (AUV=$322,401, 5% royalty, 30% materials, 17% labor) and Ubreakifix (AUV=$526,994, 7% royalty, 32% materials, 15% labor) both use the identical calculation logic
+No brand-specific hard-coding allowed
+
+14.2 Validation Checks
+
+Check: Total Investment = CapEx + Non-CapEx + Working Capital
+Check: Equity + Debt ≥ Total Investment Required
+Check: Balance Sheet balances (Assets = Liabilities + Equity) every month
+Check: Cash Flow ending cash = Balance Sheet cash every month
+Check: Annual totals = sum of monthly values for that fiscal year
+
+
+This gives you roughly 80+ discrete, testable assertions you can write as unit/integration tests against your Financial Model Engine. Each section maps to a specific spreadsheet tab or calculation block and can be validated against the known PostNet and Ubreakifix reference data.
