@@ -11,6 +11,84 @@
 - **E2E Tests:** Playwright via `@playwright/test`; config at `playwright.config.ts`
 - **Pattern:** Mock-based isolation using `vi.mock()` for storage layer; Express test apps with injected auth middleware
 
+## QA Assessment (2026-02-15) — Story 3.2: Brand Default Integration & Per-Field Metadata
+
+**Story Type:** Infrastructure / Data-layer only (no UI)
+
+### Unit Tests — `shared/plan-initialization.test.ts` (98 tests)
+
+All functions exported from `shared/plan-initialization.ts` are thoroughly tested:
+
+- [x] `buildPlanFinancialInputs` — revenue/opCosts/financing/startupCapital field conversion, dollars-to-cents, per-field metadata (source, isCustom, lastModifiedAt, brandDefault)
+- [x] `buildPlanStartupCosts` — template mapping, dollar-to-cents, enhanced fields (isCustom, source, brandDefaultAmount, item7Range, sortOrder), null range handling
+- [x] `unwrapForEngine` — revenue mapping (monthlyAuv*12), growth rate expansion, fixed cost aggregation with 3% escalation, otherMonthly-to-otherOpexPct conversion, equityPct derivation, depreciation rate, system defaults
+- [x] `updateFieldValue` — value update, source tracking, isCustom flag, timestamp, immutability
+- [x] `resetFieldToDefault` — reset to brandDefault, null brandDefault handling, immutability
+- [x] `addCustomStartupCost` — append, isCustom/source, null brand fields, sortOrder, immutability
+- [x] `removeStartupCost` — custom removal, template protection, sortOrder re-normalization
+- [x] `updateStartupCostAmount` — amount update, source change, isolation, immutability
+- [x] `resetStartupCostToDefault` — template reset, custom item no-op
+- [x] `reorderStartupCosts` — ID-based reorder, contiguous sortOrder
+- [x] `getStartupCostTotals` — capex/non_capex/working_capital/grand totals, empty array
+- [x] `migrateStartupCosts` — old-format migration, Zod validation, enhanced field preservation
+- [x] Engine Integration — valid output, identity checks, positive revenue, determinism, custom item integration
+- [x] PostNet Reference Validation (AC7) — Y1-Y5 revenue, Y1/Y5 EBITDA, cumulative cash flow, ROI, startup investment (within $1.00 tolerance)
+- [x] Edge Cases — zero loan, empty startup costs, zero AUV, zero depreciation, zero otherMonthly
+- [x] Round-trip — edit then reset (field level + full engine pipeline)
+
+### Supporting Unit Tests
+
+- [x] `server/services/financial-service.test.ts` — 9 tests covering `computePlanOutputs()` service integration with plan initialization functions
+- [x] `shared/financial-engine.test.ts` — 49 tests (engine computation, unmodified by Story 3.2)
+
+### API E2E Tests — `e2e/story-3-2-metadata.spec.ts` (5 tests)
+
+- [x] Plan created with financialInputs preserves per-field metadata through API round-trip (AC1)
+- [x] PATCH financialInputs with user_entry source persists metadata correctly (AC4)
+- [x] Startup costs preserve brand defaults and support user edits (AC2)
+- [x] Startup cost reset restores brand defaults after user edits (AC5)
+- [x] Plan with financial inputs can compute financial outputs (AC3, AC6)
+
+### E2E Browser Tests
+
+N/A — Story 3.2 is data-layer only with no UI components.
+
+### Acceptance Criteria Coverage
+
+| AC | Description | Unit Tests | API E2E | Status |
+|----|-------------|-----------|---------|--------|
+| AC1 | Brand default initialization with per-field metadata | 12+ tests (field values, metadata structure) | 1 test (API round-trip) | Fully Covered |
+| AC2 | Startup cost template mapping (dollars-to-cents) | 10+ tests (conversion, enhanced fields) | 1 test (brand defaults + user edits) | Fully Covered |
+| AC3 | Unwrap produces valid EngineInput | 15+ tests (all mapping paths) | 1 test (compute outputs) | Fully Covered |
+| AC4 | Field update with source tracking | 7 tests (value, source, isCustom, timestamp, immutability) | 1 test (PATCH metadata) | Fully Covered |
+| AC5 | Field reset to brand default | 6 tests (reset, null handling, immutability) | 1 test (startup cost reset) | Fully Covered |
+| AC6 | Round-trip identity checks | 5 tests (engine integration + round-trip) | 1 test (compute outputs) | Fully Covered |
+| AC7 | PostNet reference validation | 6 tests (Y1-Y5 revenue, EBITDA, cash flow, ROI, investment) | - | Fully Covered |
+
+### Test Results
+
+```
+Vitest: 156 tests passed (3 files) in 1.91s
+  - shared/plan-initialization.test.ts: 98 passed
+  - shared/financial-engine.test.ts: 49 passed
+  - server/services/financial-service.test.ts: 9 passed
+
+Playwright: 5 tests passed (1 file) in 3.9s
+  - e2e/story-3-2-metadata.spec.ts: 5 passed
+```
+
+### Assessment
+
+Story 3.2 test coverage is **excellent**. All 7 acceptance criteria are fully covered by automated tests at both unit and API integration levels. No additional test generation is needed. The existing test suite covers:
+- Happy paths for all functions
+- Edge cases (zero values, empty arrays, null fields)
+- Round-trip correctness (edit -> reset -> engine consistency)
+- PostNet reference validation within tolerance
+- API persistence round-trips
+- Immutability guarantees
+
+---
+
 ## Generated Tests (2026-02-15) — Story 4.5 QA
 
 ### API Tests — Story 4.5: Auto-Save & Conflict Detection (5 new tests)
