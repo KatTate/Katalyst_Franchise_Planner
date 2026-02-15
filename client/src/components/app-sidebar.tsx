@@ -4,7 +4,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { useBrandTheme } from "@/hooks/use-brand-theme";
 import { useImpersonation } from "@/contexts/ImpersonationContext";
 import { useDemoMode } from "@/contexts/DemoModeContext";
-import { Home, Mail, Building2, LogOut } from "lucide-react";
+import { Home, Mail, Building2, LogOut, CalendarCheck } from "lucide-react";
 import {
   Sidebar,
   SidebarContent,
@@ -105,6 +105,25 @@ export function AppSidebar() {
           </SidebarGroup>
         </SidebarContent>
         <SidebarFooter>
+          {(user as any).bookingUrl && (
+            <div className="px-3 pb-1">
+              <Separator className="mb-2" />
+              <Button
+                variant="ghost"
+                size="sm"
+                className="w-full justify-start gap-2 text-xs text-muted-foreground"
+                onClick={() => window.open((user as any).bookingUrl, '_blank', 'noopener,noreferrer')}
+                data-testid="button-sidebar-book-consultation"
+              >
+                <CalendarCheck className="h-3.5 w-3.5" />
+                <span className="truncate">
+                  {(user as any).accountManagerName
+                    ? `Book with ${(user as any).accountManagerName}`
+                    : "Book Consultation"}
+                </span>
+              </Button>
+            </div>
+          )}
           {hasBrandContext && (
             <div className="px-3 pb-2">
               <Separator className="mb-2" />

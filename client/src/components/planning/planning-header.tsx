@@ -1,6 +1,10 @@
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { ModeSwitcher } from "@/components/planning/mode-switcher";
 import { SaveIndicator } from "@/components/planning/save-indicator";
+import { Button } from "@/components/ui/button";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { CalendarCheck } from "lucide-react";
+import { useAuth } from "@/hooks/use-auth";
 import type { ExperienceTier } from "@/components/planning/mode-switcher";
 import type { SaveStatus } from "@/hooks/use-plan-auto-save";
 
@@ -13,6 +17,10 @@ interface PlanningHeaderProps {
 }
 
 export function PlanningHeader({ planName, activeMode, onModeChange, saveStatus, onRetrySave }: PlanningHeaderProps) {
+  const { user } = useAuth();
+  const bookingUrl = (user as any)?.bookingUrl as string | undefined;
+  const accountManagerName = (user as any)?.accountManagerName as string | undefined;
+
   return (
     <header className="flex items-center gap-3 px-3 py-2 border-b bg-background shrink-0">
       <SidebarTrigger data-testid="button-sidebar-toggle" />
@@ -20,6 +28,23 @@ export function PlanningHeader({ planName, activeMode, onModeChange, saveStatus,
       <div className="flex-1" />
       <ModeSwitcher activeMode={activeMode} onModeChange={onModeChange} />
       <div className="flex-1" />
+      {bookingUrl && (
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => window.open(bookingUrl, '_blank', 'noopener,noreferrer')}
+              data-testid="button-header-book-consultation"
+            >
+              <CalendarCheck className="h-4 w-4" />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>
+            {accountManagerName ? `Book with ${accountManagerName}` : "Book Consultation"}
+          </TooltipContent>
+        </Tooltip>
+      )}
       <SaveIndicator status={saveStatus} onRetry={onRetrySave} />
     </header>
   );
