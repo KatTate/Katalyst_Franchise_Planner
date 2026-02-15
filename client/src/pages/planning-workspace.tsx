@@ -137,7 +137,7 @@ export default function PlanningWorkspace() {
       <div className="flex-1 min-h-0">
         <ResizablePanelGroup direction="horizontal">
           <ResizablePanel defaultSize={40} minSize={30}>
-            <InputPanel activeMode={activeMode} />
+            <InputPanel activeMode={activeMode} planId={planId} />
           </ResizablePanel>
           <ResizableHandle withHandle />
           <ResizablePanel defaultSize={60} minSize={40}>

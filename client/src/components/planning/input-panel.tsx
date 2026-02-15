@@ -1,21 +1,18 @@
 import { Card, CardContent } from "@/components/ui/card";
-import { MessageSquare, ClipboardList, Grid3X3 } from "lucide-react";
+import { MessageSquare, Grid3X3 } from "lucide-react";
 import type { ExperienceTier } from "@/components/planning/mode-switcher";
+import { FormsMode } from "@/components/planning/forms-mode";
 
 interface InputPanelProps {
   activeMode: ExperienceTier;
+  planId: string;
 }
 
-const MODE_PLACEHOLDERS: Record<ExperienceTier, { icon: typeof MessageSquare; title: string; description: string }> = {
+const MODE_PLACEHOLDERS: Partial<Record<ExperienceTier, { icon: typeof MessageSquare; title: string; description: string }>> = {
   planning_assistant: {
     icon: MessageSquare,
     title: "Planning Assistant",
     description: "The AI Planning Advisor will be available here. For now, use Forms or Quick Entry to build your plan.",
-  },
-  forms: {
-    icon: ClipboardList,
-    title: "Forms",
-    description: "Section-based input forms are coming soon.",
   },
   quick_entry: {
     icon: Grid3X3,
@@ -24,8 +21,17 @@ const MODE_PLACEHOLDERS: Record<ExperienceTier, { icon: typeof MessageSquare; ti
   },
 };
 
-export function InputPanel({ activeMode }: InputPanelProps) {
+export function InputPanel({ activeMode, planId }: InputPanelProps) {
+  if (activeMode === "forms") {
+    return (
+      <div data-testid="input-panel" className="h-full overflow-hidden">
+        <FormsMode planId={planId} />
+      </div>
+    );
+  }
+
   const placeholder = MODE_PLACEHOLDERS[activeMode];
+  if (!placeholder) return null;
   const Icon = placeholder.icon;
 
   return (

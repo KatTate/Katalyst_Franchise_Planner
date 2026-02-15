@@ -1,6 +1,6 @@
 # Story 4.2: Forms Mode — Section-Based Input
 
-Status: ready-for-dev
+Status: in-progress
 
 ## Story
 
