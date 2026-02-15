@@ -1,6 +1,6 @@
 # Story 4.3: Quick Entry Mode — Grid Foundation
 
-Status: review
+Status: done
 
 ## Story
 
