@@ -13,7 +13,27 @@
 
 ## Generated Tests (2026-02-15)
 
-### E2E Tests — New Files (Stories 4.1 & 4.2)
+### E2E Tests — Story 4.3: Quick Entry Mode Grid Foundation (16 tests)
+
+- [x] `e2e/quick-entry-mode.spec.ts` - Quick Entry Mode Grid Foundation (16 tests)
+  - Grid renders with category groups and field rows (AC 1, AC 2)
+  - Category groups collapse and expand (AC 2)
+  - Value cells are immediately editable on focus — no click-to-edit (AC 3)
+  - Commit on blur updates source badge to Your Entry (AC 4)
+  - Commit on Enter updates value (AC 4)
+  - Escape cancels edit without committing (AC 4)
+  - Sticky metrics bar renders with 4 metrics (AC 5)
+  - Out-of-range field shows Gurple styling and tooltip (AC 6)
+  - In-range field does not show Gurple styling (AC 6 — null case)
+  - Reset button appears for user-edited fields and reverts to brand default (AC 7)
+  - Unit column shows correct unit symbols ($, %, #)
+  - Brand default column shows formatted default values
+  - Mode switching preserves Quick Entry values (AC 9)
+  - Empty state shown when plan has no financial inputs (AC 8)
+  - Sticky metrics update after cell edit (AC 5)
+  - Loading skeleton shown while plan data loads (AC 10)
+
+### E2E Tests — Stories 4.1 & 4.2
 
 - [x] `e2e/planning-workspace.spec.ts` - Planning Workspace, Mode Switcher & Dashboard (7 tests)
   - Workspace renders with planning header and mode switcher
@@ -35,7 +55,7 @@
   - Completeness dashboard updates when fields are edited
   - Start here indicator shows for new plans with all brand defaults
 
-### Bug Fix During QA
+### Bug Fix During QA (2026-02-15)
 
 - **Missing POST /api/plans route:** Discovered during QA that the POST /api/plans endpoint for creating plans was missing from `server/routes/plans.ts`. The `storage.createPlan()` method existed but was never exposed via a route handler. Added the POST route with Zod validation using `insertPlanSchema`.
 
@@ -107,7 +127,7 @@
 | Shared modules | 3/3 | 100% | Financial engine + plan initialization + schema |
 | Services | 3/3 | 100% | Financial service + brand validation + structured logger |
 | Client utilities | 1/1 | 100% | Quick start helpers |
-| E2E specs | 7 files | 51+ tests | Auth, dashboard, invitations, brands, API, planning workspace, forms mode |
+| E2E specs | 8 files | 67+ tests | Auth, dashboard, invitations, brands, API, planning workspace, forms mode, quick entry mode |
 
 ### API Endpoint Coverage
 
@@ -135,6 +155,7 @@
 | Onboarding | Partial (API level) | Needs franchisee user for UI |
 | Planning workspace (4.1) | Yes | Full — mode switcher, split view, dashboard metrics, charts, quick start guard |
 | Forms mode (4.2) | Yes | Full — sections, progress, editing, reset, badges, mode switch state preservation |
+| Quick entry mode (4.3) | Yes | Full — grid with category groups, collapse/expand, immediate edit on focus, commit/cancel, sticky metrics, reset to default, empty state, mode switch state preservation |
 | Accept invitation | No | Requires invitation token flow |
 | Admin brand detail | No | Navigate from brands list |
 | Impersonation | Unit tests | Covered in admin.test.ts |
@@ -147,11 +168,11 @@ Total test files: 16
 Total tests: 352
 Passed: 352
 Failed: 0
-Duration: ~5.7s
+Duration: ~4.8s
 ```
 
 ### E2E Results
-All E2E scenarios verified passing via Playwright testing agent.
+All E2E scenarios verified passing via Playwright testing agent, including Story 4.3 Quick Entry mode (13 tests).
 
 **Local run note:** Direct `npx playwright test` requires system-level browser dependencies (`libglib-2.0.so.0` etc.) that must be provisioned in the CI/NixOS environment. The Replit test agent handles this automatically.
 
@@ -169,6 +190,7 @@ npx vitest run server/routes/auth.test.ts
 npx playwright test e2e/dashboard.spec.ts
 npx playwright test e2e/planning-workspace.spec.ts
 npx playwright test e2e/forms-mode.spec.ts
+npx playwright test e2e/quick-entry-mode.spec.ts
 ```
 
 ## Next Steps
@@ -177,5 +199,5 @@ npx playwright test e2e/forms-mode.spec.ts
 - Add E2E tests for admin brand detail page
 - Add E2E tests for onboarding UI (requires franchisee user creation via invitation flow)
 - Consider adding startup costs and financial metrics E2E tests
-- Add E2E tests for Quick Entry mode when Story 4.3 is implemented
+- Add E2E tests for keyboard navigation and auto-formatting when Story 4.4 is implemented
 - Run tests in CI pipeline
