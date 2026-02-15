@@ -189,7 +189,7 @@ export function FormsMode({ planId, queueSave }: FormsModeProps) {
           />
         ))}
 
-        <StartupCostSection planId={planId} defaultOpen={true} onCountChange={setStartupCostCount} />
+        <StartupCostSection planId={planId} defaultOpen={true} onCountChange={setStartupCostCount} onSectionInteract={handleSectionInteract} />
 
         {!queueSave && isSaving && (
           <p className="text-xs text-muted-foreground text-center pt-1" data-testid="status-saving">
@@ -492,7 +492,7 @@ function FormField({
   );
 }
 
-function StartupCostSection({ planId, defaultOpen, onCountChange }: { planId: string; defaultOpen: boolean; onCountChange?: StartupCostCountCallback }) {
+function StartupCostSection({ planId, defaultOpen, onCountChange, onSectionInteract }: { planId: string; defaultOpen: boolean; onCountChange?: StartupCostCountCallback; onSectionInteract?: (category: string) => void }) {
   const [isOpen, setIsOpen] = useState(defaultOpen);
   const { costs } = useStartupCosts(planId);
 
@@ -500,8 +500,15 @@ function StartupCostSection({ planId, defaultOpen, onCountChange }: { planId: st
     onCountChange?.(costs.length);
   }, [costs.length, onCountChange]);
 
+  const handleOpenChange = useCallback((open: boolean) => {
+    setIsOpen(open);
+    if (open) {
+      onSectionInteract?.("startupCosts");
+    }
+  }, [onSectionInteract]);
+
   return (
-    <Collapsible open={isOpen} onOpenChange={setIsOpen}>
+    <Collapsible open={isOpen} onOpenChange={handleOpenChange}>
       <div className="border rounded-md" data-testid="section-startupCosts">
         <CollapsibleTrigger className="flex items-center justify-between gap-2 w-full px-4 py-3 hover-elevate rounded-t-md">
           <div className="flex items-center gap-2 min-w-0">
