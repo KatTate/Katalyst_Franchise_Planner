@@ -7,54 +7,57 @@ import { RefreshCw } from "lucide-react";
 import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from "@/components/ui/resizable";
 import { useSidebar } from "@/components/ui/sidebar";
 import { useAuth } from "@/hooks/use-auth";
-import { usePlan, planKey } from "@/hooks/use-plan";
+import { usePlanAutoSave } from "@/hooks/use-plan-auto-save";
+import { planKey } from "@/hooks/use-plan";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { PlanningHeader } from "@/components/planning/planning-header";
 import { InputPanel } from "@/components/planning/input-panel";
 import { DashboardPanel } from "@/components/planning/dashboard-panel";
 import { QuickStartOverlay } from "@/components/shared/quick-start-overlay";
 import type { ExperienceTier } from "@/components/planning/mode-switcher";
-import type { Brand } from "@shared/schema";
+import type { Brand, Plan } from "@shared/schema";
 
 export default function PlanningWorkspace() {
   const params = useParams<{ planId: string }>();
   const planId = params.planId!;
   const { user } = useAuth();
-  const { plan, isLoading: planLoading, error: planError } = usePlan(planId);
+  const { plan, isLoading: planLoading, error: planError, saveStatus, queueSave, retrySave, isSaving } = usePlanAutoSave(planId);
   const { setOpen } = useSidebar();
 
-  // Load brand data for QuickStart overlay
   const brandId = plan?.brandId;
   const { data: brand } = useQuery<Brand>({
     queryKey: ["/api/brands", brandId],
     enabled: !!brandId,
   });
 
-  // Mode state — initialize from user's preferred tier
+  const getStoredMode = (): ExperienceTier | null => {
+    try {
+      const stored = localStorage.getItem(`plan-mode-${planId}`);
+      if (stored === "forms" || stored === "quick_entry" || stored === "planning_assistant") {
+        return stored;
+      }
+    } catch {}
+    return null;
+  };
+
   const [activeMode, setActiveMode] = useState<ExperienceTier>(
-    user?.preferredTier ?? "forms"
+    getStoredMode() ?? user?.preferredTier ?? "forms"
   );
 
-  // Re-sync mode when user data arrives asynchronously (e.g., direct navigation)
   const hasUserSynced = useRef(false);
   useEffect(() => {
-    if (user?.preferredTier && !hasUserSynced.current) {
+    if (user?.preferredTier && !hasUserSynced.current && !getStoredMode()) {
       setActiveMode(user.preferredTier as ExperienceTier);
       hasUserSynced.current = true;
     }
   }, [user?.preferredTier]);
 
-  // Track whether we've initialized sidebar state
   const sidebarInitialized = useRef(false);
-
-  // Sync sidebar with mode on mount and mode change
   useEffect(() => {
-    // Collapse sidebar in Planning Assistant mode, expand otherwise
     setOpen(activeMode !== "planning_assistant");
     sidebarInitialized.current = true;
   }, [activeMode, setOpen]);
 
-  // Debounced save of preferred tier to server
   const saveTierRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   useEffect(() => {
     return () => {
@@ -62,30 +65,42 @@ export default function PlanningWorkspace() {
     };
   }, []);
 
+  const pendingModeRef = useRef<ExperienceTier | null>(null);
+
+  useEffect(() => {
+    if (!isSaving && pendingModeRef.current) {
+      const nextMode = pendingModeRef.current;
+      pendingModeRef.current = null;
+      setActiveMode(nextMode);
+    }
+  }, [isSaving]);
+
   const handleModeChange = useCallback(
     (mode: ExperienceTier) => {
-      setActiveMode(mode);
+      if (isSaving) {
+        pendingModeRef.current = mode;
+        return;
+      }
 
-      // Debounced PATCH to persist preference
+      setActiveMode(mode);
+      try { localStorage.setItem(`plan-mode-${planId}`, mode); } catch {}
+
       if (saveTierRef.current) clearTimeout(saveTierRef.current);
       saveTierRef.current = setTimeout(async () => {
         try {
           await apiRequest("PATCH", "/api/auth/me", { preferredTier: mode });
           queryClient.invalidateQueries({ queryKey: ["/api/auth/me"] });
         } catch {
-          // Non-critical — preference save failed silently
         }
       }, 500);
     },
-    []
+    [isSaving]
   );
 
-  // Quick Start completion handler — invalidate plan query to refetch quickStartCompleted
   const handleQuickStartComplete = useCallback(() => {
     queryClient.invalidateQueries({ queryKey: planKey(planId) });
   }, [planId]);
 
-  // Loading state
   if (planLoading) {
     return (
       <div data-testid="planning-workspace" className="flex flex-col h-full">
@@ -108,7 +123,6 @@ export default function PlanningWorkspace() {
     );
   }
 
-  // Error state
   if (planError || !plan) {
     return (
       <div data-testid="planning-workspace" className="flex flex-col items-center justify-center h-full">
@@ -123,7 +137,6 @@ export default function PlanningWorkspace() {
     );
   }
 
-  // Quick Start guard
   if (!plan.quickStartCompleted) {
     return (
       <div data-testid="planning-workspace" className="flex flex-col h-full overflow-auto">
@@ -142,12 +155,14 @@ export default function PlanningWorkspace() {
         planName={plan.name || "My Plan"}
         activeMode={activeMode}
         onModeChange={handleModeChange}
+        saveStatus={saveStatus}
+        onRetrySave={retrySave}
       />
       <div className="flex-1 min-h-0">
         <ResizablePanelGroup direction="horizontal">
           <ResizablePanel defaultSize={40} minSize={30}>
             <div className="h-full" style={{ minWidth: 360 }}>
-              <InputPanel activeMode={activeMode} planId={planId} />
+              <InputPanel activeMode={activeMode} planId={planId} queueSave={queueSave} />
             </div>
           </ResizablePanel>
           <ResizableHandle withHandle />

@@ -7,13 +7,14 @@ import { QuickEntryMode } from "@/components/planning/quick-entry-mode";
 interface InputPanelProps {
   activeMode: ExperienceTier;
   planId: string;
+  queueSave?: (data: any) => void;
 }
 
-export function InputPanel({ activeMode, planId }: InputPanelProps) {
+export function InputPanel({ activeMode, planId, queueSave }: InputPanelProps) {
   if (activeMode === "forms") {
     return (
       <div data-testid="input-panel" className="h-full overflow-hidden">
-        <FormsMode planId={planId} />
+        <FormsMode planId={planId} queueSave={queueSave} />
       </div>
     );
   }
@@ -21,7 +22,7 @@ export function InputPanel({ activeMode, planId }: InputPanelProps) {
   if (activeMode === "quick_entry") {
     return (
       <div data-testid="input-panel" className="h-full overflow-hidden">
-        <QuickEntryMode planId={planId} />
+        <QuickEntryMode planId={planId} queueSave={queueSave} />
       </div>
     );
   }

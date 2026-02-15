@@ -26,6 +26,7 @@ import type { FieldMeta } from "@/lib/field-metadata";
 
 interface FormsModeProps {
   planId: string;
+  queueSave?: (data: any) => void;
 }
 
 interface SectionProgress {
@@ -60,15 +61,19 @@ function hasAnyUserEdits(financialInputs: PlanFinancialInputs): boolean {
   });
 }
 
-export function FormsMode({ planId }: FormsModeProps) {
+export function FormsMode({ planId, queueSave }: FormsModeProps) {
   const { plan, isLoading, error, updatePlan, isSaving, saveError } = usePlan(planId);
   const financialInputs = plan?.financialInputs as PlanFinancialInputs | null | undefined;
 
   const saveInputs = useCallback(
     (updated: PlanFinancialInputs) => {
-      updatePlan({ financialInputs: updated }).catch(() => {});
+      if (queueSave) {
+        queueSave({ financialInputs: updated });
+      } else {
+        updatePlan({ financialInputs: updated }).catch(() => {});
+      }
     },
-    [updatePlan]
+    [updatePlan, queueSave]
   );
 
   const {
@@ -81,7 +86,7 @@ export function FormsMode({ planId }: FormsModeProps) {
     handleEditCommit,
     handleEditCancel,
     handleReset,
-  } = useFieldEditing({ financialInputs, isSaving, onSave: saveInputs });
+  } = useFieldEditing({ financialInputs, isSaving: queueSave ? false : isSaving, onSave: saveInputs });
 
   const sectionProgress = useMemo(
     () => (financialInputs ? computeSectionProgress(financialInputs) : []),

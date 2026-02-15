@@ -129,6 +129,19 @@ router.patch(
     // Stage 1b: strip protected fields that clients must never mutate
     const { userId, brandId, ...allowedFields } = parsed.data;
 
+    // Stage 1c: conflict detection — compare client's expected updatedAt with current DB value
+    const clientUpdatedAt = req.body._expectedUpdatedAt;
+    if (clientUpdatedAt) {
+      const currentUpdatedAt = plan.updatedAt ? new Date(plan.updatedAt).toISOString() : null;
+      if (currentUpdatedAt && clientUpdatedAt !== currentUpdatedAt) {
+        return res.status(409).json({
+          message: "This plan was updated in another tab. Please reload to see the latest version.",
+          code: "CONFLICT",
+          serverUpdatedAt: currentUpdatedAt,
+        });
+      }
+    }
+
     // Stage 2: deep validation for financialInputs when present
     if (allowedFields.financialInputs !== undefined) {
       const fiParsed = planFinancialInputsSchema.safeParse(
@@ -151,8 +164,9 @@ router.patch(
       }
     }
 
-    // Stage 3: persist
-    const updated = await storage.updatePlan(req.params.planId, allowedFields);
+    // Stage 3: persist — also update lastAutoSave timestamp
+    const dataWithTimestamp = { ...allowedFields, lastAutoSave: new Date() };
+    const updated = await storage.updatePlan(req.params.planId, dataWithTimestamp as any);
 
     const auditLogId = req.session?.impersonation_audit_log_id;
     if (auditLogId && allowedFields.financialInputs !== undefined) {

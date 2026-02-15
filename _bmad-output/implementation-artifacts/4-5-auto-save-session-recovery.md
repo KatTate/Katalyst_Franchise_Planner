@@ -1,6 +1,6 @@
 # Story 4.5: Auto-Save & Session Recovery
 
-Status: ready-for-dev
+Status: review
 
 ## Story
 
@@ -172,10 +172,35 @@ The save status indicator lives in the planning workspace header (right side, wh
 
 ### Agent Model Used
 
-{{agent_model_name_version}}
+Claude 4.6 Opus (Replit Agent)
 
 ### Completion Notes
 
+Implemented debounced auto-save (2-second idle), save status indicator (saved/saving/unsaved/error states), beforeunload warning, 409 conflict detection with toast notification, exponential backoff retry (3 retries), and mode switch protection during in-flight saves. Optimistic updates applied immediately in queueSave for responsive UI. Session recovery works via server-persisted plan data and user preferredTier.
+
+Key decisions:
+- Conflict detection uses `_expectedUpdatedAt` field in request body (not a header) to pass the client's known updatedAt timestamp
+- Auto-save wrapper (`usePlanAutoSave`) builds on top of existing `usePlan` hook without modifying it
+- FormsMode and QuickEntryMode receive `queueSave` as optional prop, falling back to immediate `updatePlan` when not provided
+- `isSaving` guard in `useFieldEditing` bypassed when auto-save is active to keep editing non-blocking
+
 ### File List
 
+- `client/src/hooks/use-plan-auto-save.ts` — CREATED: Auto-save hook with debounce, retry, beforeunload, conflict handling
+- `client/src/components/planning/save-indicator.tsx` — CREATED: 4-state save indicator component
+- `client/src/components/planning/planning-header.tsx` — MODIFIED: Replaced "Draft" placeholder with SaveIndicator
+- `client/src/pages/planning-workspace.tsx` — MODIFIED: Integrated usePlanAutoSave, mode switch protection, queueSave prop passing
+- `client/src/components/planning/input-panel.tsx` — MODIFIED: Pass queueSave prop to FormsMode/QuickEntryMode
+- `client/src/components/planning/forms-mode.tsx` — MODIFIED: Use queueSave for debounced saves, bypass isSaving guard
+- `client/src/components/planning/quick-entry-mode.tsx` — MODIFIED: Use queueSave for debounced saves, bypass isSaving guard
+- `server/routes/plans.ts` — MODIFIED: Added 409 conflict detection, lastAutoSave timestamp update
+
 ### Testing Summary
+
+- **Approach:** End-to-end Playwright test + existing Vitest regression suite
+- **Vitest:** All 380 existing tests pass (no regressions)
+- **E2E coverage:** Dev login → plan creation → Quick Start completion → field edit → auto-save debounce → "All changes saved" indicator → page reload → session recovery verification
+- **ACs covered by e2e:** AC 1 (debounced save), AC 2 (indicator transitions), AC 3/6 (session recovery after reload), AC 8 (mode preserved)
+- **ACs verified by code review:** AC 4 (beforeunload), AC 5 (409 conflict), AC 7 (retry with backoff)
+- **LSP Status:** Clean — no new errors introduced
+- **Visual Verification:** Screenshots taken during e2e test confirm save indicator renders correctly in planning header

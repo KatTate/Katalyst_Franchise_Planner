@@ -35,6 +35,7 @@ import { formatCents } from "@/lib/format-currency";
 
 interface QuickEntryModeProps {
   planId: string;
+  queueSave?: (data: any) => void;
 }
 
 interface GridRow {
@@ -83,7 +84,7 @@ function buildGridRows(financialInputs: PlanFinancialInputs): GridRow[] {
   });
 }
 
-export function QuickEntryMode({ planId }: QuickEntryModeProps) {
+export function QuickEntryMode({ planId, queueSave }: QuickEntryModeProps) {
   const { plan, isLoading, error, updatePlan, isSaving, saveError } = usePlan(planId);
   const { output, isLoading: outputsLoading, isFetching } = usePlanOutputs(planId);
   const financialInputs = plan?.financialInputs as PlanFinancialInputs | null | undefined;
@@ -92,14 +93,18 @@ export function QuickEntryMode({ planId }: QuickEntryModeProps) {
 
   const saveInputs = useCallback(
     (updated: PlanFinancialInputs) => {
-      updatePlan({ financialInputs: updated }).catch(() => {});
+      if (queueSave) {
+        queueSave({ financialInputs: updated });
+      } else {
+        updatePlan({ financialInputs: updated }).catch(() => {});
+      }
     },
-    [updatePlan]
+    [updatePlan, queueSave]
   );
 
   const { handleFieldUpdate, handleReset } = useFieldEditing({
     financialInputs,
-    isSaving,
+    isSaving: queueSave ? false : isSaving,
     onSave: saveInputs,
   });
 
