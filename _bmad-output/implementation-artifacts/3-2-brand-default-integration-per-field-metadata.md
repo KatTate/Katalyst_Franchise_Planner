@@ -29,11 +29,13 @@ so that I start by refining a reasonable plan rather than building from scratch 
 ### Architecture Patterns to Follow
 
 **New Interfaces (shared/financial-engine.ts):**
+*[Source: architecture.md — Decision 15 (Engine Design), Per-field metadata pattern]*
 - Update `FinancialFieldValue` to add `lastModifiedAt: string | null` and `isCustom: boolean` fields, and change `"manual"` source to `"user_entry"` per AC requirements.
 - Add `PlanFinancialInputs` interface — mirrors brand parameter categories with camelCase keys, each field wrapped in `FinancialFieldValue`. This is the JSONB persistence type for `plans.financial_inputs`.
 - `PlanFinancialInputs` structure mirrors `BrandParameters` categories: `revenue`, `operatingCosts`, `financing`, `startupCapital`.
 
 **New Module (shared/plan-initialization.ts):**
+*[Source: architecture.md — Decision 15 (Engine Design); Story 3.1 Code Review DD-1b (buildFinancialInputsFromBrand), DD-4 (StartupCostItem mapping), OS-1 (transformation function)]*
 - `buildPlanFinancialInputs(brandParams: BrandParameters): PlanFinancialInputs` — maps brand parameters to plan financial inputs with metadata. Currency values from brand params (stored as dollars) are converted to cents. Each field gets `source: 'brand_default'`, `isCustom: false`.
 - `buildPlanStartupCosts(template: StartupCostTemplate): StartupCostLineItem[]` — maps brand startup cost template items to engine-compatible line items with amounts converted to cents.
 - `unwrapForEngine(planInputs: PlanFinancialInputs, startupCosts: StartupCostLineItem[]): EngineInput` — extracts raw values from wrapped fields, expands single values into per-year arrays where needed, performs unit conversions (e.g., `monthlyAuv * 12` → `annualGrossSales`).
@@ -41,10 +43,12 @@ so that I start by refining a reasonable plan rather than building from scratch 
 - `resetFieldToDefault(field: FinancialFieldValue, timestamp: string): FinancialFieldValue` — returns new field with `currentValue: brandDefault`, `source: 'brand_default'`, `isCustom: false`.
 
 **Schema Update (shared/schema.ts):**
+*[Source: architecture.md — Decision 15 (Engine Design); Story 3.1 Code Review DD-1a (PlanFinancialInputs separation)]*
 - Change `financialInputs` JSONB type annotation from `FinancialInputs` (engine type) to `PlanFinancialInputs` (wrapped type).
 - Change `startupCosts` JSONB type annotation remains `StartupCostLineItem[]` (engine type is sufficient for startup costs).
 
 **Number Format Conventions:**
+*[Source: architecture.md — Number Format Rules]*
 - Plan JSONB stores currency in **cents as integers** (consistent with engine convention)
 - Brand parameters store currency in **dollars as raw numbers** (per existing schema)
 - The initialization function handles the conversion: `brandParam.value * 100` → cents
