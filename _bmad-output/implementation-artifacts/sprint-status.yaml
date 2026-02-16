@@ -121,8 +121,8 @@ development_status:
   # Dependencies: Epic 3 (engine), Epic 4 (planning workspace)
   # Pre-req: CP-2 engine extension (Story 5.1), CP-8 tech debt resolution
   # UX design authority: ux-financial-statements-spec.md (v2, 2026-02-16)
-  epic-5: backlog
-  5-1-financial-engine-extension: backlog
+  epic-5: in-progress
+  5-1-financial-engine-extension: ready-for-dev
   5-2-financial-statements-container-summary-tab: backlog
   5-3-pl-statement-tab: backlog
   5-4-balance-sheet-cash-flow-tabs: backlog
