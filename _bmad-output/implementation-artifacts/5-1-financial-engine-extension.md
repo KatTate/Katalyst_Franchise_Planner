@@ -1,6 +1,6 @@
 # Story 5.1: Financial Engine Extension
 
-Status: in-progress
+Status: review
 
 ## Story
 
@@ -604,9 +604,37 @@ No contradiction. Both fields exist and are computed monthly.
 ## Dev Agent Record
 
 ### Agent Model Used
+Claude 4.6 Opus (via Replit Agent)
 
 ### Completion Notes
+All 11 acceptance criteria satisfied. Implementation is purely additive — no existing computation logic modified.
+
+**Key implementation decisions:**
+- `cfInterestExpense` is a display-only field in the financing CF section. Interest cash impact flows through operating CF (via `preTaxIncome` → `operatingCashFlow`). `cfInterestExpense` is NOT included in `cfNetFinancingCashFlow` to avoid double-counting. This preserves `cfNetOperatingCashFlow === operatingCashFlow` identity.
+- `taxPayableBalance` uses shift-by-N mechanism with configurable `taxPaymentDelayMonths` (default: 1). Balance is floored at 0 to prevent negative tax liability.
+- `retainedEarnings` accumulates `preTaxIncome - monthlyDistribution` where distributions are positive values divided by 12.
+- Working Capital identity check (Cat 12) currently validates AR only. AP and Inventory validation deferred.
+- Debt Check (Cat 4) conditionally executes only when `termMonths <= MAX_PROJECTION_MONTHS` (60). For PostNet (144-month term), this check is skipped — total count remains ≥13 categories via other checks.
+- 15 identity check categories implemented; 13+ unique categories present for any given input set (breakeven checks are conditional on `breakEvenMonth !== null`).
+
+**Adversarial review findings (3 critical bugs fixed during implementation):**
+1. Tax payment delay property name: corrected to use `taxPaymentDelayMonths`
+2. `replacementReturnRequired` formula: corrected to use `netAfterTaxProceeds / totalCashInvested`
+3. Corporation Tax Check: updated to use `preTaxNetIncomeIncSweatEquity` (not `preTaxNetIncome`)
 
 ### File List
+| File | Action | Lines Changed |
+|------|--------|---------------|
+| `shared/financial-engine.ts` | MODIFY | ~446 lines added (644 → 1090 lines) |
+| `shared/financial-engine.test.ts` | MODIFY | ~1230 lines added (497 → 1729 lines) |
 
 ### Testing Summary
+- **Framework:** Vitest 4.0.18
+- **Total tests:** 172 (49 existing + 123 new)
+- **All passing:** Yes (172/172)
+- **Execution time:** ~237ms
+- **LSP diagnostics:** Zero errors in both files
+- **Import count:** Zero (AC11 verified)
+- **Determinism:** Verified for PostNet, alternate brand, and custom optional inputs
+- **Edge cases tested:** Zero revenue, zero financing, zero tax rate, zero EBITDA multiple, zero shareholder salary adj, custom tax payment delay (0, 3, 6 months), custom non-capex investment spread
+- **Identity checks:** 300+ individual checks, all passing, covering 13+ unique categories
