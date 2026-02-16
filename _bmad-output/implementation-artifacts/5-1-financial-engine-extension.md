@@ -332,6 +332,97 @@ NonCapex is spread as a monthly operating expense in Year 1 only. It's part of `
 
 The existing annual summary computes `totalLiabilities = accountsPayable + loanClosingBalance` (line 500) WITHOUT `taxPayable`. Story 5.1's monthly BS will include `taxPayable` in `totalCurrentLiabilities`. The annual summary should be updated to include `taxPayable` as well, OR the dev agent must accept that annual and monthly BS won't match on liabilities. **This is not explicitly called out in the acceptance criteria and could be a gap.** The dev agent should update the annual summary's `totalLiabilities` to include the year-end `taxPayable` value for consistency.
 
+### Architecture Decision Records (Elicitation Output)
+
+Key architectural decisions documented with explicit trade-offs, so the dev agent has clear rationale and doesn't need to re-derive choices.
+
+**ADR-1: Monthly vs. Annual Balance Sheet Computation**
+
+- **Decision:** Monthly primary, annual derives.
+- **Options considered:** (A) Monthly only — single source of truth but leaves dead code in annual summary. (B) Both independently — no changes to existing annual code but two independent BS computations that could diverge. (C) Monthly primary, annual derives — compute in monthly loop, annual summary reads from last month of year.
+- **Rationale:** Option C is the cleanest. Compute once (monthly), read the year-end snapshot for annual summaries. The annual summary's existing BS fields (`totalAssets`, `totalLiabilities`, `totalEquity`) should be populated from `lastMonth.*` rather than recomputed. This naturally resolves the "annual summary BS gap" finding — when monthly computation includes `taxPayable`, the annual snapshot inherits it automatically.
+- **Migration:** Replace existing annual BS computation (lines 496-501) with reads from `lastMonth.totalAssets`, `lastMonth.totalLiabilities`, `lastMonth.totalEquity`, `lastMonth.totalLiabilitiesAndEquity`.
+
+**ADR-2: Tax Payable Mechanism**
+
+- **Decision:** Shift-by-N.
+- **Options considered:** (A) Queue-based — precise but complex, overkill for MVP. (B) Annual clearing — simple but `taxPaymentDelayMonths` input unused. (C) Shift-by-N — accrue monthly, pay accrual from N months ago each month. (D) Quarterly clearing — matches real-world but ignores the input parameter.
+- **Rationale:** Simplest mechanism that actually uses `taxPaymentDelayMonths`. With default=1, taxes accrue in month M and are paid in month M+1, producing steady-state where `taxPayable` equals roughly one month's tax. Deterministic, no data structures beyond running balance.
+- **Implementation:** Dev agent must store monthly `preTaxIncome` values in an array (or access from `monthly[]` being built) to look back N months for payment calculation.
+
+**ADR-3: cfTaxPayableChange Placement — Operating vs. Separate**
+
+- **Decision:** Exclude from operating CF, preserve identity.
+- **Options considered:** (A) Exclude from operating CF — preserves AC3 identity and backward compatibility. (B) Include in operating CF, break identity — correct accounting presentation but violates AC3. (C) Include and update existing `operatingCashFlow` — changes existing values, risks test failures.
+- **Rationale:** AC9 mandates zero regressions. AC3 explicitly requires `cfNetOperatingCashFlow === operatingCashFlow`. Option A is pragmatic: `cfTaxPayableChange` becomes a bridge item between operating and investing sections.
+- **Cash Flow layout:**
+  ```
+  Operating CF (cfNetOperatingCashFlow = operatingCashFlow)  <- identity preserved
+  + cfTaxPayableChange                                       <- bridge item
+  = CF before investing
+  - cfCapexPurchase
+  = cfNetBeforeFinancing
+  + financing items
+  = cfNetCashFlow
+  ```
+- **Alternative:** If reference spreadsheet clearly shows tax payable change inside Operating CF, choose Option B and update AC3's identity check to `cfNetOperatingCashFlow === operatingCashFlow + cfTaxPayableChange`.
+
+**ADR-4: Monthly Push Structure — Flat vs. Spread**
+
+- **Decision:** Computed objects with spread.
+- **Options considered:** (A) Single flat push — matches existing pattern but 57+ field object literal is unmaintainable. (B) Computed objects + spread — readable, groups related fields, easier to debug. (C) Post-processing pass — no change to existing push but mutating pushed objects is unusual.
+- **Rationale:** Grouping new fields into `cfFields` and `bsFields` objects makes code self-documenting. `bsFields` references `cfFields.endingCash`, enforcing correct computation order.
+- **Implementation pattern:**
+  ```typescript
+  const cfFields = {
+    cfDepreciation: ...,
+    cfAccountsReceivableChange: ...,
+    beginningCash: ...,
+    endingCash: ...,
+  };
+  const bsFields = {
+    taxPayable: ...,
+    commonStock: ...,
+    retainedEarnings: ...,
+    totalCurrentAssets: round2(cfFields.endingCash + accountsReceivable + inventory),
+    ...
+  };
+  monthly.push({ ...existingFields, ...cfFields, ...bsFields });
+  ```
+
+**ADR-5: Annual Summary Update Strategy**
+
+- **Decision:** Replace with monthly snapshot, with rounding guard.
+- **Options considered:** (A) Leave annual as-is — zero risk but annual BS lacks `taxPayable` and diverges. (B) Replace with monthly snapshot — single source of truth, eliminates divergence. (C) Add new fields alongside existing — backward compatible but duplicated logic.
+- **Rationale:** ADR-1 established monthly as primary. Annual must derive from it. The existing annual computation already uses `lastMonth.*` for AR, AP, inventory, loanBalance, and netFixedAssets. Only `totalCurrentAssets`, `totalAssets`, `totalLiabilities`, `totalEquity` are recomputed — replacing these with `lastMonth.*` reads eliminates divergence.
+- **Rounding guard:** After replacing, run existing tests. If any annual BS values shift by 1 cent, tests will catch it. Also eliminates need for `cumulativeCash` and `cumulativeRetainedEarnings` tracking in annual loop — those are now tracked monthly.
+- **Implementation:**
+  ```typescript
+  // Replace lines 496-501 with:
+  const totalCurrentAssets = round2(lastMonth.totalCurrentAssets);
+  const totalAssets = round2(lastMonth.totalAssets);
+  const totalLiabilities = round2(lastMonth.totalLiabilities);
+  const totalEquity = round2(lastMonth.totalEquity);
+  ```
+
+**ADR-6: Valuation and ROIC Data Source**
+
+- **Decision:** Read from annual summaries.
+- **Options considered:** (A) Aggregate from monthly — independent of annual summary but duplicates aggregation logic and risks rounding differences. (B) Read from annual summaries — DRY, single source for annual aggregates, consistent rounding.
+- **Rationale:** Annual summary loop already aggregates revenue, EBITDA, preTaxIncome, distributions. Recomputing wastes effort and risks divergence. Valuation and ROIC sections should be computed in a separate loop AFTER the annual summary loop, reading from `annualSummaries[y].*`.
+- **For cumulative values** (totalSweatEquity, retainedEarningsLessDistributions): use a running accumulator across the 5-year ROIC loop.
+
+**ADR Summary Table:**
+
+| ADR | Decision | Key Rationale |
+|---|---|---|
+| ADR-1 | Monthly primary, annual derives | Single source of truth; resolves annual BS gap |
+| ADR-2 | Shift-by-N tax mechanism | Simplest that honors `taxPaymentDelayMonths` input |
+| ADR-3 | Exclude `cfTaxPayableChange` from operating CF | Preserves AC3 identity and AC9 zero regression |
+| ADR-4 | Spread pattern for monthly push | Maintainability at 57+ fields; enforces computation order |
+| ADR-5 | Replace annual BS with monthly snapshot | Consistency; eliminates divergence; removes redundant tracking |
+| ADR-6 | Valuation/ROIC reads from annual summaries | DRY; consistent rounding; natural dependency order |
+
 ### Self-Consistency Validation (Elicitation Output)
 
 Multiple independent approaches were generated for the 5 trickiest computations, then compared for consistency. Three contradictions were surfaced that the dev agent must resolve before implementation.
