@@ -67,6 +67,12 @@ story_location: _bmad-output/implementation-artifacts
 #     (was: 5-1-pl-statement-view etc.; now: 5-1-financial-engine-extension etc.)
 #   - All story counts verified: 52 stories across 13 epics
 #   - All statuses preserved — no downgrades
+# 2026-02-16: Story 5.1 adversarial code review completed
+#   - 0 HIGH, 3 MEDIUM, 3 LOW findings — all resolved
+#   - Math.max(0) guard added for adjustedTotalWages, docstrings updated
+#   - architecture.md synced (cfOtherAssetsChange → cfDepreciation)
+#   - 173 tests passing (49 existing + 124 new), zero regressions
+#   - Story status confirmed: done
 
 development_status:
   # Epic 1: Auth, Onboarding & User Management

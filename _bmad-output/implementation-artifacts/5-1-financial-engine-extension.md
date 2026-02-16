@@ -97,7 +97,7 @@ So that the Financial Statement views have complete data to render (FR8, FR9, FR
 
 7. **Given** the extended engine
    **When** projections are computed
-   **Then** `identityChecks` is extended from 4 categories to 13 checks matching the reference spreadsheet Audit sheet:
+   **Then** `identityChecks` is extended from 4 categories to 15 check categories matching and exceeding the reference spreadsheet Audit sheet:
    - **Balance Sheet Imbalance I** — totalAssets = totalLiabilitiesAndEquity (per year, end-of-year monthly snapshot)
    - **Balance Sheet Imbalance II** — alternative cross-check (e.g., equity = assets - liabilities)
    - **P&L Check** — grossProfit + directLabor + totalOpex + depreciation + interest = preTaxIncome (annual)
@@ -630,11 +630,24 @@ All 11 acceptance criteria satisfied. Implementation is purely additive — no e
 
 ### Testing Summary
 - **Framework:** Vitest 4.0.18
-- **Total tests:** 172 (49 existing + 123 new)
-- **All passing:** Yes (172/172)
+- **Total tests:** 173 (49 existing + 124 new)
+- **All passing:** Yes (173/173)
 - **Execution time:** ~237ms
 - **LSP diagnostics:** Zero errors in both files
 - **Import count:** Zero (AC11 verified)
 - **Determinism:** Verified for PostNet, alternate brand, and custom optional inputs
-- **Edge cases tested:** Zero revenue, zero financing, zero tax rate, zero EBITDA multiple, zero shareholder salary adj, custom tax payment delay (0, 3, 6 months), custom non-capex investment spread
-- **Identity checks:** 300+ individual checks, all passing, covering 13+ unique categories
+- **Edge cases tested:** Zero revenue, zero financing, zero tax rate, zero EBITDA multiple, zero shareholder salary adj, custom tax payment delay (0, 3, 6 months), custom non-capex investment spread, shareholderSalaryAdj exceeding totalWages (floor-at-zero guard)
+- **Identity checks:** 300+ individual checks, all passing, covering 15 unique categories
+
+### Code Review Notes (2026-02-16)
+**Reviewer:** Adversarial code review workflow (BMAD CR)
+**Outcome:** 0 HIGH, 3 MEDIUM, 3 LOW — all resolved
+
+| ID | Severity | Finding | Resolution |
+|----|----------|---------|------------|
+| M1 | MEDIUM | Stale `taxRate` docstring — claimed "NOT applied" but used in 3 places | Docstring updated to list all 3 usage sites |
+| M2 | MEDIUM | `adjustedTotalWages` could go negative if `shareholderSalaryAdj > totalWages` | `Math.max(0, ...)` floor added; edge case test added (173rd test) |
+| M3 | MEDIUM | `salaryCapAtTarget` includes facilities/payroll taxes in nonWageOpex; spec ambiguous | Code comment added explaining business rationale for inclusion |
+| L1 | LOW | architecture.md listed `cfOtherAssetsChange` but implementation has `cfDepreciation` | architecture.md updated to `cfDepreciation` |
+| L2 | LOW | Story said "13 checks" but implementation has 15 categories | Story AC7 updated to "15 check categories"; test description updated |
+| L3 | LOW | `cumulativeNetCashFlow` initialized to 0 then overwritten in Step 6 | Inline comment added explaining deferred computation |

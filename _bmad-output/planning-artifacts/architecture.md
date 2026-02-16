@@ -915,7 +915,7 @@ Balance Sheet disaggregation:
 - `totalEquity`, `totalLiabilitiesAndEquity`
 
 Cash Flow disaggregation:
-- Operating: `cfAccountsReceivableChange`, `cfInventoryChange`, `cfOtherAssetsChange`, `cfAccountsPayableChange`, `cfTaxPayableChange`, `cfNetOperatingCashFlow`
+- Operating: `cfDepreciation` (add-back), `cfAccountsReceivableChange`, `cfInventoryChange`, `cfAccountsPayableChange`, `cfTaxPayableChange`, `cfNetOperatingCashFlow`
 - Investing: `cfCapexPurchase`, `cfNetBeforeFinancing`
 - Financing: `cfNotesPayable`, `cfLineOfCredit`, `cfInterestExpense`, `cfDistributions`, `cfEquityIssuance`, `cfNetFinancingCashFlow`
 - Net: `cfNetCashFlow`, `beginningCash`, `endingCash`

@@ -1585,10 +1585,23 @@ describe("Financial Engine", () => {
         expect(Math.abs(p.adjustedTotalWages - (p.totalWages - 200000))).toBeLessThanOrEqual(1);
       });
     });
+
+    it("adjustedTotalWages floors at 0 when shareholderSalaryAdj exceeds totalWages", () => {
+      const hugeAdj = [99999999, 99999999, 99999999, 99999999, 99999999] as [number, number, number, number, number];
+      const customInput: EngineInput = {
+        financialInputs: { ...postNetInputs, shareholderSalaryAdj: hugeAdj },
+        startupCosts: postNetStartupCosts,
+      };
+      const customResult = calculateProjections(customInput);
+      customResult.plAnalysis.forEach((p) => {
+        expect(p.adjustedTotalWages).toBe(0);
+        expect(p.adjustedLaborEfficiency).toBe(0);
+      });
+    });
   });
 
   describe("Story 5.1 — AC7: Identity Checks Categories Comprehensive", () => {
-    it("all 13 identity check categories are present", () => {
+    it("at least 13 identity check categories are present (implementation has 15)", () => {
       const categories = new Set(result.identityChecks.map((c) => {
         const match = c.name.match(/^(.+?)(?:\s*\()/);
         return match ? match[1].trim() : c.name;

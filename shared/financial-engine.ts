@@ -123,9 +123,9 @@ export interface FinancialInputs {
   /** Annual owner distributions in cents [Y1..Y5] */
   distributions: [number, number, number, number, number];
   /** Corporation tax rate (decimal, e.g. 0.21 = 21%).
-   *  Reserved for future tax modeling. Currently collected for downstream
-   *  consumers but NOT applied to engine calculations — all P&L metrics
-   *  are pre-tax, matching the PostNet reference model convention. */
+   *  Applied in: (1) Balance Sheet tax payable accrual, (2) Valuation
+   *  estimated tax on sale, (3) ROIC Extended taxes due. The main P&L
+   *  remains pre-tax — taxRate does NOT reduce preTaxIncome. */
   taxRate: number;
   ebitdaMultiple?: number;
   targetPreTaxProfitPct?: [number, number, number, number, number];
@@ -599,7 +599,7 @@ export function calculateProjections(input: EngineInput): EngineOutput {
       accountsPayable,
       netFixedAssets,
       operatingCashFlow,
-      cumulativeNetCashFlow: 0,
+      cumulativeNetCashFlow: 0, // placeholder — overwritten in Step 6 (break-even loop)
       loanOpeningBalance: loanOpening,
       loanPrincipalPayment: principalPayment,
       loanClosingBalance: loanBalance,
@@ -808,13 +808,15 @@ export function calculateProjections(input: EngineInput): EngineOutput {
     const annualDirectLabor = yearMonths.reduce((s, mp) => s + Math.abs(mp.directLabor), 0);
     const annualMgmtSalaries = yearMonths.reduce((s, mp) => s + Math.abs(mp.managementSalaries), 0);
     const totalWages = round2(annualDirectLabor + annualMgmtSalaries);
-    const adjustedTotalWages = round2(totalWages - annualSalaryAdj);
+    const adjustedTotalWages = round2(Math.max(0, totalWages - annualSalaryAdj));
 
     const annualFacilities = yearMonths.reduce((s, mp) => s + Math.abs(mp.facilities), 0);
     const annualPayrollTax = yearMonths.reduce((s, mp) => s + Math.abs(mp.payrollTaxBenefits), 0);
     const annualMarketing = yearMonths.reduce((s, mp) => s + Math.abs(mp.marketing), 0);
     const annualOtherOpex = yearMonths.reduce((s, mp) => s + Math.abs(mp.otherOpex), 0);
     const annualNonCapex = yearMonths.reduce((s, mp) => s + Math.abs(mp.nonCapexInvestment), 0);
+    // nonWageOpex includes facilities and payroll taxes: these are real fixed costs that
+    // reduce available margin for wages, giving a realistic salary cap.
     const nonWageOpex = round2(annualFacilities + annualPayrollTax + annualMarketing + annualOtherOpex + annualNonCapex);
     const salaryCapAtTarget = round2(nonLaborGrossMargin - targetPreTaxProfit - nonWageOpex);
     const overUnderCap = round2(salaryCapAtTarget - adjustedTotalWages);
