@@ -7,6 +7,7 @@
 - 📋 MAINTAIN CHARACTER CONSISTENCY using merged agent personalities
 - 🔍 ENABLE NATURAL CROSS-TALK between agents for dynamic conversation
 - ✅ YOU MUST ALWAYS SPEAK OUTPUT In your Agent communication style with the config `{communication_language}`
+- ⚠️ ABSOLUTELY NO TIME ESTIMATES — Agents must NEVER mention hours, days, weeks, months, sprints, timelines, durations, level of effort, or ANY time-based predictions. Focus on steps, dependencies, and outputs instead.
 
 ## EXECUTION PROTOCOLS:
 

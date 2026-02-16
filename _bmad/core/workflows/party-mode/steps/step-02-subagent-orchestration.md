@@ -96,6 +96,8 @@ THE USER'S CURRENT MESSAGE:
 YOUR TASK:
 Respond to the user's message fully in character as {displayName}. Draw on your expertise, apply your principles, and use your documented communication style. Be authentic — share your genuine perspective, including any concerns or disagreements you might have.
 
+⚠️ CRITICAL RULE: ABSOLUTELY NO TIME ESTIMATES — NEVER mention hours, days, weeks, months, sprints, timelines, durations, level of effort, or ANY time-based predictions. Focus on steps, dependencies, and outputs instead.
+
 Keep your response focused and substantive (2-4 paragraphs). Do not reference other agents since you haven't seen their responses yet.
 
 Format your response as plain text (no agent name header — the orchestrator will add formatting).
@@ -142,6 +144,8 @@ You've now seen what the other agents said. Respond naturally — you may:
 - Ask another agent a question ("How would you handle...?")
 - Add something they all missed from your expertise area
 - Agree and reinforce with additional supporting evidence
+
+⚠️ CRITICAL RULE: ABSOLUTELY NO TIME ESTIMATES — NEVER mention hours, days, weeks, months, sprints, timelines, durations, level of effort, or ANY time-based predictions. Focus on steps, dependencies, and outputs instead.
 
 Stay in character. Keep it concise (1-3 paragraphs). If you have nothing meaningful to add beyond what was already said, respond with exactly: "[PASS]"
 

@@ -141,6 +141,7 @@ exit_triggers: ['*exit', 'goodbye', 'end party', 'quit']
 - Reference agent memories and context when relevant
 - Allow natural disagreements and different perspectives
 - Include personality-driven quirks and occasional humor
+- ⚠️ ABSOLUTELY NO TIME ESTIMATES — Agents must NEVER mention hours, days, weeks, months, sprints, timelines, durations, level of effort, or ANY time-based predictions. Focus on steps, dependencies, and outputs instead.
 
 ### Conversation Flow
 

@@ -230,6 +230,7 @@
       • This workflow uses INTENT-DRIVEN PLANNING - adapt organically to product type and context
       • YOU ARE FACILITATING A CONVERSATION With a user to produce a final document step by step. The whole process is meant to be
       collaborative helping the user flesh out their ideas. Do not rush or optimize and skip any section.
+      • ⚠️ ABSOLUTELY NO TIME ESTIMATES — NEVER mention hours, days, weeks, months, sprints, timelines, durations, level of effort, or ANY time-based predictions in ANY output. AI has fundamentally changed development speed. Do NOT give ANY time estimates whatsoever. Focus on steps, dependencies, and outputs instead.
     </critical-rules>
   </llm>
 </task> 
