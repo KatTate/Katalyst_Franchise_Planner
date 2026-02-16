@@ -262,6 +262,71 @@ So that the Financial Statement views have complete data to render (FR8, FR9, FR
 - **Existing 49 tests break via nonCapexInvestment default:** CRITICAL. Prevention: Default `nonCapexInvestment` to `[nonCapexTotal, 0, 0, 0, 0]` to exactly replicate current Year-1-only behavior. Write a specific test verifying old inputs produce identical outputs before AND after extension.
 - **Determinism (AC8):** New computations using `Math.round` vs `round2()` could produce platform-dependent results. MEDIUM. Prevention: Use ONLY `round2()`. Never `Math.round`, `Math.floor`, `Math.ceil`, or `toFixed`.
 
+### Red Team vs Blue Team Analysis (Elicitation Output)
+
+Adversarial attack-defend analysis targeting the engine extension with malicious and edge-case inputs. Each attack was defended and hardening measures identified.
+
+**CRITICAL — Shift-by-N Array Underflow (Round 5):**
+
+The main monthly loop is 1-indexed (`for (let m = 1; m <= 60; m++)`), but the `monthly[]` array is 0-indexed. The shift-by-N tax payment lookback must account for this:
+```typescript
+const lookbackIndex = (m - 1) - taxPaymentDelayMonths;
+if (lookbackIndex >= 0) {
+  const pastPreTaxIncome = monthly[lookbackIndex].preTaxIncome;
+  const payment = round2(Math.max(0, pastPreTaxIncome * taxRate));
+  taxPayableBalance = round2(taxPayableBalance - payment);
+}
+```
+Without the `lookbackIndex >= 0` guard, `monthly[-1]` causes an array underflow. For the first N months, no payment is made — taxes only accrue. This is correct behavior.
+
+**HIGH — Negative Revenue Causes Negative taxPayableBalance (Round 1):**
+
+If revenue goes negative in later years (aggressive negative growth), `preTaxIncome` becomes deeply negative. Tax accrual is 0 (floored), but shift-by-N still pays taxes from prior positive months. `taxPayableBalance` goes negative — representing overpaid taxes / tax refund, which the engine doesn't model.
+
+Hardening: Floor `taxPayableBalance` at 0 after each payment:
+```typescript
+taxPayableBalance = round2(Math.max(0, taxPayableBalance));
+```
+A negative tax payable on the Balance Sheet is nonsensical and would distort `totalCurrentLiabilities`.
+
+**HIGH — Zero Revenue Division in P&L Analysis (Round 7):**
+
+All ratio fields in P&L Analysis (`laborEfficiency`, `adjustedLaborEfficiency`, `discretionaryMarketingPct`, `prTaxBenefitsPctOfWages`, `otherOpexPctOfRevenue`) produce Infinity/NaN when revenue = 0.
+
+Hardening: Guard ALL division-by-revenue with `revenue !== 0 ? round2(value / revenue) : 0`. This follows the existing engine's pattern for `grossProfitPct`, `ebitdaPct`, etc.
+
+**MEDIUM — Identity Checks Pass With Wrong Absolute Values (Round 6):**
+
+Identity checks verify CONSISTENCY (totalAssets = totalLiabilitiesAndEquity), not CORRECTNESS. If `endingCash` and `retainedEarnings` are both wrong by the same amount, the BS "balances" while being completely wrong.
+
+Hardening: Add cross-system verification checks:
+- `endingCash[year 5]` should equal sum of ALL cash flows over 60 months (computed independently)
+- `retainedEarnings[year 5]` should equal `sum(preTaxIncome[1..60]) + sum(distributions[1..60])` (computed from monthly array independently)
+- After ADR-5, verify `annualSummaries[y].endingCash === monthly[yearEndMonth].endingCash`
+
+**LOW — Boundary Input Behaviors (Rounds 2, 4, 8):**
+
+| Input Scenario | Behavior | Status |
+|---|---|---|
+| Zero equity + zero debt | Cash goes negative; BS still balances via negative retained earnings | Mathematically sound; add test case |
+| `taxPaymentDelayMonths = 60` | 59 months of unpaid tax accumulate; math self-consistent | Consider clamping to 0-12; document behavior |
+| `taxPaymentDelayMonths = 0` | Instant payment; `taxPayable` always 0 on BS | Valid edge case; document |
+| Negative ROIC (loss years) | `afterTaxNetIncome` negative, `roicPct` negative | Valid signal, not an error; no floor needed |
+| Enormous revenue (overflow) | Values stay within `Number.MAX_SAFE_INTEGER` for franchise-scale businesses | No fix needed; document engine is designed for franchise-scale |
+
+**Full Attack Summary Table:**
+
+| Attack | Severity | Hardening Required |
+|---|---|---|
+| Shift-by-N array underflow (1-indexed vs 0-indexed) | CRITICAL | `lookbackIndex >= 0` guard before array access |
+| Negative revenue → negative taxPayableBalance | HIGH | Floor at 0: `Math.max(0, taxPayableBalance)` |
+| Zero revenue → division by zero in P&L Analysis | HIGH | Guard all ratio fields with `revenue !== 0` check |
+| Identity checks pass with wrong values | MEDIUM | Add cross-system cash and retained earnings verification |
+| Zero financing → negative cash | LOW | Add test case; math is sound |
+| taxPaymentDelayMonths = 60 | LOW | Consider input clamping; document |
+| taxPaymentDelayMonths = 0 | NONE | Document as supported edge case |
+| Negative ROIC | NONE | Valid; no change needed |
+
 ### First Principles Analysis (Elicitation Output)
 
 The computation dependency chain was rebuilt from fundamentals to verify proposed field computation order and expose hidden assumptions.
