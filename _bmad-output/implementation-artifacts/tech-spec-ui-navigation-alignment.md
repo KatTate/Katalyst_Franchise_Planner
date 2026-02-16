@@ -5,8 +5,8 @@ created: '2026-02-16'
 status: 'dev-complete'
 stepsCompleted: [1, 2, 3, 4, 5, 6]
 tech_stack: ['React 18', 'TypeScript', 'Vite', 'wouter', 'TanStack Query v5', 'Tailwind CSS', 'shadcn/ui', 'Drizzle ORM', 'Express']
-files_to_modify: ['client/src/components/app-sidebar.tsx', 'client/src/pages/planning-workspace.tsx', 'client/src/contexts/WorkspaceViewContext.tsx', 'client/src/components/planning/forms-mode.tsx', 'client/src/components/planning/input-panel.tsx']
-code_patterns: ['WorkspaceViewContext for sidebar/workspace state sync', 'SidebarGroup/SidebarGroupLabel for section grouping', 'Collapsible sections in forms-mode.tsx', 'usePlanOutputs hook for summary metrics', 'data-testid attributes on all interactive/display elements']
+files_to_modify: ['client/src/components/app-sidebar.tsx', 'client/src/pages/planning-workspace.tsx', 'client/src/contexts/WorkspaceViewContext.tsx']
+code_patterns: ['WorkspaceViewContext for sidebar/workspace state sync', 'resetWorkspaceView on planId change to prevent stale state', 'SidebarGroup/SidebarGroupLabel for section grouping', 'Collapsible sections in forms-mode.tsx', 'usePlanOutputs hook for summary metrics', 'data-testid attributes on all interactive/display elements']
 test_patterns: ['Vitest for unit tests', 'Playwright via run_test for e2e', 'No existing sidebar or workspace layout tests']
 ---
 
@@ -196,11 +196,11 @@ Restructure the sidebar to match the v3 UX spec's navigation model. Collapse the
 
 | File | Change Type | Description |
 | ---- | ----------- | ----------- |
-| `client/src/contexts/WorkspaceViewContext.tsx` | Modify | Rename `WorkspaceView` values to `"my-plan" | "reports" | "scenarios" | "settings"`. Add `activePlanName` / `setActivePlanName` state. Add `navigateToScenarios()` and `navigateToSettings()` methods. Update default from `"dashboard"` to `"my-plan"`. |
-| `client/src/components/app-sidebar.tsx` | Modify | Restructure into 3 section groups (MY LOCATIONS, [Plan Name], HELP). Rename "Dashboard" to "Home". Add Scenarios and Settings items. Move booking link from footer to HELP group. Rename WorkspaceView references from `"dashboard"`/`"statements"` to `"my-plan"`/`"reports"`. |
-| `client/src/pages/planning-workspace.tsx` | Modify | Remove `ResizablePanelGroup` / `DashboardPanel` from My Plan view. Render FormsMode (or QuickEntryMode) as single-column with `SummaryMetrics` above. Add conditional rendering for `"scenarios"` and `"settings"` views. Call `setActivePlanName` on plan load. |
-| `client/src/components/planning/forms-mode.tsx` | Modify (minor) | Accept optional `planId` prop for `SummaryMetrics` embedding (if metrics are placed inside FormsMode rather than above it in the workspace). |
-| `client/src/components/planning/input-panel.tsx` | Possibly modify | May need to pass through `planId` for metrics, or may be bypassed entirely if workspace renders FormsMode directly. |
+| `client/src/contexts/WorkspaceViewContext.tsx` | Modify | Rename `WorkspaceView` values to `"my-plan" | "reports" | "scenarios" | "settings"`. Add `activePlanName` / `setActivePlanName` state. Add `navigateToScenarios()`, `navigateToSettings()`, and `resetWorkspaceView()` methods. Update default from `"dashboard"` to `"my-plan"`. |
+| `client/src/components/app-sidebar.tsx` | Modify | Restructure into 3 section groups ([Brand Name], [Plan Name], HELP). Rename "Dashboard" to "Home". Add Scenarios and Settings items. Move booking link from footer to HELP group. Rename WorkspaceView references from `"dashboard"`/`"statements"` to `"my-plan"`/`"reports"`. |
+| `client/src/pages/planning-workspace.tsx` | Modify | Remove `ResizablePanelGroup` / `DashboardPanel` from My Plan view. Render FormsMode (or QuickEntryMode) as single-column with `SummaryMetrics` above `InputPanel`. Add conditional rendering for `"scenarios"` and `"settings"` views. Call `setActivePlanName` on plan load. Call `resetWorkspaceView` on `planId` change to prevent stale view state across plans. |
+| `client/src/components/planning/forms-mode.tsx` | Not modified | `SummaryMetrics` was placed in `planning-workspace.tsx` above `InputPanel` rather than inside `FormsMode`, so no changes were needed here. |
+| `client/src/components/planning/input-panel.tsx` | Not modified | `SummaryMetrics` is rendered above `InputPanel` in the workspace, so no passthrough was needed. |
 
 ### Dependencies
 

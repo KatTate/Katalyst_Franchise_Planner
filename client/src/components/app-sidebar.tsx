@@ -179,7 +179,7 @@ export function AppSidebar() {
 
           {showHelpSection && (
             <SidebarGroup>
-              <SidebarGroupLabel data-testid="text-sidebar-help-section">Help</SidebarGroupLabel>
+              <SidebarGroupLabel data-testid="text-sidebar-help-section">HELP</SidebarGroupLabel>
               <SidebarGroupContent>
                 <SidebarMenu>
                   <SidebarMenuItem>

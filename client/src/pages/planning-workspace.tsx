@@ -25,7 +25,7 @@ export default function PlanningWorkspace() {
   const { user } = useAuth();
   const { plan, isLoading: planLoading, error: planError, saveStatus, queueSave, retrySave, flushSave, isSaving, hasUnsavedChanges } = usePlanAutoSave(planId);
   const { setOpen } = useSidebar();
-  const { workspaceView, statementsDefaultTab, navigateToStatements, setActivePlanName } = useWorkspaceView();
+  const { workspaceView, statementsDefaultTab, navigateToStatements, setActivePlanName, resetWorkspaceView, navigateToMyPlan } = useWorkspaceView();
 
   const brandId = plan?.brandId;
   const { data: brand } = useQuery<Brand>({
@@ -34,12 +34,13 @@ export default function PlanningWorkspace() {
   });
 
   useEffect(() => {
+    resetWorkspaceView();
+  }, [planId, resetWorkspaceView]);
+
+  useEffect(() => {
     if (plan?.name) {
       setActivePlanName(plan.name);
     }
-    return () => {
-      setActivePlanName(null);
-    };
   }, [plan?.name, setActivePlanName]);
 
   const getStoredMode = (): ExperienceTier | null => {

@@ -12,6 +12,7 @@ interface WorkspaceViewContextType {
   navigateToMyPlan: () => void;
   navigateToScenarios: () => void;
   navigateToSettings: () => void;
+  resetWorkspaceView: () => void;
 }
 
 const WorkspaceViewContext = createContext<WorkspaceViewContextType>({
@@ -23,6 +24,7 @@ const WorkspaceViewContext = createContext<WorkspaceViewContextType>({
   navigateToMyPlan: () => {},
   navigateToScenarios: () => {},
   navigateToSettings: () => {},
+  resetWorkspaceView: () => {},
 });
 
 export function WorkspaceViewProvider({ children }: { children: React.ReactNode }) {
@@ -47,6 +49,11 @@ export function WorkspaceViewProvider({ children }: { children: React.ReactNode 
     setWorkspaceView("settings");
   }, []);
 
+  const resetWorkspaceView = useCallback(() => {
+    setWorkspaceView("my-plan");
+    setActivePlanName(null);
+  }, []);
+
   return (
     <WorkspaceViewContext.Provider
       value={{
@@ -58,6 +65,7 @@ export function WorkspaceViewProvider({ children }: { children: React.ReactNode 
         navigateToMyPlan,
         navigateToScenarios,
         navigateToSettings,
+        resetWorkspaceView,
       }}
     >
       {children}
