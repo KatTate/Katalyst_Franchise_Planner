@@ -262,6 +262,80 @@ So that the Financial Statement views have complete data to render (FR8, FR9, FR
 - **Existing 49 tests break via nonCapexInvestment default:** CRITICAL. Prevention: Default `nonCapexInvestment` to `[nonCapexTotal, 0, 0, 0, 0]` to exactly replicate current Year-1-only behavior. Write a specific test verifying old inputs produce identical outputs before AND after extension.
 - **Determinism (AC8):** New computations using `Math.round` vs `round2()` could produce platform-dependent results. MEDIUM. Prevention: Use ONLY `round2()`. Never `Math.round`, `Math.floor`, `Math.ceil`, or `toFixed`.
 
+### Self-Consistency Validation (Elicitation Output)
+
+Multiple independent approaches were generated for the 5 trickiest computations, then compared for consistency. Three contradictions were surfaced that the dev agent must resolve before implementation.
+
+**Computation 1: Retained Earnings (Monthly Tracking)**
+
+| Approach | Method | Verdict |
+|---|---|---|
+| A (Recommended) | Accumulate directly in monthly loop: `cumulativeRetainedEarnings += preTaxIncome + distribution` (distribution is already negative) | PRIMARY — direct, no dependencies |
+| B (Cross-check) | Derive from BS identity: `retainedEarnings = totalEquity - commonStock` | IDENTITY CHECK — use as Audit validation |
+| C (Rejected) | Derive from annual summary and interpolate monthly | REJECTED — pro-rata interpolation introduces approximation error |
+
+**CONTRADICTION #1 — Retained earnings sign convention:** The Dev Notes section says "accumulate `preTaxIncome - monthlyDistribution` each month." But distributions are NEGATIVE in the engine (they're an outflow). So `preTaxIncome - monthlyDistribution` when distribution = -5000 becomes `preTaxIncome - (-5000) = preTaxIncome + 5000`, which INCREASES retained earnings when distributing cash — clearly wrong. The correct formula is `preTaxIncome + distribution` (where distribution is negative, naturally reducing retained earnings). The Dev Notes formula is misleading as written.
+
+**Computation 2: Beginning/Ending Cash (Monthly CF)**
+
+| Approach | Method | Verdict |
+|---|---|---|
+| A (Recommended) | Running variable: `beginningCash = runningCash`, compute `cfNetCashFlow`, `endingCash = beginningCash + cfNetCashFlow`, `runningCash = endingCash` | PRIMARY — guarantees continuity structurally |
+| B (Cross-check) | Derive from existing `cumulativeCash` in annual summaries | ANNUAL CROSS-CHECK — free validation since value already exists |
+| C (Rejected) | Compute endingCash from all individual components directly | REJECTED — too many components and sign conventions, error-prone |
+
+**Critical initialization risk:** Initial `runningCash` = `equityAmount + debtAmount - totalStartupInvestment`. The dev agent MUST trace the actual startup cash logic in the existing engine to derive the correct initial value. There may not be a single `totalStartupInvestment` variable — the existing engine may compute startup cash differently. If the initial value is wrong, ALL 60 months of cash are wrong. This is the single highest-risk initialization in the story.
+
+**Computation 3: Tax Payable with Payment Delay**
+
+| Approach | Method | Verdict |
+|---|---|---|
+| A (Rejected) | Simple monthly accrual, annual clearing — `taxPaymentDelayMonths` input goes unused | REJECTED — contradicts AC1 |
+| B (Rejected) | Monthly accrual, delayed payment via queue data structure | REJECTED — unnecessary complexity, queue must be drained at year boundaries |
+| C (Rejected) | Quarterly estimated tax payments (like real-world) — ignores `taxPaymentDelayMonths` | REJECTED — ignores the input parameter |
+| D (Recommended) | Shift-by-N: accrue tax monthly, pay the tax from N months ago each month | PRIMARY — cleanest, honors the input, no queue, predictable BS impact |
+
+Approach D implementation:
+```
+let taxPayableBalance = 0
+for each month m:
+  accrual = max(0, preTaxIncome[m] * taxRate)
+  taxPayableBalance += accrual
+  if (m >= taxPaymentDelayMonths):
+    payment = max(0, preTaxIncome[m - taxPaymentDelayMonths] * taxRate)
+    taxPayableBalance -= payment
+  taxPayable[m] = taxPayableBalance
+```
+
+With default `taxPaymentDelayMonths = 1`, this produces near-monthly clearing where taxPayable oscillates around 1 month's worth of tax.
+
+**CONTRADICTION #2 — Tax payable timing mechanism:** The Dev Notes say "quarterly or annual payment clearing" but the input `taxPaymentDelayMonths` with default=1 suggests monthly shifted payment. These are inconsistent. Approach D resolves this by making the mechanism configurable via the input, but the dev agent should confirm which behavior the reference spreadsheet uses.
+
+**Computation 4: cfNetOperatingCashFlow vs operatingCashFlow Identity**
+
+| Approach | Method | Issue |
+|---|---|---|
+| A | Build cfNetOperatingCashFlow including cfTaxPayableChange | Breaks identity with existing operatingCashFlow (which has no tax payable) |
+| B | Build cfNetOperatingCashFlow excluding cfTaxPayableChange | Maintains identity but where does tax payable change go? |
+
+**CONTRADICTION #3 — cfNetOperatingCashFlow identity:** AC3 states `cfNetOperatingCashFlow equals the existing operatingCashFlow field (consistency check)`. But the new disaggregation adds `cfTaxPayableChange` which the existing `operatingCashFlow` does not include. These cannot both be true unless `cfTaxPayableChange` is excluded from operating CF and placed elsewhere (e.g., as a separate adjustment line, or rolled into financing). The dev agent must check the reference spreadsheet's Cash Flow layout to determine where tax payable change appears, then either:
+- Exclude `cfTaxPayableChange` from `cfNetOperatingCashFlow` (preserving the identity), or
+- Include it and accept that `cfNetOperatingCashFlow` is more complete than the legacy `operatingCashFlow` field (breaking the identity but being more correct)
+
+**Computation 5: P&L Analysis — totalWages**
+
+| Approach | Method | Verdict |
+|---|---|---|
+| A (Confirmed) | `totalWages = Math.abs(directLabor) + Math.abs(managementSalaries)` | VALID — `managementSalaries` confirmed as existing separate field on `MonthlyProjection` (line 173 of engine, computed at line 357) |
+
+No contradiction. Both fields exist and are computed monthly.
+
+**Summary of Contradictions Requiring Resolution:**
+
+1. **Retained earnings sign convention** — Dev Notes formula `preTaxIncome - monthlyDistribution` is misleading. Correct formula is `preTaxIncome + distribution` (distribution is already negative). Dev agent should use the correct formula and ignore the Dev Notes wording.
+2. **Tax payable timing** — Dev Notes suggest quarterly/annual clearing but `taxPaymentDelayMonths` input with default=1 suggests monthly shifted payment. Recommended: use Approach D (shift-by-N) which honors the input. Check reference spreadsheet to confirm.
+3. **cfNetOperatingCashFlow identity** — Cannot hold if `cfTaxPayableChange` is included in operating CF. Dev agent must check reference spreadsheet CF layout and decide whether to preserve or break the identity. Document the decision either way.
+
 ### File Change Summary
 
 | File | Action | Notes |
