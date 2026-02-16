@@ -308,7 +308,7 @@
       <action>Save file, preserving ALL comments and structure</action>
     </check>
 
-    <action>Report completion</action>
+    <action>Report completion and present next steps menu</action>
     <output>**🎯 Story Context Created, {user_name}!**
 
       **Story Details:**
@@ -317,13 +317,75 @@
       - File: {{default_output_file}}
       - Status: ready-for-dev
 
-      **Recommended Next Steps:**
-      1. Review the story in {{default_output_file}}
-      2. Say **"party mode"** for a multi-agent review of the story before implementation (recommended for critical epics)
-      3. **Start a fresh chat** and say **"dev story"** to begin implementation — a clean context gives the dev agent maximum working memory for the build
+      ---
 
-      💡 *Fresh chat tip: Implementation works best in its own session so the agent has full context for coding rather than carrying story-creation history.*
+      **Next Steps:**
+
+      [A] Advanced Elicitation — refine the story further
+      [R] Adversarial Review — critical review of the story (recommended)
+      [P] Party Mode — multi-agent review of the story
+      [D] Done — exit workflow
+
+      ---
+
+      Once you are satisfied with the story (ideally after **Adversarial Review** or **Party Mode**), start implementation in a FRESH CONTEXT for best results.
+
+      Copy one of these prompts to start:
+
+      ```
+      dev story {{default_output_file}}
+      ```
+
+      Or if you want to generate tests first:
+
+      ```
+      QA {{default_output_file}}
+      ```
+
+      A fresh context gives the dev agent maximum working memory for the build.
     </output>
+
+    <ask>Select [A], [R], [P], [D], or share any feedback:</ask>
+
+    <check if="user chooses A">
+      <action>Read fully and follow: {project-root}/_bmad/core/workflows/advanced-elicitation/workflow.xml with current story content</action>
+      <action>Process enhanced insights and ask user "Accept improvements? (y/n)"</action>
+      <action>If yes, update story file. If no, keep original.</action>
+      <action>Redisplay the next steps menu above</action>
+    </check>
+
+    <check if="user chooses R">
+      <action>Load and follow adversarial review: {project-root}/_bmad/core/tasks/review-adversarial-general.xml against {{default_output_file}}</action>
+      <action>Present findings with severity ratings</action>
+      <action>Ask user which findings to address, update story file accordingly</action>
+      <action>Redisplay the next steps menu above</action>
+    </check>
+
+    <check if="user chooses P">
+      <action>Read fully and follow: {project-root}/_bmad/core/workflows/party-mode/workflow.md with current story content</action>
+      <action>Process collaborative insights and ask user "Accept changes? (y/n)"</action>
+      <action>If yes, update story file. If no, keep original.</action>
+      <action>Redisplay the next steps menu above</action>
+    </check>
+
+    <check if="user chooses D">
+      <output>**All done!** Your story is ready at:
+
+        `{{default_output_file}}`
+
+        When you're ready to implement in a fresh context:
+
+        ```
+        dev story {{default_output_file}}
+        ```
+
+        Or generate tests first:
+
+        ```
+        QA {{default_output_file}}
+        ```
+      </output>
+    </check>
   </step>
 
 </workflow>

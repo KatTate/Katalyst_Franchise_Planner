@@ -64,7 +64,8 @@ through all 6 steps in order. The workflow engine handles:
 
 ## What's Next
 
-After creating a story, the typical next steps are:
-- **Validate Story (VS)** — verify the story is complete and ready for development
-- **Dev Story (DS)** — implement the story
-- Recommend starting a **new chat session** for Dev Story to keep context fresh
+After creating a story, Step 6 presents an interactive menu with options:
+- **[A] Advanced Elicitation** — refine the story further
+- **[R] Adversarial Review** — critical review of the story (recommended)
+- **[P] Party Mode** — multi-agent review before implementation
+- **[D] Done** — exit with copy-paste prompts for dev story or QA automation in a fresh context
