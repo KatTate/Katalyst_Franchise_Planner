@@ -205,6 +205,63 @@ So that the Financial Statement views have complete data to render (FR8, FR9, FR
 
 - **The existing `operatingCashFlow` field must remain unchanged.** The new `cfNetOperatingCashFlow` should equal `operatingCashFlow` for consistency. This is an identity check, not a replacement. Both fields coexist.
 
+### Failure Mode Analysis (Elicitation Output)
+
+**Risk Priority (ordered by likelihood x impact):**
+
+1. **Balance sheet not balancing** — tax payable timing mechanism is underspecified and interacts with both BS and CF
+2. **Cash flow identity break** — beginning/ending cash continuity requires careful initialization and single-source-of-truth tracking
+3. **Sign convention errors** — the negative-expense convention is non-obvious and every new field must respect it
+4. **Existing test regression via nonCapexInvestment default** — the one area where new code changes existing computation
+5. **cfNetOperatingCashFlow != operatingCashFlow** — interest treatment must be consistent between the two
+
+**Balance Sheet Disaggregation (AC2) Failure Modes:**
+
+- **Balance sheet doesn't balance:** `totalAssets != totalLiabilitiesAndEquity` due to missing a component or sign error. CRITICAL. Prevention: Identity check (Audit #1) must be computed and validated per month, not just per year. Add assertion in test for all 60 months.
+- **Retained earnings drift:** Cumulative `preTaxIncome - distributions` tracked monthly but initialized incorrectly. If starting value isn't 0 or if month-0 is skipped, all subsequent months are wrong. HIGH. Prevention: Initialize `cumulativeRetainedEarnings = 0` before the loop. Accumulate inside the loop BEFORE computing the monthly BS fields. Verify month-1 retained earnings = month-1 preTaxIncome - month-1 distribution.
+- **Sign convention error on retainedEarnings:** Distributions in the engine are stored as NEGATIVE values (outflow). `retainedEarnings += preTaxIncome - (-distribution)` would be WRONG. Must be `retainedEarnings += preTaxIncome + distribution` where distribution is already negative, OR explicitly use absolute value. Trace sign through carefully. HIGH.
+- **taxPayable timing mismatch:** Tax payable accumulates but the delay mechanism for payment clearing is ambiguous. If taxes are never "paid" in the BS, `taxPayable` grows unbounded and the BS won't balance. CRITICAL. Prevention: Taxes accrue monthly, payments clear on delay. Cash outflow for tax payment must appear in CF AND reduce taxPayable liability. Must be symmetric.
+- **commonStock hardcoded wrong:** Should be constant = equityAmount. If equityAmount is in cents and commonStock is expected in dollars (or vice versa), off by 100x. MEDIUM. Prevention: Both are in cents. Verify by checking equityAmount in test inputs.
+- **lineOfCredit placeholder breaks totals:** Even though it's 0, if it's accidentally `undefined` or `NaN` instead of `0`, it poisons every sum. LOW. Prevention: Always initialize as `round2(0)`.
+
+**Cash Flow Disaggregation (AC3) Failure Modes:**
+
+- **beginningCash/endingCash continuity break:** `endingCash[M] != beginningCash[M+1]`. CRITICAL. Prevention: Single running variable `runningCash`. `beginningCash = runningCash` at start of month, compute `cfNetCashFlow`, then `endingCash = beginningCash + cfNetCashFlow`, then `runningCash = endingCash`. Identity is structural, not computed.
+- **Initial cash balance wrong:** Month 1 `beginningCash` should be cash available after startup investment: `equity + debt - totalStartupInvestment`. If this doesn't account for all startup cost components (capex + non-capex + working capital reserve), it's wrong from month 1. CRITICAL. Prevention: Trace existing engine's startup cash calculation and replicate exactly.
+- **cfNetOperatingCashFlow != operatingCashFlow:** AC3 requires these to be equal. If disaggregated components don't sum to existing value, something is missing or double-counted. CRITICAL. Prevention: Compute from components AND assert equality with `operatingCashFlow` in tests.
+- **Double-counting interest:** Interest appears in P&L and could appear in both operating and financing CF sections. If it's in Operating (through preTaxIncome) AND in Financing, it's double-counted. HIGH. Prevention: Verify existing `operatingCashFlow` field's definition — does it include or exclude interest? Must be consistent.
+- **AR/AP/Inventory change sign errors:** Increase in AR = cash OUT (negative CF). If sign is flipped, operating CF is wrong. HIGH. Prevention: AR increase = negative cash flow. AP increase = positive cash flow. Inventory increase = negative cash flow.
+- **Off-by-one on "change" fields for month 1:** Month 1 has no "previous month." If AR change = AR[1] - AR[0], AR[0] should be 0. If undefined, NaN propagates. MEDIUM. Prevention: Explicitly set month-0 values to 0.
+
+**Valuation (AC4) Failure Modes:**
+
+- **Using net income instead of EBITDA:** Story says "Net Operating Income = EBITDA." If code uses `preTaxIncome` (which includes depreciation and interest), valuation is too low. HIGH. Prevention: Must use EBITDA, NOT preTaxIncome.
+- **Shareholder salary adjustment sign error:** `adjNetOperatingIncome = EBITDA - shareholderSalaryAdj`. shareholderSalaryAdj values are POSITIVE (adjustment amount, not expense). Subtraction is correct. HIGH.
+- **Division by zero in adjNetOperatingIncomePct:** Zero revenue edge case. MEDIUM. Prevention: Guard with `if grossSales === 0, set pct to 0`.
+
+**ROIC Extended (AC5) Failure Modes:**
+
+- **Cumulative sweat equity miscalculated:** `totalSweatEquity` must be cumulative through year N, not just current year. HIGH. Prevention: Use running sum.
+- **retainedEarningsLessDistributions source mismatch:** Should match BS `retainedEarnings` at year-end. If computed independently, could diverge. HIGH. Prevention: Derive from monthly `retainedEarnings` at month 12/24/36/48/60.
+- **Division by zero in roicPct:** `totalInvestedCapital = 0`. MEDIUM. Prevention: Guard with `if totalInvestedCapital <= 0, roicPct = 0`.
+
+**P&L Analysis (AC6) Failure Modes:**
+
+- **salaryCapAtTarget formula ambiguity:** Two formulas given. MEDIUM. Prevention: Use `salaryCapAtTarget = nonLaborGrossMargin - targetPreTaxProfit - |non-wage opex|`. Verify against reference spreadsheet.
+- **Absolute value inconsistency:** Some fields use `|x|` because expenses are negative. If applied inconsistently, ratios are wrong. HIGH. Prevention: ALL P&L Analysis output fields are POSITIVE values. Apply `Math.abs()` when extracting expense values.
+- **totalWages missing a component:** `totalWages = |directLabor| + |managementSalaries|`. If `managementSalaries` is not tracked separately, formula can't be computed as specified. HIGH. Prevention: Check existing `MonthlyProjection` fields for management salary availability.
+
+**Audit Checks (AC7) Failure Modes:**
+
+- **Tolerance too tight:** Current tolerance is 1 cent. With 60 months of `round2()` accumulation, rounding drift COULD exceed 1 cent. MEDIUM. Prevention: Run tests with multiple input sets. Consider tolerance of 100 (1 dollar) for cumulative checks while keeping 1 cent for per-month checks.
+- **Check count explosion:** "13 check categories" but some are per-year. Test should validate by CHECK NAME pattern, not array length. MEDIUM.
+
+**Cross-Cutting Failure Modes:**
+
+- **Monthly push unmaintainability:** Adding ~27 new fields to existing ~30-field push creates 57+ field object. One typo breaks everything. MEDIUM. Prevention: Consider building new fields as separate object and spreading: `monthly.push({ ...existingFields, ...newBSFields, ...newCFFields })`.
+- **Existing 49 tests break via nonCapexInvestment default:** CRITICAL. Prevention: Default `nonCapexInvestment` to `[nonCapexTotal, 0, 0, 0, 0]` to exactly replicate current Year-1-only behavior. Write a specific test verifying old inputs produce identical outputs before AND after extension.
+- **Determinism (AC8):** New computations using `Math.round` vs `round2()` could produce platform-dependent results. MEDIUM. Prevention: Use ONLY `round2()`. Never `Math.round`, `Math.floor`, `Math.ceil`, or `toFixed`.
+
 ### File Change Summary
 
 | File | Action | Notes |
