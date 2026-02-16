@@ -35,6 +35,8 @@ Restructure the sidebar to match the v3 UX spec's navigation model. Collapse the
 - My Plan layout: collapse split-panel into single-column (summary metrics bar at top, forms below)
 - Summary metric cards move from DashboardPanel into the top of the My Plan forms view
 - Dashboard charts (break-even, revenue vs expenses) remain accessible via Reports; removed from My Plan
+- Rename WorkspaceView values from `"dashboard"`/`"statements"` to `"my-plan"`/`"reports"` for developer clarity
+- Rename "Dashboard" sidebar item to "Home"
 - Label corrections throughout
 
 **Out of Scope:**
@@ -52,7 +54,7 @@ Restructure the sidebar to match the v3 UX spec's navigation model. Collapse the
 
 1. **Sidebar structure:** Uses shadcn `SidebarGroup` / `SidebarGroupLabel` / `SidebarMenu` / `SidebarMenuButton` for section grouping. Two SidebarGroups exist today: one for nav items (Dashboard, Brands, Invitations) and one for plan items (My Plan, Reports) that appears conditionally when `isInPlanWorkspace` is true.
 
-2. **WorkspaceViewContext:** Manages `workspaceView: "dashboard" | "statements"` state. Both the sidebar and planning-workspace consume this. The context provides `navigateToStatements(tab?)` and `navigateToMyPlan()` methods. The sidebar uses `workspaceView` to highlight the active item. The planning-workspace conditionally renders `FinancialStatements` or the `ResizablePanelGroup` based on this state.
+2. **WorkspaceViewContext:** Manages `workspaceView: "dashboard" | "statements"` state. Both the sidebar and planning-workspace consume this. The context provides `navigateToStatements(tab?)` and `navigateToMyPlan()` methods. The sidebar uses `workspaceView` to highlight the active item. The planning-workspace conditionally renders `FinancialStatements` or the `ResizablePanelGroup` based on this state. **Note:** The current values `"dashboard"` and `"statements"` are implementation artifacts that don't match user-facing labels. This spec renames them to `"my-plan"` and `"reports"` as part of the context update (see Technical Decision #7).
 
 3. **Plan workspace layout:** `planning-workspace.tsx` renders a `ResizablePanelGroup` with `InputPanel` (40%) and `DashboardPanel` (60%) side by side. The `InputPanel` delegates to `FormsMode` or `QuickEntryMode` based on `activeMode` (ExperienceTier). The `DashboardPanel` contains 5 metric cards and 2 charts (break-even, revenue vs expenses).
 
@@ -96,11 +98,13 @@ Restructure the sidebar to match the v3 UX spec's navigation model. Collapse the
 
 6. **Booking link → HELP section.** Move from `SidebarFooter` into a new `SidebarGroup` with label "HELP". Keep the header icon button as-is (it's a convenience duplicate). The SidebarFooter retains only the user avatar/logout and "Powered by Katalyst" branding.
 
+7. **Rename WorkspaceView values for clarity.** The current values `"dashboard"` and `"statements"` are implementation artifacts that don't match user-facing labels and confuse new developers. Rename to `"my-plan"` and `"reports"` respectively. The full union becomes `"my-plan" | "reports" | "scenarios" | "settings"`. This is a search-and-replace across 3 files: `WorkspaceViewContext.tsx`, `app-sidebar.tsx`, and `planning-workspace.tsx`.
+
 ## Acceptance Criteria
 
 ### Sidebar Structure
 
-- AC 1: Given the user is on the home dashboard (not inside a plan), the sidebar shows only the MY LOCATIONS section group with items: "All Plans" (previously "Dashboard"), plus admin items (Brands, Invitations) if applicable. No plan-specific section or HELP section appears.
+- AC 1: Given the user is on the home dashboard (not inside a plan), the sidebar shows only the MY LOCATIONS section group with items: "Home" (previously "Dashboard"), plus admin items (Brands, Invitations) if applicable. No plan-specific section or HELP section appears.
 
 - AC 2: Given the user is inside a plan workspace (`/plans/:planId`), the sidebar shows three section groups in order: MY LOCATIONS, [Active Plan Name], and HELP.
 
@@ -122,13 +126,13 @@ Restructure the sidebar to match the v3 UX spec's navigation model. Collapse the
 
 - AC 10: The first section group label reads the brand display name (or "Katalyst Growth Planner" for Katalyst admins) — no change from current behavior.
 
-- AC 11: The "Dashboard" nav item is renamed to "All Plans" with the same icon and route (`/`).
+- AC 11: The "Dashboard" nav item is renamed to "Home" in the sidebar with the same icon (`Home`) and route (`/`). The page title on the dashboard page itself is not changed in this spec — sidebar label only.
 
 ### My Plan Layout
 
 - AC 12: Given the user is on the My Plan view, the workspace renders a single-column layout (no split panel, no resize handle, no side-by-side dashboard).
 
-- AC 13: Given the user is on the My Plan view and plan outputs are available, a summary metrics bar appears at the top of the forms area showing at minimum: Total Startup Investment, Projected Annual Revenue, ROI (5-Year), and Break-Even.
+- AC 13: Given the user is on the My Plan view and plan outputs are available, a **sticky** summary metrics bar appears at the top of the forms area (above the PlanCompleteness bar, below the PlanningHeader). It shows at minimum: Total Startup Investment, Projected Annual Revenue, ROI (5-Year), and Break-Even. The metrics bar remains visible while the user scrolls through form sections below.
 
 - AC 14: Given the user is on the My Plan view, the collapsible form sections (Revenue, COGS, Labor, Facilities, Startup Costs) render below the summary metrics bar, occupying the full width of the content area.
 
@@ -138,7 +142,7 @@ Restructure the sidebar to match the v3 UX spec's navigation model. Collapse the
 
 ### WorkspaceViewContext
 
-- AC 17: The `WorkspaceView` type includes at least four states: `"dashboard"` (My Plan), `"statements"` (Reports), `"scenarios"`, and `"settings"`.
+- AC 17: The `WorkspaceView` type uses semantic names: `"my-plan"`, `"reports"`, `"scenarios"`, and `"settings"`. The old values `"dashboard"` and `"statements"` are replaced everywhere.
 
 - AC 18: The context exposes `activePlanName: string | null` and `setActivePlanName: (name: string | null) => void`. The planning-workspace sets it when plan data loads.
 
@@ -146,11 +150,19 @@ Restructure the sidebar to match the v3 UX spec's navigation model. Collapse the
 
 ### Data-testid Coverage
 
-- AC 20: All new sidebar items have `data-testid` attributes following existing conventions: `nav-scenarios`, `nav-settings`, `nav-all-plans`, `nav-help-booking`.
+- AC 20: All new sidebar items have `data-testid` attributes following existing conventions: `nav-scenarios`, `nav-settings`, `nav-home`, `nav-help-booking`.
 
 - AC 21: All new placeholder views have `data-testid` attributes: `placeholder-scenarios`, `placeholder-settings`.
 
 - AC 22: The summary metrics bar in My Plan has `data-testid="my-plan-summary-metrics"`.
+
+### Loading & Edge Cases
+
+- AC 23: Given plan data is still loading, the plan section label in the sidebar shows a fallback (e.g., "Plan" or a skeleton indicator) until the plan name resolves. Once loaded, the label updates to the actual plan name.
+
+- AC 24: Given the user navigates from Scenarios (or Settings) back to My Plan via the sidebar, the My Plan view renders correctly with summary metrics and form sections — no stale state from the previous view.
+
+- AC 25: Given the user is in quick-entry mode (internally), summary metrics do NOT appear twice. Either the external SummaryMetrics bar is suppressed when QuickEntryMode is active (since QuickEntryMode renders its own metrics row), or the embedded metrics in QuickEntryMode are removed in favor of the shared bar.
 
 ## Implementation Guidance
 
@@ -162,7 +174,7 @@ Restructure the sidebar to match the v3 UX spec's navigation model. Collapse the
 
 3. **Reuse existing SummaryMetrics component.** `shared/summary-metrics.tsx` exports `SummaryMetrics` which takes a `planId` and renders metric cards with loading/error/empty states. Embed this directly — don't create a new metrics component.
 
-4. **FormsMode receives the metrics bar.** The `SummaryMetrics` component should be embedded inside the FormsMode component's layout, above the `PlanCompleteness` sticky bar. Alternatively, it can be placed in the planning-workspace itself above the FormsMode. Choose whichever keeps the scroll behavior correct — the metrics bar should scroll with the form content, not be sticky.
+4. **FormsMode receives the sticky metrics bar.** The `SummaryMetrics` component should be placed as a **sticky** element at the top of the My Plan content area — above the `PlanCompleteness` bar and below the `PlanningHeader`. It stays visible while the user scrolls through form sections. Place it either inside the FormsMode layout (as a second sticky bar above `PlanCompleteness`) or in the planning-workspace itself above the FormsMode scroll container. The key requirement: the metrics bar must remain visible during scrolling, just like the existing `PlanCompleteness` bar does.
 
 5. **Placeholder views are simple.** For Scenarios and Settings, render a centered card with an icon, a title ("Scenarios" / "Settings"), and a one-line description ("Coming soon — scenario comparison will appear here."). Follow the same pattern used in `input-panel.tsx` for the Planning Assistant placeholder (lines 30-44).
 
@@ -184,8 +196,8 @@ Restructure the sidebar to match the v3 UX spec's navigation model. Collapse the
 
 | File | Change Type | Description |
 | ---- | ----------- | ----------- |
-| `client/src/contexts/WorkspaceViewContext.tsx` | Modify | Add `"scenarios"` and `"settings"` to `WorkspaceView` union. Add `activePlanName` / `setActivePlanName` state. Add `navigateToScenarios()` and `navigateToSettings()` methods. |
-| `client/src/components/app-sidebar.tsx` | Modify | Restructure into 3 section groups (MY LOCATIONS, [Plan Name], HELP). Rename "Dashboard" to "All Plans". Add Scenarios and Settings items. Move booking link from footer to HELP group. |
+| `client/src/contexts/WorkspaceViewContext.tsx` | Modify | Rename `WorkspaceView` values to `"my-plan" | "reports" | "scenarios" | "settings"`. Add `activePlanName` / `setActivePlanName` state. Add `navigateToScenarios()` and `navigateToSettings()` methods. Update default from `"dashboard"` to `"my-plan"`. |
+| `client/src/components/app-sidebar.tsx` | Modify | Restructure into 3 section groups (MY LOCATIONS, [Plan Name], HELP). Rename "Dashboard" to "Home". Add Scenarios and Settings items. Move booking link from footer to HELP group. Rename WorkspaceView references from `"dashboard"`/`"statements"` to `"my-plan"`/`"reports"`. |
 | `client/src/pages/planning-workspace.tsx` | Modify | Remove `ResizablePanelGroup` / `DashboardPanel` from My Plan view. Render FormsMode (or QuickEntryMode) as single-column with `SummaryMetrics` above. Add conditional rendering for `"scenarios"` and `"settings"` views. Call `setActivePlanName` on plan load. |
 | `client/src/components/planning/forms-mode.tsx` | Modify (minor) | Accept optional `planId` prop for `SummaryMetrics` embedding (if metrics are placed inside FormsMode rather than above it in the workspace). |
 | `client/src/components/planning/input-panel.tsx` | Possibly modify | May need to pass through `planId` for metrics, or may be bypassed entirely if workspace renders FormsMode directly. |
@@ -202,7 +214,7 @@ Restructure the sidebar to match the v3 UX spec's navigation model. Collapse the
 
 **E2E testing (Playwright via run_test) is the primary verification method:**
 
-1. **Sidebar structure when outside a plan:** Navigate to `/` — verify "All Plans" item appears, no plan section or HELP section visible.
+1. **Sidebar structure when outside a plan:** Navigate to `/` — verify "Home" item appears, no plan section or HELP section visible.
 
 2. **Sidebar structure when inside a plan:** Navigate to a plan — verify three section groups appear. Verify plan section label shows the plan name (not "Plan"). Verify My Plan, Reports, Scenarios, Settings items are present.
 
@@ -217,6 +229,12 @@ Restructure the sidebar to match the v3 UX spec's navigation model. Collapse the
 7. **My Plan single-column layout:** When on My Plan, verify no resize handle is visible. Verify summary metrics appear. Verify form sections render full-width.
 
 8. **Reports regression:** After visiting My Plan, click Reports — verify Financial Statements render correctly with all tabs functional.
+
+9. **Round-trip navigation:** Click Scenarios → then click My Plan → verify forms and summary metrics render correctly (no stale view state).
+
+10. **Plan name loading fallback:** Navigate to a plan — observe the sidebar section label during load. Verify it shows a fallback, then updates to the actual plan name once loaded.
+
+11. **QuickEntry duplicate metrics:** If the user's stored mode is quick_entry, verify summary metrics do not appear twice on screen.
 
 **Unit testing is NOT required for this change** — the changes are structural/layout and best verified visually and interactively.
 
@@ -234,4 +252,4 @@ Restructure the sidebar to match the v3 UX spec's navigation model. Collapse the
 - Impact Strip (Story 5.9) will be added below the forms in My Plan. The single-column layout created here provides the correct container for it.
 - Guardian Bar (Story 5.8) will integrate with the Impact Strip.
 - Mode-switcher cleanup will eventually remove the `ExperienceTier` state, `InputPanel` wrapper, and `QuickEntryMode` component. The layout created here is designed to survive that cleanup.
-- The "All Plans" label (renamed from "Dashboard") is an interim label. When the portfolio view (multi-plan management) is built, this item's destination and behavior may evolve.
+- The "Home" label (renamed from "Dashboard") is an interim label. When the portfolio view (multi-plan management) is built, this item may be renamed to "All Plans" or "My Locations" and its destination/behavior may evolve.
