@@ -1,14 +1,16 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
-import { RefreshCw } from "lucide-react";
+import { RefreshCw, ArrowRight } from "lucide-react";
 import { usePlanOutputs } from "@/hooks/use-plan-outputs";
 import { MetricCard, formatROI, formatBreakEven } from "@/components/shared/summary-metrics";
 import { BreakEvenChart, RevenueExpensesChart } from "@/components/planning/dashboard-charts";
 import { formatCents } from "@/lib/format-currency";
+import type { StatementTabId } from "@/components/planning/financial-statements";
 
 interface DashboardPanelProps {
   planId: string;
+  onNavigateToStatements?: (tab?: StatementTabId) => void;
 }
 
 function DashboardSkeleton() {
@@ -38,7 +40,48 @@ function DashboardSkeleton() {
   );
 }
 
-export function DashboardPanel({ planId }: DashboardPanelProps) {
+function ClickableMetricCard({
+  label,
+  value,
+  subtitle,
+  testId,
+  isFetching,
+  onClick,
+}: {
+  label: string;
+  value: string;
+  subtitle?: string;
+  testId: string;
+  isFetching: boolean;
+  onClick?: () => void;
+}) {
+  return (
+    <Card className={onClick ? "cursor-pointer hover-elevate" : ""} onClick={onClick}>
+      <CardContent className="pt-4 pb-3 px-4">
+        <p className="text-xs text-muted-foreground font-medium uppercase tracking-wide mb-1">
+          {label}
+        </p>
+        <p
+          className="text-2xl font-semibold font-mono tabular-nums transition-opacity duration-200"
+          style={{ opacity: isFetching ? 0.5 : 1 }}
+          data-testid={testId}
+        >
+          {value}
+        </p>
+        {subtitle && (
+          <p className="text-xs text-muted-foreground mt-0.5">{subtitle}</p>
+        )}
+        {onClick && (
+          <span className="text-xs text-primary flex items-center gap-0.5 mt-1">
+            View details <ArrowRight className="h-3 w-3" />
+          </span>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
+export function DashboardPanel({ planId, onNavigateToStatements }: DashboardPanelProps) {
   const { output, isLoading, isFetching, error, invalidateOutputs } = usePlanOutputs(planId);
 
   if (isLoading) {
@@ -86,47 +129,63 @@ export function DashboardPanel({ planId }: DashboardPanelProps) {
   const monthlyAvgCashFlow = annualSummaries[0]
     ? Math.round(annualSummaries[0].netCashFlow / 12)
     : 0;
+  const fetching = isFetching && !isLoading;
 
   return (
     <div data-testid="dashboard-panel" className="h-full p-4 overflow-auto">
       <div className="space-y-4">
-        {/* Summary Cards */}
         <div data-testid="dashboard-summary-cards" className="grid grid-cols-2 xl:grid-cols-3 gap-3">
-          <MetricCard
+          <ClickableMetricCard
             label="Total Startup Investment"
             value={formatCents(roiMetrics.totalStartupInvestment)}
             testId="metric-card-investment"
-            isFetching={isFetching && !isLoading}
+            isFetching={fetching}
+            onClick={onNavigateToStatements ? () => onNavigateToStatements("summary") : undefined}
           />
-          <MetricCard
+          <ClickableMetricCard
             label="Projected Annual Revenue"
             value={formatCents(annualSummaries[0]?.revenue ?? 0)}
             subtitle="Year 1"
             testId="metric-card-revenue"
-            isFetching={isFetching && !isLoading}
+            isFetching={fetching}
+            onClick={onNavigateToStatements ? () => onNavigateToStatements("pnl") : undefined}
           />
-          <MetricCard
+          <ClickableMetricCard
             label="ROI (5-Year)"
             value={formatROI(roiMetrics.fiveYearROIPct)}
             testId="metric-card-roi"
-            isFetching={isFetching && !isLoading}
+            isFetching={fetching}
+            onClick={onNavigateToStatements ? () => onNavigateToStatements("roic") : undefined}
           />
-          <MetricCard
+          <ClickableMetricCard
             label="Break-Even"
             value={formatBreakEven(roiMetrics.breakEvenMonth)}
             testId="metric-card-breakeven"
-            isFetching={isFetching && !isLoading}
+            isFetching={fetching}
+            onClick={onNavigateToStatements ? () => onNavigateToStatements("cash-flow") : undefined}
           />
-          <MetricCard
+          <ClickableMetricCard
             label="Monthly Cash Flow"
             value={formatCents(monthlyAvgCashFlow)}
             subtitle="Year 1 Average"
             testId="metric-card-cashflow"
-            isFetching={isFetching && !isLoading}
+            isFetching={fetching}
+            onClick={onNavigateToStatements ? () => onNavigateToStatements("cash-flow") : undefined}
           />
         </div>
 
-        {/* Charts */}
+        {onNavigateToStatements && (
+          <Button
+            variant="outline"
+            className="w-full"
+            onClick={() => onNavigateToStatements("summary")}
+            data-testid="button-dashboard-view-statements"
+          >
+            <ArrowRight className="h-3.5 w-3.5 mr-1.5" />
+            View Financial Statements
+          </Button>
+        )}
+
         <BreakEvenChart monthlyProjections={monthlyProjections} />
         <RevenueExpensesChart annualSummaries={annualSummaries} />
       </div>

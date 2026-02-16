@@ -13,9 +13,12 @@ import { apiRequest, queryClient } from "@/lib/queryClient";
 import { PlanningHeader } from "@/components/planning/planning-header";
 import { InputPanel } from "@/components/planning/input-panel";
 import { DashboardPanel } from "@/components/planning/dashboard-panel";
+import { FinancialStatements, type StatementTabId } from "@/components/planning/financial-statements";
 import { QuickStartOverlay } from "@/components/shared/quick-start-overlay";
 import type { ExperienceTier } from "@/components/planning/mode-switcher";
 import type { Brand, Plan } from "@shared/schema";
+
+export type WorkspaceView = "dashboard" | "statements";
 
 export default function PlanningWorkspace() {
   const params = useParams<{ planId: string }>();
@@ -43,6 +46,18 @@ export default function PlanningWorkspace() {
   const [activeMode, setActiveMode] = useState<ExperienceTier>(
     getStoredMode() ?? user?.preferredTier ?? "forms"
   );
+
+  const [workspaceView, setWorkspaceView] = useState<WorkspaceView>("dashboard");
+  const [statementsDefaultTab, setStatementsDefaultTab] = useState<StatementTabId>("summary");
+
+  const handleNavigateToStatements = useCallback((tab?: StatementTabId) => {
+    if (tab) setStatementsDefaultTab(tab);
+    setWorkspaceView("statements");
+  }, []);
+
+  const handleBackToDashboard = useCallback(() => {
+    setWorkspaceView("dashboard");
+  }, []);
 
   const hasUserSynced = useRef(false);
   useEffect(() => {
@@ -175,21 +190,34 @@ export default function PlanningWorkspace() {
         onModeChange={handleModeChange}
         saveStatus={saveStatus}
         onRetrySave={retrySave}
+        workspaceView={workspaceView}
+        onViewChange={setWorkspaceView}
       />
       <div className="flex-1 min-h-0">
-        <ResizablePanelGroup direction="horizontal">
-          <ResizablePanel defaultSize={40} minSize={30}>
-            <div className="h-full" style={{ minWidth: 360 }}>
-              <InputPanel activeMode={activeMode} planId={planId} queueSave={queueSave} />
-            </div>
-          </ResizablePanel>
-          <ResizableHandle withHandle />
-          <ResizablePanel defaultSize={60} minSize={40}>
-            <div className="h-full" style={{ minWidth: 480 }}>
-              <DashboardPanel planId={planId} />
-            </div>
-          </ResizablePanel>
-        </ResizablePanelGroup>
+        {workspaceView === "statements" ? (
+          <FinancialStatements
+            planId={planId}
+            defaultTab={statementsDefaultTab}
+            onBack={handleBackToDashboard}
+          />
+        ) : (
+          <ResizablePanelGroup direction="horizontal">
+            <ResizablePanel defaultSize={40} minSize={30}>
+              <div className="h-full" style={{ minWidth: 360 }}>
+                <InputPanel activeMode={activeMode} planId={planId} queueSave={queueSave} />
+              </div>
+            </ResizablePanel>
+            <ResizableHandle withHandle />
+            <ResizablePanel defaultSize={60} minSize={40}>
+              <div className="h-full" style={{ minWidth: 480 }}>
+                <DashboardPanel
+                  planId={planId}
+                  onNavigateToStatements={handleNavigateToStatements}
+                />
+              </div>
+            </ResizablePanel>
+          </ResizablePanelGroup>
+        )}
       </div>
     </div>
   );
