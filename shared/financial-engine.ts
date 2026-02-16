@@ -127,6 +127,11 @@ export interface FinancialInputs {
    *  consumers but NOT applied to engine calculations — all P&L metrics
    *  are pre-tax, matching the PostNet reference model convention. */
   taxRate: number;
+  ebitdaMultiple?: number;
+  targetPreTaxProfitPct?: [number, number, number, number, number];
+  shareholderSalaryAdj?: [number, number, number, number, number];
+  taxPaymentDelayMonths?: number;
+  nonCapexInvestment?: [number, number, number, number, number];
 }
 
 export interface StartupCostLineItem {
@@ -199,6 +204,40 @@ export interface MonthlyProjection {
   loanOpeningBalance: number;
   loanPrincipalPayment: number;
   loanClosingBalance: number;
+
+  // Balance Sheet disaggregation
+  taxPayable: number;
+  lineOfCredit: number;
+  commonStock: number;
+  retainedEarnings: number;
+  totalCurrentAssets: number;
+  totalAssets: number;
+  totalCurrentLiabilities: number;
+  totalLiabilities: number;
+  totalEquity: number;
+  totalLiabilitiesAndEquity: number;
+
+  // Cash Flow disaggregation — Operating
+  cfDepreciation: number;
+  cfAccountsReceivableChange: number;
+  cfInventoryChange: number;
+  cfAccountsPayableChange: number;
+  cfTaxPayableChange: number;
+  cfNetOperatingCashFlow: number;
+  // Cash Flow disaggregation — Investing
+  cfCapexPurchase: number;
+  cfNetBeforeFinancing: number;
+  // Cash Flow disaggregation — Financing
+  cfNotesPayable: number;
+  cfLineOfCredit: number;
+  cfInterestExpense: number;
+  cfDistributions: number;
+  cfEquityIssuance: number;
+  cfNetFinancingCashFlow: number;
+  // Cash Flow disaggregation — Net
+  cfNetCashFlow: number;
+  beginningCash: number;
+  endingCash: number;
 }
 
 export interface AnnualSummary {
@@ -244,11 +283,66 @@ export interface IdentityCheckResult {
   tolerance: number;
 }
 
+export interface ValuationOutput {
+  year: number;
+  grossSales: number;
+  netOperatingIncome: number;
+  shareholderSalaryAdj: number;
+  adjNetOperatingIncome: number;
+  adjNetOperatingIncomePct: number;
+  ebitdaMultiple: number;
+  estimatedValue: number;
+  estimatedTaxOnSale: number;
+  netAfterTaxProceeds: number;
+  totalCashInvested: number;
+  replacementReturnRequired: number;
+  businessAnnualROIC: number;
+}
+
+export interface ROICExtendedOutput {
+  year: number;
+  outsideCash: number;
+  totalLoans: number;
+  totalCashInvested: number;
+  totalSweatEquity: number;
+  retainedEarningsLessDistributions: number;
+  totalInvestedCapital: number;
+  preTaxNetIncome: number;
+  preTaxNetIncomeIncSweatEquity: number;
+  taxRate: number;
+  taxesDue: number;
+  afterTaxNetIncome: number;
+  roicPct: number;
+  avgCoreCapitalPerMonth: number;
+  monthsOfCoreCapital: number;
+  excessCoreCapital: number;
+}
+
+export interface PLAnalysisOutput {
+  year: number;
+  adjustedPreTaxProfit: number;
+  targetPreTaxProfit: number;
+  aboveBelowTarget: number;
+  nonLaborGrossMargin: number;
+  totalWages: number;
+  adjustedTotalWages: number;
+  salaryCapAtTarget: number;
+  overUnderCap: number;
+  laborEfficiency: number;
+  adjustedLaborEfficiency: number;
+  discretionaryMarketingPct: number;
+  prTaxBenefitsPctOfWages: number;
+  otherOpexPctOfRevenue: number;
+}
+
 export interface EngineOutput {
   monthlyProjections: MonthlyProjection[];
   annualSummaries: AnnualSummary[];
   roiMetrics: ROIMetrics;
   identityChecks: IdentityCheckResult[];
+  valuation: ValuationOutput[];
+  roicExtended: ROICExtendedOutput[];
+  plAnalysis: PLAnalysisOutput[];
 }
 
 // ─── Helpers ────────────────────────────────────────────────────────────
@@ -308,11 +402,21 @@ export function calculateProjections(input: EngineInput): EngineOutput {
     ? Math.round(1 / fi.startup.depreciationRate)
     : 0;
 
+  // ── Step 3b: Resolve new optional input defaults ─────────────────
+  const ebitdaMultiple = fi.ebitdaMultiple ?? 3;
+  const targetPreTaxProfitPct = fi.targetPreTaxProfitPct ?? [0.10, 0.10, 0.10, 0.10, 0.10] as [number, number, number, number, number];
+  const shareholderSalaryAdj = fi.shareholderSalaryAdj ?? [0, 0, 0, 0, 0] as [number, number, number, number, number];
+  const taxPaymentDelayMonths = fi.taxPaymentDelayMonths ?? 1;
+  const nonCapexInvestmentPerYear = fi.nonCapexInvestment ?? [nonCapexTotal, 0, 0, 0, 0] as [number, number, number, number, number];
+
   // ── Step 4: Monthly Projections ───────────────────────────────────
   const monthly: MonthlyProjection[] = [];
   let prevRevenue = 0;
   let loanBalance = debtAmount;
   let accumulatedDepreciation = 0;
+  let taxPayableBalance = 0;
+  let runningCash = 0;
+  let cumulativeRetainedEarningsMonthly = 0;
 
   for (let m = 1; m <= MAX_PROJECTION_MONTHS; m++) {
     const yi = yearIndex(m);
@@ -324,7 +428,6 @@ export function calculateProjections(input: EngineInput): EngineOutput {
     let revenue: number;
 
     if (m <= fi.revenue.monthsToReachAuv) {
-      // Linear ramp from startingMonthAuvPct to 100% over monthsToReachAuv months
       const startPct = fi.revenue.startingMonthAuvPct;
       if (startPct !== 0) {
         const monthsRemaining = fi.revenue.monthsToReachAuv - m;
@@ -334,7 +437,6 @@ export function calculateProjections(input: EngineInput): EngineOutput {
       }
       revenue = round2(auvPct * monthlyAuv);
     } else {
-      // Post-ramp: compound monthly growth
       const growthRate = fi.revenue.growthRates[yi];
       const monthlyGrowthRate = growthRate / MONTHS_PER_YEAR;
       revenue = round2(prevRevenue * (1 + monthlyGrowthRate));
@@ -346,7 +448,7 @@ export function calculateProjections(input: EngineInput): EngineOutput {
     const royalties = round2(-revenue * fi.operatingCosts.royaltyPct[yi]);
     const adFund = round2(-revenue * fi.operatingCosts.adFundPct[yi]);
     const totalCogs = round2(materialsCogs + royalties + adFund);
-    const grossProfit = round2(revenue + totalCogs); // totalCogs is negative
+    const grossProfit = round2(revenue + totalCogs);
 
     // ── Operating Expenses ────────────────────────────────────────
     const directLabor = round2(-revenue * fi.operatingCosts.laborPct[yi]);
@@ -359,10 +461,7 @@ export function calculateProjections(input: EngineInput): EngineOutput {
     const payrollTaxBenefits = round2(-payrollBase * fi.operatingCosts.payrollTaxPct[yi]);
     const otherOpex = round2(-revenue * fi.operatingCosts.otherOpexPct[yi]);
 
-    // Non-CapEx spread over Year 1 only
-    const nonCapexMonthly = (yi === 0)
-      ? round2(-nonCapexTotal / MONTHS_PER_YEAR)
-      : 0;
+    const nonCapexMonthly = round2(-nonCapexInvestmentPerYear[yi] / MONTHS_PER_YEAR);
 
     const totalOpex = round2(
       facilities + marketingExp + managementSalaries +
@@ -397,14 +496,14 @@ export function calculateProjections(input: EngineInput): EngineOutput {
     // ── Pre-Tax Income ────────────────────────────────────────────
     const preTaxIncome = round2(ebitda + depThisMonth + interestExpense);
 
-    // ── Balance Sheet Items ───────────────────────────────────────
+    // ── Balance Sheet Items (existing) ────────────────────────────
     const dim = daysInMonth();
     const accountsReceivable = round2((revenue / dim) * fi.workingCapitalAssumptions.arDays);
     const inventoryVal = round2((Math.abs(materialsCogs) / dim) * fi.workingCapitalAssumptions.inventoryDays);
     const accountsPayable = round2((Math.abs(materialsCogs) / dim) * fi.workingCapitalAssumptions.apDays);
     const netFixedAssets = round2(capexTotal - accumulatedDepreciation);
 
-    // ── Operating Cash Flow ───────────────────────────────────────
+    // ── Operating Cash Flow (existing) ────────────────────────────
     const prevAR = m > 1 ? monthly[m - 2].accountsReceivable : 0;
     const prevInv = m > 1 ? monthly[m - 2].inventory : 0;
     const prevAP = m > 1 ? monthly[m - 2].accountsPayable : 0;
@@ -416,6 +515,60 @@ export function calculateProjections(input: EngineInput): EngineOutput {
     const operatingCashFlow = round2(
       preTaxIncome + Math.abs(depThisMonth) + changeAR + changeInv + changeAP
     );
+
+    // ── Tax Payable (shift-by-N mechanism) ─────────────────────────
+    const prevTaxPayable = taxPayableBalance;
+    const taxAccrual = round2(Math.max(0, preTaxIncome * fi.taxRate));
+    taxPayableBalance = round2(taxPayableBalance + taxAccrual);
+    const lookbackIndex = (m - 1) - taxPaymentDelayMonths;
+    if (lookbackIndex >= 0) {
+      const pastPreTaxIncome = monthly[lookbackIndex].preTaxIncome;
+      const payment = round2(Math.max(0, pastPreTaxIncome * fi.taxRate));
+      taxPayableBalance = round2(taxPayableBalance - payment);
+    }
+    taxPayableBalance = round2(Math.max(0, taxPayableBalance));
+    const taxPayable = taxPayableBalance;
+
+    // ── Cash Flow Disaggregation ───────────────────────────────────
+    const cfDepreciation = round2(Math.abs(depThisMonth));
+    const cfAccountsReceivableChange = round2(changeAR);
+    const cfInventoryChange = round2(changeInv);
+    const cfAccountsPayableChange = round2(changeAP);
+    const cfTaxPayableChange = round2(taxPayable - prevTaxPayable);
+    const cfNetOperatingCashFlow = operatingCashFlow;
+
+    const cfCapexPurchase = (m === 1) ? round2(-capexTotal) : 0;
+    const cfNetBeforeFinancing = round2(cfNetOperatingCashFlow + cfTaxPayableChange + cfCapexPurchase);
+
+    const monthlyDistribution = round2(-fi.distributions[yi] / MONTHS_PER_YEAR);
+    const cfNotesPayable = round2(-principalPayment);
+    const cfLineOfCredit = 0;
+    const cfInterestExpense = round2(interestExpense);
+    const cfDistributions = monthlyDistribution;
+    const cfEquityIssuance = (m === 1) ? equityAmount : 0;
+    const debtDrawdownMonth = (m === 1) ? debtAmount : 0;
+    const cfNetFinancingCashFlow = round2(
+      cfNotesPayable + cfLineOfCredit + cfDistributions + cfEquityIssuance + debtDrawdownMonth
+    );
+
+    const cfNetCashFlow = round2(cfNetBeforeFinancing + cfNetFinancingCashFlow);
+    const beginningCash = runningCash;
+    const endingCash = round2(beginningCash + cfNetCashFlow);
+    runningCash = endingCash;
+
+    // ── Retained Earnings (cumulative monthly) ─────────────────────
+    cumulativeRetainedEarningsMonthly = round2(cumulativeRetainedEarningsMonthly + preTaxIncome + monthlyDistribution);
+
+    // ── Balance Sheet Disaggregation ───────────────────────────────
+    const lineOfCredit = 0;
+    const commonStock = equityAmount;
+    const retainedEarnings = cumulativeRetainedEarningsMonthly;
+    const totalCurrentAssets = round2(endingCash + accountsReceivable + inventoryVal);
+    const totalAssets = round2(totalCurrentAssets + netFixedAssets);
+    const totalCurrentLiabilities = round2(accountsPayable + taxPayable);
+    const totalLiabilities = round2(totalCurrentLiabilities + loanBalance + lineOfCredit);
+    const totalEquity = round2(commonStock + retainedEarnings);
+    const totalLiabilitiesAndEquity = round2(totalLiabilities + totalEquity);
 
     monthly.push({
       month: m,
@@ -446,10 +599,37 @@ export function calculateProjections(input: EngineInput): EngineOutput {
       accountsPayable,
       netFixedAssets,
       operatingCashFlow,
-      cumulativeNetCashFlow: 0, // populated in Step 6
+      cumulativeNetCashFlow: 0,
       loanOpeningBalance: loanOpening,
       loanPrincipalPayment: principalPayment,
       loanClosingBalance: loanBalance,
+      taxPayable,
+      lineOfCredit,
+      commonStock,
+      retainedEarnings,
+      totalCurrentAssets,
+      totalAssets,
+      totalCurrentLiabilities,
+      totalLiabilities,
+      totalEquity,
+      totalLiabilitiesAndEquity,
+      cfDepreciation,
+      cfAccountsReceivableChange,
+      cfInventoryChange,
+      cfAccountsPayableChange,
+      cfTaxPayableChange,
+      cfNetOperatingCashFlow,
+      cfCapexPurchase,
+      cfNetBeforeFinancing,
+      cfNotesPayable,
+      cfLineOfCredit,
+      cfInterestExpense,
+      cfDistributions,
+      cfEquityIssuance,
+      cfNetFinancingCashFlow,
+      cfNetCashFlow,
+      beginningCash,
+      endingCash,
     });
 
     prevRevenue = revenue;
@@ -457,8 +637,6 @@ export function calculateProjections(input: EngineInput): EngineOutput {
 
   // ── Step 5: Annual Summaries ────────────────────────────────────────
   const annualSummaries: AnnualSummary[] = [];
-  let cumulativeCash = 0;
-  let cumulativeRetainedEarnings = 0;
 
   for (let y = 0; y < 5; y++) {
     const yearMonths = monthly.filter((mp) => mp.year === y + 1);
@@ -476,29 +654,7 @@ export function calculateProjections(input: EngineInput): EngineOutput {
     const preTaxIncome = round2(ebitda + depreciation + interest);
     const opCashFlow = yearMonths.reduce((s, mp) => s + mp.operatingCashFlow, 0);
 
-    // Financing cash flows for the year
-    const capexCF = y === 0 ? -capexTotal : 0;
-    const debtDrawdown = y === 0 ? debtAmount : 0;
-    const principalRepaid = yearMonths.reduce((s, mp) => s + mp.loanPrincipalPayment, 0);
-    const debtRepaymentCF = -principalRepaid; // principal repayment every year including Y1
-    const distributions = -fi.distributions[y];
-    const equityIssuance = y === 0 ? equityAmount : 0;
-
-    const financingCF = debtDrawdown + debtRepaymentCF + distributions + equityIssuance;
-    const cfBeforeFinancing = round2(opCashFlow + capexCF);
-    const netCashFlow = round2(cfBeforeFinancing + financingCF);
-    cumulativeCash = round2(cumulativeCash + netCashFlow);
-
-    // Retained earnings
-    cumulativeRetainedEarnings = round2(cumulativeRetainedEarnings + preTaxIncome - fi.distributions[y]);
-
-    // Balance sheet
-    const totalCurrentAssets = round2(
-      cumulativeCash + lastMonth.accountsReceivable + lastMonth.inventory
-    );
-    const totalAssets = round2(totalCurrentAssets + lastMonth.netFixedAssets);
-    const totalLiabilities = round2(lastMonth.accountsPayable + lastMonth.loanClosingBalance);
-    const totalEquity = round2(equityAmount + cumulativeRetainedEarnings);
+    const annualNetCashFlow = yearMonths.reduce((s, mp) => s + mp.cfNetCashFlow, 0);
 
     annualSummaries.push({
       year: y + 1,
@@ -516,12 +672,12 @@ export function calculateProjections(input: EngineInput): EngineOutput {
       interestExpense: round2(interest),
       preTaxIncome: round2(preTaxIncome),
       preTaxIncomePct: revenue !== 0 ? round2(preTaxIncome / revenue) : 0,
-      totalAssets: round2(totalAssets),
-      totalLiabilities: round2(totalLiabilities),
-      totalEquity: round2(totalEquity),
+      totalAssets: round2(lastMonth.totalAssets),
+      totalLiabilities: round2(lastMonth.totalLiabilities),
+      totalEquity: round2(lastMonth.totalEquity),
       operatingCashFlow: round2(opCashFlow),
-      netCashFlow: round2(netCashFlow),
-      endingCash: round2(cumulativeCash),
+      netCashFlow: round2(annualNetCashFlow),
+      endingCash: round2(lastMonth.endingCash),
     });
   }
 
@@ -559,15 +715,154 @@ export function calculateProjections(input: EngineInput): EngineOutput {
     fiveYearROIPct,
   };
 
-  // ── Step 7: Accounting Identity Checks ──────────────────────────────
+  // ── Step 7: Valuation ──────────────────────────────────────────────
+  const valuation: ValuationOutput[] = [];
+  for (let y = 0; y < 5; y++) {
+    const annual = annualSummaries[y];
+    const grossSales = round2(annual.revenue);
+    const netOperatingIncome = round2(annual.ebitda);
+    const annualSalaryAdj = shareholderSalaryAdj[y];
+    const adjNetOperatingIncome = round2(netOperatingIncome - annualSalaryAdj);
+    const adjNetOperatingIncomePct = grossSales !== 0 ? round2(adjNetOperatingIncome / grossSales) : 0;
+    const estimatedValue = round2(adjNetOperatingIncome * ebitdaMultiple);
+    const estimatedTaxOnSale = round2(estimatedValue * fi.taxRate);
+    const netAfterTaxProceeds = round2(estimatedValue - estimatedTaxOnSale);
+    const totalCashInvested = equityAmount;
+    const businessAnnualROIC = totalCashInvested > 0 ? round2(adjNetOperatingIncome / totalCashInvested) : 0;
+    const replacementReturnRequired = totalCashInvested > 0 ? round2(adjNetOperatingIncome / totalCashInvested) : 0;
+
+    valuation.push({
+      year: y + 1,
+      grossSales,
+      netOperatingIncome,
+      shareholderSalaryAdj: annualSalaryAdj,
+      adjNetOperatingIncome,
+      adjNetOperatingIncomePct,
+      ebitdaMultiple,
+      estimatedValue,
+      estimatedTaxOnSale,
+      netAfterTaxProceeds,
+      totalCashInvested,
+      replacementReturnRequired,
+      businessAnnualROIC,
+    });
+  }
+
+  // ── Step 8: ROIC Extended ──────────────────────────────────────────
+  const roicExtended: ROICExtendedOutput[] = [];
+  let cumulativeSweatEquity = 0;
+  for (let y = 0; y < 5; y++) {
+    const annual = annualSummaries[y];
+    const yearEndMonth = monthly[(y + 1) * MONTHS_PER_YEAR - 1];
+    const outsideCash = equityAmount;
+    const totalLoans = debtAmount;
+    const totalCashInvested = round2(outsideCash + totalLoans);
+    cumulativeSweatEquity = round2(cumulativeSweatEquity + shareholderSalaryAdj[y]);
+    const retainedEarningsLessDistributions = round2(yearEndMonth.retainedEarnings);
+    const totalInvestedCapital = round2(totalCashInvested + cumulativeSweatEquity + retainedEarningsLessDistributions);
+    const preTaxNetIncome = round2(annual.preTaxIncome);
+    const annualSalaryAdj = shareholderSalaryAdj[y];
+    const preTaxNetIncomeIncSweatEquity = round2(preTaxNetIncome + annualSalaryAdj);
+    const taxesDue = round2(Math.max(0, preTaxNetIncomeIncSweatEquity * fi.taxRate));
+    const afterTaxNetIncome = round2(preTaxNetIncomeIncSweatEquity - taxesDue);
+    const roicPct = totalInvestedCapital > 0 ? round2(afterTaxNetIncome / totalInvestedCapital) : 0;
+
+    const yearMonths = monthly.filter((mp) => mp.year === y + 1);
+    const totalOpexAbs = yearMonths.reduce((s, mp) => s + Math.abs(mp.totalOpex), 0);
+    const totalDirectLaborAbs = yearMonths.reduce((s, mp) => s + Math.abs(mp.directLabor), 0);
+    const avgCoreCapitalPerMonth = round2((totalOpexAbs + totalDirectLaborAbs) / MONTHS_PER_YEAR);
+    const monthsOfCoreCapital = avgCoreCapitalPerMonth > 0 ? round2(yearEndMonth.endingCash / avgCoreCapitalPerMonth) : 0;
+    const excessCoreCapital = round2(yearEndMonth.endingCash - (3 * avgCoreCapitalPerMonth));
+
+    roicExtended.push({
+      year: y + 1,
+      outsideCash,
+      totalLoans,
+      totalCashInvested,
+      totalSweatEquity: cumulativeSweatEquity,
+      retainedEarningsLessDistributions,
+      totalInvestedCapital,
+      preTaxNetIncome,
+      preTaxNetIncomeIncSweatEquity,
+      taxRate: fi.taxRate,
+      taxesDue,
+      afterTaxNetIncome,
+      roicPct,
+      avgCoreCapitalPerMonth,
+      monthsOfCoreCapital,
+      excessCoreCapital,
+    });
+  }
+
+  // ── Step 9: P&L Analysis ───────────────────────────────────────────
+  const plAnalysis: PLAnalysisOutput[] = [];
+  for (let y = 0; y < 5; y++) {
+    const annual = annualSummaries[y];
+    const yearMonths = monthly.filter((mp) => mp.year === y + 1);
+    const revenue = round2(annual.revenue);
+    const annualSalaryAdj = shareholderSalaryAdj[y];
+    const adjustedPreTaxProfit = round2(annual.preTaxIncome + annualSalaryAdj);
+    const targetPreTaxProfit = round2(revenue * targetPreTaxProfitPct[y]);
+    const aboveBelowTarget = round2(adjustedPreTaxProfit - targetPreTaxProfit);
+    const nonLaborGrossMargin = round2(annual.grossProfit);
+    const annualDirectLabor = yearMonths.reduce((s, mp) => s + Math.abs(mp.directLabor), 0);
+    const annualMgmtSalaries = yearMonths.reduce((s, mp) => s + Math.abs(mp.managementSalaries), 0);
+    const totalWages = round2(annualDirectLabor + annualMgmtSalaries);
+    const adjustedTotalWages = round2(totalWages - annualSalaryAdj);
+
+    const annualFacilities = yearMonths.reduce((s, mp) => s + Math.abs(mp.facilities), 0);
+    const annualPayrollTax = yearMonths.reduce((s, mp) => s + Math.abs(mp.payrollTaxBenefits), 0);
+    const annualMarketing = yearMonths.reduce((s, mp) => s + Math.abs(mp.marketing), 0);
+    const annualOtherOpex = yearMonths.reduce((s, mp) => s + Math.abs(mp.otherOpex), 0);
+    const annualNonCapex = yearMonths.reduce((s, mp) => s + Math.abs(mp.nonCapexInvestment), 0);
+    const nonWageOpex = round2(annualFacilities + annualPayrollTax + annualMarketing + annualOtherOpex + annualNonCapex);
+    const salaryCapAtTarget = round2(nonLaborGrossMargin - targetPreTaxProfit - nonWageOpex);
+    const overUnderCap = round2(salaryCapAtTarget - adjustedTotalWages);
+    const laborEfficiency = revenue !== 0 ? round2(totalWages / revenue) : 0;
+    const adjustedLaborEfficiency = revenue !== 0 ? round2(adjustedTotalWages / revenue) : 0;
+    const discretionaryMarketingPct = revenue !== 0 ? round2(annualMarketing / revenue) : 0;
+    const prTaxBenefitsPctOfWages = totalWages !== 0 ? round2(annualPayrollTax / totalWages) : 0;
+    const otherOpexPctOfRevenue = revenue !== 0 ? round2(annualOtherOpex / revenue) : 0;
+
+    plAnalysis.push({
+      year: y + 1,
+      adjustedPreTaxProfit,
+      targetPreTaxProfit,
+      aboveBelowTarget,
+      nonLaborGrossMargin,
+      totalWages,
+      adjustedTotalWages,
+      salaryCapAtTarget,
+      overUnderCap,
+      laborEfficiency,
+      adjustedLaborEfficiency,
+      discretionaryMarketingPct,
+      prTaxBenefitsPctOfWages,
+      otherOpexPctOfRevenue,
+    });
+  }
+
+  // ── Step 10: Accounting Identity Checks (13 categories) ─────────────
   const identityChecks: IdentityCheckResult[] = [];
   const tolerance = 1; // $0.01 tolerance (1 cent)
 
-  // Check 1: Balance sheet balances for each year
+  // Cat 1: Monthly BS identity — A = L + E every month
+  for (const mp of monthly) {
+    const diff = Math.abs(mp.totalAssets - mp.totalLiabilitiesAndEquity);
+    identityChecks.push({
+      name: `Monthly BS identity (M${mp.month})`,
+      passed: diff <= tolerance,
+      expected: mp.totalAssets,
+      actual: mp.totalLiabilitiesAndEquity,
+      tolerance,
+    });
+  }
+
+  // Cat 2: Annual BS identity — derived from monthly snapshots
   for (const annual of annualSummaries) {
     const diff = Math.abs(annual.totalAssets - (annual.totalLiabilities + annual.totalEquity));
     identityChecks.push({
-      name: `Balance sheet balances (Year ${annual.year})`,
+      name: `Annual BS identity (Year ${annual.year})`,
       passed: diff <= tolerance,
       expected: annual.totalAssets,
       actual: round2(annual.totalLiabilities + annual.totalEquity),
@@ -575,21 +870,20 @@ export function calculateProjections(input: EngineInput): EngineOutput {
     });
   }
 
-  // Check 2: Depreciation total matches CapEx over depreciation period
+  // Cat 3: Depreciation total equals CapEx
   if (depreciationYears > 0) {
     const totalDepreciation = monthly.reduce((s, mp) => s + Math.abs(mp.depreciation), 0);
-    const expectedDepreciation = capexTotal;
-    const depDiff = Math.abs(round2(totalDepreciation) - expectedDepreciation);
+    const depDiff = Math.abs(round2(totalDepreciation) - capexTotal);
     identityChecks.push({
       name: "Total depreciation equals CapEx",
       passed: depDiff <= tolerance,
-      expected: expectedDepreciation,
+      expected: capexTotal,
       actual: round2(totalDepreciation),
       tolerance,
     });
   }
 
-  // Check 3: Loan fully amortized check (within projection window if term <= 60)
+  // Cat 4: Loan amortization consistency
   if (fi.financing.termMonths > 0 && fi.financing.termMonths <= MAX_PROJECTION_MONTHS) {
     const finalLoanBalance = monthly[monthly.length - 1].loanClosingBalance;
     const expectedFinalBalance = Math.max(0, debtAmount - (monthlyPrincipal * Math.min(fi.financing.termMonths, MAX_PROJECTION_MONTHS)));
@@ -602,15 +896,13 @@ export function calculateProjections(input: EngineInput): EngineOutput {
     });
   }
 
-  // Check 4: P&L to cash flow consistency per year (Net Income + Depreciation + WC changes ≈ Operating CF)
+  // Cat 5: P&L to cash flow consistency per year
   for (const annual of annualSummaries) {
     const yearMonths = monthly.filter((mp) => mp.year === annual.year);
     const netIncome = annual.preTaxIncome;
     const dep = Math.abs(annual.depreciation);
-    const firstMonth = yearMonths[0];
     const lastMonthOfYear = yearMonths[yearMonths.length - 1];
 
-    // Get prior year ending values
     const priorYearMonths = monthly.filter((mp) => mp.year === annual.year - 1);
     const priorLast = priorYearMonths.length > 0 ? priorYearMonths[priorYearMonths.length - 1] : null;
     const priorAR = priorLast ? priorLast.accountsReceivable : 0;
@@ -626,10 +918,116 @@ export function calculateProjections(input: EngineInput): EngineOutput {
     const diff = Math.abs(expectedOCF - actualOCF);
 
     identityChecks.push({
-      name: `P&L to cash flow consistency (Year ${annual.year})`,
+      name: `P&L to CF consistency (Year ${annual.year})`,
       passed: diff <= tolerance,
       expected: expectedOCF,
       actual: actualOCF,
+      tolerance,
+    });
+  }
+
+  // Cat 6: CF cash continuity — endingCash[m] = beginningCash[m+1]
+  for (let m = 0; m < monthly.length - 1; m++) {
+    const diff = Math.abs(monthly[m].endingCash - monthly[m + 1].beginningCash);
+    identityChecks.push({
+      name: `CF cash continuity (M${monthly[m].month}→M${monthly[m + 1].month})`,
+      passed: diff <= tolerance,
+      expected: monthly[m].endingCash,
+      actual: monthly[m + 1].beginningCash,
+      tolerance,
+    });
+  }
+
+  // Cat 7: CF net = before financing + financing
+  for (const mp of monthly) {
+    const expected = round2(mp.cfNetBeforeFinancing + mp.cfNetFinancingCashFlow);
+    const diff = Math.abs(expected - mp.cfNetCashFlow);
+    identityChecks.push({
+      name: `CF net identity (M${mp.month})`,
+      passed: diff <= tolerance,
+      expected,
+      actual: mp.cfNetCashFlow,
+      tolerance,
+    });
+  }
+
+  // Cat 8: CF ending cash = beginning + net
+  for (const mp of monthly) {
+    const expected = round2(mp.beginningCash + mp.cfNetCashFlow);
+    const diff = Math.abs(expected - mp.endingCash);
+    identityChecks.push({
+      name: `CF ending cash identity (M${mp.month})`,
+      passed: diff <= tolerance,
+      expected,
+      actual: mp.endingCash,
+      tolerance,
+    });
+  }
+
+  // Cat 9: P&L chain — revenue + cogs = grossProfit, grossProfit + labor = CM, etc.
+  for (const mp of monthly) {
+    const gpExpected = round2(mp.revenue + mp.totalCogs);
+    const gpDiff = Math.abs(gpExpected - mp.grossProfit);
+    identityChecks.push({
+      name: `P&L gross profit (M${mp.month})`,
+      passed: gpDiff <= tolerance,
+      expected: gpExpected,
+      actual: mp.grossProfit,
+      tolerance,
+    });
+  }
+
+  // Cat 10: EBITDA = CM + totalOpex
+  for (const annual of annualSummaries) {
+    const expected = round2(annual.contributionMargin + annual.totalOpex);
+    const diff = Math.abs(expected - annual.ebitda);
+    identityChecks.push({
+      name: `EBITDA identity (Year ${annual.year})`,
+      passed: diff <= tolerance,
+      expected,
+      actual: annual.ebitda,
+      tolerance,
+    });
+  }
+
+  // Cat 11: Annual CF net matches sum of monthly CF net
+  for (let y = 0; y < 5; y++) {
+    const yearMonths = monthly.filter((mp) => mp.year === y + 1);
+    const sumMonthly = round2(yearMonths.reduce((s, mp) => s + mp.cfNetCashFlow, 0));
+    const annual = annualSummaries[y];
+    const diff = Math.abs(sumMonthly - annual.netCashFlow);
+    identityChecks.push({
+      name: `Annual CF aggregation (Year ${y + 1})`,
+      passed: diff <= tolerance,
+      expected: sumMonthly,
+      actual: annual.netCashFlow,
+      tolerance,
+    });
+  }
+
+  // Cat 12: Valuation adjNetOperatingIncome = EBITDA - shareholderSalaryAdj
+  for (const v of valuation) {
+    const annual = annualSummaries[v.year - 1];
+    const expected = round2(annual.ebitda - v.shareholderSalaryAdj);
+    const diff = Math.abs(expected - v.adjNetOperatingIncome);
+    identityChecks.push({
+      name: `Valuation adjNOI identity (Year ${v.year})`,
+      passed: diff <= tolerance,
+      expected,
+      actual: v.adjNetOperatingIncome,
+      tolerance,
+    });
+  }
+
+  // Cat 13: ROIC invested capital = cash + loans + sweatEquity + retainedEarnings
+  for (const r of roicExtended) {
+    const expected = round2(r.totalCashInvested + r.totalSweatEquity + r.retainedEarningsLessDistributions);
+    const diff = Math.abs(expected - r.totalInvestedCapital);
+    identityChecks.push({
+      name: `ROIC invested capital identity (Year ${r.year})`,
+      passed: diff <= tolerance,
+      expected,
+      actual: r.totalInvestedCapital,
       tolerance,
     });
   }
@@ -639,5 +1037,8 @@ export function calculateProjections(input: EngineInput): EngineOutput {
     annualSummaries,
     roiMetrics,
     identityChecks,
+    valuation,
+    roicExtended,
+    plAnalysis,
   };
 }

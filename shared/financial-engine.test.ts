@@ -270,7 +270,7 @@ describe("Financial Engine", () => {
 
     it("includes balance sheet checks for all 5 years", () => {
       const bsChecks = result.identityChecks.filter((c) =>
-        c.name.startsWith("Balance sheet")
+        c.name.startsWith("Annual BS identity")
       );
       expect(bsChecks).toHaveLength(5);
     });
@@ -285,7 +285,7 @@ describe("Financial Engine", () => {
 
     it("includes P&L to cash flow consistency checks", () => {
       const plCfChecks = result.identityChecks.filter((c) =>
-        c.name.includes("P&L to cash flow")
+        c.name.includes("P&L to CF consistency")
       );
       expect(plCfChecks).toHaveLength(5);
       plCfChecks.forEach((check) => {
@@ -551,6 +551,531 @@ describe("Financial Engine", () => {
         .split("\n")
         .filter((line: string) => /^\s*import\s/.test(line));
       expect(importLines).toHaveLength(0);
+    });
+  });
+
+  describe("Monthly Balance Sheet Disaggregation (AC1)", () => {
+    it("every month has totalAssets = totalLiabilitiesAndEquity", () => {
+      result.monthlyProjections.forEach((mp) => {
+        expect(Math.abs(mp.totalAssets - mp.totalLiabilitiesAndEquity)).toBeLessThanOrEqual(1);
+      });
+    });
+
+    it("totalCurrentAssets = endingCash + AR + inventory", () => {
+      result.monthlyProjections.forEach((mp) => {
+        const expected = mp.endingCash + mp.accountsReceivable + mp.inventory;
+        expect(Math.abs(mp.totalCurrentAssets - expected)).toBeLessThanOrEqual(1);
+      });
+    });
+
+    it("totalAssets = totalCurrentAssets + netFixedAssets", () => {
+      result.monthlyProjections.forEach((mp) => {
+        const expected = mp.totalCurrentAssets + mp.netFixedAssets;
+        expect(Math.abs(mp.totalAssets - expected)).toBeLessThanOrEqual(1);
+      });
+    });
+
+    it("totalLiabilities = AP + taxPayable + loanClosingBalance + lineOfCredit", () => {
+      result.monthlyProjections.forEach((mp) => {
+        const expected = mp.accountsPayable + mp.taxPayable + mp.loanClosingBalance + mp.lineOfCredit;
+        expect(Math.abs(mp.totalLiabilities - expected)).toBeLessThanOrEqual(1);
+      });
+    });
+
+    it("totalEquity = commonStock + retainedEarnings", () => {
+      result.monthlyProjections.forEach((mp) => {
+        const expected = mp.commonStock + mp.retainedEarnings;
+        expect(Math.abs(mp.totalEquity - expected)).toBeLessThanOrEqual(1);
+      });
+    });
+
+    it("retainedEarnings accumulates preTaxIncome minus distributions", () => {
+      let cumulativeRE = 0;
+      result.monthlyProjections.forEach((mp, i) => {
+        const yi = Math.floor(i / 12);
+        const monthlyDist = postNetInputs.distributions[yi] / 12;
+        cumulativeRE += mp.preTaxIncome - monthlyDist;
+        expect(Math.abs(mp.retainedEarnings - cumulativeRE)).toBeLessThanOrEqual(1);
+      });
+    });
+
+    it("commonStock equals equity amount for all months", () => {
+      const equityAmount = Math.round(postNetInputs.financing.totalInvestment * postNetInputs.financing.equityPct);
+      result.monthlyProjections.forEach((mp) => {
+        expect(mp.commonStock).toBe(equityAmount);
+      });
+    });
+  });
+
+  describe("Monthly Cash Flow Disaggregation (AC2)", () => {
+    it("cfNetOperatingCashFlow equals operatingCashFlow", () => {
+      result.monthlyProjections.forEach((mp) => {
+        expect(mp.cfNetOperatingCashFlow).toBe(mp.operatingCashFlow);
+      });
+    });
+
+    it("cfNetBeforeFinancing = opCF + taxPayableChange + capex", () => {
+      result.monthlyProjections.forEach((mp) => {
+        const expected = mp.cfNetOperatingCashFlow + mp.cfTaxPayableChange + mp.cfCapexPurchase;
+        expect(Math.abs(mp.cfNetBeforeFinancing - expected)).toBeLessThanOrEqual(1);
+      });
+    });
+
+    it("cfNetCashFlow = cfNetBeforeFinancing + cfNetFinancingCashFlow", () => {
+      result.monthlyProjections.forEach((mp) => {
+        const expected = mp.cfNetBeforeFinancing + mp.cfNetFinancingCashFlow;
+        expect(Math.abs(mp.cfNetCashFlow - expected)).toBeLessThanOrEqual(1);
+      });
+    });
+
+    it("endingCash = beginningCash + cfNetCashFlow", () => {
+      result.monthlyProjections.forEach((mp) => {
+        const expected = mp.beginningCash + mp.cfNetCashFlow;
+        expect(Math.abs(mp.endingCash - expected)).toBeLessThanOrEqual(1);
+      });
+    });
+
+    it("cash continuity: ending cash of M[n] = beginning cash of M[n+1]", () => {
+      for (let i = 0; i < result.monthlyProjections.length - 1; i++) {
+        expect(Math.abs(
+          result.monthlyProjections[i].endingCash - result.monthlyProjections[i + 1].beginningCash
+        )).toBeLessThanOrEqual(1);
+      }
+    });
+
+    it("capex purchase only in month 1", () => {
+      result.monthlyProjections.forEach((mp) => {
+        if (mp.month === 1) {
+          expect(mp.cfCapexPurchase).toBeLessThan(0);
+        } else {
+          expect(mp.cfCapexPurchase).toBe(0);
+        }
+      });
+    });
+
+    it("equity issuance only in month 1", () => {
+      result.monthlyProjections.forEach((mp) => {
+        if (mp.month === 1) {
+          expect(mp.cfEquityIssuance).toBeGreaterThan(0);
+        } else {
+          expect(mp.cfEquityIssuance).toBe(0);
+        }
+      });
+    });
+
+    it("cfInterestExpense is display-only and NOT included in financing total", () => {
+      result.monthlyProjections.forEach((mp) => {
+        if (mp.interestExpense !== 0) {
+          expect(mp.cfInterestExpense).toBe(mp.interestExpense);
+        }
+        const financingWithoutInterest = mp.cfNotesPayable + mp.cfLineOfCredit + mp.cfDistributions + mp.cfEquityIssuance;
+        const debtDrawdown = mp.month === 1 ? Math.round(postNetInputs.financing.totalInvestment * (1 - postNetInputs.financing.equityPct)) : 0;
+        const expectedFinancing = financingWithoutInterest + debtDrawdown;
+        expect(Math.abs(mp.cfNetFinancingCashFlow - expectedFinancing)).toBeLessThanOrEqual(1);
+      });
+    });
+  });
+
+  describe("Tax Payable Shift-by-N (AC3)", () => {
+    it("month 1 taxPayable is 0 (no prior period accrual)", () => {
+      expect(result.monthlyProjections[0].taxPayable).toBe(0);
+    });
+
+    it("taxPayable is non-negative for all months", () => {
+      result.monthlyProjections.forEach((mp) => {
+        expect(mp.taxPayable).toBeGreaterThanOrEqual(0);
+      });
+    });
+
+    it("taxPayable accumulates when preTaxIncome is positive", () => {
+      const firstPositiveMonth = result.monthlyProjections.find((mp) => mp.preTaxIncome > 0);
+      if (firstPositiveMonth && firstPositiveMonth.month < 60) {
+        const nextMonth = result.monthlyProjections[firstPositiveMonth.month];
+        expect(nextMonth.taxPayable).toBeGreaterThan(0);
+      }
+    });
+
+    it("custom taxDelayMonths shifts tax payment timing", () => {
+      const customInput: EngineInput = {
+        financialInputs: { ...postNetInputs, taxDelayMonths: 3 },
+        startupCosts: postNetStartupCosts,
+      };
+      const customResult = calculateProjections(customInput);
+      const delay3 = customResult.monthlyProjections;
+      const delay1 = result.monthlyProjections;
+      const m3Tax = delay3[2].taxPayable;
+      const m1Tax = delay1[2].taxPayable;
+      expect(m3Tax).toBeGreaterThanOrEqual(m1Tax);
+    });
+
+    it("cfTaxPayableChange reflects balance change", () => {
+      result.monthlyProjections.forEach((mp, i) => {
+        const prevTaxPayable = i > 0 ? result.monthlyProjections[i - 1].taxPayable : 0;
+        const expected = mp.taxPayable - prevTaxPayable;
+        expect(Math.abs(mp.cfTaxPayableChange - expected)).toBeLessThanOrEqual(1);
+      });
+    });
+  });
+
+  describe("Annual Summary BS from Monthly Snapshots (ADR-5, AC4)", () => {
+    it("annual totalAssets equals last month's totalAssets", () => {
+      for (let y = 0; y < 5; y++) {
+        const lastMonth = result.monthlyProjections[(y + 1) * 12 - 1];
+        expect(result.annualSummaries[y].totalAssets).toBe(lastMonth.totalAssets);
+      }
+    });
+
+    it("annual totalLiabilities equals last month's totalLiabilities", () => {
+      for (let y = 0; y < 5; y++) {
+        const lastMonth = result.monthlyProjections[(y + 1) * 12 - 1];
+        expect(result.annualSummaries[y].totalLiabilities).toBe(lastMonth.totalLiabilities);
+      }
+    });
+
+    it("annual totalEquity equals last month's totalEquity", () => {
+      for (let y = 0; y < 5; y++) {
+        const lastMonth = result.monthlyProjections[(y + 1) * 12 - 1];
+        expect(result.annualSummaries[y].totalEquity).toBe(lastMonth.totalEquity);
+      }
+    });
+
+    it("annual endingCash equals last month's endingCash", () => {
+      for (let y = 0; y < 5; y++) {
+        const lastMonth = result.monthlyProjections[(y + 1) * 12 - 1];
+        expect(result.annualSummaries[y].endingCash).toBe(lastMonth.endingCash);
+      }
+    });
+
+    it("annual netCashFlow equals sum of monthly cfNetCashFlow", () => {
+      for (let y = 0; y < 5; y++) {
+        const yearMonths = result.monthlyProjections.filter((mp) => mp.year === y + 1);
+        const sumMonthly = yearMonths.reduce((s, mp) => s + mp.cfNetCashFlow, 0);
+        expect(Math.abs(result.annualSummaries[y].netCashFlow - sumMonthly)).toBeLessThanOrEqual(1);
+      }
+    });
+  });
+
+  describe("Valuation Output (AC6)", () => {
+    it("produces 5 annual valuation records", () => {
+      expect(result.valuation).toHaveLength(5);
+    });
+
+    it("valuation years are 1 through 5", () => {
+      result.valuation.forEach((v, i) => {
+        expect(v.year).toBe(i + 1);
+      });
+    });
+
+    it("grossSales matches annual revenue", () => {
+      result.valuation.forEach((v) => {
+        const annual = result.annualSummaries[v.year - 1];
+        expect(v.grossSales).toBe(annual.revenue);
+      });
+    });
+
+    it("netOperatingIncome equals annual EBITDA", () => {
+      result.valuation.forEach((v) => {
+        const annual = result.annualSummaries[v.year - 1];
+        expect(v.netOperatingIncome).toBe(annual.ebitda);
+      });
+    });
+
+    it("adjNetOperatingIncome = EBITDA - shareholderSalaryAdj", () => {
+      result.valuation.forEach((v) => {
+        const expected = v.netOperatingIncome - v.shareholderSalaryAdj;
+        expect(Math.abs(v.adjNetOperatingIncome - expected)).toBeLessThanOrEqual(1);
+      });
+    });
+
+    it("estimatedValue = adjNetOperatingIncome * ebitdaMultiple", () => {
+      result.valuation.forEach((v) => {
+        const expected = v.adjNetOperatingIncome * v.ebitdaMultiple;
+        expect(Math.abs(v.estimatedValue - expected)).toBeLessThanOrEqual(1);
+      });
+    });
+
+    it("estimatedTaxOnSale = estimatedValue * taxRate", () => {
+      result.valuation.forEach((v) => {
+        const expected = v.estimatedValue * postNetInputs.taxRate;
+        expect(Math.abs(v.estimatedTaxOnSale - expected)).toBeLessThanOrEqual(1);
+      });
+    });
+
+    it("netAfterTaxProceeds = estimatedValue - estimatedTaxOnSale", () => {
+      result.valuation.forEach((v) => {
+        const expected = v.estimatedValue - v.estimatedTaxOnSale;
+        expect(Math.abs(v.netAfterTaxProceeds - expected)).toBeLessThanOrEqual(1);
+      });
+    });
+
+    it("default shareholderSalaryAdj is zero array", () => {
+      result.valuation.forEach((v) => {
+        expect(v.shareholderSalaryAdj).toBe(0);
+      });
+    });
+
+    it("custom shareholderSalaryAdj is applied", () => {
+      const customInput: EngineInput = {
+        financialInputs: { ...postNetInputs, shareholderSalaryAdj: [100000, 100000, 100000, 100000, 100000] },
+        startupCosts: postNetStartupCosts,
+      };
+      const customResult = calculateProjections(customInput);
+      customResult.valuation.forEach((v) => {
+        expect(v.shareholderSalaryAdj).toBe(100000);
+      });
+    });
+  });
+
+  describe("ROIC Extended Output (AC7)", () => {
+    it("produces 5 annual ROIC records", () => {
+      expect(result.roicExtended).toHaveLength(5);
+    });
+
+    it("ROIC years are 1 through 5", () => {
+      result.roicExtended.forEach((r, i) => {
+        expect(r.year).toBe(i + 1);
+      });
+    });
+
+    it("totalCashInvested = outsideCash + totalLoans", () => {
+      result.roicExtended.forEach((r) => {
+        expect(Math.abs(r.totalCashInvested - (r.outsideCash + r.totalLoans))).toBeLessThanOrEqual(1);
+      });
+    });
+
+    it("totalInvestedCapital = totalCashInvested + sweatEquity + retainedEarnings", () => {
+      result.roicExtended.forEach((r) => {
+        const expected = r.totalCashInvested + r.totalSweatEquity + r.retainedEarningsLessDistributions;
+        expect(Math.abs(r.totalInvestedCapital - expected)).toBeLessThanOrEqual(1);
+      });
+    });
+
+    it("afterTaxNetIncome = preTaxNetIncomeIncSweatEquity - taxesDue", () => {
+      result.roicExtended.forEach((r) => {
+        const expected = r.preTaxNetIncomeIncSweatEquity - r.taxesDue;
+        expect(Math.abs(r.afterTaxNetIncome - expected)).toBeLessThanOrEqual(1);
+      });
+    });
+
+    it("taxesDue is non-negative", () => {
+      result.roicExtended.forEach((r) => {
+        expect(r.taxesDue).toBeGreaterThanOrEqual(0);
+      });
+    });
+
+    it("sweatEquity accumulates across years", () => {
+      for (let i = 1; i < result.roicExtended.length; i++) {
+        expect(result.roicExtended[i].totalSweatEquity).toBeGreaterThanOrEqual(
+          result.roicExtended[i - 1].totalSweatEquity
+        );
+      }
+    });
+
+    it("monthsOfCoreCapital is computed when avg capital > 0", () => {
+      result.roicExtended.forEach((r) => {
+        if (r.avgCoreCapitalPerMonth > 0) {
+          expect(r.monthsOfCoreCapital).toBeGreaterThan(0);
+        }
+      });
+    });
+  });
+
+  describe("P&L Analysis Output (AC8)", () => {
+    it("produces 5 annual P&L analysis records", () => {
+      expect(result.plAnalysis).toHaveLength(5);
+    });
+
+    it("P&L analysis years are 1 through 5", () => {
+      result.plAnalysis.forEach((p, i) => {
+        expect(p.year).toBe(i + 1);
+      });
+    });
+
+    it("aboveBelowTarget = adjustedPreTaxProfit - targetPreTaxProfit", () => {
+      result.plAnalysis.forEach((p) => {
+        const expected = p.adjustedPreTaxProfit - p.targetPreTaxProfit;
+        expect(Math.abs(p.aboveBelowTarget - expected)).toBeLessThanOrEqual(1);
+      });
+    });
+
+    it("overUnderCap = salaryCapAtTarget - adjustedTotalWages", () => {
+      result.plAnalysis.forEach((p) => {
+        const expected = p.salaryCapAtTarget - p.adjustedTotalWages;
+        expect(Math.abs(p.overUnderCap - expected)).toBeLessThanOrEqual(1);
+      });
+    });
+
+    it("laborEfficiency is between 0 and 1 for reasonable inputs", () => {
+      result.plAnalysis.forEach((p) => {
+        expect(p.laborEfficiency).toBeGreaterThanOrEqual(0);
+        expect(p.laborEfficiency).toBeLessThanOrEqual(1);
+      });
+    });
+
+    it("default targetPreTaxProfitPct produces non-zero targetPreTaxProfit (default is 10%)", () => {
+      result.plAnalysis.forEach((p) => {
+        const annual = result.annualSummaries[p.year - 1];
+        const expected = Math.round(annual.revenue * 0.10);
+        expect(Math.abs(p.targetPreTaxProfit - expected)).toBeLessThanOrEqual(1);
+      });
+    });
+
+    it("custom targetPreTaxProfitPct is applied", () => {
+      const customInput: EngineInput = {
+        financialInputs: { ...postNetInputs, targetPreTaxProfitPct: [0.15, 0.15, 0.15, 0.15, 0.15] },
+        startupCosts: postNetStartupCosts,
+      };
+      const customResult = calculateProjections(customInput);
+      customResult.plAnalysis.forEach((p) => {
+        const annual = customResult.annualSummaries[p.year - 1];
+        const expected = Math.round(annual.revenue * 0.15);
+        expect(Math.abs(p.targetPreTaxProfit - expected)).toBeLessThanOrEqual(1);
+      });
+    });
+  });
+
+  describe("Extended Identity Checks (AC9 — 13 categories)", () => {
+    it("all identity checks pass", () => {
+      const failedChecks = result.identityChecks.filter((c) => !c.passed);
+      if (failedChecks.length > 0) {
+        console.log("Failed checks:", failedChecks.map((c) => `${c.name}: expected=${c.expected}, actual=${c.actual}`));
+      }
+      expect(failedChecks).toHaveLength(0);
+    });
+
+    it("includes 60 monthly BS identity checks", () => {
+      const monthlyBS = result.identityChecks.filter((c) => c.name.startsWith("Monthly BS identity"));
+      expect(monthlyBS).toHaveLength(60);
+    });
+
+    it("includes 5 annual BS identity checks", () => {
+      const annualBS = result.identityChecks.filter((c) => c.name.startsWith("Annual BS identity"));
+      expect(annualBS).toHaveLength(5);
+    });
+
+    it("includes 59 CF cash continuity checks", () => {
+      const cont = result.identityChecks.filter((c) => c.name.startsWith("CF cash continuity"));
+      expect(cont).toHaveLength(59);
+    });
+
+    it("includes 60 CF net identity checks", () => {
+      const netId = result.identityChecks.filter((c) => c.name.startsWith("CF net identity"));
+      expect(netId).toHaveLength(60);
+    });
+
+    it("includes 60 CF ending cash identity checks", () => {
+      const endId = result.identityChecks.filter((c) => c.name.startsWith("CF ending cash identity"));
+      expect(endId).toHaveLength(60);
+    });
+
+    it("includes 60 P&L gross profit checks", () => {
+      const gp = result.identityChecks.filter((c) => c.name.startsWith("P&L gross profit"));
+      expect(gp).toHaveLength(60);
+    });
+
+    it("includes 5 EBITDA identity checks", () => {
+      const ebitda = result.identityChecks.filter((c) => c.name.startsWith("EBITDA identity"));
+      expect(ebitda).toHaveLength(5);
+    });
+
+    it("includes 5 annual CF aggregation checks", () => {
+      const agg = result.identityChecks.filter((c) => c.name.startsWith("Annual CF aggregation"));
+      expect(agg).toHaveLength(5);
+    });
+
+    it("includes 5 valuation adjNOI identity checks", () => {
+      const val = result.identityChecks.filter((c) => c.name.startsWith("Valuation adjNOI"));
+      expect(val).toHaveLength(5);
+    });
+
+    it("includes 5 ROIC invested capital identity checks", () => {
+      const roic = result.identityChecks.filter((c) => c.name.startsWith("ROIC invested capital"));
+      expect(roic).toHaveLength(5);
+    });
+
+    it("total check count is at least 300", () => {
+      expect(result.identityChecks.length).toBeGreaterThanOrEqual(300);
+    });
+  });
+
+  describe("OpEx Disaggregation Fields (AC10)", () => {
+    it("monthly projection includes opex breakdown fields", () => {
+      const mp = result.monthlyProjections[12];
+      expect(mp.managementSalaries).toBeDefined();
+      expect(mp.facilities).toBeDefined();
+      expect(mp.payrollTaxBenefits).toBeDefined();
+      expect(mp.marketing).toBeDefined();
+      expect(mp.otherOpex).toBeDefined();
+      expect(mp.nonCapexInvestment).toBeDefined();
+    });
+
+    it("management salaries in year 1 is 0 per reference data", () => {
+      const y1Months = result.monthlyProjections.filter((mp) => mp.year === 1);
+      y1Months.forEach((mp) => {
+        expect(mp.managementSalaries).toBe(0);
+      });
+    });
+
+    it("management salaries in year 2+ are negative (expense convention)", () => {
+      const y2Months = result.monthlyProjections.filter((mp) => mp.year === 2);
+      y2Months.forEach((mp) => {
+        expect(mp.managementSalaries).toBeLessThan(0);
+      });
+    });
+
+    it("facilities are negative (expense convention)", () => {
+      result.monthlyProjections.forEach((mp) => {
+        expect(mp.facilities).toBeLessThanOrEqual(0);
+      });
+    });
+  });
+
+  describe("New Optional Input Defaults (AC11)", () => {
+    it("default ebitdaMultiple is 3", () => {
+      result.valuation.forEach((v) => {
+        expect(v.ebitdaMultiple).toBe(3);
+      });
+    });
+
+    it("custom ebitdaMultiple is applied", () => {
+      const customInput: EngineInput = {
+        financialInputs: { ...postNetInputs, ebitdaMultiple: 5 },
+        startupCosts: postNetStartupCosts,
+      };
+      const customResult = calculateProjections(customInput);
+      customResult.valuation.forEach((v) => {
+        expect(v.ebitdaMultiple).toBe(5);
+      });
+    });
+
+    it("nonCapexInvestment defaults to startup cost non-capex amount in Y1", () => {
+      const y1Months = result.monthlyProjections.filter((mp) => mp.year === 1);
+      const totalNonCapex = y1Months.reduce((s, mp) => s + Math.abs(mp.nonCapexInvestment), 0);
+      const nonCapexFromCosts = postNetStartupCosts
+        .filter((c) => c.capexClassification === "non_capex")
+        .reduce((s, c) => s + c.amount, 0);
+      expect(Math.abs(totalNonCapex - nonCapexFromCosts)).toBeLessThanOrEqual(12);
+    });
+
+    it("custom nonCapexInvestment overrides default", () => {
+      const customInput: EngineInput = {
+        financialInputs: { ...postNetInputs, nonCapexInvestment: [120000, 240000, 240000, 240000, 240000] },
+        startupCosts: postNetStartupCosts,
+      };
+      const customResult = calculateProjections(customInput);
+      const m1 = customResult.monthlyProjections[0];
+      expect(Math.abs(Math.abs(m1.nonCapexInvestment) - 10000)).toBeLessThanOrEqual(1);
+    });
+  });
+
+  describe("Determinism with new outputs", () => {
+    it("identical inputs produce identical new output sections", () => {
+      const r1 = calculateProjections(postNetInput);
+      const r2 = calculateProjections(postNetInput);
+      expect(JSON.stringify(r1.valuation)).toBe(JSON.stringify(r2.valuation));
+      expect(JSON.stringify(r1.roicExtended)).toBe(JSON.stringify(r2.roicExtended));
+      expect(JSON.stringify(r1.plAnalysis)).toBe(JSON.stringify(r2.plAnalysis));
+      expect(JSON.stringify(r1.identityChecks.length)).toBe(JSON.stringify(r2.identityChecks.length));
     });
   });
 });

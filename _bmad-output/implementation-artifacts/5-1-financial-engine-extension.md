@@ -1,6 +1,6 @@
 # Story 5.1: Financial Engine Extension
 
-Status: ready-for-dev
+Status: in-progress
 
 ## Story
 
