@@ -729,7 +729,7 @@ export function calculateProjections(input: EngineInput): EngineOutput {
     const netAfterTaxProceeds = round2(estimatedValue - estimatedTaxOnSale);
     const totalCashInvested = equityAmount;
     const businessAnnualROIC = totalCashInvested > 0 ? round2(adjNetOperatingIncome / totalCashInvested) : 0;
-    const replacementReturnRequired = totalCashInvested > 0 ? round2(adjNetOperatingIncome / totalCashInvested) : 0;
+    const replacementReturnRequired = totalCashInvested > 0 ? round2(netAfterTaxProceeds / totalCashInvested) : 0;
 
     valuation.push({
       year: y + 1,
@@ -964,70 +964,115 @@ export function calculateProjections(input: EngineInput): EngineOutput {
     });
   }
 
-  // Cat 9: P&L chain — revenue + cogs = grossProfit, grossProfit + labor = CM, etc.
-  for (const mp of monthly) {
-    const gpExpected = round2(mp.revenue + mp.totalCogs);
-    const gpDiff = Math.abs(gpExpected - mp.grossProfit);
-    identityChecks.push({
-      name: `P&L gross profit (M${mp.month})`,
-      passed: gpDiff <= tolerance,
-      expected: gpExpected,
-      actual: mp.grossProfit,
-      tolerance,
-    });
-  }
-
-  // Cat 10: EBITDA = CM + totalOpex
+  // Cat 9: P&L Check — grossProfit + directLabor + totalOpex + depreciation + interest = preTaxIncome (annual)
   for (const annual of annualSummaries) {
-    const expected = round2(annual.contributionMargin + annual.totalOpex);
-    const diff = Math.abs(expected - annual.ebitda);
+    const expected = round2(annual.grossProfit + annual.directLabor + annual.totalOpex + annual.depreciation + annual.interestExpense);
+    const diff = Math.abs(expected - annual.preTaxIncome);
     identityChecks.push({
-      name: `EBITDA identity (Year ${annual.year})`,
+      name: `P&L Check (Year ${annual.year})`,
       passed: diff <= tolerance,
       expected,
-      actual: annual.ebitda,
+      actual: annual.preTaxIncome,
       tolerance,
     });
   }
 
-  // Cat 11: Annual CF net matches sum of monthly CF net
+  // Cat 10: Balance Sheet Check — beginning equity + net income - distributions = ending equity (annual)
   for (let y = 0; y < 5; y++) {
     const yearMonths = monthly.filter((mp) => mp.year === y + 1);
-    const sumMonthly = round2(yearMonths.reduce((s, mp) => s + mp.cfNetCashFlow, 0));
-    const annual = annualSummaries[y];
-    const diff = Math.abs(sumMonthly - annual.netCashFlow);
+    const priorYearMonths = monthly.filter((mp) => mp.year === y);
+    const beginEquity = priorYearMonths.length > 0
+      ? priorYearMonths[priorYearMonths.length - 1].totalEquity
+      : round2(equityAmount);
+    const yearPreTaxIncome = yearMonths.reduce((s, mp) => s + mp.preTaxIncome, 0);
+    const yearDistributions = fi.distributions[y];
+    const expected = round2(beginEquity + yearPreTaxIncome - yearDistributions);
+    const endEquity = yearMonths[yearMonths.length - 1].totalEquity;
+    const diff = Math.abs(expected - endEquity);
     identityChecks.push({
-      name: `Annual CF aggregation (Year ${y + 1})`,
+      name: `BS equity continuity (Year ${y + 1})`,
       passed: diff <= tolerance,
-      expected: sumMonthly,
-      actual: annual.netCashFlow,
+      expected,
+      actual: endEquity,
       tolerance,
     });
   }
 
-  // Cat 12: Valuation adjNetOperatingIncome = EBITDA - shareholderSalaryAdj
+  // Cat 11: Corporation Tax Check — taxesDue = max(0, preTaxNetIncomeIncSweatEquity) * taxRate per year
+  for (let y = 0; y < 5; y++) {
+    const roicYear = roicExtended[y];
+    const expectedTaxAccrual = round2(Math.max(0, roicYear.preTaxNetIncomeIncSweatEquity) * fi.taxRate);
+    const diff = Math.abs(expectedTaxAccrual - roicYear.taxesDue);
+    identityChecks.push({
+      name: `Corporation Tax Check (Year ${y + 1})`,
+      passed: diff <= tolerance,
+      expected: expectedTaxAccrual,
+      actual: roicYear.taxesDue,
+      tolerance,
+    });
+  }
+
+  // Cat 12: Working Capital Check — AR/AP/Inventory consistent with revenue/COGS
+  for (const mp of monthly) {
+    const yi = yearIndex(mp.month);
+    const dailyRevenue = mp.revenue / daysInMonth();
+    const expectedAR = round2(dailyRevenue * fi.workingCapitalAssumptions.arDays);
+    const diff = Math.abs(expectedAR - mp.accountsReceivable);
+    identityChecks.push({
+      name: `Working Capital AR (M${mp.month})`,
+      passed: diff <= tolerance,
+      expected: expectedAR,
+      actual: mp.accountsReceivable,
+      tolerance,
+    });
+  }
+
+  // Cat 13: Breakeven Check — break-even month consistency
+  if (breakEvenMonth !== null) {
+    const atBreakeven = monthly[breakEvenMonth - 1].cumulativeNetCashFlow;
+    identityChecks.push({
+      name: "Breakeven month non-negative",
+      passed: atBreakeven >= 0,
+      expected: 0,
+      actual: atBreakeven,
+      tolerance,
+    });
+    if (breakEvenMonth > 1) {
+      const beforeBreakeven = monthly[breakEvenMonth - 2].cumulativeNetCashFlow;
+      identityChecks.push({
+        name: "Breakeven prior month negative",
+        passed: beforeBreakeven < 0,
+        expected: -1,
+        actual: beforeBreakeven,
+        tolerance,
+      });
+    }
+  }
+
+  // Cat 14: ROI Check — 5-year ROI derivation from cumulative cash flows
+  {
+    const expectedROI = totalStartupInvestment !== 0
+      ? round2(fiveYearCumulativeCashFlow / totalStartupInvestment)
+      : 0;
+    const diff = Math.abs(expectedROI - roiMetrics.fiveYearROIPct);
+    identityChecks.push({
+      name: "ROI Check",
+      passed: diff <= tolerance,
+      expected: expectedROI,
+      actual: roiMetrics.fiveYearROIPct,
+      tolerance,
+    });
+  }
+
+  // Cat 15: Valuation Check — estimatedValue = adjNetOperatingIncome * ebitdaMultiple
   for (const v of valuation) {
-    const annual = annualSummaries[v.year - 1];
-    const expected = round2(annual.ebitda - v.shareholderSalaryAdj);
-    const diff = Math.abs(expected - v.adjNetOperatingIncome);
+    const expected = round2(v.adjNetOperatingIncome * v.ebitdaMultiple);
+    const diff = Math.abs(expected - v.estimatedValue);
     identityChecks.push({
-      name: `Valuation adjNOI identity (Year ${v.year})`,
+      name: `Valuation Check (Year ${v.year})`,
       passed: diff <= tolerance,
       expected,
-      actual: v.adjNetOperatingIncome,
-      tolerance,
-    });
-  }
-
-  // Cat 13: ROIC invested capital = cash + loans + sweatEquity + retainedEarnings
-  for (const r of roicExtended) {
-    const expected = round2(r.totalCashInvested + r.totalSweatEquity + r.retainedEarningsLessDistributions);
-    const diff = Math.abs(expected - r.totalInvestedCapital);
-    identityChecks.push({
-      name: `ROIC invested capital identity (Year ${r.year})`,
-      passed: diff <= tolerance,
-      expected,
-      actual: r.totalInvestedCapital,
+      actual: v.estimatedValue,
       tolerance,
     });
   }

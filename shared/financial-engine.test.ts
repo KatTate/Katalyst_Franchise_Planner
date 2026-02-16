@@ -695,17 +695,22 @@ describe("Financial Engine", () => {
       }
     });
 
-    it("custom taxDelayMonths shifts tax payment timing", () => {
+    it("custom taxPaymentDelayMonths shifts tax payment timing", () => {
       const customInput: EngineInput = {
-        financialInputs: { ...postNetInputs, taxDelayMonths: 3 },
+        financialInputs: { ...postNetInputs, taxPaymentDelayMonths: 6 },
         startupCosts: postNetStartupCosts,
       };
       const customResult = calculateProjections(customInput);
-      const delay3 = customResult.monthlyProjections;
+      const delay6 = customResult.monthlyProjections;
       const delay1 = result.monthlyProjections;
-      const m3Tax = delay3[2].taxPayable;
-      const m1Tax = delay1[2].taxPayable;
-      expect(m3Tax).toBeGreaterThanOrEqual(m1Tax);
+      const positiveMonth = delay1.findIndex((mp) => mp.preTaxIncome > 0);
+      if (positiveMonth >= 0 && positiveMonth + 6 < 60) {
+        const checkMonth = positiveMonth + 6;
+        expect(delay6[checkMonth].taxPayable).toBeGreaterThanOrEqual(delay1[checkMonth].taxPayable);
+      }
+      const totalTax6 = delay6.reduce((s, mp) => s + mp.taxPayable, 0);
+      const totalTax1 = delay1.reduce((s, mp) => s + mp.taxPayable, 0);
+      expect(totalTax6).not.toBe(totalTax1);
     });
 
     it("cfTaxPayableChange reflects balance change", () => {
@@ -968,33 +973,82 @@ describe("Financial Engine", () => {
       expect(endId).toHaveLength(60);
     });
 
-    it("includes 60 P&L gross profit checks", () => {
-      const gp = result.identityChecks.filter((c) => c.name.startsWith("P&L gross profit"));
-      expect(gp).toHaveLength(60);
+    it("includes 5 P&L Check checks", () => {
+      const pl = result.identityChecks.filter((c) => c.name.startsWith("P&L Check"));
+      expect(pl).toHaveLength(5);
     });
 
-    it("includes 5 EBITDA identity checks", () => {
-      const ebitda = result.identityChecks.filter((c) => c.name.startsWith("EBITDA identity"));
-      expect(ebitda).toHaveLength(5);
+    it("includes 5 BS equity continuity checks", () => {
+      const bsEquity = result.identityChecks.filter((c) => c.name.startsWith("BS equity continuity"));
+      expect(bsEquity).toHaveLength(5);
     });
 
-    it("includes 5 annual CF aggregation checks", () => {
-      const agg = result.identityChecks.filter((c) => c.name.startsWith("Annual CF aggregation"));
-      expect(agg).toHaveLength(5);
+    it("includes 5 Corporation Tax Check checks", () => {
+      const tax = result.identityChecks.filter((c) => c.name.startsWith("Corporation Tax Check"));
+      expect(tax).toHaveLength(5);
     });
 
-    it("includes 5 valuation adjNOI identity checks", () => {
-      const val = result.identityChecks.filter((c) => c.name.startsWith("Valuation adjNOI"));
+    it("includes 60 Working Capital AR checks", () => {
+      const wc = result.identityChecks.filter((c) => c.name.startsWith("Working Capital AR"));
+      expect(wc).toHaveLength(60);
+    });
+
+    it("includes Breakeven checks when breakEvenMonth exists", () => {
+      if (result.roiMetrics.breakEvenMonth !== null) {
+        const be = result.identityChecks.filter((c) => c.name.startsWith("Breakeven"));
+        expect(be.length).toBeGreaterThanOrEqual(1);
+      }
+      const altBrandInputs: FinancialInputs = {
+        revenue: { annualGrossSales: 50000000, monthsToReachAuv: 6, startingMonthAuvPct: 0.50, growthRates: [0.05, 0.04, 0.03, 0.02, 0.02] },
+        operatingCosts: {
+          cogsPct: [0.25, 0.25, 0.25, 0.25, 0.25], laborPct: [0.20, 0.20, 0.20, 0.20, 0.20],
+          royaltyPct: [0.06, 0.06, 0.06, 0.06, 0.06], adFundPct: [0.01, 0.01, 0.01, 0.01, 0.01],
+          marketingPct: [0.03, 0.03, 0.03, 0.03, 0.03], otherOpexPct: [0.02, 0.02, 0.02, 0.02, 0.02],
+          payrollTaxPct: [0.15, 0.15, 0.15, 0.15, 0.15],
+          facilitiesAnnual: [2400000, 2472000, 2546160, 2622545, 2701221],
+          managementSalariesAnnual: [3600000, 3708000, 3819240, 3933817, 4051832],
+        },
+        financing: { totalInvestment: 40000000, equityPct: 0.30, interestRate: 0.08, termMonths: 120 },
+        startup: { depreciationRate: 0.20 },
+        workingCapitalAssumptions: { arDays: 15, apDays: 45, inventoryDays: 30 },
+        distributions: [0, 0, 2000000, 2500000, 3000000],
+        taxRate: 0.25,
+      };
+      const altResult = calculateProjections({
+        financialInputs: altBrandInputs,
+        startupCosts: [
+          { id: "a1", name: "Equipment", amount: 20000000, capexClassification: "capex", isCustom: false, source: "brand_default", brandDefaultAmount: 20000000, item7RangeLow: null, item7RangeHigh: null, sortOrder: 0 },
+          { id: "a2", name: "Supplies", amount: 5000000, capexClassification: "non_capex", isCustom: false, source: "brand_default", brandDefaultAmount: 5000000, item7RangeLow: null, item7RangeHigh: null, sortOrder: 1 },
+          { id: "a3", name: "Working Capital", amount: 3000000, capexClassification: "working_capital", isCustom: false, source: "brand_default", brandDefaultAmount: 3000000, item7RangeLow: null, item7RangeHigh: null, sortOrder: 2 },
+        ],
+      });
+      if (altResult.roiMetrics.breakEvenMonth !== null) {
+        const be = altResult.identityChecks.filter((c) => c.name.startsWith("Breakeven"));
+        expect(be.length).toBeGreaterThanOrEqual(1);
+        be.forEach((c) => expect(c.passed).toBe(true));
+      }
+    });
+
+    it("includes ROI Check", () => {
+      const roi = result.identityChecks.filter((c) => c.name === "ROI Check");
+      expect(roi).toHaveLength(1);
+    });
+
+    it("includes 5 Valuation Check checks", () => {
+      const val = result.identityChecks.filter((c) => c.name.startsWith("Valuation Check"));
       expect(val).toHaveLength(5);
-    });
-
-    it("includes 5 ROIC invested capital identity checks", () => {
-      const roic = result.identityChecks.filter((c) => c.name.startsWith("ROIC invested capital"));
-      expect(roic).toHaveLength(5);
     });
 
     it("total check count is at least 300", () => {
       expect(result.identityChecks.length).toBeGreaterThanOrEqual(300);
+    });
+
+    it("all 13+ identity check categories are present", () => {
+      const categories = new Set(result.identityChecks.map((c) => {
+        const match = c.name.match(/^(.+?)(?:\s*\()/);
+        return match ? match[1].trim() : c.name;
+      }));
+      expect(categories.size).toBeGreaterThanOrEqual(13);
     });
   });
 
@@ -1315,11 +1369,25 @@ describe("Financial Engine", () => {
       });
     });
 
-    it("replacementReturnRequired is computed", () => {
+    it("replacementReturnRequired = netAfterTaxProceeds / totalCashInvested", () => {
       result.valuation.forEach((v) => {
-        expect(typeof v.replacementReturnRequired).toBe("number");
-        expect(Number.isFinite(v.replacementReturnRequired)).toBe(true);
+        if (v.totalCashInvested > 0) {
+          const expected = v.netAfterTaxProceeds / v.totalCashInvested;
+          expect(Math.abs(v.replacementReturnRequired - expected)).toBeLessThanOrEqual(0.01);
+        }
       });
+    });
+
+    it("replacementReturnRequired differs from businessAnnualROIC when tax > 0", () => {
+      const customInput: EngineInput = {
+        financialInputs: { ...postNetInputs, ebitdaMultiple: 3 },
+        startupCosts: postNetStartupCosts,
+      };
+      const customResult = calculateProjections(customInput);
+      const hasRevenue = customResult.valuation.find((v) => v.adjNetOperatingIncome !== 0);
+      if (hasRevenue) {
+        expect(hasRevenue.replacementReturnRequired).not.toBe(hasRevenue.businessAnnualROIC);
+      }
     });
 
     it("totalCashInvested equals equityAmount across all years", () => {
@@ -1525,7 +1593,7 @@ describe("Financial Engine", () => {
         const match = c.name.match(/^(.+?)(?:\s*\()/);
         return match ? match[1].trim() : c.name;
       }));
-      expect(categories.size).toBeGreaterThanOrEqual(10);
+      expect(categories.size).toBeGreaterThanOrEqual(13);
     });
 
     it("alternate brand passes all identity checks", () => {
