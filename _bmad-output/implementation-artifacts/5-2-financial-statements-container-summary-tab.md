@@ -1,6 +1,6 @@
 # Story 5.2: Financial Statements Container & Summary Tab
 
-Status: in-progress
+Status: complete
 
 ## Story
 
