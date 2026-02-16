@@ -262,6 +262,76 @@ So that the Financial Statement views have complete data to render (FR8, FR9, FR
 - **Existing 49 tests break via nonCapexInvestment default:** CRITICAL. Prevention: Default `nonCapexInvestment` to `[nonCapexTotal, 0, 0, 0, 0]` to exactly replicate current Year-1-only behavior. Write a specific test verifying old inputs produce identical outputs before AND after extension.
 - **Determinism (AC8):** New computations using `Math.round` vs `round2()` could produce platform-dependent results. MEDIUM. Prevention: Use ONLY `round2()`. Never `Math.round`, `Math.floor`, `Math.ceil`, or `toFixed`.
 
+### First Principles Analysis (Elicitation Output)
+
+The computation dependency chain was rebuilt from fundamentals to verify proposed field computation order and expose hidden assumptions.
+
+**Computation Dependency Graph (5 Layers):**
+
+- **Layer 0 — Pure Inputs:** All `FinancialInputs` fields including new optional fields (`ebitdaMultiple`, `targetPreTaxProfitPct[]`, `shareholderSalaryAdj[]`, `taxPaymentDelayMonths`, `nonCapexInvestment[]`). No dependencies.
+- **Layer 1 — First-Order Monthly:** `revenue`, `totalCogs`, `directLabor`, `grossProfit`, `facilities`, `marketing`, `managementSalaries`, `payrollTaxBenefits`, `otherOpex`, `totalOpex`, `monthlyDepreciation`, `loanPayment`, `interestExpense`, `principalPayment`, `monthlyDistribution`. Depend only on Layer 0. ALL EXISTING.
+- **Layer 2 — Second-Order Monthly:** `EBITDA`, `preTaxIncome`, `loanBalance`, `accountsReceivable`, `accountsPayable`, `inventory`, `netFixedAssets`. Depend on Layer 1. ALL EXISTING.
+- **Layer 3 — New Balance Sheet Fields:** `taxPayable`, `commonStock`, `retainedEarnings`, `lineOfCredit`, `totalCurrentAssets`, `totalAssets`, `totalCurrentLiabilities`, `totalLiabilities`, `totalEquity`, `totalLiabilitiesAndEquity`. Depend on Layers 0-2 AND Layer 4 (endingCash).
+- **Layer 4 — New Cash Flow Fields:** All `cf*` fields, `beginningCash`, `endingCash`. Depend on Layers 2-3 (taxPayable only).
+- **Layer 5 — Annual Post-Loop:** `valuation[]`, `roicExtended[]`, `plAnalysis[]`, `identityChecks`. Aggregate monthly data. No circular dependencies.
+
+**Cross-Dependency Between Balance Sheet and Cash Flow:**
+
+`totalCurrentAssets` (Layer 3) requires `endingCash` (Layer 4), but `endingCash` depends on `cfTaxPayableChange` which depends on `taxPayable` (Layer 3). Analysis confirms this is NOT circular — it's a linear chain:
+
+```
+Layer 2 (preTaxIncome) → Layer 3 (taxPayable) → Layer 4 (cfTaxPayableChange)
+→ Layer 4 (cfNetCashFlow → endingCash) → Layer 3 (totalCurrentAssets → totalAssets)
+```
+
+**MANDATORY Computation Order Within Monthly Loop:**
+
+```
+1. Revenue, COGS, Labor, OpEx, EBITDA          (Layer 1 — existing)
+2. Depreciation, Interest, PreTaxIncome         (Layer 2 — existing)
+3. Working Capital (AR, AP, Inventory)          (Layer 2 — existing)
+4. Loan Balance                                 (Layer 2 — existing)
+5. Tax Payable (shift-by-N from preTaxIncome)   (Layer 3 — NEW)
+6. CF disaggregation fields + endingCash        (Layer 4 — NEW, depends on #5)
+7. BS aggregation fields using endingCash       (Layer 3 — NEW, depends on #6)
+```
+
+**CRITICAL: If the dev agent computes BS aggregation fields (step 7) BEFORE CF fields (step 6), the Balance Sheet will use stale or undefined cash values and will NOT balance.**
+
+**Initial Cash Resolution:**
+
+The existing engine uses two different approaches for cash tracking:
+- **Annual summary:** `cumulativeCash` starts at 0. Year 1 netCashFlow includes startup financing inflows (equity + debt) and capex outflow as one-time items.
+- **Break-even calculation:** `cumulativeNetCash` starts at `equityAmount + debtAmount - totalStartupInvestment` (pre-loads startup flows before iterating months).
+
+Both produce identical year-end values. For monthly CF disaggregation, the annual summary approach is correct:
+
+```
+beginningCash[month 1] = 0
+Month 1 CF includes: cfEquityIssuance = equityAmount (if month 1)
+                     debt drawdown = debtAmount (if month 1)
+                     cfCapexPurchase = -capexTotal (if month 1)
+                     nonCapex flows through operating expense (existing behavior)
+                     + normal operating CF, principal, distributions
+endingCash[month 1] = 0 + all month-1 cash flows
+```
+
+**NonCapex Backward Compatibility — Confirmed Safe:**
+
+Existing behavior: `nonCapexMonthly = (yi === 0) ? round2(-nonCapexTotal / MONTHS_PER_YEAR) : 0`
+
+NonCapex is spread as a monthly operating expense in Year 1 only. It's part of `totalOpex`, flowing through P&L and operating CF. The new `nonCapexInvestment[]` default must be `[nonCapexTotal, 0, 0, 0, 0]`, making the new computation `nonCapexMonthly = round2(-nonCapexInvestmentPerYear[yi] / 12)` algebraically identical to the existing code with the default values. `totalStartupInvestment` is derived from startup costs independently and does NOT change when per-year spreading changes.
+
+**Retained Earnings Sign Convention — Confirmed From Source:**
+
+- Annual summary (line 493): `cumulativeRetainedEarnings += preTaxIncome - fi.distributions[y]` where `fi.distributions[y]` is POSITIVE (annual amount).
+- Monthly equivalent: `cumulativeRetainedEarnings += preTaxIncome + monthlyDistribution` where `monthlyDistribution` is NEGATIVE (expense convention).
+- Both are mathematically equivalent: both REDUCE retained earnings when distributing. Confirmed from first principles.
+
+**NEW FINDING — Annual Summary Balance Sheet Gap:**
+
+The existing annual summary computes `totalLiabilities = accountsPayable + loanClosingBalance` (line 500) WITHOUT `taxPayable`. Story 5.1's monthly BS will include `taxPayable` in `totalCurrentLiabilities`. The annual summary should be updated to include `taxPayable` as well, OR the dev agent must accept that annual and monthly BS won't match on liabilities. **This is not explicitly called out in the acceptance criteria and could be a gap.** The dev agent should update the annual summary's `totalLiabilities` to include the year-end `taxPayable` value for consistency.
+
 ### Self-Consistency Validation (Elicitation Output)
 
 Multiple independent approaches were generated for the 5 trickiest computations, then compared for consistency. Three contradictions were surfaced that the dev agent must resolve before implementation.
