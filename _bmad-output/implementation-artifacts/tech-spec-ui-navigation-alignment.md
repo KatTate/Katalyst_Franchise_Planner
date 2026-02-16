@@ -2,8 +2,8 @@
 title: 'UI Navigation Alignment — Sidebar Restructure & Plan Layout'
 slug: 'ui-navigation-alignment'
 created: '2026-02-16'
-status: 'ready-for-dev'
-stepsCompleted: [1, 2, 3, 4]
+status: 'dev-complete'
+stepsCompleted: [1, 2, 3, 4, 5, 6]
 tech_stack: ['React 18', 'TypeScript', 'Vite', 'wouter', 'TanStack Query v5', 'Tailwind CSS', 'shadcn/ui', 'Drizzle ORM', 'Express']
 files_to_modify: ['client/src/components/app-sidebar.tsx', 'client/src/pages/planning-workspace.tsx', 'client/src/contexts/WorkspaceViewContext.tsx', 'client/src/components/planning/forms-mode.tsx', 'client/src/components/planning/input-panel.tsx']
 code_patterns: ['WorkspaceViewContext for sidebar/workspace state sync', 'SidebarGroup/SidebarGroupLabel for section grouping', 'Collapsible sections in forms-mode.tsx', 'usePlanOutputs hook for summary metrics', 'data-testid attributes on all interactive/display elements']
