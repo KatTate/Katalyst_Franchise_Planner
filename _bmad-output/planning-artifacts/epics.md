@@ -1,10 +1,14 @@
 ---
-stepsCompleted: [1, 2, 3, 4]
+stepsCompleted: [1, 2, 3, 4, 5]
 inputDocuments:
   - _bmad-output/planning-artifacts/prd.md
   - _bmad-output/planning-artifacts/architecture.md
   - _bmad-output/planning-artifacts/ux-design-specification.md
   - _bmad-output/planning-artifacts/sprint-change-proposal-2026-02-15.md
+  - _bmad-output/planning-artifacts/ux-financial-statements-spec.md
+  - _bmad-output/brainstorming/brainstorming-session-2026-02-15.md
+  - _bmad-output/course-corrections/cc-2026-02-15-financial-output-layer.md
+  - _bmad-output/course-corrections/cc-2026-02-15-addendum-guided-decomposition.md
 ---
 
 # Katalyst Growth Planner - Epic Breakdown
@@ -264,7 +268,7 @@ This document provides the complete epic and story breakdown for the Katalyst Gr
 | FR66-FR69 | Epic ST | Per-brand Franchisee Demo Mode |
 | FR70-FR73 | Epic ST | Franchisor Demo Mode with fictitious brand |
 
-**Coverage Summary:** 87/87 FRs mapped (73 original + 14 new FR7a-FR7n). All functional requirements covered. Stories across 11 MVP epics (+ 1 deferred Phase 2 epic + 1 admin support tools epic).
+**Coverage Summary:** 87/87 FRs mapped (73 original + 14 new FR7a-FR7n). All functional requirements covered. Stories across 11 MVP epics (+ 1 deferred Phase 2 epic + 1 admin support tools epic). Epics 5-7 contain 14 stories total (10 + 2 + 2).
 
 ## Epic List
 
@@ -289,21 +293,22 @@ Franchisees can build financial plans using two manual input paradigms — Forms
 **NFRs addressed:** NFR2 (< 1s transitions), NFR5 (non-blocking auto-save), NFR13 (2-min auto-save), NFR14 (concurrent edit handling), NFR25 (desktop 1024px+), NFR28 (200ms feedback)
 
 ### Epic 5: Financial Statement Views & Output Layer
-Render every spreadsheet output sheet as interactive financial statement views. Includes P&L Statement, Balance Sheet, Cash Flow Statement, Summary Financials, ROIC, Valuation, and Audit views. Also includes Glossary, Quick Entry interactive statements, and contextual help content.
+Render every spreadsheet output sheet as interactive financial statement views within a unified tabbed container. Progressive disclosure (annual → quarterly → monthly). Quick Entry edits inline within statements. Guardian Bar provides persistent plan health. Dynamic interpretation explains "so what." Impact Strip keeps Forms mode users informed. Document Preview builds pride progressively.
 **FRs covered:** FR7a, FR7b, FR7c, FR7d, FR7e, FR7f, FR7g, FR7h, FR7k, FR7l, FR7m
 **NFRs addressed:** NFR1 (< 2s recalculation), NFR27 (consistent financial formatting)
-**Stories:** To be defined by Create Epics and Stories workflow. UX design authority: `ux-financial-statements-spec.md`
+**Stories (10):** 5.1 Engine Extension, 5.2 Container & Summary Tab, 5.3 P&L Tab, 5.4 Balance Sheet & Cash Flow Tabs, 5.5 ROIC/Valuation/Audit Tabs, 5.6 Quick Entry Integration, 5.7 Scenario Comparison, 5.8 Guardian Bar & Interpretation, 5.9 Impact Strip & Document Preview, 5.10 Glossary & Help
+**UX design authority:** `ux-financial-statements-spec.md` (v2, 2026-02-16)
 
 ### Epic 6: Document Generation & Vault
-Generate lender-grade PDF business plan packages and maintain document history with download capability. Elevated from old Epic 7.
+Generate lender-grade PDF business plan packages and maintain document history with download capability. The document is the product's primary deliverable — the lender package. Elevated from old Epic 7.
 **FRs covered:** FR7n, FR24, FR25, FR26, FR27
 **NFRs addressed:** NFR3 (< 30s PDF generation), NFR18 (immutable documents)
-**Stories:** To be defined by Create Epics and Stories workflow.
+**Stories (2):** 6.1 PDF Document Generation, 6.2 Document History & Downloads
 
 ### Epic 7: Per-Year Inputs & Multi-Plan Management
-Support per-year (Y1-Y5) input values for all financial assumptions and plan CRUD operations.
-**FRs covered:** FR7i, FR7j
-**Stories:** To be defined by Create Epics and Stories workflow.
+Enable Year 1-5 independent input values for all per-year financial assumptions, unlocking growth trajectory modeling. Add plan creation, naming, cloning, and navigation for multi-location planning. Includes PlanFinancialInputs restructuring, Facilities field alignment, and Other OpEx unit correction.
+**FRs covered:** FR7i, FR7j, FR15, FR16
+**Stories (2):** 7.1 Per-Year Input Columns, 7.2 Plan CRUD & Navigation
 
 ### Epic 8: Advisory Guardrails & Smart Guidance
 System provides non-blocking advisory nudges when franchisee inputs fall outside FDD Item 7 ranges or brand averages. Identifies weak business cases with actionable guidance on which inputs to reconsider. Suggests consultant booking when appropriate. All guidance is advisory — never blocks the franchisee.
@@ -901,15 +906,496 @@ So that I can get help whenever I need it without leaving the planning experienc
 
 ## Epic 5: Financial Statement Views & Output Layer
 
-*Stories for this epic will be defined by the Create Epics and Stories workflow using `ux-financial-statements-spec.md` as the UX design authority and the Sprint Change Proposal (2026-02-15) CP-4 as the scope definition.*
+The plan builder renders every output sheet from the reference spreadsheet as interactive tabular views within a unified Financial Statements container. Each view matches the reference spreadsheet's line items and column structure. Financial statement views use progressive disclosure (annual → quarterly → monthly drill-down). In Forms mode, statements are read-only with an Impact Strip showing real-time metrics. In Quick Entry mode, input cells within these statements are directly editable inline — the financial statement IS the input interface. A persistent Guardian Bar provides at-a-glance plan health. Dynamic interpretation rows explain "so what" for every key metric.
 
-*Planned stories (10): P&L Statement View, Balance Sheet View, Cash Flow Statement View, Summary Financials View, ROIC View, Valuation View, Audit/Integrity Checks View, Glossary & Financial Term Reference, Quick Entry Interactive Financial Statements, Contextual Help & Guidance Content.*
+**UX Design Authority:** `ux-financial-statements-spec.md` (v2, 2026-02-16)
+**FRs covered:** FR7a, FR7b, FR7c, FR7d, FR7e, FR7f, FR7g, FR7h, FR7k, FR7l, FR7m
+**Dependencies:** Epic 3 (financial engine), Epic 4 (planning workspace, EditableCell component)
+**Story sequence rationale:** Stories follow the UX spec's recommended rewrite structure (Part 16), which addresses all six foundation points and all nine critique issues. The sequence builds from engine → container → individual statements → interaction → interpretation → help, ensuring each story has its dependencies met.
+
+### Story 5.1: Financial Engine Extension
+
+As a developer,
+I want the financial engine to compute all output sections present in the reference spreadsheet,
+So that the Financial Statement views have complete data to render (FR8, FR9, FR10).
+
+**Acceptance Criteria:**
+
+**Given** the existing financial engine in `shared/financial-engine.ts`
+**When** the engine is extended with the missing computations
+**Then** the engine accepts 5 new inputs: `ebitdaMultiple` (number), `targetPreTaxProfitPct` (5-element array), `shareholderSalaryAdj` (5-element array), `taxPaymentDelayMonths` (number), `nonCapexInvestment` (5-element array)
+**And** new inputs have sensible defaults (ebitdaMultiple: 3, targetPreTaxProfitPct: [10,10,10,10,10], shareholderSalaryAdj: [0,0,0,0,0], taxPaymentDelayMonths: 1, nonCapexInvestment: derived from startup costs)
+**And** `MonthlyProjection` gains 17+ new fields for balance sheet disaggregation: taxPayable, lineOfCredit, commonStock, retainedEarnings, totalCurrentAssets, totalAssets, totalCurrentLiabilities, totalLiabilities, totalEquity, totalLiabilitiesAndEquity
+**And** `MonthlyProjection` gains 17 new fields for cash flow disaggregation: cfAccountsReceivableChange, cfInventoryChange, cfOtherAssetsChange, cfAccountsPayableChange, cfTaxPayableChange, cfNetOperatingCashFlow, cfCapexPurchase, cfNetBeforeFinancing, cfNotesPayable, cfLineOfCredit, cfInterestExpense, cfDistributions, cfEquityIssuance, cfNetFinancingCashFlow, cfNetCashFlow, beginningCash, endingCash
+**And** a new `ValuationOutput` section is computed per year (11 fields): grossSales, netOperatingIncome, shareholderSalaryAdj, adjNetOperatingIncome, adjNetOperatingIncomePct, equityInvestedCapital, estimatedValue, estimatedTaxesOnSale, netAfterTaxProceeds, replacementReturnRequired, businessAnnualROIC
+**And** `ROICOutput` is extended to 15 fields per year: outsideCash, totalLoans, totalCashInvested, totalSweatEquity, retainedEarningsLessDistributions, totalInvestedCapital, preTaxNetIncome, preTaxNetIncomeIncSweatEquity, taxRate, taxesDue, afterTaxNetIncome, roicPct, avgCoreCapitalPerMonth, monthsOfCoreCapital, excessCoreCapital
+**And** `AuditChecks` is extended from 4 checks to 13: Balance Sheet Imbalance I & II, P&L Check, Balance Sheet Check, Cash Flow Check I & II, Corporation Tax Check, Working Capital Check, Debt Check, Capex Check, Breakeven Check, ROI Check, Valuation Check
+**And** 12+ P&L analysis lines are computed: Adjusted Pre-tax Profit, Target Pre-tax Profit, Above/Below Target, Non-Labor Gross Margin, Total Wages, Adjusted Total Wages, Salary Cap @ target %, (Over)/Under Cap, Labor Efficiency, Adjusted Labor Efficiency, Discretionary Marketing %, PR Taxes & Benefits as % of All Wages, Other OpEx as % of Revenue
+**And** all existing 140+ engine tests continue passing (no regressions)
+**And** new computations have comprehensive test coverage verifiable against reference spreadsheet values
+**And** the engine remains deterministic — identical inputs always produce identical outputs (FR9)
+
+**Dev Notes:**
+- This story is pure computation — no UI changes.
+- Reference spreadsheets in `_bmad-output/planning-artifacts/reference-data/` are the verification source.
+- The engine currently computes most P&L line items. This extension adds the remaining output sections (Valuation, extended ROIC, extended Audit) and disaggregates Balance Sheet and Cash Flow into their full component lines.
+- See Sprint Change Proposal CP-2 for the complete field specification.
+
+### Story 5.2: Financial Statements Container & Summary Tab
+
+As a franchisee (any persona),
+I want a unified Financial Statements view with tabbed navigation and an annual Summary as the landing tab,
+So that I can quickly assess my business plan across all 5 years and drill into detail when I need it (FR7d).
+
+**Acceptance Criteria:**
+
+**Given** I am in the planning workspace with a plan that has financial projections
+**When** I click "Financial Statements" in the sidebar navigation
+**Then** the Financial Statements container renders with a horizontal tab bar: Summary | P&L | Balance Sheet | Cash Flow | ROIC | Valuation | Audit
+**And** the Summary tab is active by default (except in Quick Entry mode where P&L is default — Story 5.6)
+**And** tab switching is instant with no loading state — all data comes from the cached engine computation
+**And** each tab remembers its scroll position and drill-down state within the session
+**And** on viewports below 1024px, tabs convert to a dropdown selector
+
+**Given** I am on the Summary tab
+**When** the tab renders
+**Then** a sticky Key Metrics Callout Bar appears at the top showing: Total 5yr Pre-Tax Income, Break-even Month (with calendar date), and 5yr ROI %
+**And** below the callout bar, collapsible sections render: Annual P&L Summary (expanded by default), Balance Sheet Summary (collapsed), Cash Flow Summary (collapsed), Break-Even Analysis (expanded), Startup Capital Summary (collapsed)
+**And** Annual P&L Summary shows annual columns (Y1-Y5) with rows: Revenue, Cost of Sales, COGS %, Gross Profit, GP %, Direct Labor, DL %, Contribution Margin %, Total OpEx, OpEx %, EBITDA, EBITDA %, D&A, Interest, Net PBT, Net PBT %, Adj Net PBT, Adj Net PBT %
+**And** Labor Efficiency subsection shows: Direct LER, Admin LER (Forecasted/Benchmark/Difference), Adj Total LER (Actual/Benchmark/Difference), Salary Cap, Over/Under Cap
+**And** Balance Sheet Summary shows: Assets (of which Cash), Liabilities, Total Net Assets, Total Liabilities & Equity, (of which Retained Earnings)
+**And** Cash Flow Summary shows: Closing Cash Balance per year
+**And** Break-Even Analysis shows: Break-even month, break-even calendar date, cumulative cash flow sparkline, plain-language interpretation ("You'd start making money by [date]")
+**And** Startup Capital Summary shows: Total investment, CapEx vs non-CapEx split, funding sources (equity vs debt)
+**And** each section header includes a link to the detailed statement tab (e.g., "Annual P&L Summary → View Full P&L")
+
+**Given** I am on the existing Dashboard Panel
+**When** I click a summary metric card (e.g., "Pre-Tax Income: $142,000")
+**Then** the system navigates to the relevant Financial Statements tab scrolled to the relevant row (e.g., P&L tab scrolled to pre-tax income)
+
+**Given** the progressive disclosure infrastructure
+**When** I click on a year column header in any statement tab
+**Then** that year expands to show 4 quarterly columns (Q1-Q4) plus the annual total
+**And** other years remain collapsed as annual totals
+**And** a breadcrumb/visual indicator shows the drill-down path (e.g., "Year 2 → Quarterly")
+**And** clicking a quarter column header expands to 3 monthly columns with quarter and annual totals visible
+**And** "Expand All" / "Collapse All" controls are available
+**And** Enter on a focused column header drills down; Escape goes up a level
+
+**Given** the plan uses single-value inputs (pre-Epic-7)
+**When** any statement tab renders
+**Then** a small link icon appears in the column header row spanning all 5 year columns with tooltip: "All years share the same value. Per-year values will be available in a future update."
+**And** editing an input cell in any year column updates all year columns simultaneously with a brief flash animation on the propagated cells
+
+**Given** any statement tab renders
+**When** the tab has a completeness indicator
+**Then** each tab in the tab bar shows a completeness badge: a filled circle if all inputs for that statement have been user-edited, a half-filled circle if some inputs are brand defaults, an empty circle if all inputs are brand defaults
+
+**And** row labels (leftmost column) are sticky horizontally — always visible during horizontal scroll
+**And** section headers are sticky vertically — always visible during vertical scroll
+**And** sticky elements have a high z-index and subtle shadow to indicate floating
+**And** currency values format as $X,XXX throughout; percentages as X.X%
+
+**Dev Notes:**
+- The `<FinancialStatements>` container component (~100 lines) manages tab routing and shared state.
+- Progressive disclosure infrastructure (annual → quarterly → monthly) is built here and reused by all statement tabs.
+- The `<ColumnManager>` component generates column definitions based on drill-down state.
+- Linked-column indicators (pre-Epic-7) are implemented here and apply to all tabs.
+- The Summary tab uses `<StatementSection>` components with `<StatementTable>` for each section.
+- See UX spec Part 2 (Progressive Disclosure), Part 10 (Component Architecture), Part 12 (Empty & Incomplete States).
+
+### Story 5.3: P&L Statement Tab
+
+As a franchisee,
+I want to see my complete Profit & Loss statement matching the reference spreadsheet,
+So that I can understand how my assumptions flow through to profitability (FR7a).
+
+**Acceptance Criteria:**
+
+**Given** I navigate to the P&L tab within Financial Statements
+**When** the tab renders
+**Then** a sticky Key Metrics Callout Bar shows: Annual Revenue (Y1), Pre-Tax Income (Y1), Pre-Tax Margin %
+**And** the P&L renders as a tabular financial document with progressive disclosure (annual default, drill to quarterly/monthly)
+**And** row sections match the reference spreadsheet structure:
+- **Revenue:** Monthly Revenue, Annual Revenue
+- **COGS:** COGS %, COGS $
+- **Gross Profit:** Gross Profit $, Gross Margin %
+- **Operating Expenses:** Direct Labor (% and $), Management Salaries, Payroll Tax & Benefits, Facilities, Marketing/Advertising, Discretionary Marketing, Other OpEx
+- **EBITDA:** EBITDA $, EBITDA Margin %
+- **Below EBITDA:** Depreciation, Interest Expense
+- **Pre-Tax Income:** Pre-Tax Income $, Pre-Tax Margin %
+- **P&L Analysis:** Adjusted Pre-Tax Profit, Target Pre-Tax Profit, Above/Below Target, Salary Cap analysis, Labor Efficiency, Adjusted Labor Efficiency
+
+**And** input-driven rows (Revenue, COGS %, Direct Labor %, Management Salaries, Facilities, Marketing, Other OpEx) are visually distinguished from computed rows using: a subtle tinted background (primary/5), a thin dashed left border (primary/20), and a small pencil icon on hover
+**And** computed rows use standard background, medium weight text, no border decoration
+**And** section headers use slightly elevated background with bold text
+**And** the visual distinction does NOT rely solely on color — dashed border and pencil icon provide non-color indicators (Accessibility, Critique Issue #7)
+
+**Given** the P&L tab has interpretation rows enabled (Story 5.8)
+**When** interpretation rows render
+**Then** key computed rows include an interpretation row below them showing contextual "so what" text:
+- Gross Margin: "XX% — [within/above/below] [Brand] typical range ([low]-[high]%)" (benchmark from brand defaults only)
+- Pre-Tax Margin: "[XX]% margin — [contextual interpretation]"
+- Labor Efficiency: contextual interpretation with brand benchmark comparison
+**And** if no brand benchmark exists for a metric, the interpretation shows only the percentage/ratio without benchmark context
+**And** interpretations use neutral language: "within typical range," "above typical range," "below typical range" — never "good" or "bad"
+**And** interpretation rows are associated with their parent data row via `aria-describedby`
+
+**And** all cells support ARIA grid roles: input cells use `role="gridcell"` with `aria-readonly="false"`; computed cells use `aria-readonly="true"`
+**And** hovering over any computed cell shows a tooltip with: plain-language explanation, calculation formula, and link to Glossary
+
+**Dev Notes:**
+- Row structure maps directly to the reference spreadsheet "P&L Statement" sheet.
+- The `<StatementTable>` orchestrator composes `<SectionGroup>`, `<DataRow>`, `<ComputedCell>`, and `<InterpretationRow>` components.
+- Input cell highlighting is visual-only in this story — actual inline editing is enabled in Story 5.6 (Quick Entry Integration).
+- Interpretation content and Guardian integration are wired in Story 5.8.
+- See UX spec Part 8.2 (P&L Statement) and Part 5 (Dynamic Interpretation).
+
+### Story 5.4: Balance Sheet & Cash Flow Tabs
+
+As a franchisee,
+I want to see my complete Balance Sheet and Cash Flow Statement matching the reference spreadsheet,
+So that I can understand my asset/liability position and where cash comes from and goes (FR7b, FR7c).
+
+**Acceptance Criteria:**
+
+**Given** I navigate to the Balance Sheet tab
+**When** the tab renders
+**Then** a sticky Key Metrics Callout Bar shows: Total Assets (Y1), Total Equity (Y1), and Balance Sheet status (pass/fail)
+**And** the Balance Sheet renders with progressive disclosure and row sections matching the reference spreadsheet:
+- **Current Assets:** Cash, Accounts Receivable, Other Current Assets, Total Current Assets
+- **Fixed Assets:** Equipment (Gross Fixed Assets), Accumulated Depreciation, Net Book Value (Net Fixed Assets)
+- **Other Assets:** Other Assets
+- **Total Assets**
+- **Current Liabilities:** Accounts Payable, Tax Payable, Credit Card Payable, Line of Credit, Total Current Liabilities
+- **Long-Term Liabilities:** Notes Payable, Total Long-Term Liabilities
+- **Total Liabilities**
+- **Capital (Equity):** Common Stock / Paid-in Capital, Retained Earnings, Total Capital
+- **Total Liabilities and Equity**
+- **Core Capital Metrics:** Core Capital target levels, Months of Core Capital, Excess Core Capital
+- **Ratios:** AR DSO, AP % of COGS
+
+**And** a balance sheet identity check row shows: "Total Assets = Total Liabilities + Equity" with a pass/fail icon per column (checkmark for pass, alert icon for fail)
+**And** if the identity check fails for any column, the row highlights in destructive color with the specific values shown
+
+**Given** I navigate to the Cash Flow tab
+**When** the tab renders
+**Then** a sticky Key Metrics Callout Bar shows: Net Cash Flow (Y1), Ending Cash (Y5), and lowest cash point (month and amount)
+**And** the Cash Flow renders with progressive disclosure and row sections matching the reference spreadsheet:
+- **Operating Activities:** Net Income, Add Back Depreciation, Changes in AR, Changes in Inventory, Changes in Other Assets, Changes in AP, Changes in Tax Payable, Net Operating Cash Flow
+- **Investing Activities:** Purchase of Fixed Assets (CapEx), Net Cash Before Financing
+- **Financing Activities:** Notes Payable, Line of Credit Draws/Repayments, Interest Expense, Distributions, Equity Issuance, Net Financing Cash Flow
+- **Net Cash Flow:** Net Cash Flow, Beginning Cash, Ending Cash
+- **Cash Management:** Check row, LOC Balance, Base Cash Balance, Cash Available to Pay on Line, Cash Needed to Draw on Line
+
+**And** any month where Ending Cash is negative displays a subtle warm background tint AND a small downward-arrow icon in the cell — advisory, not destructive red
+**And** the cash flow identity check (Ending Cash = Beginning Cash + Net Cash Flows) shows pass/fail per column with specific values
+
+**And** both tabs use the same `<StatementTable>` component family as the P&L tab
+**And** both tabs have input-driven rows visually distinguished from computed rows (same pattern as P&L)
+
+**Dev Notes:**
+- Balance Sheet and Cash Flow are built together because they are tightly coupled through LOC mechanics (Line of Credit draws/repayments flow between them) and tax payable timing.
+- Negative cash highlighting uses a warm advisory color, NOT destructive red — consistent with the Guardian's "Concerning" level (UX spec Part 6).
+- See UX spec Part 8.3 (Balance Sheet), Part 8.4 (Cash Flow Statement).
+
+### Story 5.5: ROIC, Valuation & Audit Tabs
+
+As a franchisee,
+I want to see my Return on Invested Capital, business valuation analysis, and financial integrity audit results,
+So that I can understand my return, what the franchise could be worth, and trust the accuracy of projections (FR7e, FR7f, FR7g).
+
+**Acceptance Criteria:**
+
+**Given** I navigate to the ROIC tab
+**When** the tab renders
+**Then** the ROIC view renders as a tabular view with annual columns only (Y1-Y5, no monthly drill-down)
+**And** a sticky Key Metrics Callout Bar shows: "Your 5-year cumulative ROIC of X% means for every dollar you invested, you earned $Y back."
+**And** row sections match the reference spreadsheet:
+- **Invested Capital:** Outside Cash (Equity), Total Loans (Debt), Total Cash Invested, Total Sweat Equity, Retained Earnings less Distributions, Total Invested Capital
+- **Returns:** Pre-Tax Net Income, Pre-Tax Net Income incl. Sweat Equity, Tax Rate, Taxes Due, After-Tax Net Income, ROIC %
+- **Core Capital:** Average Core Capital per Month, Months of Core Capital, Excess Core Capital
+
+**Given** I navigate to the Valuation tab
+**When** the tab renders
+**Then** the Valuation view renders with annual columns only (Y1-Y5)
+**And** a sticky Key Metrics Callout Bar shows: Estimated Enterprise Value (Y5), Net After-Tax Proceeds (Y5)
+**And** row sections match the reference spreadsheet:
+- **EBITDA Basis:** EBITDA, EBITDA Multiple (editable input), Estimated Enterprise Value
+- **Adjustments:** Less: Outstanding Debt, Less: Working Capital Adjustment, Estimated Equity Value
+- **After-Tax:** Estimated Taxes on Sale (21%), Net After-Tax Proceeds
+- **Returns:** Total Cash Extracted (distributions + sale proceeds), Total Invested, Net Return, Return Multiple, Replacement Return Required, Business Annual ROIC
+**And** EBITDA Multiple is the primary editable input cell on this tab — visually distinguished with the same input cell pattern (tinted background, dashed border, pencil icon)
+
+**Given** I navigate to the Audit tab
+**When** the tab renders
+**Then** the Audit view displays as a diagnostic checklist (not a tabular financial statement)
+**And** all 13 integrity checks are shown matching the reference spreadsheet: Balance Sheet Imbalance I & II, P&L Check, Balance Sheet Check, Cash Flow Check I & II, Corporation Tax Check, Working Capital Check, Debt Check, Capex Check, Breakeven Check, ROI Check, Valuation Check
+**And** each check shows: check name, pass/fail status (checkmark icon for pass, alert icon for fail), expected value, actual value, and tolerance
+**And** a visual summary shows: "X of 13 checks passing"
+**And** failed checks include a specific explanation of what's wrong and a navigation link "[View in Balance Sheet →]" that navigates to the relevant statement tab and row
+**And** the Audit view is read-only in all modes — it has no editable cells
+
+**Dev Notes:**
+- ROIC, Valuation, and Audit are built together because they are simpler annual-only views (no monthly drill-down).
+- Audit is a diagnostic view, not a financial statement — it uses a different layout than the other tabs.
+- The Valuation tab's editable EBITDA Multiple cell reuses the same `<EditableCell>` component from Epic 4.
+- See UX spec Part 8.5 (ROIC), Part 8.6 (Valuation), Part 8.7 (Audit).
+
+### Story 5.6: Quick Entry Input-Output Integration
+
+As an experienced franchisee (Jordan persona),
+I want to edit input values directly within the P&L, Balance Sheet, and Cash Flow views in Quick Entry mode,
+So that I work inside the financial document I already understand — not a separate input panel (FR7h).
+
+**Acceptance Criteria:**
+
+**Given** I am in Quick Entry mode
+**When** the Financial Statements container renders
+**Then** the P&L tab is the default landing tab (not Summary) because P&L contains the majority of editable inputs
+**And** input cells in all statement tabs are editable inline — clicking an input cell enters edit mode with border highlight and editable text
+**And** the `<EditableCell>` component from Epic 4 is reused with minimal changes for inline editing
+**And** Tab moves to the next input cell in the same column (skipping computed cells)
+**And** Shift+Tab moves to the previous input cell
+**And** Enter confirms the edit and moves down to the next input cell in the same row group
+**And** Escape cancels the edit and restores the previous value
+**And** all auto-formatting rules from Epic 4 apply (currency, percentage, integer formatting on blur)
+**And** editing a cell immediately triggers engine recalculation and updates all dependent computed cells (optimistic UI)
+**And** changes auto-save with the same 2-second debounce as existing input modes
+
+**Given** I am in Quick Entry mode
+**When** I look for the "All Inputs" view
+**Then** an "All Inputs" option is available in the tab bar (special tab or toggle)
+**And** "All Inputs" renders ALL editable inputs from all statements in a single flat table grouped by financial statement section
+**And** this is functionally equivalent to the existing Epic 4 Quick Entry flat grid, relocated into the Financial Statements container
+**And** the old `quick-entry-mode.tsx` flat grid component is preserved internally as the rendering engine for "All Inputs"
+
+**Given** this is the user's first visit to Quick Entry mode after the Epic 5 update
+**When** the Financial Statements container opens
+**Then** a one-time orientation overlay appears: "Your inputs now live inside the financial statements. Edit directly in the P&L, Balance Sheet, and Cash Flow tabs — or use 'All Inputs' for the classic flat view."
+**And** a "Got it" dismissal button is shown
+**And** the overlay never appears again after dismissal (stored in user preferences or localStorage)
+
+**Given** I am in Forms mode or Planning Assistant mode
+**When** I view Financial Statements
+**Then** all cells are read-only — input cells show their visual distinction (tinted background, dashed border) but clicking them does NOT enter edit mode
+**And** hovering over an input cell in read-only mode shows a tooltip: "Switch to Quick Entry to edit values directly in statements"
+
+**Dev Notes:**
+- This story transforms Quick Entry from a flat grid into an interactive financial statement experience.
+- The mode-specific behavior table: Planning Assistant = read-only; Forms = read-only with Impact Strip (Story 5.9); Quick Entry = editable inline with P&L as default landing.
+- The "All Inputs" fallback preserves backward compatibility for users who prefer the flat grid.
+- See UX spec Part 3 (Input-Output Integration), Part 3 (Transition from Existing Quick Entry Grid).
+
+### Story 5.7: Scenario Comparison
+
+As a franchisee,
+I want to compare my base case against conservative and optimistic scenarios,
+So that I can build conviction that my plan works even in a challenging environment (FR7d).
+
+**Acceptance Criteria:**
+
+**Given** I am viewing any Financial Statement tab
+**When** I look at the Scenario Bar (persistent bar between tab navigation and statement content)
+**Then** I see: "Viewing: ● Base Case" with a "[Compare Scenarios]" dropdown/button
+
+**Given** I click "Compare Scenarios"
+**When** the dropdown opens
+**Then** I see two quick scenario options: "Conservative" and "Optimistic"
+**And** I see a disabled "Create Custom Scenario" option with tooltip: "Custom scenarios coming in a future update" (deferred to Epic 10)
+
+**Given** I activate scenario comparison
+**When** the statement view transforms
+**Then** each year column splits into 3 sub-columns: Base, Conservative, Optimistic
+**And** scenario columns are color-coded: Base (neutral), Conservative (muted warm), Optimistic (muted cool)
+**And** a comparison summary card appears above the table with precise language: "In the conservative scenario (15% lower revenue, higher costs), your business reaches break-even by Month [X] and generates $[Y] in Year 1 pre-tax income. Your base case projects $[Z], and the optimistic case projects $[W]."
+**And** the summary card language acknowledges this is a sensitivity analysis, not a guarantee — never says "Even in the conservative scenario..."
+
+**Given** the quick scenario sensitivity model
+**When** Conservative scenario is computed
+**Then** three variables are adjusted simultaneously: Revenue -15%, COGS % +2 percentage points, Operating Expenses +10%
+**And** when Optimistic scenario is computed, adjustments are: Revenue +15%, COGS % -1 percentage point, Operating Expenses -5%
+**And** sensitivity factors are sourced from brand-level defaults (configurable by franchisor in brand configuration, with the above values as sensible defaults)
+**And** scenarios are computed client-side by applying sensitivity multipliers to base case inputs — they do NOT persist unless the user explicitly saves them
+
+**Given** scenario comparison is active and the user attempts to drill down
+**When** the comparison is at annual view (default)
+**Then** year headers lose their expand affordance
+**And** a tooltip explains: "Collapse comparison to drill into year detail"
+**Given** the user had already drilled into a year before activating comparison
+**Then** comparison shows 3 scenario columns per quarter for the expanded year; other years show Base Case only
+**Given** the user had drilled to monthly before activating comparison
+**Then** the system auto-collapses to quarterly for the expanded year and shows comparison with a brief toast: "Comparison view available at annual and quarterly levels"
+
+**Dev Notes:**
+- The interaction constraint between comparison and drill-down prevents column explosion (Critique Issue #2).
+- Quick scenarios require zero configuration — they are auto-generated from the base case.
+- Brand-configurable sensitivity factors anticipate that some franchisors will calibrate based on actual variance data.
+- See UX spec Part 4 (Scenario Comparison).
+
+### Story 5.8: Guardian Bar & Dynamic Interpretation
+
+As a franchisee,
+I want persistent at-a-glance feedback on my plan's health and contextual interpretation of every key metric,
+So that every decision I make is informed by its financial impact (FR7d).
+
+**Acceptance Criteria:**
+
+**Given** I am viewing any Financial Statement tab
+**When** the Guardian Bar renders (persistent slim bar above the tabs, below the workspace header)
+**Then** three indicators are shown: Break-even (month and calendar date), 5yr ROI (percentage), Cash Position (status)
+**And** each indicator uses BOTH a color AND a distinct icon shape:
+- Healthy: Green (success token) + Checkmark icon
+- Attention: Amber/Yellow (warning token) + Alert triangle icon
+- Concerning: Gurple (info/advisory token) + Info circle icon
+**And** the color/icon system is NOT a red/yellow/green traffic light — Gurple (advisory purple) is used for "concerning," NOT destructive red
+**And** each indicator always includes the specific value in text ("5yr ROI: 127%") — the color/icon is supplementary, not the primary information channel
+
+**Given** the Guardian threshold configuration
+**When** thresholds are evaluated
+**Then** default thresholds are:
+- Break-even: Healthy ≤ 18 months, Attention 18-30 months, Concerning > 30 months
+- 5-Year ROI: Healthy ≥ 100%, Attention 50-100%, Concerning < 50%
+- Cash Position: Healthy = never negative, Attention = negative ≤ 3 months, Concerning = negative > 3 months
+**And** thresholds use brand-specific defaults when configured by the franchisor (future configurability in Epic 8)
+**And** for MVP, sensible defaults above are used
+
+**Given** I click a Guardian indicator
+**When** the system responds
+**Then** I am navigated to the relevant financial statement tab and scrolled to the relevant row:
+- Clicking "Break-even: Mo 14" → Summary tab, break-even analysis section
+- Clicking "Cash: lowest point -$8,200 in Month 6" → Cash Flow tab, drills into Year 1 monthly view, highlights Month 6
+- Clicking "5yr ROI: 127%" → ROIC tab
+
+**Given** I am in Quick Entry mode and edit an input cell
+**When** the engine recalculates
+**Then** the Guardian Bar updates in real time reflecting the new computation
+**And** if a Guardian indicator changes threshold level (e.g., green → amber), the indicator animates briefly to draw attention
+
+**Given** dynamic interpretation rows are enabled across statement tabs (P&L, Balance Sheet, Cash Flow)
+**When** a key computed row renders
+**Then** an interpretation row appears below it with contextual "so what" text:
+- Type 1 (Callout bar metrics): Key summary numbers with plain-language impact statement
+- Type 2 (Inline interpretation): Benchmark comparison using brand defaults only — "XX% — within [Brand] typical range ([low]-[high]%)"
+- Type 3 (Hover tooltips on computed cells): Plain-language explanation, calculation formula, and Glossary link
+**And** benchmarks come ONLY from brand defaults configured by the franchisor — never from universal databases
+**And** if no brand benchmark exists, interpretation shows only the percentage/ratio without benchmark context
+**And** in Quick Entry mode, interpretations update in real time as input cells are edited
+
+**Dev Notes:**
+- The Guardian Bar is a separate `<GuardianBar>` component (~80 lines), always visible at the top of the Financial Statements container.
+- Guardian is a compass, not a judgment — language is always factual ("Break-even: Month 14") and the user draws their own conclusions.
+- Interpretation rows are `<InterpretationRow>` components (~40 lines each) associated with parent data rows via `aria-describedby`.
+- Guardian thresholds are hardcoded defaults for MVP. Epic 8 (Advisory Guardrails) adds brand-configurable thresholds.
+- See UX spec Part 5 (Dynamic Interpretation), Part 6 (ROI Threshold Guardian).
+
+### Story 5.9: Impact Strip & Document Preview Widget
+
+As a franchisee using Forms mode,
+I want to see the real-time impact of my edits on key metrics without leaving the form,
+So that I understand the financial consequence of every input change (FR7d).
+
+**Acceptance Criteria:**
+
+**Given** I am in Forms mode editing financial inputs
+**When** the Impact Strip renders (persistent sticky bar at the bottom of the Forms input panel)
+**Then** it shows 3-4 key metrics most relevant to the section I'm currently editing:
+- Revenue section → Pre-Tax Income, Break-even, Gross Margin, 5yr ROI
+- Operating Expenses section → EBITDA, Pre-Tax Income, Labor Efficiency
+- Financing section → Cash Position, Debt Service, Break-even
+- Startup Costs section → Total Investment, ROI, Break-even
+
+**Given** I change an input value in Forms mode
+**When** the engine recalculates
+**Then** affected metrics in the Impact Strip show a delta indicator ("+$3,200") in a subtle highlight for 3 seconds, then the highlight fades but the new value remains
+**And** a deep link "View Full P&L →" (or relevant statement) navigates to the Financial Statements tab for the full picture
+**And** the "Return to Editing" browser back button (or a link in the statements view) brings the user back to Forms
+
+**Given** the Impact Strip includes a miniature Guardian
+**When** it renders
+**Then** three colored dots with icons (matching Guardian Bar pattern) show break-even, ROI, and cash health status
+**And** if an edit pushes a Guardian metric from green to amber, the dot animates briefly
+**And** clicking a miniature Guardian dot navigates to the Financial Statements view with the relevant tab and row focused
+
+**Given** the Impact Strip includes a document preview icon
+**When** I click the document icon
+**Then** a Document Preview modal opens showing all pages of the business plan document rendered at readable size
+**And** the preview reflects the current state of my financial inputs
+
+**Given** I am on the Dashboard Panel
+**When** the dashboard renders
+**Then** a Document Preview widget card appears showing the first page of the lender document in miniature
+**And** the preview card shows the franchisee's name on the document (the pride moment)
+**And** the preview updates in real time as inputs change
+**And** "View Full Preview" opens the full Document Preview modal
+**And** "Generate PDF" triggers PDF generation (Story 6.1)
+**And** if the plan is at < 50% input completeness, the preview shows a "Draft" watermark
+
+**Given** I am on the Financial Statements view
+**When** the header renders
+**Then** a "Generate PDF" button appears in the header area (no preview — the user is already looking at the content)
+**And** the button label evolves with completeness: < 50% → "Generate Draft"; 50-90% → "Generate Package"; > 90% → "Generate Lender Package"
+
+**Given** the plan has all inputs at brand defaults (no user edits)
+**When** the Document Preview widget or Guardian Bar renders
+**Then** a note appears: "Your plan is using all brand default values. Edit inputs to personalize your projections."
+
+**Dev Notes:**
+- The Impact Strip is a `<ImpactStrip>` component (~100 lines) rendered inside the Forms mode input panel.
+- Context-sensitive metrics require mapping each form section to relevant financial metrics.
+- The Document Preview modal is a `<DocumentPreviewModal>` component (~120 lines) that renders the plan as formatted pages.
+- Document Preview lives on the Dashboard (widget) and Forms (via Impact Strip icon), NOT within Financial Statements (Critique Issue #4).
+- The "Generate PDF" button in the Financial Statements header connects to Story 6.1.
+- See UX spec Part 1 (Impact Strip pattern), Part 7 (Document Preview), Part 12 (Empty & Incomplete States).
+
+### Story 5.10: Glossary & Contextual Help
+
+As a franchisee,
+I want access to a glossary of financial terms and contextual help for every input field,
+So that I can understand what each metric means and make informed decisions (FR7k, FR7l).
+
+**Acceptance Criteria:**
+
+**Given** I navigate to the Glossary
+**When** the Glossary page renders (accessible from sidebar navigation item "Glossary")
+**Then** I see a searchable list of 15 financial terms: Payback Period, EBITDA, Adj Net Profit Before Tax, Shareholder Salary Adjustment, EBITDA Multiple, Average Unit Volume (AUV), Direct Labor Cost, Facilities, Equity - Cash, Core Capital, Estimated Distributions, ROIC, Breakeven, Number of Months to Breakeven, Cash Flow
+**And** each term includes: plain-language definition (universal across brands), how it's calculated (from engine logic), and a "See it in your plan" link that navigates to the relevant financial statement section
+**And** if brand-specific benchmark values are configured by the franchisor (via brand defaults), they are displayed alongside the definition — benchmarks are sourced from brand configuration, NOT hardcoded in the glossary
+**And** if no brand benchmark exists, the term shows definition and calculation only — no benchmark section
+
+**Given** I hover over any computed cell in a financial statement tab
+**When** the tooltip renders
+**Then** it shows: what the number means in plain language, how it's calculated (e.g., "Revenue ($360,000) minus COGS ($108,000)"), and a "Learn more" link to the full Glossary entry for that term
+
+**Given** I view any input field (in Forms mode, Quick Entry mode, or Startup Costs)
+**When** I hover over the info icon next to the field
+**Then** a tooltip shows the field's explanation text (1-2 sentences from spreadsheet cell comments for consolidated fields; newly authored text for decomposed sub-fields)
+**And** a "Learn more" link opens an expanded help panel with deeper explanation (1-2 paragraphs, extracted from Loom video teaching content)
+**And** if a brand-specific benchmark exists for this field, it is shown in the tooltip
+
+**Given** the help content data model
+**When** help content is stored
+**Then** each field's help content includes: fieldKey (e.g., "input.facilities", "input.facilities.rent"), tooltipText (brief 1-2 sentences), expandedHelp (deeper 1-2 paragraphs from video content extraction), glossaryTermSlug (links to glossary entry, nullable), parentFieldKey (for decomposed sub-fields, nullable)
+**And** help content is stored as platform-level text data — not hardcoded in component files
+**And** ~33 tooltip texts are sourced from spreadsheet cell comments (consolidated fields)
+**And** ~20 new tooltip texts are authored for decomposed sub-fields (Forms mode guided fields)
+**And** expanded help content is extracted from the 25 Loom walkthrough videos into text-based guidance
+
+**Dev Notes:**
+- Glossary is a standalone page accessible from sidebar navigation.
+- Inline tooltips integrate into every computed cell and every input field — this is the "education for empowerment" layer.
+- Help content for decomposed sub-fields (rent, utilities, telecom, etc.) must be newly authored — the spreadsheet never decomposed these fields.
+- Loom video content extraction is a prerequisite content authoring task — the videos are watched, teaching is distilled into text, and stored as platform data.
+- See UX spec Part 11 (Glossary), Part 5 (Type 3: Hover Tooltips), and Course Correction Addendum (Guided Decomposition) Section 3 (Help Content System).
 
 ---
 
 ## Epic 6: Document Generation & Vault
 
-Generate lender-grade PDF business plan packages and maintain document history with download capability. Elevated from old Epic 7 (stories 7.2 and 7.3).
+Generate lender-grade PDF business plan packages and maintain document history with download capability. Elevated from old Epic 7 (stories 7.2 and 7.3). The document is the product's primary deliverable — what Sam takes to the bank, what Chris uses for location #2 financing, what Jordan presents to investors.
+
+**FRs covered:** FR24, FR25, FR26, FR27
+**Dependencies:** Epic 5 (financial statement views provide the content that PDF exports)
 
 ### Story 6.1: PDF Document Generation
 
@@ -919,14 +1405,41 @@ So that I can walk into a bank meeting feeling confident and prepared (FR24, FR2
 
 **Acceptance Criteria:**
 
-**Given** I have a completed plan (optionally with scenarios)
-**When** I click "Generate Package"
-**Then** a PDF package is generated within 30 seconds (NFR3) containing: pro forma P&L, cash flow projection, balance sheet, break-even analysis, and executive summary
-**And** the document header reads "[Franchisee Name]'s [Brand] Plan" — franchisee name before brand name
+**Given** I have a plan with financial projections
+**When** I click "Generate PDF" (from the Financial Statements header, Dashboard preview widget, or Impact Strip document icon)
+**Then** a PDF package is generated within 30 seconds (NFR3) containing:
+- Cover page with franchisee name, brand identity (logo, colors), and plan date
+- Executive Summary with key metrics (break-even, 5yr ROI, total investment)
+- Pro forma P&L Statement (annual summary + monthly detail for all 5 years)
+- Balance Sheet (annual summary + monthly detail)
+- Cash Flow Statement (annual summary + monthly detail)
+- ROIC Analysis (annual)
+- Valuation Analysis (annual)
+- Break-Even Analysis with cumulative cash flow chart
+- Startup Capital Summary
+
+**And** the document header reads "[Franchisee Name]'s [Brand] Business Plan" — franchisee name before brand name
 **And** professional formatting with brand identity (logo, colors) and Katalyst design — consistent typography, proper page breaks, branded headers/footers, and financial tables with formatting that matches or exceeds what a financial consultant would produce
-**And** FTC-compliant disclaimers state that projections are franchisee-created, not franchisor representations (FR25)
-**And** financial values use consistent formatting throughout (NFR27)
-**And** a live document preview is visible during planning so the franchisee can see the artifact taking shape
+**And** FTC-compliant disclaimers state on every page: "These projections are franchisee-created estimates and do not constitute franchisor earnings claims or representations" (FR25)
+**And** financial values use consistent formatting throughout: currency as $X,XXX, percentages as X.X% (NFR27)
+
+**Given** the "Generate PDF" button label evolves with input completeness (Story 5.9)
+**When** the button is clicked at < 50% completeness
+**Then** the generated PDF includes a "DRAFT" watermark on every page
+**And** a brief note on the cover: "This plan contains brand default assumptions that have not been personalized. Review and update inputs for a complete projection."
+
+**Given** scenario comparison is active when PDF is generated
+**When** the PDF renders
+**Then** the PDF includes the comparison summary card text and scenario columns in the P&L and key metrics tables
+
+**And** the PDF is available for immediate download upon generation
+**And** the generated PDF is stored for future access (Story 6.2)
+
+**Dev Notes:**
+- PDF generation runs server-side using a PDF library (e.g., `@react-pdf/renderer` or `puppeteer` for high-fidelity rendering).
+- The PDF content mirrors the Financial Statement views — same line items, same structure, but formatted for print/PDF.
+- The "Generate PDF" button in the Financial Statements header was placed by Story 5.9.
+- See UX spec Part 7 (Document Preview — Progressive Pride) for emotional design context.
 
 ### Story 6.2: Document History & Downloads
 
@@ -937,17 +1450,111 @@ So that I can access any version of my plan at any time (FR26, FR27).
 **Acceptance Criteria:**
 
 **Given** I have generated one or more document packages
-**When** I view my document list
-**Then** I see all previously generated documents with timestamps and plan version metadata
-**And** I can download any previous document
+**When** I view my document history (accessible from sidebar navigation or Dashboard)
+**Then** I see a chronological list of all previously generated documents with: generation timestamp, plan name, input completeness at time of generation (draft/partial/complete), and file size
+**And** I can download any previous document with a single click
 **And** generated documents are immutable — changes to the plan after generation do not alter existing documents (NFR18)
-**And** documents are stored with metadata in PostgreSQL and binary PDF in Replit Object Storage
+**And** documents are stored with metadata in PostgreSQL (generation date, plan snapshot ID, completeness level) and binary PDF in Replit Object Storage
+**And** each document entry shows a thumbnail preview of the first page
+**And** a "Generate New" button is prominently available to create an updated version reflecting current inputs
 
 ---
 
 ## Epic 7: Per-Year Inputs & Multi-Plan Management
 
-*Stories for this epic will be defined by the Create Epics and Stories workflow. Planned stories (2): Per-Year Input Columns, Plan CRUD & Navigation.*
+Enable Year 1-5 independent input values for all per-year financial assumptions, unlocking growth trajectory modeling. Add plan creation, naming, cloning, and navigation for multi-location planning.
+
+**FRs covered:** FR7i, FR7j, FR15, FR16
+**Dependencies:** Epic 5 (financial statement views with linked-column indicators provide the visual foundation that this epic unlocks)
+
+### Story 7.1: Per-Year Input Columns
+
+As a franchisee,
+I want to set different values for each year (Year 1 through Year 5) for my financial assumptions,
+So that I can model realistic growth trajectories instead of flat projections across all 5 years (FR7i).
+
+**Acceptance Criteria:**
+
+**Given** the `PlanFinancialInputs` interface is restructured
+**When** per-year fields are stored
+**Then** all 10 per-year operating cost categories use 5-element arrays: growthRates[5], royaltyPct[5], adFundPct[5], cogsPct[5], laborPct[5], facilitiesAnnual[5], marketingPct[5], managementSalariesAnnual[5], payrollTaxPct[5], otherOpexPct[5]
+**And** new per-year fields are added: targetPreTaxProfitPct[5], shareholderSalaryAdj[5], distributions[5], nonCapexInvestment[5]
+**And** missing single-value fields are added to the UI: arDays, apDays, inventoryDays, taxPaymentDelayMonths, ebitdaMultiple
+**And** existing plans are migrated by broadcasting current single values into 5-element arrays (semantically identical — no data loss)
+
+**Given** I am editing inputs in Quick Entry mode (Financial Statement tabs)
+**When** I edit a value in a specific year column
+**Then** only that year's value changes — other years retain their independent values
+**And** the linked-column indicators from Story 5.2 are removed (link icons disappear, cells no longer flash on broadcast)
+**And** a "Copy Year 1 to all years" action is available for users who want to broadcast a single value
+
+**Given** I am editing inputs in Forms mode
+**When** the form renders per-year fields
+**Then** each per-year field shows 5 input columns labeled Year 1 through Year 5
+**And** by default, Year 2-5 inherit Year 1's value with a visual indicator (link icon, lighter text) showing they are inherited
+**And** editing Year 2-5 breaks the inheritance for that specific year — the value becomes independent
+**And** a "Reset to Year 1" action is available per cell to re-establish inheritance
+
+**Given** the Facilities field alignment
+**When** the input structure is corrected
+**Then** the engine's single `facilitiesAnnual[5]` field is exposed directly in Quick Entry as "Facilities ($)" per year (matching the spreadsheet)
+**And** in Forms mode, the guided decomposition (rent, utilities, telecom, vehicle fleet, insurance) rolls up into `facilitiesAnnual[year]` with per-year support
+**And** Other OpEx changes from flat dollar amount to % of revenue (matching the spreadsheet), with migration converting existing dollar values to equivalent percentages based on projected revenue
+
+**Dev Notes:**
+- This is the story that removes the "linked columns" behavior introduced in Story 5.2 and replaces it with independent per-year editing.
+- The `PlanFinancialInputs` → `FinancialInputs` translation layer changes from broadcasting single values to passing per-year arrays directly.
+- Migration must handle existing plans gracefully — broadcast current single values to 5-element arrays.
+- The Facilities and Other OpEx field alignment fixes are included here because they are structurally tied to the per-year restructuring.
+- See Sprint Change Proposal CP-3 (Fix PlanFinancialInputs) and UX spec Part 3 (Pre-Epic-7 / Post-Epic-7 behavior).
+
+### Story 7.2: Plan CRUD & Navigation
+
+As a franchisee,
+I want to create, name, rename, clone, and switch between multiple plans,
+So that I can model different locations or scenarios as separate plans (FR15, FR16).
+
+**Acceptance Criteria:**
+
+**Given** I am on the Dashboard or in the sidebar
+**When** I click "Create New Plan"
+**Then** a new plan is created with the brand's default financial parameters and startup cost template
+**And** I am prompted to name the plan (e.g., "PostNet - Downtown Location")
+**And** the new plan opens in the planning workspace immediately
+**And** the backend `POST /api/plans` endpoint is called (already exists but has no UI trigger)
+
+**Given** I have an existing plan
+**When** I want to duplicate it
+**Then** a "Clone Plan" action is available in the plan's context menu (kebab menu or similar)
+**And** cloning creates a new plan with all financial inputs and startup costs copied from the source plan
+**And** the cloned plan is named "[Source Plan Name] (Copy)" and can be renamed immediately
+**And** the cloned plan is independent — changes to the clone do not affect the original
+
+**Given** I have a plan
+**When** I want to rename it
+**Then** I can click the plan name in the workspace header to enter inline edit mode
+**And** the new name saves on blur or Enter, cancels on Escape
+**And** plan names are validated: non-empty, max 100 characters
+
+**Given** I have multiple plans
+**When** I am in the sidebar
+**Then** a "My Plans" section in the sidebar lists all my plans with their names
+**And** clicking a plan navigates to that plan's workspace
+**And** the currently active plan is visually highlighted in the sidebar
+**And** each plan shows a compact status indicator (e.g., input completeness percentage or "Draft"/"Complete" label)
+
+**Given** I want to delete a plan
+**When** I select "Delete Plan" from the context menu
+**Then** a confirmation dialog appears: "Delete [Plan Name]? This cannot be undone. All financial data and generated documents for this plan will be permanently removed."
+**And** deletion requires typing the plan name to confirm (destructive action safeguard)
+**And** the last remaining plan cannot be deleted — at least one plan must exist
+
+**Dev Notes:**
+- Backend `POST /api/plans` already exists. This story adds the UI trigger and additional endpoints: `PATCH /api/plans/:id` (rename), `POST /api/plans/:id/clone` (clone), `DELETE /api/plans/:id` (delete).
+- Sidebar plan navigation addresses Gap #9 from the brainstorming session.
+- The "Create New Plan" button addresses Gap #1 and Gap #10 (blockers for multi-location planning).
+- Plan naming addresses Gap #3 and Gap #4 (no more "Demo Plan" default name).
+- See Brainstorming Session 2026-02-15, Layer 3 (Multi-Plan and Workflow Gaps).
 
 ---
 
