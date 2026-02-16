@@ -3,8 +3,8 @@ import { useParams } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
-import { RefreshCw } from "lucide-react";
-import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from "@/components/ui/resizable";
+import { Card, CardContent } from "@/components/ui/card";
+import { RefreshCw, FlaskConical, Settings } from "lucide-react";
 import { useSidebar } from "@/components/ui/sidebar";
 import { useAuth } from "@/hooks/use-auth";
 import { usePlanAutoSave } from "@/hooks/use-plan-auto-save";
@@ -12,9 +12,9 @@ import { planKey } from "@/hooks/use-plan";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { PlanningHeader } from "@/components/planning/planning-header";
 import { InputPanel } from "@/components/planning/input-panel";
-import { DashboardPanel } from "@/components/planning/dashboard-panel";
 import { FinancialStatements } from "@/components/planning/financial-statements";
 import { QuickStartOverlay } from "@/components/shared/quick-start-overlay";
+import { SummaryMetrics } from "@/components/shared/summary-metrics";
 import { useWorkspaceView } from "@/contexts/WorkspaceViewContext";
 import type { ExperienceTier } from "@/components/planning/mode-switcher";
 import type { Brand, Plan } from "@shared/schema";
@@ -25,13 +25,22 @@ export default function PlanningWorkspace() {
   const { user } = useAuth();
   const { plan, isLoading: planLoading, error: planError, saveStatus, queueSave, retrySave, flushSave, isSaving, hasUnsavedChanges } = usePlanAutoSave(planId);
   const { setOpen } = useSidebar();
-  const { workspaceView, statementsDefaultTab, navigateToStatements } = useWorkspaceView();
+  const { workspaceView, statementsDefaultTab, navigateToStatements, setActivePlanName } = useWorkspaceView();
 
   const brandId = plan?.brandId;
   const { data: brand } = useQuery<Brand>({
     queryKey: ["/api/brands", brandId],
     enabled: !!brandId,
   });
+
+  useEffect(() => {
+    if (plan?.name) {
+      setActivePlanName(plan.name);
+    }
+    return () => {
+      setActivePlanName(null);
+    };
+  }, [plan?.name, setActivePlanName]);
 
   const getStoredMode = (): ExperienceTier | null => {
     try {
@@ -83,14 +92,10 @@ export default function PlanningWorkspace() {
           <div className="flex-1" />
           <Skeleton className="h-8 w-80" />
         </div>
-        <div className="flex-1 flex">
-          <div className="flex-1 p-4">
-            <Skeleton className="h-full w-full rounded-lg" />
-          </div>
-          <div className="flex-1 p-4">
-            <Skeleton className="h-64 w-full rounded-lg mb-4" />
-            <Skeleton className="h-48 w-full rounded-lg" />
-          </div>
+        <div className="flex-1 p-4 space-y-4">
+          <Skeleton className="h-24 w-full rounded-lg" />
+          <Skeleton className="h-12 w-full rounded-lg" />
+          <Skeleton className="h-48 w-full rounded-lg" />
         </div>
       </div>
     );
@@ -122,6 +127,66 @@ export default function PlanningWorkspace() {
     );
   }
 
+  const showExternalMetrics = activeMode !== "quick_entry";
+
+  const renderWorkspaceContent = () => {
+    switch (workspaceView) {
+      case "reports":
+        return (
+          <FinancialStatements
+            planId={planId}
+            defaultTab={statementsDefaultTab}
+          />
+        );
+      case "scenarios":
+        return (
+          <div data-testid="placeholder-scenarios" className="flex-1 flex items-center justify-center p-8">
+            <Card>
+              <CardContent className="flex flex-col items-center justify-center py-16 px-8 text-center">
+                <div className="rounded-full bg-muted p-4 mb-4">
+                  <FlaskConical className="h-8 w-8 text-muted-foreground" />
+                </div>
+                <h3 className="text-lg font-semibold mb-2">Scenarios</h3>
+                <p className="text-muted-foreground text-sm max-w-sm">
+                  Coming soon — scenario comparison will appear here.
+                </p>
+              </CardContent>
+            </Card>
+          </div>
+        );
+      case "settings":
+        return (
+          <div data-testid="placeholder-settings" className="flex-1 flex items-center justify-center p-8">
+            <Card>
+              <CardContent className="flex flex-col items-center justify-center py-16 px-8 text-center">
+                <div className="rounded-full bg-muted p-4 mb-4">
+                  <Settings className="h-8 w-8 text-muted-foreground" />
+                </div>
+                <h3 className="text-lg font-semibold mb-2">Settings</h3>
+                <p className="text-muted-foreground text-sm max-w-sm">
+                  Coming soon — plan settings will appear here.
+                </p>
+              </CardContent>
+            </Card>
+          </div>
+        );
+      case "my-plan":
+      default:
+        return (
+          <div className="flex-1 flex flex-col min-h-0">
+            {showExternalMetrics && (
+              <div className="sticky top-0 z-20 bg-background border-b px-4 py-3" data-testid="my-plan-summary-metrics">
+                <SummaryMetrics planId={planId} />
+              </div>
+            )}
+            <div className="flex-1 min-h-0">
+              <InputPanel activeMode={activeMode} planId={planId} queueSave={queueSave} />
+            </div>
+          </div>
+        );
+    }
+  };
+
   return (
     <div data-testid="planning-workspace" className="flex flex-col h-full">
       <PlanningHeader
@@ -129,30 +194,8 @@ export default function PlanningWorkspace() {
         saveStatus={saveStatus}
         onRetrySave={retrySave}
       />
-      <div className="flex-1 min-h-0">
-        {workspaceView === "statements" ? (
-          <FinancialStatements
-            planId={planId}
-            defaultTab={statementsDefaultTab}
-          />
-        ) : (
-          <ResizablePanelGroup direction="horizontal">
-            <ResizablePanel defaultSize={40} minSize={30}>
-              <div className="h-full" style={{ minWidth: 360 }}>
-                <InputPanel activeMode={activeMode} planId={planId} queueSave={queueSave} />
-              </div>
-            </ResizablePanel>
-            <ResizableHandle withHandle />
-            <ResizablePanel defaultSize={60} minSize={40}>
-              <div className="h-full" style={{ minWidth: 480 }}>
-                <DashboardPanel
-                  planId={planId}
-                  onNavigateToStatements={navigateToStatements}
-                />
-              </div>
-            </ResizablePanel>
-          </ResizablePanelGroup>
-        )}
+      <div className="flex-1 min-h-0 flex flex-col">
+        {renderWorkspaceContent()}
       </div>
     </div>
   );

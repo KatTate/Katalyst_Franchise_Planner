@@ -5,7 +5,7 @@ import { useBrandTheme } from "@/hooks/use-brand-theme";
 import { useImpersonation } from "@/contexts/ImpersonationContext";
 import { useDemoMode } from "@/contexts/DemoModeContext";
 import { useWorkspaceView } from "@/contexts/WorkspaceViewContext";
-import { Home, Mail, Building2, LogOut, CalendarCheck, ClipboardList, BarChart3 } from "lucide-react";
+import { Home, Mail, Building2, LogOut, CalendarCheck, ClipboardList, BarChart3, FlaskConical, Settings, HelpCircle } from "lucide-react";
 import {
   Sidebar,
   SidebarContent,
@@ -21,6 +21,7 @@ import {
 import { Separator } from "@/components/ui/separator";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -37,7 +38,14 @@ export function AppSidebar() {
   const { brand } = useBrandTheme();
   const { active: isImpersonating } = useImpersonation();
   const { active: isDemoMode } = useDemoMode();
-  const { workspaceView, navigateToStatements, navigateToMyPlan } = useWorkspaceView();
+  const {
+    workspaceView,
+    activePlanName,
+    navigateToStatements,
+    navigateToMyPlan,
+    navigateToScenarios,
+    navigateToSettings,
+  } = useWorkspaceView();
   const [location, setLocation] = useLocation();
   const [showLogoutDialog, setShowLogoutDialog] = useState(false);
   const [logoError, setLogoError] = useState(false);
@@ -56,12 +64,17 @@ export function AppSidebar() {
 
   const hideAdminNav = isImpersonating || isDemoMode;
   const navItems = [
-    { title: "Dashboard", url: "/", icon: Home, visible: true },
-    { title: "Brands", url: "/admin/brands", icon: Building2, visible: isRealKatalystAdmin && !hideAdminNav },
-    { title: "Invitations", url: "/admin/invitations", icon: Mail, visible: isRealAdmin && !hideAdminNav },
+    { title: "Home", url: "/", icon: Home, visible: true, testId: "nav-home" },
+    { title: "Brands", url: "/admin/brands", icon: Building2, visible: isRealKatalystAdmin && !hideAdminNav, testId: "nav-brands" },
+    { title: "Invitations", url: "/admin/invitations", icon: Mail, visible: isRealAdmin && !hideAdminNav, testId: "nav-invitations" },
   ].filter((item) => item.visible);
 
   const isInPlanWorkspace = /^\/plans\/[^/]+$/.test(location);
+
+  const planSectionLabel = activePlanName || null;
+  const showPlanSection = isInPlanWorkspace;
+  const hasBookingLink = !!(user.bookingUrl && user.accountManagerId);
+  const showHelpSection = isInPlanWorkspace && hasBookingLink;
 
   const displayUser = user._realUser ?? user;
   const initials = displayUser.displayName
@@ -97,7 +110,7 @@ export function AppSidebar() {
                     <SidebarMenuButton
                       isActive={location === item.url && !isInPlanWorkspace}
                       onClick={() => setLocation(item.url)}
-                      data-testid={`nav-${item.title.toLowerCase()}`}
+                      data-testid={item.testId}
                     >
                       <item.icon />
                       <span>{item.title}</span>
@@ -108,14 +121,20 @@ export function AppSidebar() {
             </SidebarGroupContent>
           </SidebarGroup>
 
-          {isInPlanWorkspace && (
+          {showPlanSection && (
             <SidebarGroup>
-              <SidebarGroupLabel data-testid="text-sidebar-plan-section">Plan</SidebarGroupLabel>
+              <SidebarGroupLabel data-testid="text-sidebar-plan-section">
+                {planSectionLabel ? (
+                  planSectionLabel
+                ) : (
+                  <Skeleton className="h-3.5 w-28" />
+                )}
+              </SidebarGroupLabel>
               <SidebarGroupContent>
                 <SidebarMenu>
                   <SidebarMenuItem>
                     <SidebarMenuButton
-                      isActive={workspaceView === "dashboard"}
+                      isActive={workspaceView === "my-plan"}
                       onClick={navigateToMyPlan}
                       data-testid="nav-my-plan"
                     >
@@ -125,12 +144,55 @@ export function AppSidebar() {
                   </SidebarMenuItem>
                   <SidebarMenuItem>
                     <SidebarMenuButton
-                      isActive={workspaceView === "statements"}
+                      isActive={workspaceView === "reports"}
                       onClick={() => navigateToStatements("summary")}
                       data-testid="nav-reports"
                     >
                       <BarChart3 />
                       <span>Reports</span>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                  <SidebarMenuItem>
+                    <SidebarMenuButton
+                      isActive={workspaceView === "scenarios"}
+                      onClick={navigateToScenarios}
+                      data-testid="nav-scenarios"
+                    >
+                      <FlaskConical />
+                      <span>Scenarios</span>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                  <SidebarMenuItem>
+                    <SidebarMenuButton
+                      isActive={workspaceView === "settings"}
+                      onClick={navigateToSettings}
+                      data-testid="nav-settings"
+                    >
+                      <Settings />
+                      <span>Settings</span>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                </SidebarMenu>
+              </SidebarGroupContent>
+            </SidebarGroup>
+          )}
+
+          {showHelpSection && (
+            <SidebarGroup>
+              <SidebarGroupLabel data-testid="text-sidebar-help-section">Help</SidebarGroupLabel>
+              <SidebarGroupContent>
+                <SidebarMenu>
+                  <SidebarMenuItem>
+                    <SidebarMenuButton
+                      onClick={() => window.open(user.bookingUrl, '_blank', 'noopener,noreferrer')}
+                      data-testid="nav-help-booking"
+                    >
+                      <CalendarCheck />
+                      <span className="truncate">
+                        {user.accountManagerName
+                          ? `Talk to ${user.accountManagerName}`
+                          : "Book Consultation"}
+                      </span>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
                 </SidebarMenu>
@@ -139,25 +201,6 @@ export function AppSidebar() {
           )}
         </SidebarContent>
         <SidebarFooter>
-          {user.bookingUrl && user.accountManagerId && (
-            <div className="px-3 pb-1">
-              <Separator className="mb-2" />
-              <Button
-                variant="ghost"
-                size="sm"
-                className="w-full justify-start gap-2 text-xs text-muted-foreground"
-                onClick={() => window.open(user.bookingUrl, '_blank', 'noopener,noreferrer')}
-                data-testid="button-sidebar-book-consultation"
-              >
-                <CalendarCheck className="h-3.5 w-3.5" />
-                <span className="truncate">
-                  {user.accountManagerName
-                    ? `Book with ${user.accountManagerName}`
-                    : "Book Consultation"}
-                </span>
-              </Button>
-            </div>
-          )}
           {hasBrandContext && (
             <div className="px-3 pb-2">
               <Separator className="mb-2" />
