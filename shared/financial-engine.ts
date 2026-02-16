@@ -521,7 +521,7 @@ export function calculateProjections(input: EngineInput): EngineOutput {
     const taxAccrual = round2(Math.max(0, preTaxIncome * fi.taxRate));
     taxPayableBalance = round2(taxPayableBalance + taxAccrual);
     const lookbackIndex = (m - 1) - taxPaymentDelayMonths;
-    if (lookbackIndex >= 0) {
+    if (lookbackIndex >= 0 && lookbackIndex < monthly.length) {
       const pastPreTaxIncome = monthly[lookbackIndex].preTaxIncome;
       const payment = round2(Math.max(0, pastPreTaxIncome * fi.taxRate));
       taxPayableBalance = round2(taxPayableBalance - payment);

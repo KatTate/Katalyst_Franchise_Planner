@@ -452,7 +452,7 @@ npx playwright test e2e/story-4-7-integration-gaps.spec.ts
 **AC1: Optional Input Defaults & Backward Compatibility (4 new tests):**
 - [x] Custom `targetPreTaxProfitPct` is applied to P&L analysis
 - [x] Custom `taxPaymentDelayMonths` shifts payment timing
-- [x] `taxPaymentDelayMonths = 0` causes array underflow (known engine bug documented)
+- [x] `taxPaymentDelayMonths = 0` means immediate payment (bug fixed — added bounds check)
 - [x] Backward compatibility: omitting all new optional fields produces valid output
 
 **AC2: Balance Sheet Disaggregation Edge Cases (5 new tests):**
@@ -531,14 +531,12 @@ npx playwright test e2e/story-4-7-integration-gaps.spec.ts
 | AC10 | Comprehensive coverage | 0 | 7 | 7 | Covered |
 | AC11 | Zero imports (module purity) | 1 | 0 | 1 | Covered |
 
-### Discovered Issue
+### Bug Fix: `taxPaymentDelayMonths = 0` Array Underflow (RESOLVED)
 
-**Bug: `taxPaymentDelayMonths = 0` Array Underflow**
-- **Severity:** Medium
-- **Location:** `shared/financial-engine.ts:523-528`
-- **Description:** When `taxPaymentDelayMonths` is set to 0, lookback index resolves to `m-1` which for month 1 attempts to access `monthly[0]` before it's been pushed, causing a `TypeError`.
-- **Impact:** Edge case only — default is 1, real-world usage always >= 1.
-- **Recommendation:** Add guard `lookbackIndex < monthly.length` or enforce minimum delay of 1.
+- **Location:** `shared/financial-engine.ts:527`
+- **Root cause:** Lookback index `(m-1) - 0 = m-1` for month 1 accessed `monthly[0]` before it was pushed.
+- **Fix:** Added bounds check `lookbackIndex < monthly.length` alongside existing `lookbackIndex >= 0`.
+- **Verified:** Test now validates correct behavior (no crash, finite non-negative taxPayable for all 60 months).
 
 ### Input Datasets Tested
 
@@ -562,7 +560,6 @@ No regressions introduced.
 
 ## Next Steps
 
-- Fix discovered bug: `taxPaymentDelayMonths = 0` array underflow
 - Add E2E tests for accept-invitation flow (requires token generation)
 - Add E2E tests for admin brand detail page
 - Add E2E tests for onboarding UI (requires franchisee user creation via invitation flow)

@@ -1122,12 +1122,17 @@ describe("Financial Engine", () => {
       );
     });
 
-    it("taxPaymentDelayMonths = 0 causes array underflow (known bug — engine requires delay >= 1)", () => {
+    it("taxPaymentDelayMonths = 0 means immediate payment (no crash)", () => {
       const delay0Input: EngineInput = {
         financialInputs: { ...postNetInputs, taxPaymentDelayMonths: 0 },
         startupCosts: postNetStartupCosts,
       };
-      expect(() => calculateProjections(delay0Input)).toThrow();
+      const delay0Result = calculateProjections(delay0Input);
+      expect(delay0Result.monthlyProjections).toHaveLength(60);
+      delay0Result.monthlyProjections.forEach((mp) => {
+        expect(mp.taxPayable).toBeGreaterThanOrEqual(0);
+        expect(Number.isFinite(mp.taxPayable)).toBe(true);
+      });
     });
 
     it("backward compatibility: omitting all new optional fields produces valid output", () => {
