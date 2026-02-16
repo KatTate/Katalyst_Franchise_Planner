@@ -1,8 +1,9 @@
 # UX Specification: Financial Statement Experience
 
 **Author:** Sally (UX Designer)
-**Date:** 2026-02-15
-**Status:** Draft for Review
+**Date:** 2026-02-16
+**Status:** Revised — Self-Critique Complete
+**Revision:** v2 — Addresses 9 issues identified in Sally's self-critique of v1
 **Foundation:** John's Six Points from Party Mode Retrospective Review
 **Input Documents:**
 - Brainstorming Session 2026-02-08 (54 ideas, core design principles)
@@ -10,6 +11,7 @@
 - UX Design Specification 2026-02-08 (experience principles, emotional arcs)
 - Sprint Change Proposal 2026-02-15 (scope, FRs, engine extension)
 - Epic 1-4 Retrospectives (pattern: backend-first → UX rework)
+- Sally's Self-Critique 2026-02-16 (9 issues identified)
 
 ---
 
@@ -75,10 +77,40 @@ The Financial Statements view is accessible via two paths:
 - Each tab remembers its scroll position and drill-down state within the session.
 - On mobile/narrow viewports (below 1024px), tabs convert to a dropdown selector.
 
-**Relationship to existing modes:**
+### Mode-Specific Navigation (Critique Issue #1: Forms Mode Experience)
 
-- In **Forms** and **Planning Assistant** modes, Financial Statements is a separate view. The user navigates away from the input panel to see statements, then navigates back to edit.
-- In **Quick Entry** mode, Financial Statements ARE the input interface (see F2: Input-Output Integration below). The tab container becomes the workspace — inputs and outputs coexist in the same tables.
+The original draft made Forms mode financial statements read-only, forcing Chris to navigate AWAY to edit and BACK to check impact — the same split-brain pattern we criticized the Sprint Change Proposal for. This section replaces that design.
+
+**Quick Entry mode:** Financial statement tabs ARE the workspace. Input cells are editable inline. No separate input panel. The tab container is the primary interface. (Details in Part 3.)
+
+**Forms mode — Impact Strip pattern:**
+
+Forms mode retains its existing section-based form input panel as the primary editing surface. BUT: a persistent **Impact Strip** appears at the bottom of the Forms input panel, showing the 3-4 key metrics most affected by the section the user is currently editing:
+
+```
+┌─ Forms Input Panel ──────────────────────────────────────────┐
+│                                                               │
+│  [Revenue Section]                                            │
+│  Monthly Revenue: $30,000                                     │
+│  Revenue Growth Rate: 10%                                     │
+│  ...                                                          │
+│                                                               │
+├─ Impact Strip (sticky bottom) ───────────────────────────────┤
+│  Pre-Tax Income: $42,000 (+$3,200)  │  Break-even: Mo 14     │
+│  Gross Margin: 70.0%                │  5yr ROI: 127%          │
+│  ↳ View Full P&L →                                           │
+└───────────────────────────────────────────────────────────────┘
+```
+
+Impact Strip behavior:
+- **Context-sensitive:** The metrics shown change based on which form section is active. Revenue section shows P&L impact. Financing section shows balance sheet and cash flow impact. Startup costs section shows investment totals and ROI impact.
+- **Delta indicators:** When the user changes a value, affected metrics show the change amount ("+$3,200") in a subtle highlight for 3 seconds, then the highlight fades but the new value remains.
+- **Deep link:** The "View Full P&L" (or "View Full Balance Sheet", etc.) link navigates to the relevant Financial Statements tab. This is the bridge from editing to reviewing — Chris clicks to see the full picture, then uses the browser back button (or a "Return to Editing" link in the statements view) to come back.
+- **Guardian integration:** The Impact Strip includes a miniature Guardian indicator — three colored dots (break-even, ROI, cash) that change color in real time as the user edits. If an edit pushes a Guardian metric from green to amber, the dot animates briefly to draw attention.
+
+**Planning Assistant mode:** Financial statements are read-only. The AI conversation drives input changes; the statement view shows results. The Impact Strip pattern is not needed because the AI conversation panel already shows live-updating dashboard metrics on its right side (existing split-screen layout from Epic 4).
+
+**The net effect:** No mode requires navigating away to understand impact. Quick Entry edits inline. Forms shows impact at the bottom of every input panel. Planning Assistant shows it in the dashboard panel alongside the conversation.
 
 **[F1] [F2]**
 
@@ -168,11 +200,13 @@ Every cell in a financial statement table is one of two types:
 
 **Visual distinction between input and computed cells:**
 
-| Cell Type | Background | Text Style | Interaction |
-|-----------|-----------|------------|-------------|
-| Input (editable) | Subtle tinted background (e.g., very faint primary/5 tint) | Regular weight | Click to edit inline; Tab navigates between input cells |
-| Computed (read-only) | Standard background | Medium weight | Hover shows tooltip with formula/derivation; not editable |
-| Section header/total | Slightly elevated background | Bold weight | Not editable; shows sum of child rows |
+| Cell Type | Background | Text Style | Border | Icon | Interaction |
+|-----------|-----------|------------|--------|------|-------------|
+| Input (editable) | Subtle tinted background (primary/5) | Regular weight | Thin dashed left border (primary/20) | Small pencil icon on hover | Click to edit inline; Tab navigates between input cells |
+| Computed (read-only) | Standard background | Medium weight | None | None | Hover shows tooltip with formula/derivation; not editable |
+| Section header/total | Slightly elevated background | Bold weight | None | None | Not editable; shows sum of child rows |
+
+**Accessibility note (Critique Issue #7):** The input/computed distinction MUST NOT rely solely on background color. The dashed left border and the pencil icon on hover provide two additional non-color indicators. Screen readers announce input cells with `role="gridcell"` and `aria-readonly="false"`; computed cells use `aria-readonly="true"`. See Part 15 (Accessibility) for full details.
 
 **Inline editing behavior:**
 
@@ -211,19 +245,45 @@ Operating Expenses
 
 In this view, Maria tabs through the `[edit]` cells at spreadsheet speed, and every computed cell updates as she goes. She's not "viewing a P&L and editing inputs somewhere else" — she's editing INSIDE the P&L.
 
+### Pre-Epic-7 Per-Year Behavior (Critique Issue #8)
+
+Until Epic 7 delivers the PlanFinancialInputs restructuring to per-year arrays, all years broadcast the same value. This creates a UX tension: the annual view shows 5 year columns, but editing Y2 changes Y1-Y5 simultaneously.
+
+**Design decision: Linked columns with visual indicator.**
+
+Before Epic 7:
+- All 5 year columns are displayed (not hidden — that would make the views unusable).
+- A small **link icon** appears in the column header row, spanning all 5 year columns, with a tooltip: "All years share the same value. Per-year values will be available in a future update."
+- When the user edits an input cell in ANY year column, ALL year columns update simultaneously. The updating cells briefly flash to show the change propagated.
+- The cell the user edited shows a pencil icon; the other 4 year columns show a link icon in the edited cell for 2 seconds, reinforcing "these are linked."
+- In the drill-down views (quarterly/monthly), editing any period updates all periods for that input.
+
+After Epic 7:
+- The link icon disappears.
+- Editing Y2 changes only Y2. Y1 values are independent.
+- A "Copy Y1 to all years" action is available for users who want to broadcast.
+- Per-year values are the default; broadcasting is the opt-in action.
+
+### Transition from Existing Quick Entry Grid (Critique Issue #9)
+
+Maria currently uses a flat TanStack Table grid with ~19 input fields from Epic 4. This spec replaces that flat grid with the financial statement tabs in Quick Entry mode. Maria's workspace changes fundamentally — we must design the transition.
+
+**Design decision: P&L as default landing tab + "All Inputs" shortcut.**
+
+- In Quick Entry mode, the Financial Statements container opens with the **P&L tab active by default** (not Summary). The P&L contains the majority of editable inputs (revenue, COGS, all operating expenses) and is the closest analog to the flat grid Maria is used to.
+- An **"All Inputs" view** is available as a special tab (or a toggle in the tab bar) that renders ALL editable inputs from all statements in a single flat table — grouped by statement section. This is functionally equivalent to the old flat grid but organized by financial statement context. It's the escape hatch for users who prefer the flat list.
+- On the first visit to Quick Entry after the Epic 5 update, a **one-time orientation overlay** appears:
+  - "Your inputs now live inside the financial statements. Edit directly in the P&L, Balance Sheet, and Cash Flow tabs — or use 'All Inputs' for the classic flat view."
+  - A "Got it" dismissal button. The overlay never shows again.
+- The old `quick-entry-mode.tsx` flat grid component is preserved internally as the rendering engine for the "All Inputs" view. It's not deleted — it's relocated.
+
 **Mode-specific behavior of the same Financial Statements view:**
 
 | Mode | Financial Statements Behavior |
 |------|------------------------------|
 | Planning Assistant | Read-only view. AI conversation drives input changes; statement view shows results. |
-| Forms | Read-only view. User edits in the Forms input panel; statement view shows results. |
-| Quick Entry | Interactive view. Input cells are editable inline. This IS the primary input interface. |
-
-**The existing Quick Entry grid (from Epic 4) transforms:**
-
-The current Quick Entry grid shows a flat list of ~19 input fields in a TanStack Table. With this spec, Quick Entry mode replaces that flat grid with the financial statement tabs themselves. The P&L tab becomes the primary input surface for P&L-related inputs. The Balance Sheet tab becomes the input surface for balance sheet inputs (working capital days, financing terms). Each statement tab exposes only the inputs relevant to that statement.
-
-This means the current `quick-entry-mode.tsx` component evolves from a standalone grid into a controller that renders the financial statement tabs with inline editing enabled. The component reuse pattern from Epic 4 (shared field metadata, shared auto-save hook) continues — the rendering container changes, not the data layer.
+| Forms | Read-only view. Impact Strip at bottom of Forms panel shows key metrics + deep links to statements. |
+| Quick Entry | Interactive view. Input cells are editable inline. This IS the primary input interface. P&L tab is the default landing. "All Inputs" view available as fallback. |
 
 **[F2]**
 
@@ -249,43 +309,75 @@ A persistent **Scenario Bar** sits between the tab navigation and the statement 
 
 - **"Base Case"** is the user's current plan inputs — always exists.
 - **"Compare Scenarios"** opens a dropdown/panel with:
-  - **Quick Scenarios:** "Conservative (-15%)" and "Optimistic (+15%)" — auto-generated by applying a revenue sensitivity factor to the base case. These require zero configuration.
+  - **Quick Scenarios:** "Conservative" and "Optimistic" — auto-generated by applying sensitivity factors to multiple variables (see below). These require zero configuration.
   - **Custom Scenario:** "Create Custom Scenario" — lets the user duplicate the base case and modify specific inputs. (Implementation deferred to Epic 10, but the UI slot exists now.)
+
+#### Quick Scenario Sensitivity Model (Critique Issue #6)
+
+**The original draft applied ±15% to revenue only. That's dangerously oversimplified.** A "conservative" scenario with only lower revenue ignores cost risks. Sam would walk into the bank with false confidence.
+
+Quick scenarios apply sensitivity factors to **three variables simultaneously:**
+
+| Variable | Conservative | Optimistic |
+|----------|-------------|-----------|
+| Revenue | -15% | +15% |
+| COGS % | +2 percentage points | -1 percentage point |
+| Operating Expenses (total) | +10% | -5% |
+
+This models the realistic conservative case: lower revenue AND higher costs. The optimistic case is more modest on the cost side (costs don't swing as much as revenue in practice).
+
+**Sensitivity factor source:** These factors are brand-level defaults set in brand configuration. If the franchisor has data on actual variance ranges, they can calibrate the factors. The defaults above are sensible starting points.
+
+**Language precision:** The comparison summary card uses precise language about what's being modeled:
+
+> "In the conservative scenario (15% lower revenue, higher costs), your business reaches break-even by Month 22 and generates $8,400 in pre-tax income in Year 1. Your base case projects $42,000."
+
+NOT "Even in the conservative scenario..." — that implies the conservative case captures all downside. Our language acknowledges it's a sensitivity analysis, not a guarantee.
 
 #### Comparison View
 
-When the user activates comparison, the statement view transforms:
+When the user activates comparison, the statement view transforms.
 
-**Side-by-side columns:**
+**Interaction constraint with progressive disclosure (Critique Issue #2):**
 
-Each year column splits into sub-columns for each active scenario:
+Scenario comparison and drill-down interact dangerously. Three scenarios x 5 years = 15 columns at annual view. Three scenarios x 4 quarters = 12 columns for a single expanded year. This creates an unreadable table.
+
+**Design rule: Comparison mode locks drill-down to the currently expanded level.**
+
+When comparison is activated:
+- If the user is at **annual view** (default): comparison shows 3 scenario columns per year. This is 15 data columns — wide but manageable with horizontal scroll. No further drill-down is available while comparison is active. The year headers lose their expand affordance and a tooltip explains: "Collapse comparison to drill into year detail."
+- If the user has **already drilled into a year** before activating comparison: comparison shows 3 scenario columns per quarter (12 columns for the expanded year) + the other years as single "Base Case only" annual columns. Still manageable. No further drill-down to monthly while comparison is active.
+- If the user has **already drilled to monthly** before activating comparison: comparison is NOT AVAILABLE at monthly granularity. The system auto-collapses to quarterly for the expanded year and shows the comparison. A brief toast: "Comparison view available at annual and quarterly levels."
+
+**To drill down while comparing:** Deactivate comparison first, drill to the desired level, then reactivate comparison at that level.
+
+**Visual layout (annual comparison):**
 
 ```
                     Year 1                      Year 2
               Base    Cons    Opt         Base    Cons    Opt
 Revenue      $360K   $306K   $414K      $396K   $336K   $455K
-COGS         $108K   $91.8K  $124K      $118K   $100K   $136K
+COGS         $108K   $98K    $120K      $118K   $108K   $140K
 ...
-Pre-Tax      $42K    $12K    $72K       $58K    $24K    $92K
+Pre-Tax      $42K    $8.4K   $72K       $58K    $18K    $92K
 ```
 
 - Scenario columns are color-coded: Base (neutral), Conservative (muted/warm), Optimistic (muted/cool).
 - The "worst case" column highlights the bottom-line metric with contextual interpretation (see F4).
-- Comparison mode works with the progressive disclosure layers — users can compare at annual, quarterly, or monthly granularity.
 
 **Comparison summary card:**
 
-Above the table, a summary card distills the comparison into one sentence:
+Above the table, a summary card distills the comparison:
 
-> "Even in the conservative scenario, your business reaches break-even by Month 18 and generates $12,000 in pre-tax income in Year 1. Your base case projects $42,000."
+> "In the conservative scenario (15% lower revenue, higher costs), your business reaches break-even by Month 22 and generates $8,400 in Year 1 pre-tax income. Your base case projects $42,000, and the optimistic case projects $72,000."
 
-This is the conviction moment. The card is the first thing Sam reads, and it answers "does this work even if things go wrong?"
+This is the conviction moment — but it's an honest one. The conservative case models multiple risk factors, not just revenue.
 
 #### Where Scenarios Live in the Data Model
 
 - Scenarios are stored as variations on the plan's `financial_inputs` JSONB.
 - The base case IS the plan's current inputs.
-- Quick scenarios are computed client-side by applying a multiplier to revenue assumptions — they don't persist unless the user saves them.
+- Quick scenarios are computed client-side by applying sensitivity multipliers to the base case inputs — they don't persist unless the user saves them.
 - Custom scenarios (Epic 10) are persisted as separate input snapshots within the plan.
 
 **[F3]**
@@ -341,6 +433,8 @@ Row-level interpretations appear for:
 - Interpretations use neutral language: "within typical range," "above typical range," "below typical range." Never "good" or "bad."
 - In Quick Entry mode, interpretations update in real time as input cells are edited.
 
+**Accessibility note (Critique Issue #7):** Interpretation rows are associated with their parent data row via `aria-describedby`. Screen readers announce them as supplementary context after reading the data row values. They are NOT read as separate table rows — they are descriptive annotations.
+
 #### Type 3: Hover Tooltips on Computed Values
 
 When the user hovers over any computed cell, a tooltip appears showing:
@@ -370,13 +464,15 @@ A **persistent, slim bar** appears at the very top of the Financial Statements v
 └──────────────────────────────────────────────────────────────────┘
 ```
 
-Each indicator uses the following color system:
+Each indicator uses the following color AND icon system:
 
-| Color | Meaning | Example |
-|-------|---------|---------|
-| Green (success token) | Metric is healthy | Break-even within 18 months; positive 5yr ROI; cash never goes negative |
-| Amber/Yellow (warning token) | Metric needs attention | Break-even between 18-30 months; 5yr ROI below 50%; cash goes negative briefly |
-| Gurple (info/advisory token) | Metric is concerning but not critical | Break-even beyond 30 months; negative 5yr ROI; extended negative cash periods |
+| Level | Color | Icon | Meaning | Example |
+|-------|-------|------|---------|---------|
+| Healthy | Green (success token) | Checkmark | Metric is healthy | Break-even within 18 months; positive 5yr ROI; cash never goes negative |
+| Attention | Amber/Yellow (warning token) | Alert triangle | Metric needs attention | Break-even between 18-30 months; 5yr ROI below 50%; cash goes negative briefly |
+| Concerning | Gurple (info/advisory token) | Info circle | Metric is concerning | Break-even beyond 30 months; negative 5yr ROI; extended negative cash periods |
+
+**Accessibility note (Critique Issue #7):** Each indicator includes BOTH a color AND an icon shape. The checkmark, alert triangle, and info circle are distinguishable without color perception. The text label always includes the specific value ("5yr ROI: 127%") — the color/icon is supplementary, not the primary information channel.
 
 **Important design constraint:** This is NOT a red/yellow/green traffic light. We use the Katalyst color system:
 - Success (green) for healthy
@@ -409,6 +505,10 @@ These thresholds are configurable per brand in the admin brand configuration (fu
 - Clicking "Cash: lowest point -$8,200 in Month 6" → navigates to Cash Flow tab, drills into Year 1 monthly view, highlights Month 6.
 - The Guardian updates in real time as inputs change — in Quick Entry mode, editing a cell immediately reflects in the Guardian.
 
+#### Guardian in Forms Mode (via Impact Strip)
+
+The full Guardian Bar is only visible on the Financial Statements view. In Forms mode, the Impact Strip (Part 1) includes a miniature Guardian — three colored dots with icons, showing the same health status. Clicking a miniature Guardian dot navigates to the Financial Statements view with the relevant tab and row focused.
+
 **[F5]**
 
 ---
@@ -419,43 +519,60 @@ These thresholds are configurable per brand in the admin brand configuration (fu
 
 **Design principle (from UX Spec, Sam's emotional arc):** "A live document preview is visible during planning, building pride progressively rather than delivering it as a surprise at the end."
 
-#### Document Preview Panel
+#### Where Document Preview Lives (Critique Issue #4)
 
-A **Document Preview** option is available as a toggle in the Financial Statements view. When activated, a collapsible right-side panel (or bottom panel on narrower screens) shows a miniature rendering of the lender-ready document:
+**Revised design decision:** Document Preview is NOT shown within the Financial Statements view. When the user is already looking at the P&L tab, showing a miniature P&L preview alongside it is redundant — a thumbnail of what you're already looking at adds no value.
+
+Instead, Document Preview appears where there IS a meaningful gap between "what I'm working on" and "what the output looks like":
+
+**1. Dashboard Panel — Preview Widget:**
+
+The existing Dashboard Panel (summary cards + charts) gains a **Document Preview widget** — a card-sized miniature showing the first page of the lender document. It updates in real time as inputs change.
 
 ```
-┌─────────────────────────────────────────────────────────────────┐
-│  [Financial Statement Tabs]                 [📄 Preview ▾]     │
-│                                                                 │
-│  ┌──────────────────────┐  ┌──────────────────────────────┐    │
-│  │                      │  │  Sam's PostNet Business Plan  │    │
-│  │  Interactive P&L     │  │  ─────────────────────────── │    │
-│  │  (full-size,         │  │  P&L Statement               │    │
-│  │   editable in QE)    │  │  Year 1    Year 2    Year 3  │    │
-│  │                      │  │  Revenue   $360K    $396K    │    │
-│  │                      │  │  ...                         │    │
-│  │                      │  │                              │    │
-│  │                      │  │  Page 1 of 8                 │    │
-│  └──────────────────────┘  └──────────────────────────────┘    │
-└─────────────────────────────────────────────────────────────────┘
+┌─ Dashboard ──────────────────────────────────────────────────┐
+│                                                               │
+│  [Summary Cards]  [Charts]                                    │
+│                                                               │
+│  ┌─ Your Business Plan ─────────────────────────────────┐    │
+│  │  Sam's PostNet Business Plan                          │    │
+│  │  ──────────────────────────                           │    │
+│  │  P&L Statement (preview)                              │    │
+│  │  Revenue: $360K | Pre-Tax: $42K                       │    │
+│  │                                                       │    │
+│  │  Page 1 of 8    [View Full Preview] [Generate PDF]    │    │
+│  └───────────────────────────────────────────────────────┘    │
+└───────────────────────────────────────────────────────────────┘
 ```
 
-**Preview behavior:**
+- The preview card shows Sam's name on the document. That's the pride moment.
+- "View Full Preview" opens a modal with all pages rendered at readable size.
+- "Generate PDF" triggers the actual PDF generation and download.
 
-- The preview shows the current financial statements formatted as they would appear in the PDF — professional layout, page numbers, headers with "Sam's PostNet Plan," FTC disclaimers.
-- The preview updates in real time as inputs change.
-- The preview is a READ-ONLY miniature — not editable. Editing happens in the main panel.
-- A "Generate PDF" button appears at the bottom of the preview panel. This becomes progressively more prominent as the plan reaches completeness.
-- The preview panel is **collapsed by default** (shown as a slim sidebar icon) to not overwhelm first-time users. It's discoverable but not intrusive.
+**2. Forms Mode — Preview accessible from Impact Strip:**
+
+The Impact Strip includes a small document icon. Clicking it opens the full Document Preview modal. The user sees their edits reflected in the document format.
+
+**3. Financial Statements — Generate Button Only:**
+
+On the Financial Statements view, the document preview is replaced by a prominent "Generate PDF" button in the header area. The user is already looking at the content — they don't need a preview of it. They need the ability to produce the final artifact.
+
+```
+┌─ Financial Statements Header ────────────────────────────────┐
+│  [Summary] [P&L] [Balance Sheet] [Cash Flow] ...   [Generate PDF ↓] │
+└───────────────────────────────────────────────────────────────┘
+```
+
+**Generate PDF button label evolves with completeness:**
+- At < 50% input completeness: "Generate Draft"
+- At 50-90%: "Generate Package"
+- At > 90%: "Generate Lender Package" (with a subtle completion indicator)
 
 **The emotional design:**
 
-- When Sam first opens the preview, he sees his name on a professional-looking financial document. That's the pride moment.
-- As he works through inputs (in any mode), the preview's numbers update. The document gets more complete and more real.
-- The "Generate PDF" button's label evolves with completeness:
-  - At < 50% completeness: "Generate Draft Package"
-  - At 50-90%: "Generate Package"
-  - At > 90%: "Generate Lender Package" (with a subtle checkmark or completion indicator)
+- When Sam first sees the preview widget on the Dashboard, he sees his name on a professional-looking financial document. That's the pride moment — and it happens early, while he's still editing inputs.
+- As he works through inputs (in any mode), the preview updates. The document gets more complete and more real.
+- When Sam navigates to Financial Statements and sees the full interactive views, the document preview isn't needed — the interactive views ARE the document content. The "Generate PDF" button is the natural culmination: "I've reviewed everything, now make it official."
 
 **[F6]**
 
@@ -465,7 +582,7 @@ A **Document Preview** option is available as a toggle in the Financial Statemen
 
 ### 8.1 Summary Financials (Landing Tab)
 
-The Summary tab is the DEFAULT tab when the user opens Financial Statements. It provides the annual overview that Sam needs and the quick reference that Maria wants.
+The Summary tab is the DEFAULT tab when the user opens Financial Statements (except in Quick Entry mode, where P&L is the default — see Part 3). It provides the annual overview that Sam needs and the quick reference that Maria wants.
 
 **Layout:**
 
@@ -554,7 +671,7 @@ Each section header is a link to the detailed statement tab. "Annual P&L Summary
 | Financing Activities | Notes Payable, Line of Credit Draws/Repayments, Interest Expense, Distributions, Equity Issuance, Net Financing Cash Flow |
 | Net Cash Flow | Net Cash Flow, Beginning Cash, Ending Cash |
 
-**Negative cash highlighting:** Any month where Ending Cash is negative gets a subtle warm background tint (not destructive red — this is advisory, not an error). The Guardian Bar's "Cash" indicator reflects this.
+**Negative cash highlighting:** Any month where Ending Cash is negative gets a subtle warm background tint AND a small downward-arrow icon in the cell (not destructive red — this is advisory, not an error). The Guardian Bar's "Cash" indicator reflects this.
 
 ### 8.5 ROIC
 
@@ -619,8 +736,8 @@ Financial statement views are inherently wide — even annual-only view has 5+ c
 
 | Viewport | Behavior |
 |----------|----------|
-| ≥ 1280px | Full experience. Statement tabs + preview panel side by side. All columns visible without horizontal scroll. |
-| 1024-1279px | Full experience but preview panel collapsed by default. Horizontal scroll may appear for quarterly/monthly drill-down. |
+| ≥ 1280px | Full experience. Statement tabs + all features. All annual columns visible without horizontal scroll. |
+| 1024-1279px | Full experience. Horizontal scroll may appear for quarterly/monthly drill-down. |
 | 768-1023px | Simplified experience. Tab navigation converts to dropdown. Annual view only (no drill-down to quarterly/monthly). Scenario comparison shows one scenario at a time with a selector. Guardian Bar collapses to a single summary indicator. |
 | < 768px | **"View on Desktop" message.** Financial statements are not rendered on mobile. A friendly message: "Financial statements are best viewed on a larger screen. Your plan data is safe — open this page on your computer or tablet to see the full view." The Summary tab's key metrics callout bar IS shown on mobile as a read-only summary card — so mobile users can still see headline numbers. |
 
@@ -634,14 +751,16 @@ Financial statement views are inherently wide — even annual-only view has 5+ c
 
 The Epic 4 retrospective flagged `forms-mode.tsx` (536 lines) and `quick-entry-mode.tsx` (571 lines) as growing concerns. Financial statement views are MORE complex. The component architecture must prevent 1000+ line files.
 
-**Component hierarchy:**
+**Component hierarchy (Critique Issue #3 — StatementTable decomposition):**
+
+The original draft assigned six distinct behaviors to a single `<StatementTable>` component. This revised architecture decomposes it into a family of focused components:
 
 ```
-<FinancialStatements>                    (container, tab routing, ~100 lines)
-├── <GuardianBar />                      (persistent health indicators, ~80 lines)
-├── <ScenarioBar />                      (scenario selector/comparison toggle, ~60 lines)
-├── <StatementTab statement="summary">   (tab content router, ~50 lines)
-│   ├── <CalloutBar metrics={...} />     (key metrics summary, ~60 lines)
+<FinancialStatements>                          (container, tab routing, ~100 lines)
+├── <GuardianBar />                            (persistent health indicators, ~80 lines)
+├── <ScenarioBar />                            (scenario selector/comparison toggle, ~60 lines)
+├── <StatementTab statement="summary">         (tab content router, ~50 lines)
+│   ├── <CalloutBar metrics={...} />           (key metrics summary, ~60 lines)
 │   ├── <StatementSection title="P&L Summary">
 │   │   └── <StatementTable rows={...} columns={...} />
 │   ├── <StatementSection title="Balance Sheet Summary">
@@ -652,27 +771,41 @@ The Epic 4 retrospective flagged `forms-mode.tsx` (536 lines) and `quick-entry-m
 │   └── <StatementTable
 │           rows={pnlRows}
 │           columns={yearColumns}
-│           drillDown={true}              (enables progressive disclosure)
-│           editable={mode === 'quick-entry'}  (enables F2 input-output integration)
-│           interpretations={pnlInterpretations}  (enables F4 "so what" layer)
+│           drillDown={true}
+│           editable={mode === 'quick-entry'}
+│           interpretations={pnlInterpretations}
 │       />
 ├── ...
-└── <DocumentPreview />                  (collapsible preview panel, ~120 lines)
+├── <AllInputsView />                          (Quick Entry flat grid fallback, ~80 lines)
+├── <ImpactStrip />                            (Forms mode bottom bar, ~100 lines)
+└── <DocumentPreviewModal />                   (full preview modal, ~120 lines)
 ```
 
-**Key shared components:**
+**StatementTable decomposition — the family of components:**
+
+`<StatementTable>` is an ORCHESTRATOR (~150 lines) that composes these focused sub-components:
+
+| Component | Responsibility | Lines (target) |
+|-----------|---------------|----------------|
+| `<StatementTable>` | Orchestrates layout, passes data to children, manages table-level state (which sections expanded, which year drilled into) | ~150 |
+| `<ColumnManager>` | Generates column definitions based on drill-down state. Handles annual → quarterly → monthly column expansion/collapse. Manages the "linked columns" indicator (pre-Epic-7). | ~120 |
+| `<SectionGroup>` | Renders a collapsible row group (Revenue, COGS, Operating Expenses, etc.). Manages its own expand/collapse state. Contains `<DataRow>` and `<InterpretationRow>` children. | ~80 |
+| `<DataRow>` | Renders a single row of data cells across all visible columns. Delegates cell rendering to `<EditableCell>` or `<ComputedCell>` based on cell type. | ~60 |
+| `<EditableCell>` | Inline editing for input cells. Reused from Epic 4 with minimal changes. Handles click-to-edit, Tab navigation, auto-formatting, auto-save. | ~100 (existing) |
+| `<ComputedCell>` | Read-only cell with hover tooltip showing formula and glossary link. | ~40 |
+| `<InterpretationRow>` | Renders contextual "so what" text below a data row. Collapses into a single row spanning all columns. | ~40 |
+| `<StickyContainer>` | Wraps row labels and section headers with sticky positioning and shadow effects. | ~30 |
+| `<ScenarioColumns>` | When comparison is active, wraps each year's data into scenario sub-columns with color coding. Handles the comparison layout transformation. | ~80 |
+
+**Total across family:** ~700 lines distributed across 9 files averaging ~80 lines each. No single file exceeds 150 lines. The complexity is real — we're distributing it, not hiding it.
+
+**Key shared components (unchanged from v1):**
 
 | Component | Responsibility | Reuse |
 |-----------|---------------|-------|
-| `<StatementTable>` | Renders rows × columns with progressive disclosure, inline editing, sticky headers/labels, and interpretation rows | Used by every statement tab |
 | `<CalloutBar>` | Renders 2-3 key metrics with dynamic interpretation text | Used by every statement tab |
 | `<GuardianBar>` | Renders persistent health indicators with navigation links | Used once, always visible |
 | `<ScenarioBar>` | Renders scenario selector and comparison toggle | Used once, always visible |
-| `<InterpretationRow>` | Renders contextual "so what" text below a data row | Used within `<StatementTable>` |
-| `<EditableCell>` | Inline editing for input cells (reuse from Epic 4) | Used within `<StatementTable>` in Quick Entry mode |
-| `<DocumentPreview>` | Miniature PDF-style rendering of the plan | Used once, collapsible |
-
-**Target file sizes:** No single component file should exceed 300 lines. The `<StatementTable>` component is the most complex and should be the focus of architectural attention — it handles progressive disclosure, inline editing, sticky positioning, and interpretation rows.
 
 ---
 
@@ -694,7 +827,51 @@ The Glossary (Story 5.8) and Help Content (Story 5.10) from the Sprint Change Pr
 
 ---
 
-## Part 12: User Journey Tracing
+## Part 12: Empty & Incomplete States (Critique Issue #5)
+
+### Brand Defaults Are a Starting Point, Not a Finished Product
+
+When Sam opens Financial Statements before editing any inputs, every field has a brand default value. Technically, the statements are "complete." But emotionally, this is NOT Sam's plan — it's the brand template. The UX must distinguish between "personalized" and "default" values.
+
+#### Completeness Indicators
+
+**Per-tab completeness badge:**
+
+Each tab in the Financial Statements navigation shows a small completeness indicator:
+
+```
+[Summary ●] [P&L 3/8] [Balance Sheet 0/4] [Cash Flow —] [ROIC —] ...
+```
+
+- Tabs with editable inputs show "X of Y inputs customized" (e.g., "3/8" means 3 of 8 input fields have been edited by the user).
+- Tabs with no editable inputs (Cash Flow, ROIC — all computed) show a dash "—" with no completeness indicator.
+- The Summary tab shows a filled circle when at least one input has been customized anywhere, and an empty circle when everything is still brand defaults.
+
+**Per-cell default indicator:**
+
+Input cells that still hold the brand default value show a subtle **"BD" badge** (Brand Default) in the corner of the cell. When the user edits the cell, the badge disappears. When the user resets the cell to the brand default (existing reset action from Epic 4), the badge reappears.
+
+This provides a per-cell visual answer to "did I actually set this, or is it the template?"
+
+#### Guardian Bar with All Defaults
+
+When all inputs are brand defaults, the Guardian Bar shows the health metrics computed from brand defaults. This IS honest — the brand defaults represent a typical plan for that brand. The Guardian indicators are:
+- Labeled normally (green/amber/gurple based on thresholds)
+- But with a supplementary note below the Guardian Bar: "Based on [Brand] defaults. Customize your inputs to see your specific projections."
+
+This note disappears once the user has customized at least 3 inputs (arbitrary threshold — enough to indicate engagement).
+
+#### Document Preview with Incomplete Plan
+
+The Document Preview widget on the Dashboard shows the same preview regardless of completeness, but:
+- The document title reads "Sam's PostNet Business Plan — Draft" until the plan reaches 50% input customization.
+- The "Generate PDF" button label reflects completeness (see Part 7).
+
+**[F5] [F6]**
+
+---
+
+## Part 13: User Journey Tracing
 
 ### From Login to Conviction (the retrospective's missing piece)
 
@@ -705,32 +882,39 @@ This section traces the complete user path for each persona through the financia
 1. **Login** → Dashboard (existing)
 2. **Quick Start** → 5 questions → preliminary metrics (existing)
 3. **Forms mode** → edits inputs by category (existing)
-4. **Clicks "Financial Statements"** in sidebar → Summary tab opens
-5. **Sees callout bar:** "Your 5-year total pre-tax income: $142,000. Break-even: Month 14 (February 2027)."
-6. **Sees Guardian Bar:** all three indicators green
-7. **Scrolls through Summary sections** — annual P&L, balance sheet, cash flow summaries
-8. **Clicks "View Full P&L"** → P&L tab opens (read-only in Forms mode)
-9. **Sees interpretation row:** "Pre-tax margin 11.7% — within PostNet typical range"
+4. **Sees Impact Strip** at the bottom of Forms: "Pre-Tax Income: $42,000 (+$3,200) | Break-even: Mo 14 | ROI: 127%"
+5. **Sees miniature Guardian dots** in Impact Strip — all green
+6. **Clicks "View Full P&L →"** in Impact Strip → Financial Statements view, P&L tab
+7. **Sees Guardian Bar** at top — full-size indicators with icons
+8. **Sees callout bar:** "Year 1 pre-tax margin: 11.7% — within PostNet typical range"
+9. **Sees completeness badge** on P&L tab: "5/8" — some inputs still at brand default
 10. **Hovers a computed cell** → tooltip explains "Gross Profit = Revenue - COGS"
-11. **Clicks "Compare Scenarios"** → Conservative/Optimistic columns appear
-12. **Reads comparison summary:** "Even in the conservative scenario, you reach break-even by Month 18"
-13. **Opens Document Preview** → sees "Sam's PostNet Business Plan" with professional formatting
-14. **Clicks "Generate Lender Package"** → PDF downloads
+11. **Clicks Summary tab** → annual overview with all sections
+12. **Reads break-even interpretation:** "You'd start making money by February 2027"
+13. **Clicks "Compare Scenarios"** → Conservative/Optimistic columns appear
+14. **Reads comparison summary:** "In the conservative scenario (15% lower revenue, higher costs), your business reaches break-even by Month 22"
+15. **Returns to Dashboard** → sees Document Preview widget with "Sam's PostNet Business Plan — Draft"
+16. **Continues editing** in Forms mode → preview updates
+17. **Returns to Financial Statements** → completeness badge now "8/8"
+18. **Clicks "Generate Lender Package"** → PDF downloads
 
 **Every step has a component. Every transition has a navigation path. No dead ends.**
 
 #### Maria's Journey (Veteran → Quick Entry)
 
 1. **Login** → Dashboard (existing)
-2. **Quick Entry mode** (her default) → Financial Statements tabs appear as the workspace
-3. **P&L tab active** — input cells are editable inline
-4. **Tabs through input cells** at spreadsheet speed — revenue, COGS %, labor %, facilities, etc.
-5. **Guardian Bar updates** in real time as she enters values
-6. **Drills into Year 2 quarterly view** to set seasonal revenue variation
-7. **Switches to Balance Sheet tab** — enters working capital days (AR, AP, Inventory)
-8. **Switches to Cash Flow tab** — reviews computed cash flows, checks for negative months
-9. **Opens Scenario Comparison** — confirms conservative case works
-10. **Generates PDF** — done in 15 minutes
+2. **Quick Entry mode** (her default) → Financial Statements tabs appear with **P&L tab active** (not Summary)
+3. **Sees one-time orientation overlay** (first visit only): "Your inputs now live inside the financial statements..."
+4. **Dismisses overlay** → P&L tab with input cells editable inline
+5. **Tabs through input cells** at spreadsheet speed — revenue, COGS %, labor %, facilities, etc.
+6. **Sees linked-column indicators** (pre-Epic-7) — editing Y2 updates all years, link icons flash briefly
+7. **Guardian Bar updates** in real time as she enters values
+8. **Switches to Balance Sheet tab** — enters working capital days (AR, AP, Inventory)
+9. **Switches to Cash Flow tab** — reviews computed cash flows, checks for negative months (warm tint + downward arrow icon on negative cells)
+10. **Clicks "All Inputs" tab** → flat grid of all inputs, for a quick sanity check
+11. **Returns to P&L tab** → Opens Scenario Comparison at annual level
+12. **Reviews comparison summary** — notes conservative case still works with multi-variable sensitivity
+13. **Clicks "Generate Lender Package"** → PDF downloads — done in 15 minutes
 
 **Every step is within the financial statement tabs. No mode switching. No navigating away.**
 
@@ -739,31 +923,90 @@ This section traces the complete user path for each persona through the financia
 1. **Login** → sees plan list with Location #1 and Location #2 (requires multi-plan from Epic 7)
 2. **Opens Location #2 plan** → Forms mode
 3. **Edits inputs** in Forms mode, overriding defaults with experience-informed values
-4. **Clicks "Financial Statements"** → Summary tab
-5. **Drills into P&L** → expands Year 1 to quarterly to see seasonal ramp-up
-6. **Sees interpretation:** "Your Year 1 labor cost of 28% is 3 points lower than your Location #1 plan" (requires multi-plan comparison, deferred)
-7. **Compare Scenarios** → sees that even with conservative revenue, Location #2 is stronger than Location #1 was
-8. **Generates PDF** for lender meeting
+4. **Sees Impact Strip** updating in real time at bottom of Forms panel — delta indicators show "+$4,800" as she changes revenue
+5. **Clicks "View Full P&L →"** in Impact Strip → Financial Statements view
+6. **Drills into P&L Year 1** → expands to quarterly to see seasonal ramp-up
+7. **Sees interpretation:** "Your Year 1 labor cost of 28% is above PostNet typical range (22-26%)" 
+8. **Returns to Forms** (browser back or "Return to Editing" link) → adjusts labor inputs
+9. **Impact Strip shows** labor cost now at 25%, interpretation updates
+10. **Navigates to Financial Statements → Compare Scenarios** → sees conservative case
+11. **Generates PDF** for lender meeting
 
 ---
 
-## Part 13: What This Spec Does NOT Cover
+## Part 14: What This Spec Does NOT Cover
 
 These items are explicitly out of scope for Epic 5's UX spec and belong to later epics:
 
 | Item | Deferred To | Reason |
 |------|-------------|--------|
-| Custom scenario creation (duplicate base case, modify inputs) | Epic 10 | Scope — quick scenarios (±15%) are sufficient for Epic 5 |
+| Custom scenario creation (duplicate base case, modify inputs) | Epic 10 | Scope — quick multi-variable scenarios are sufficient for Epic 5 |
 | Per-year input columns in Forms mode | Epic 7 | Dependency — per-year UI needs PlanFinancialInputs restructuring |
 | Multi-plan comparison | Epic 7 | Dependency — requires plan CRUD + navigation |
 | Planning Assistant mode interaction with statements | Epic 9 | Dependency — requires AI integration |
 | Advisory nudges on individual input fields | Epic 8 | Scope — Guardian Bar provides plan-level advisory; field-level is Epic 8 |
 | Excel/CSV export | Backlog | Lower priority than PDF |
 | Estimated vs. actual tracking | Phase 2 | PRD Phase 2 scope |
+| Configurable Guardian thresholds per brand | Epic 8 | Scope — sensible defaults for MVP |
 
 ---
 
-## Part 14: Story Rewrite Implications
+## Part 15: Accessibility (Critique Issue #7)
+
+### Inclusive Design for Financial Data
+
+Financial statement views present dense tabular data with interactive elements. Accessibility is not optional — it's a design requirement.
+
+#### Non-Color Indicators
+
+Every color-coded element in this spec has a non-color alternative:
+
+| Element | Color Meaning | Non-Color Indicator |
+|---------|--------------|-------------------|
+| Input cells (editable) | Primary/5 tinted background | Dashed left border + pencil icon on hover |
+| Computed cells (read-only) | Standard background | No border, no icon — absence IS the indicator |
+| Guardian healthy | Green | Checkmark icon |
+| Guardian attention | Amber | Alert triangle icon |
+| Guardian concerning | Gurple | Info circle icon |
+| Negative cash cells | Warm tint | Downward arrow icon in cell |
+| Scenario columns (conservative) | Muted warm | Column header labeled "Cons" |
+| Scenario columns (optimistic) | Muted cool | Column header labeled "Opt" |
+| Completeness: customized | No special color | No "BD" badge |
+| Completeness: brand default | No special color | "BD" badge visible in cell corner |
+
+#### ARIA Roles and Announcements
+
+The financial statement tables use the following ARIA structure:
+
+- The overall container uses `role="grid"` with `aria-label="P&L Statement"` (or whichever statement).
+- Section groups (Revenue, COGS, etc.) use `role="rowgroup"` with `aria-expanded="true/false"` for collapsible sections.
+- Row labels use `role="rowheader"`.
+- Input cells use `role="gridcell"` with `aria-readonly="false"` and `aria-label` including the row name and column name (e.g., "Monthly Revenue, Year 2").
+- Computed cells use `role="gridcell"` with `aria-readonly="true"`.
+- Interpretation rows use `role="note"` and are linked to their parent data row via `aria-describedby`.
+- The Guardian Bar uses `role="status"` with `aria-live="polite"` so screen readers announce changes without interrupting the user.
+
+#### Focus Management
+
+- **Drill-down:** When a year expands to quarterly view, focus moves to the first cell of the newly visible Q1 column. When collapsing, focus returns to the year column header.
+- **Tab navigation (Quick Entry):** Tab moves between input cells only, skipping computed cells. The focus order follows column-major order (all editable cells in a column, then next column).
+- **Scenario activation:** When comparison mode activates, focus stays on the current cell. The expanded columns are announced via `aria-live`.
+- **Section expand/collapse:** Focus stays on the section header after toggle. Collapsed content is removed from tab order.
+
+#### Keyboard Shortcuts
+
+| Key | Action |
+|-----|--------|
+| Tab | Move to next editable cell (Quick Entry) |
+| Shift+Tab | Move to previous editable cell |
+| Enter | Confirm edit + move to next editable cell in same row group |
+| Escape | Cancel edit / collapse current drill-down level |
+| Arrow keys | Navigate between cells within the grid |
+| Space | Toggle section expand/collapse when focused on section header |
+
+---
+
+## Part 16: Story Rewrite Implications
 
 This UX spec requires the Sprint Change Proposal's Epic 5 stories to be rewritten. The current stories (5.1-5.10) are data-table specifications. The rewritten stories should reflect the experience design:
 
@@ -783,22 +1026,41 @@ This UX spec requires the Sprint Change Proposal's Epic 5 stories to be rewritte
 **Recommended new story structure:**
 
 1. **5.1: Engine Extension** — Add missing computations (Valuation, extended ROIC, extended Audit, Balance Sheet/Cash Flow disaggregation). No UI.
-2. **5.2: Financial Statements Container + Summary Tab** — Tab navigation, Guardian Bar, Scenario Bar, Summary Financials landing tab with callout bars and section links. Progressive disclosure infrastructure (annual → quarterly → monthly).
-3. **5.3: P&L Statement Tab** — Full P&L with drill-down, interpretation rows, input cell highlighting (for Quick Entry preparation).
-4. **5.4: Balance Sheet + Cash Flow Tabs** — Built together (tightly coupled through LOC and tax payable mechanics — per Winston's recommendation).
-5. **5.5: ROIC + Valuation + Audit Tabs** — Three simpler views, annual-only, built together.
-6. **5.6: Quick Entry Input-Output Integration** — Enable inline editing in all statement tabs when mode === quick-entry. Reuse EditableCell from Epic 4. Tab navigation across input cells.
-7. **5.7: Scenario Comparison** — Quick scenarios (±15% revenue), comparison columns, comparison summary card.
-8. **5.8: Guardian Bar + Dynamic Interpretation** — ROI Threshold Guardian, row-level interpretation with brand benchmarks, callout bar content.
-9. **5.9: Document Preview + Glossary** — Collapsible preview panel, glossary page, inline help integration.
-10. **5.10: Contextual Help Content** — Tooltip text for all fields, expanded help panels, video content extraction.
+2. **5.2: Financial Statements Container + Summary Tab** — Tab navigation, Guardian Bar (structure only, thresholds in 5.8), Scenario Bar (structure only, comparison in 5.7), Summary Financials landing tab with callout bars and section links. Progressive disclosure infrastructure (annual → quarterly → monthly). Completeness indicators per tab. Linked-column indicators (pre-Epic-7).
+3. **5.3: P&L Statement Tab** — Full P&L with drill-down, interpretation rows, input cell highlighting (visual distinction for input vs. computed). Accessibility: ARIA grid roles, non-color indicators.
+4. **5.4: Balance Sheet + Cash Flow Tabs** — Built together (tightly coupled through LOC and tax payable mechanics). Negative cash highlighting with icon. Inline audit check on balance sheet.
+5. **5.5: ROIC + Valuation + Audit Tabs** — Three simpler views, annual-only, built together. Audit view with navigation links to failing rows.
+6. **5.6: Quick Entry Input-Output Integration** — Enable inline editing in all statement tabs when mode === quick-entry. Reuse EditableCell from Epic 4. Tab navigation across input cells. "All Inputs" flat view as fallback. One-time orientation overlay. P&L as default landing tab for Quick Entry.
+7. **5.7: Scenario Comparison** — Multi-variable quick scenarios (revenue, COGS, OpEx sensitivity). Comparison columns with drill-down constraint rule. Comparison summary card with honest language. Brand-configurable sensitivity factors.
+8. **5.8: Guardian Bar + Dynamic Interpretation** — ROI Threshold Guardian with icons + colors, row-level interpretation with brand benchmarks, callout bar content. Real-time updates. Navigation links from Guardian to statement rows. Default thresholds (configurable in Epic 8).
+9. **5.9: Impact Strip + Document Preview** — Forms mode Impact Strip with context-sensitive metrics, delta indicators, miniature Guardian, and deep links. Dashboard Document Preview widget. Generate PDF button with completeness-aware labels. Empty/incomplete state handling.
+10. **5.10: Glossary + Contextual Help** — Glossary page, inline tooltip integration, expanded help panels, video content extraction.
 
-This rewrite sequence addresses all six foundation points and follows the retrospective lesson: design the experience first, then build it.
+This rewrite sequence addresses all six foundation points and all nine critique issues, and follows the retrospective lesson: design the experience first, then build it.
+
+---
+
+## Appendix A: Critique Issue Traceability
+
+| Issue # | Problem | Resolution | Spec Section |
+|---------|---------|------------|-------------|
+| 1 | Forms mode users get worst experience (read-only statements, navigate away to edit) | Impact Strip pattern — persistent metrics at bottom of Forms panel with delta indicators and deep links | Part 1 (Mode-Specific Navigation) |
+| 2 | Scenario comparison + progressive disclosure = column explosion | Comparison mode locks drill-down to current level; monthly drill-down disables comparison | Part 4 (Interaction constraint) |
+| 3 | StatementTable is a mega-component disguised as small | Decomposed into 9-component family: StatementTable orchestrator + ColumnManager, SectionGroup, DataRow, EditableCell, ComputedCell, InterpretationRow, StickyContainer, ScenarioColumns | Part 10 (Component Architecture) |
+| 4 | Document Preview is redundant inside Financial Statements | Moved to Dashboard (preview widget) and Forms (via Impact Strip icon); Financial Statements gets "Generate PDF" button only | Part 7 (Document Preview) |
+| 5 | No empty/incomplete state design | Per-tab completeness badges, per-cell "BD" (Brand Default) indicator, Guardian note for all-defaults state, Draft label on preview | Part 12 (Empty & Incomplete States) |
+| 6 | Quick scenarios only adjust revenue — false conviction | Multi-variable sensitivity: revenue (-15%), COGS (+2pp), OpEx (+10%) for conservative. Honest language in summary card. | Part 4 (Quick Scenario Sensitivity Model) |
+| 7 | No accessibility design | Full Part 15: non-color indicators for every color-coded element, ARIA grid roles, focus management, keyboard shortcuts | Part 15 (Accessibility) |
+| 8 | Per-year input timing problem (pre-Epic-7) | Linked columns with visual indicator (link icon, flash on broadcast, tooltip explaining constraint) | Part 3 (Pre-Epic-7 Per-Year Behavior) |
+| 9 | No transition from existing Quick Entry flat grid | P&L as default landing tab, "All Inputs" fallback view, one-time orientation overlay | Part 3 (Transition from Existing Quick Entry Grid) |
 
 ---
 
 ## Approval
 
-**Status:** Draft — Awaiting Party Mode Review and User Approval
+**Status:** Revised — Self-Critique Complete, Ready for User Approval
 **Author:** Sally (UX Designer)
-**Date:** 2026-02-15
+**Date:** 2026-02-16
+**Revision History:**
+- v1 (2026-02-15): Initial draft addressing six foundation points
+- v2 (2026-02-16): Revised to address 9 issues from Sally's self-critique
