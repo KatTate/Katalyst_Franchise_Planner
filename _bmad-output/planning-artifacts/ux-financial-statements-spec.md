@@ -2,8 +2,8 @@
 
 **Author:** Sally (UX Designer)
 **Date:** 2026-02-16
-**Status:** Revised — Self-Critique Complete
-**Revision:** v2 — Addresses 9 issues identified in Sally's self-critique of v1
+**Status:** Revised — Architecture Simplified
+**Revision:** v3 — Eliminates mode switcher; establishes My Plan / Reports two-door architecture
 **Foundation:** John's Six Points from Party Mode Retrospective Review
 **Input Documents:**
 - Brainstorming Session 2026-02-08 (54 ideas, core design principles)
@@ -12,6 +12,7 @@
 - Sprint Change Proposal 2026-02-15 (scope, FRs, engine extension)
 - Epic 1-4 Retrospectives (pattern: backend-first → UX rework)
 - Sally's Self-Critique 2026-02-16 (9 issues identified)
+- v3 Architecture Review 2026-02-16 (mode switcher elimination, "Quick Entry IS Reports" insight)
 
 ---
 
@@ -38,62 +39,86 @@ These six points, identified during the Party Mode retrospective review, are the
 
 ---
 
-## Part 1: Navigation Model
+## Part 1: Navigation Model — The Two-Door Architecture
 
-### How Users Move Between Financial Statements
+### v3 Core Insight: There Are No Modes
 
-**Design decision:** Financial statements are NOT separate pages with separate routes. They are sections within a unified **Financial Statements view** accessible from the planning workspace, presented through a tabbed navigation bar within the content area.
+The v2 spec retained a mode switcher (Planning Assistant | Forms | Quick Entry) inherited from Epic 4. This created cognitive overload: three "modes" that confused every persona. The v3 architecture eliminates modes entirely and replaces them with two sidebar destinations that serve as two doors into the same underlying plan data.
 
-**Navigation hierarchy:**
+**The fundamental principle: Quick Entry IS Reports.**
 
-```
-Planning Workspace (existing)
-├── Mode Switcher: Planning Assistant | Forms | Quick Entry
-├── Input Panel (existing — Forms or Quick Entry input)
-├── Dashboard Panel (existing — summary cards + charts)
-└── Financial Statements (NEW — tabbed container)
-    ├── Summary          (annual overview — the landing tab)
-    ├── P&L Statement    (detailed P&L)
-    ├── Balance Sheet    (detailed balance sheet)
-    ├── Cash Flow        (detailed cash flow)
-    ├── ROIC             (returns on invested capital)
-    ├── Valuation        (business valuation)
-    └── Audit            (integrity checks)
-```
+Maria doesn't need a separate input grid or a "Quick Entry mode." She opens Reports, clicks the P&L tab, and edits input cells inline. The financial statements ARE her workspace. Sam doesn't need to understand modes — he opens My Plan and fills in structured forms. Both users are editing the same plan data through different interaction surfaces.
 
-**How users get there:**
+### Application-Level Navigation
 
-The Financial Statements view is accessible via two paths:
-
-1. **Sidebar navigation item:** "Financial Statements" appears in the franchisee sidebar below "My Plan" / "Dashboard." One click opens the Financial Statements container with the Summary tab active.
-
-2. **Dashboard drill-down:** Each summary metric card on the existing Dashboard Panel becomes a link. Clicking "Pre-Tax Income: $142,000" navigates to the P&L Statement tab, scrolled to the pre-tax income row. Clicking "Total Investment: $485,000" navigates to the Summary tab's startup capital section. The dashboard becomes a portal INTO the statements, not a dead end.
-
-**Tab behavior:**
-
-- Tabs are always visible across the top of the Financial Statements container.
-- Active tab has a primary-color underline indicator.
-- Tab switching is instant — no loading state. All statement data comes from the same engine computation that's already cached.
-- Each tab remembers its scroll position and drill-down state within the session.
-- On mobile/narrow viewports (below 1024px), tabs convert to a dropdown selector.
-
-### Mode-Specific Navigation (Critique Issue #1: Forms Mode Experience)
-
-The original draft made Forms mode financial statements read-only, forcing Chris to navigate AWAY to edit and BACK to check impact — the same split-brain pattern we criticized the Sprint Change Proposal for. This section replaces that design.
-
-**Quick Entry mode:** Financial statement tabs ARE the workspace. Input cells are editable inline. No separate input panel. The tab container is the primary interface. (Details in Part 3.)
-
-**Forms mode — Impact Strip pattern:**
-
-Forms mode retains its existing section-based form input panel as the primary editing surface. BUT: a persistent **Impact Strip** appears at the bottom of the Forms input panel, showing the 3-4 key metrics most affected by the section the user is currently editing:
+The sidebar is the single, persistent navigation structure. There is no mode switcher, no dashboard toggle, no separate "Quick Entry" destination.
 
 ```
-┌─ Forms Input Panel ──────────────────────────────────────────┐
+┌─ Sidebar ──────────────────────────┐
+│                                      │
+│  [Brand Logo / Katalyst]             │
+│                                      │
+│  ── MY LOCATIONS ──                  │
+│  All Plans (portfolio)               │
+│                                      │
+│  ── [ACTIVE PLAN NAME] ──           │
+│  My Plan                             │
+│  Reports                             │
+│  Scenarios                           │
+│  Settings                            │
+│                                      │
+│  ── HELP ──                          │
+│  Talk to [Manager Name]              │
+│                                      │
+└──────────────────────────────────────┘
+```
+
+**Sidebar items explained:**
+
+| Item | What It Is | Primary Persona |
+|------|-----------|-----------------|
+| All Plans | Portfolio view — list of franchise locations/plans. Entry point for Chris (multi-unit). For Sam (single plan), this may show just one plan with a prompt to start. | Chris |
+| My Plan | Structured form-based input workspace. Summary metrics at top, collapsible input sections below. Labels, help text, brand default indicators, AI planning assistant available as slide-in panel or floating button. | Sam, Chris |
+| Reports | Tabbed financial statements (Summary, P&L, Balance Sheet, Cash Flow, ROIC, Valuation, Audit). Input cells are editable inline — this IS the power-user input surface. | Maria (primary workspace), Sam & Chris (review output) |
+| Scenarios | Good/Better/Best scenario comparison. Pulls from the same engine data. | All |
+| Settings | Plan-level settings — plan name, brand selection, projection period, etc. | All |
+| Talk to [Manager Name] | AI planning assistant in a conversational format. Contextual to the active plan. | Sam |
+
+**Critical design rules:**
+
+1. **No mode switcher exists anywhere in the UI.** There is no toggle, no segmented control, no radio group that switches between "Planning Assistant," "Forms," and "Quick Entry." These concepts were design-time persona lenses, not user-facing features.
+
+2. **My Plan and Reports are NOT modes — they are destinations.** They appear as sidebar navigation items, just like "Settings" or "Scenarios." The user clicks one to go there. They click the other to go there. No "switching modes."
+
+3. **Data flows both directions.** If Maria edits Monthly AUV inline in the P&L (within Reports), the value in My Plan's Revenue section reflects it. If Sam enters his rent in My Plan's Facilities section, the P&L in Reports updates. One plan, two interaction surfaces.
+
+4. **The AI planning assistant is a feature, not a destination.** It's available from within My Plan as a slide-in panel (triggered by a floating button or header icon). It is NOT a separate sidebar item that Sam has to navigate to. It's contextual help available where Sam is already working. The "Talk to [Manager Name]" sidebar item in the Help section opens the same assistant but from a conversational starting point — useful for first-time users who want guidance before diving into forms.
+
+### How Users Enter the Financial Statements (Reports)
+
+Reports is accessible via three paths:
+
+1. **Sidebar click:** Clicking "Reports" opens the Financial Statements container with the Summary tab active. This is the primary entry point.
+
+2. **My Plan deep links:** The Impact Strip at the bottom of My Plan (see below) includes links like "View Full P&L →" that navigate directly to the relevant Reports tab. Summary metric cards in My Plan also link to their corresponding statement sections.
+
+3. **Portfolio drill-down:** From All Plans, clicking a plan opens it. The default landing is My Plan for Sam/Chris, but a "View Reports" link on each plan card goes directly to Reports.
+
+### My Plan — Impact Strip Pattern
+
+My Plan retains structured form-based input sections as the primary editing surface. A persistent **Impact Strip** appears at the bottom, showing the 3-4 key metrics most affected by the section the user is currently editing:
+
+```
+┌─ My Plan ────────────────────────────────────────────────────┐
+│                                                               │
+│  [Summary Metrics Bar — headline numbers]                     │
 │                                                               │
 │  [Revenue Section]                                            │
 │  Monthly Revenue: $30,000                                     │
 │  Revenue Growth Rate: 10%                                     │
 │  ...                                                          │
+│                                                               │
+│  [+ Other collapsible sections: COGS, Labor, Facilities...]   │
 │                                                               │
 ├─ Impact Strip (sticky bottom) ───────────────────────────────┤
 │  Pre-Tax Income: $42,000 (+$3,200)  │  Break-even: Mo 14     │
@@ -105,12 +130,31 @@ Forms mode retains its existing section-based form input panel as the primary ed
 Impact Strip behavior:
 - **Context-sensitive:** The metrics shown change based on which form section is active. Revenue section shows P&L impact. Financing section shows balance sheet and cash flow impact. Startup costs section shows investment totals and ROI impact.
 - **Delta indicators:** When the user changes a value, affected metrics show the change amount ("+$3,200") in a subtle highlight for 3 seconds, then the highlight fades but the new value remains.
-- **Deep link:** The "View Full P&L" (or "View Full Balance Sheet", etc.) link navigates to the relevant Financial Statements tab. This is the bridge from editing to reviewing — Chris clicks to see the full picture, then uses the browser back button (or a "Return to Editing" link in the statements view) to come back.
-- **Guardian integration:** The Impact Strip includes a miniature Guardian indicator — three colored dots (break-even, ROI, cash) that change color in real time as the user edits. If an edit pushes a Guardian metric from green to amber, the dot animates briefly to draw attention.
+- **Deep link:** The "View Full P&L" (or "View Full Balance Sheet", etc.) link navigates to the relevant Reports tab. This is the bridge from form editing to full-statement review — Chris clicks to see the full picture, then clicks "My Plan" in the sidebar to return.
+- **Guardian integration:** The Impact Strip includes a miniature Guardian indicator — three colored dots with icons (break-even, ROI, cash) that change in real time as the user edits. If an edit pushes a Guardian metric from green to amber, the dot animates briefly to draw attention.
 
-**Planning Assistant mode:** Financial statements are read-only. The AI conversation drives input changes; the statement view shows results. The Impact Strip pattern is not needed because the AI conversation panel already shows live-updating dashboard metrics on its right side (existing split-screen layout from Epic 4).
+### Reports — Financial Statements with Inline Editing
 
-**The net effect:** No mode requires navigating away to understand impact. Quick Entry edits inline. Forms shows impact at the bottom of every input panel. Planning Assistant shows it in the dashboard panel alongside the conversation.
+Reports contains the tabbed Financial Statements container. The tabs are:
+
+```
+[Summary] [P&L] [Balance Sheet] [Cash Flow] [ROIC] [Valuation] [Audit]
+```
+
+**Tab behavior:**
+
+- Tabs are always visible across the top of the Reports content area.
+- Active tab has a primary-color underline indicator.
+- Tab switching is instant — no loading state. All statement data comes from the same engine computation that's already cached.
+- Each tab remembers its scroll position and drill-down state within the session.
+- On mobile/narrow viewports (below 1024px), tabs convert to a dropdown selector.
+- Default landing tab is **Summary** for all users.
+
+**Inline editing is always available — not gated by a mode.**
+
+Every financial statement tab renders input cells as editable and computed cells as read-only. There is no toggle to "enable editing." The visual distinction between input and computed cells (see Part 3) makes it clear which cells accept input. Maria recognizes and uses this immediately. Sam may never notice the editable cells in Reports because he enters values through My Plan — and that's fine. Both paths write to the same underlying data.
+
+**Why not gate editing behind a toggle?** Because adding a toggle reintroduces modes. "View mode" vs. "Edit mode" is the same cognitive split we're eliminating. Input cells are always editable. Computed cells are always read-only. The visual treatment (dashed border, pencil icon on hover) is sufficient to distinguish them. Sam won't accidentally edit a cell in Reports because input cells don't look like buttons — they look like subtle, tinted data cells that become editable on click. Discovery is progressive: Sam might click one out of curiosity, see it's editable, and realize he can work here too. That's a feature, not a bug.
 
 **[F1] [F2]**
 
@@ -185,11 +229,11 @@ This is the view Maria uses and the view that matches the reference spreadsheet'
 
 ## Part 3: Input-Output Integration
 
-### Quick Entry IS the Financial Statement
+### Reports ARE the Interactive Financial Statements
 
 **Design principle (from Brainstorming Feb 15, Gap #21):** "Jordan works inside P&L / Balance Sheet / Cash Flow as interactive documents with editable input cells and live-computed output cells."
 
-In Quick Entry mode, the financial statement views ARE the input interface. This is the single most important design decision in this spec.
+**v3 clarification:** This is not gated by a "mode." Reports always renders financial statements with input cells editable and computed cells read-only. There is no switch to flip. Maria opens Reports and starts typing. Sam opens Reports to review his projections, and if he clicks an input cell, he can edit it there too. The interaction surface is always available — personas differ in whether they use it as their primary workspace or as an occasional review tool.
 
 #### How It Works
 
@@ -243,7 +287,22 @@ Operating Expenses
   ...
 ```
 
-In this view, Maria tabs through the `[edit]` cells at spreadsheet speed, and every computed cell updates as she goes. She's not "viewing a P&L and editing inputs somewhere else" — she's editing INSIDE the P&L.
+Maria tabs through the `[edit]` cells at spreadsheet speed, and every computed cell updates as she goes. She's not "viewing a P&L and editing inputs somewhere else" — she's editing INSIDE the P&L.
+
+Sam, meanwhile, entered the same Monthly Revenue value through My Plan's Revenue form section. Both surfaces wrote to the same underlying plan data. If Sam later visits Reports out of curiosity and clicks the Monthly Revenue cell, he sees his value — and can change it right there if he wants.
+
+### Two Doors, One Room
+
+This table summarizes how the same data is accessed through both navigation destinations:
+
+| Plan Input | My Plan Surface | Reports Surface |
+|-----------|----------------|-----------------|
+| Monthly Revenue | Text field in Revenue form section, with label, help text, brand default indicator | Editable cell in P&L → Revenue → Monthly Revenue row |
+| COGS % | Text field in COGS form section | Editable cell in P&L → Cost of Goods Sold → COGS % row |
+| AR Days | Text field in Working Capital form section | Editable cell in Balance Sheet → Current Assets section |
+| EBITDA Multiple | Text field in Valuation form section | Editable cell in Valuation → EBITDA Basis section |
+
+**Editing in either place updates the same value.** There is no sync delay, no "save and refresh." The engine recalculates and both surfaces reflect the change because they read from the same plan state.
 
 ### Pre-Epic-7 Per-Year Behavior (Critique Issue #8)
 
@@ -264,26 +323,13 @@ After Epic 7:
 - A "Copy Y1 to all years" action is available for users who want to broadcast.
 - Per-year values are the default; broadcasting is the opt-in action.
 
-### Transition from Existing Quick Entry Grid (Critique Issue #9)
+### Transition from Epic 4 Quick Entry Grid (Critique Issue #9)
 
-Maria currently uses a flat TanStack Table grid with ~19 input fields from Epic 4. This spec replaces that flat grid with the financial statement tabs in Quick Entry mode. Maria's workspace changes fundamentally — we must design the transition.
+The Epic 4 implementation included a flat TanStack Table grid with ~19 input fields in "Quick Entry mode." That flat grid is superseded by inline editing within Reports. The transition:
 
-**Design decision: P&L as default landing tab + "All Inputs" shortcut.**
-
-- In Quick Entry mode, the Financial Statements container opens with the **P&L tab active by default** (not Summary). The P&L contains the majority of editable inputs (revenue, COGS, all operating expenses) and is the closest analog to the flat grid Maria is used to.
-- An **"All Inputs" view** is available as a special tab (or a toggle in the tab bar) that renders ALL editable inputs from all statements in a single flat table — grouped by statement section. This is functionally equivalent to the old flat grid but organized by financial statement context. It's the escape hatch for users who prefer the flat list.
-- On the first visit to Quick Entry after the Epic 5 update, a **one-time orientation overlay** appears:
-  - "Your inputs now live inside the financial statements. Edit directly in the P&L, Balance Sheet, and Cash Flow tabs — or use 'All Inputs' for the classic flat view."
-  - A "Got it" dismissal button. The overlay never shows again.
-- The old `quick-entry-mode.tsx` flat grid component is preserved internally as the rendering engine for the "All Inputs" view. It's not deleted — it's relocated.
-
-**Mode-specific behavior of the same Financial Statements view:**
-
-| Mode | Financial Statements Behavior |
-|------|------------------------------|
-| Planning Assistant | Read-only view. AI conversation drives input changes; statement view shows results. |
-| Forms | Read-only view. Impact Strip at bottom of Forms panel shows key metrics + deep links to statements. |
-| Quick Entry | Interactive view. Input cells are editable inline. This IS the primary input interface. P&L tab is the default landing. "All Inputs" view available as fallback. |
+- **The flat grid component (`quick-entry-mode.tsx`) is retired.** Its functionality is fully absorbed by the inline-editable financial statement tabs in Reports.
+- **No "All Inputs" fallback tab is needed.** The original v2 spec proposed an "All Inputs" tab as an escape hatch. In v3 this is unnecessary — the P&L tab already contains the majority of editable inputs, and the remaining inputs are distributed across Balance Sheet (working capital days) and Valuation (EBITDA multiple). A power user like Maria navigates between 2-3 tabs, not a separate flat grid.
+- **No one-time orientation overlay is needed.** There's nothing to explain. Reports shows financial statements with editable cells. My Plan shows structured forms. Users navigate between them via the sidebar. There's no "mode change" to orient them to.
 
 **[F2]**
 
@@ -431,7 +477,7 @@ Row-level interpretations appear for:
 - Benchmarks come ONLY from brand defaults configured by the franchisor — never from universal databases.
 - If no brand benchmark exists for a metric, the interpretation shows only the percentage/ratio without benchmark context.
 - Interpretations use neutral language: "within typical range," "above typical range," "below typical range." Never "good" or "bad."
-- In Quick Entry mode, interpretations update in real time as input cells are edited.
+- In Reports, interpretations update in real time as input cells are edited inline. When values change via My Plan, interpretations in Reports update upon navigation back to Reports.
 
 **Accessibility note (Critique Issue #7):** Interpretation rows are associated with their parent data row via `aria-describedby`. Screen readers announce them as supplementary context after reading the data row values. They are NOT read as separate table rows — they are descriptive annotations.
 
@@ -503,11 +549,11 @@ These thresholds are configurable per brand in the admin brand configuration (fu
 - Clicking any Guardian indicator navigates to the relevant financial statement tab and scrolls to the relevant row.
 - Clicking "Break-even: Mo 14" → navigates to Summary tab, scrolls to break-even analysis section.
 - Clicking "Cash: lowest point -$8,200 in Month 6" → navigates to Cash Flow tab, drills into Year 1 monthly view, highlights Month 6.
-- The Guardian updates in real time as inputs change — in Quick Entry mode, editing a cell immediately reflects in the Guardian.
+- The Guardian updates in real time as inputs change — editing a cell inline in Reports immediately reflects in the Guardian. Editing a value in My Plan also updates the Guardian (visible via the miniature Guardian dots in the Impact Strip).
 
-#### Guardian in Forms Mode (via Impact Strip)
+#### Guardian in My Plan (via Impact Strip)
 
-The full Guardian Bar is only visible on the Financial Statements view. In Forms mode, the Impact Strip (Part 1) includes a miniature Guardian — three colored dots with icons, showing the same health status. Clicking a miniature Guardian dot navigates to the Financial Statements view with the relevant tab and row focused.
+The full Guardian Bar is only visible in Reports. In My Plan, the Impact Strip (Part 1) includes a miniature Guardian — three colored dots with icons, showing the same health status. Clicking a miniature Guardian dot navigates to Reports with the relevant tab and row focused.
 
 **[F5]**
 
@@ -549,16 +595,16 @@ The existing Dashboard Panel (summary cards + charts) gains a **Document Preview
 - "View Full Preview" opens a modal with all pages rendered at readable size.
 - "Generate PDF" triggers the actual PDF generation and download.
 
-**2. Forms Mode — Preview accessible from Impact Strip:**
+**2. My Plan — Preview accessible from Impact Strip:**
 
 The Impact Strip includes a small document icon. Clicking it opens the full Document Preview modal. The user sees their edits reflected in the document format.
 
-**3. Financial Statements — Generate Button Only:**
+**3. Reports — Generate Button Only:**
 
-On the Financial Statements view, the document preview is replaced by a prominent "Generate PDF" button in the header area. The user is already looking at the content — they don't need a preview of it. They need the ability to produce the final artifact.
+In Reports, the document preview is replaced by a prominent "Generate PDF" button in the header area. The user is already looking at the financial statement content — they don't need a preview of it. They need the ability to produce the final artifact.
 
 ```
-┌─ Financial Statements Header ────────────────────────────────┐
+┌─ Reports Header ─────────────────────────────────────────────┐
 │  [Summary] [P&L] [Balance Sheet] [Cash Flow] ...   [Generate PDF ↓] │
 └───────────────────────────────────────────────────────────────┘
 ```
@@ -571,8 +617,8 @@ On the Financial Statements view, the document preview is replaced by a prominen
 **The emotional design:**
 
 - When Sam first sees the preview widget on the Dashboard, he sees his name on a professional-looking financial document. That's the pride moment — and it happens early, while he's still editing inputs.
-- As he works through inputs (in any mode), the preview updates. The document gets more complete and more real.
-- When Sam navigates to Financial Statements and sees the full interactive views, the document preview isn't needed — the interactive views ARE the document content. The "Generate PDF" button is the natural culmination: "I've reviewed everything, now make it official."
+- As he works through inputs (in My Plan or directly in Reports), the preview updates. The document gets more complete and more real.
+- When Sam navigates to Reports and sees the full interactive financial statements, the document preview isn't needed — the interactive views ARE the document content. The "Generate PDF" button is the natural culmination: "I've reviewed everything, now make it official."
 
 **[F6]**
 
@@ -582,7 +628,7 @@ On the Financial Statements view, the document preview is replaced by a prominen
 
 ### 8.1 Summary Financials (Landing Tab)
 
-The Summary tab is the DEFAULT tab when the user opens Financial Statements (except in Quick Entry mode, where P&L is the default — see Part 3). It provides the annual overview that Sam needs and the quick reference that Maria wants.
+The Summary tab is the DEFAULT landing tab when the user opens Reports from the sidebar. It provides the annual overview that Sam needs and the quick reference that Maria wants. (Maria may navigate immediately to P&L to start editing — the Summary is a useful landing, not a gate.)
 
 **Layout:**
 
@@ -638,7 +684,7 @@ Each section header is a link to the detailed statement tab. "Annual P&L Summary
 | Pre-Tax Income | Pre-Tax Income $, Pre-Tax Margin % |
 | P&L Analysis | Adjusted Pre-Tax Profit, Target Pre-Tax Profit, Above/Below Target, Salary Cap analysis, Labor Efficiency |
 
-**In Quick Entry mode:** Revenue, COGS %, Direct Labor %, Management Salaries, Facilities, Marketing, Other OpEx %, and other input fields are editable inline. Gross Profit, EBITDA, Pre-Tax Income, and all analysis rows are computed and read-only.
+**Input cells (always editable in Reports):** Revenue, COGS %, Direct Labor %, Management Salaries, Facilities, Marketing, Other OpEx %, and other input fields are editable inline. Gross Profit, EBITDA, Pre-Tax Income, and all analysis rows are computed and read-only.
 
 ### 8.3 Balance Sheet
 
@@ -655,7 +701,7 @@ Each section header is a link to the detailed statement tab. "Annual P&L Summary
 | Equity | Common Stock / Paid-in Capital, Retained Earnings, Total Equity |
 | Check | Total Liabilities + Equity (must equal Total Assets) |
 
-**Input cells (Quick Entry):** AR Days, AP Days, Inventory Days, Tax Payment Delay are the primary inputs that drive balance sheet line items. These appear as editable cells in the relevant rows.
+**Input cells (always editable in Reports):** AR Days, AP Days, Inventory Days, Tax Payment Delay are the primary inputs that drive balance sheet line items. These appear as editable cells in the relevant rows.
 
 **Audit integration:** The "Total Liabilities + Equity = Total Assets" check shows a pass/fail indicator inline. If it fails (which shouldn't happen with a correct engine), the row highlights in destructive color.
 
@@ -749,37 +795,58 @@ Financial statement views are inherently wide — even annual-only view has 5+ c
 
 ### Preventing Mega-Components
 
-The Epic 4 retrospective flagged `forms-mode.tsx` (536 lines) and `quick-entry-mode.tsx` (571 lines) as growing concerns. Financial statement views are MORE complex. The component architecture must prevent 1000+ line files.
+The Epic 4 retrospective flagged `forms-mode.tsx` (536 lines) and `quick-entry-mode.tsx` (571 lines) as growing concerns. In the v3 architecture, `quick-entry-mode.tsx` is retired entirely (its functionality is absorbed by inline editing in Reports), and `forms-mode.tsx` evolves into the `<MyPlan>` component. Financial statement views are MORE complex than either of those files. The component architecture must prevent 1000+ line files.
 
 **Component hierarchy (Critique Issue #3 — StatementTable decomposition):**
 
 The original draft assigned six distinct behaviors to a single `<StatementTable>` component. This revised architecture decomposes it into a family of focused components:
 
 ```
-<FinancialStatements>                          (container, tab routing, ~100 lines)
-├── <GuardianBar />                            (persistent health indicators, ~80 lines)
-├── <ScenarioBar />                            (scenario selector/comparison toggle, ~60 lines)
-├── <StatementTab statement="summary">         (tab content router, ~50 lines)
-│   ├── <CalloutBar metrics={...} />           (key metrics summary, ~60 lines)
-│   ├── <StatementSection title="P&L Summary">
-│   │   └── <StatementTable rows={...} columns={...} />
-│   ├── <StatementSection title="Balance Sheet Summary">
-│   │   └── <StatementTable rows={...} columns={...} />
-│   └── ...
-├── <StatementTab statement="pnl">
-│   ├── <CalloutBar />
-│   └── <StatementTable
-│           rows={pnlRows}
-│           columns={yearColumns}
-│           drillDown={true}
-│           editable={mode === 'quick-entry'}
-│           interpretations={pnlInterpretations}
-│       />
-├── ...
-├── <AllInputsView />                          (Quick Entry flat grid fallback, ~80 lines)
-├── <ImpactStrip />                            (Forms mode bottom bar, ~100 lines)
-└── <DocumentPreviewModal />                   (full preview modal, ~120 lines)
+<AppLayout>                                    (sidebar + content area)
+├── <AppSidebar />                             (navigation: All Plans, My Plan, Reports, etc.)
+├── <ContentArea>
+│   ├── Route: /plan/:id/my-plan
+│   │   └── <MyPlan>                           (structured forms + Impact Strip)
+│   │       ├── <SummaryMetricsBar />          (headline numbers, ~60 lines)
+│   │       ├── <InputSection title="Revenue"> (collapsible form sections)
+│   │       ├── <InputSection title="COGS">
+│   │       ├── ...
+│   │       └── <ImpactStrip />                (sticky bottom bar, ~100 lines)
+│   │
+│   ├── Route: /plan/:id/reports
+│   │   └── <Reports>                          (tabbed financial statements)
+│   │       ├── <GuardianBar />                (persistent health indicators, ~80 lines)
+│   │       ├── <TabNavigation />              (Summary|P&L|BS|CF|ROIC|Val|Audit)
+│   │       ├── <StatementTab statement="summary">
+│   │       │   ├── <CalloutBar metrics={...} />
+│   │       │   ├── <StatementSection title="P&L Summary">
+│   │       │   │   └── <StatementTable rows={...} columns={...} />
+│   │       │   └── ...
+│   │       ├── <StatementTab statement="pnl">
+│   │       │   ├── <CalloutBar />
+│   │       │   └── <StatementTable
+│   │       │           rows={pnlRows}
+│   │       │           columns={yearColumns}
+│   │       │           drillDown={true}
+│   │       │           editable={true}
+│   │       │           interpretations={pnlInterpretations}
+│   │       │       />
+│   │       ├── ...
+│   │       └── <DocumentPreviewModal />       (full preview modal, ~120 lines)
+│   │
+│   ├── Route: /plan/:id/scenarios
+│   │   └── <Scenarios />                      (comparison view)
+│   │
+│   └── Route: /plan/:id/settings
+│       └── <PlanSettings />
 ```
+
+**Key differences from v2 architecture:**
+
+1. **`editable` is always `true` in Reports.** There is no `mode === 'quick-entry'` conditional. Input cells are always editable; computed cells are always read-only. The visual treatment handles the distinction.
+2. **`<AllInputsView>` is removed.** No flat grid fallback. The financial statement tabs ARE the editing surface.
+3. **`<ImpactStrip>` lives inside `<MyPlan>`, not inside `<Reports>`.** It's the bridge FROM forms TO reports, not a component within the reports view.
+4. **`<AppSidebar>` replaces the mode switcher.** Navigation is structural (sidebar items), not modal (segmented control).
 
 **StatementTable decomposition — the family of components:**
 
@@ -821,9 +888,10 @@ The Glossary (Story 5.8) and Help Content (Story 5.10) from the Sprint Change Pr
 - Terms used in interpretation rows are hyperlinked to their Glossary definitions.
 
 **Help content on input fields:**
-- In Quick Entry mode (where inputs are inline in statements), hovering an input cell shows the field's help tooltip.
+- In Reports (where inputs are inline in financial statements), hovering an input cell shows the field's help tooltip.
 - On focus (when editing), an expanded help panel slides in below the cell or in a sidebar, showing the full guidance text.
-- Help content includes both the consolidated-field help (from spreadsheet comments) and the decomposed sub-field help (newly authored for Forms mode).
+- In My Plan (structured forms), help text appears alongside form fields as it does today — labels, descriptions, and brand default indicators.
+- Help content includes both the consolidated-field help (from spreadsheet comments) and the decomposed sub-field help (authored for My Plan's form sections).
 
 ---
 
@@ -875,62 +943,65 @@ The Document Preview widget on the Dashboard shows the same preview regardless o
 
 ### From Login to Conviction (the retrospective's missing piece)
 
-This section traces the complete user path for each persona through the financial statement experience, ensuring no component mount or navigation link is missing.
+This section traces the complete user path for each persona through the two-door architecture, ensuring no component mount or navigation link is missing.
 
-#### Sam's Journey (First-Time Franchisee → Planning Assistant / Forms)
+#### Sam's Journey (First-Time Franchisee — enters through My Plan)
 
-1. **Login** → Dashboard (existing)
-2. **Quick Start** → 5 questions → preliminary metrics (existing)
-3. **Forms mode** → edits inputs by category (existing)
-4. **Sees Impact Strip** at the bottom of Forms: "Pre-Tax Income: $42,000 (+$3,200) | Break-even: Mo 14 | ROI: 127%"
-5. **Sees miniature Guardian dots** in Impact Strip — all green
-6. **Clicks "View Full P&L →"** in Impact Strip → Financial Statements view, P&L tab
-7. **Sees Guardian Bar** at top — full-size indicators with icons
-8. **Sees callout bar:** "Year 1 pre-tax margin: 11.7% — within PostNet typical range"
-9. **Sees completeness badge** on P&L tab: "5/8" — some inputs still at brand default
-10. **Hovers a computed cell** → tooltip explains "Gross Profit = Revenue - COGS"
-11. **Clicks Summary tab** → annual overview with all sections
-12. **Reads break-even interpretation:** "You'd start making money by February 2027"
-13. **Clicks "Compare Scenarios"** → Conservative/Optimistic columns appear
-14. **Reads comparison summary:** "In the conservative scenario (15% lower revenue, higher costs), your business reaches break-even by Month 22"
-15. **Returns to Dashboard** → sees Document Preview widget with "Sam's PostNet Business Plan — Draft"
-16. **Continues editing** in Forms mode → preview updates
-17. **Returns to Financial Statements** → completeness badge now "8/8"
+1. **Login** → All Plans (portfolio view, showing one plan for Sam)
+2. **Clicks his plan** → lands on **My Plan**
+3. **Quick Start** → 5 questions → preliminary metrics populate (existing)
+4. **Edits inputs** in My Plan's structured form sections — Revenue, COGS, Labor, etc.
+5. **Sees Impact Strip** at the bottom of My Plan: "Pre-Tax Income: $42,000 (+$3,200) | Break-even: Mo 14 | ROI: 127%"
+6. **Sees miniature Guardian dots** in Impact Strip — all green
+7. **Clicks "View Full P&L →"** in Impact Strip → navigates to **Reports**, P&L tab
+8. **Sees Guardian Bar** at top of Reports — full-size indicators with icons
+9. **Sees callout bar:** "Year 1 pre-tax margin: 11.7% — within PostNet typical range"
+10. **Sees completeness badge** on P&L tab: "5/8" — some inputs still at brand default
+11. **Hovers a computed cell** → tooltip explains "Gross Profit = Revenue - COGS"
+12. **Clicks Summary tab** → annual overview with all sections
+13. **Reads break-even interpretation:** "You'd start making money by February 2027"
+14. **Clicks "Scenarios" in sidebar** → Conservative/Optimistic comparison view
+15. **Reads comparison summary:** "In the conservative scenario (15% lower revenue, higher costs), your business reaches break-even by Month 22"
+16. **Clicks "My Plan" in sidebar** → returns to forms, continues editing → Impact Strip updates
+17. **Returns to Reports** → completeness badge now "8/8"
 18. **Clicks "Generate Lender Package"** → PDF downloads
 
-**Every step has a component. Every transition has a navigation path. No dead ends.**
+**Every step uses sidebar navigation. No mode switching. No confusion about where to go.**
 
-#### Maria's Journey (Veteran → Quick Entry)
+#### Maria's Journey (Financial Expert — enters through Reports)
 
-1. **Login** → Dashboard (existing)
-2. **Quick Entry mode** (her default) → Financial Statements tabs appear with **P&L tab active** (not Summary)
-3. **Sees one-time orientation overlay** (first visit only): "Your inputs now live inside the financial statements..."
-4. **Dismisses overlay** → P&L tab with input cells editable inline
+1. **Login** → All Plans (sees client's plan)
+2. **Clicks the plan** → lands on My Plan by default
+3. **Immediately clicks "Reports" in sidebar** — she knows where she's going
+4. **Clicks P&L tab** → sees financial statement with editable input cells
 5. **Tabs through input cells** at spreadsheet speed — revenue, COGS %, labor %, facilities, etc.
 6. **Sees linked-column indicators** (pre-Epic-7) — editing Y2 updates all years, link icons flash briefly
 7. **Guardian Bar updates** in real time as she enters values
-8. **Switches to Balance Sheet tab** — enters working capital days (AR, AP, Inventory)
-9. **Switches to Cash Flow tab** — reviews computed cash flows, checks for negative months (warm tint + downward arrow icon on negative cells)
-10. **Clicks "All Inputs" tab** → flat grid of all inputs, for a quick sanity check
-11. **Returns to P&L tab** → Opens Scenario Comparison at annual level
+8. **Clicks Balance Sheet tab** — enters working capital days (AR, AP, Inventory) inline
+9. **Clicks Cash Flow tab** — reviews computed cash flows, checks for negative months (warm tint + downward arrow icon on negative cells)
+10. **Clicks Valuation tab** — enters EBITDA multiple inline
+11. **Returns to P&L tab** → clicks "Scenarios" in sidebar → sees conservative case at annual level
 12. **Reviews comparison summary** — notes conservative case still works with multi-variable sensitivity
-13. **Clicks "Generate Lender Package"** → PDF downloads — done in 15 minutes
+13. **Clicks "Reports" in sidebar** → clicks "Generate Lender Package" → PDF downloads — done in 15 minutes
 
-**Every step is within the financial statement tabs. No mode switching. No navigating away.**
+**Maria never touches My Plan. She works entirely in Reports, editing inline. No flat grid, no mode selection, no orientation overlay.**
 
-#### Chris's Journey (Scaling Operator → Forms)
+#### Chris's Journey (Experienced Multi-Unit Owner — uses both doors)
 
-1. **Login** → sees plan list with Location #1 and Location #2 (requires multi-plan from Epic 7)
-2. **Opens Location #2 plan** → Forms mode
-3. **Edits inputs** in Forms mode, overriding defaults with experience-informed values
-4. **Sees Impact Strip** updating in real time at bottom of Forms panel — delta indicators show "+$4,800" as she changes revenue
-5. **Clicks "View Full P&L →"** in Impact Strip → Financial Statements view
+1. **Login** → All Plans (sees Location #1 and Location #2)
+2. **Clicks Location #2** → lands on **My Plan**
+3. **Edits inputs** in My Plan's form sections, overriding brand defaults with experience-informed values
+4. **Sees Impact Strip** updating in real time — delta indicators show "+$4,800" as she changes revenue
+5. **Clicks "View Full P&L →"** in Impact Strip → navigates to **Reports**, P&L tab
 6. **Drills into P&L Year 1** → expands to quarterly to see seasonal ramp-up
-7. **Sees interpretation:** "Your Year 1 labor cost of 28% is above PostNet typical range (22-26%)" 
-8. **Returns to Forms** (browser back or "Return to Editing" link) → adjusts labor inputs
+7. **Sees interpretation:** "Your Year 1 labor cost of 28% is above PostNet typical range (22-26%)"
+8. **Clicks "My Plan" in sidebar** → adjusts labor inputs in the Labor form section
 9. **Impact Strip shows** labor cost now at 25%, interpretation updates
-10. **Navigates to Financial Statements → Compare Scenarios** → sees conservative case
-11. **Generates PDF** for lender meeting
+10. **Clicks "Scenarios" in sidebar** → sees conservative case
+11. **Returns to Reports** → clicks "Generate Lender Package" → PDF downloads for lender meeting
+12. **Clicks "All Plans" in sidebar** → opens Location #1 plan to repeat the process
+
+**Chris moves between My Plan and Reports fluidly. The sidebar is her navigation tool — she never has to "switch modes."**
 
 ---
 
@@ -941,9 +1012,9 @@ These items are explicitly out of scope for Epic 5's UX spec and belong to later
 | Item | Deferred To | Reason |
 |------|-------------|--------|
 | Custom scenario creation (duplicate base case, modify inputs) | Epic 10 | Scope — quick multi-variable scenarios are sufficient for Epic 5 |
-| Per-year input columns in Forms mode | Epic 7 | Dependency — per-year UI needs PlanFinancialInputs restructuring |
-| Multi-plan comparison | Epic 7 | Dependency — requires plan CRUD + navigation |
-| Planning Assistant mode interaction with statements | Epic 9 | Dependency — requires AI integration |
+| Per-year input columns in My Plan and Reports | Epic 7 | Dependency — per-year UI needs PlanFinancialInputs restructuring |
+| Multi-plan comparison (portfolio-level) | Epic 7 | Dependency — requires plan CRUD + All Plans navigation |
+| AI planning assistant integration with Reports | Epic 9 | Dependency — requires AI integration |
 | Advisory nudges on individual input fields | Epic 8 | Scope — Guardian Bar provides plan-level advisory; field-level is Epic 8 |
 | Excel/CSV export | Backlog | Lower priority than PDF |
 | Estimated vs. actual tracking | Phase 2 | PRD Phase 2 scope |
@@ -1008,35 +1079,37 @@ The financial statement tables use the following ARIA structure:
 
 ## Part 16: Story Rewrite Implications
 
-This UX spec requires the Sprint Change Proposal's Epic 5 stories to be rewritten. The current stories (5.1-5.10) are data-table specifications. The rewritten stories should reflect the experience design:
+This v3 UX spec requires the Sprint Change Proposal's Epic 5 stories to be rewritten. The v3 two-door architecture eliminates mode-conditional behavior and replaces it with two navigation destinations (My Plan and Reports) that share the same underlying plan data.
 
-| Current Story | Rewrite Direction |
+| Current Story | v3 Rewrite Direction |
 |--------------|-------------------|
-| 5.1: P&L View | Merge with progressive disclosure pattern — P&L with annual/quarterly/monthly drill-down, interpretation rows, sticky headers |
-| 5.2: Balance Sheet View | Same drill-down pattern, audit check inline |
+| 5.1: P&L View | Merge with progressive disclosure pattern — P&L with annual/quarterly/monthly drill-down, interpretation rows, sticky headers. Input cells are ALWAYS editable (no mode gate). |
+| 5.2: Balance Sheet View | Same drill-down pattern, audit check inline, editable input cells always available |
 | 5.3: Cash Flow View | Same pattern, negative cash highlighting, Guardian integration |
-| 5.4: Summary Financials | Becomes the LANDING TAB with callout bars, section links to detail tabs, break-even analysis |
+| 5.4: Summary Financials | Becomes the LANDING TAB in Reports — callout bars, section links to detail tabs, break-even analysis |
 | 5.5: ROIC View | Annual-only, callout bar with plain-language ROIC interpretation |
-| 5.6: Valuation View | Annual-only, editable EBITDA multiple |
+| 5.6: Valuation View | Annual-only, editable EBITDA multiple inline |
 | 5.7: Audit View | Diagnostic view with navigation links to failing rows |
 | 5.8: Glossary | Standalone page + inline integration (tooltips link to glossary) |
-| 5.9: Quick Entry Interactive | NO LONGER A SEPARATE STORY — integrated into every statement view via the editable cell pattern when mode === quick-entry |
-| 5.10: Help Content | Integrated into field tooltips and expanded help panels |
+| 5.9: Quick Entry Interactive | **RETIRED AS A CONCEPT.** Inline editing is built into every statement tab in Reports. There is no separate "Quick Entry" anything. The old flat grid component is retired. |
+| 5.10: Help Content | Integrated into field tooltips (Reports) and form labels (My Plan) |
 
 **Recommended new story structure:**
 
 1. **5.1: Engine Extension** — Add missing computations (Valuation, extended ROIC, extended Audit, Balance Sheet/Cash Flow disaggregation). No UI.
-2. **5.2: Financial Statements Container + Summary Tab** — Tab navigation, Guardian Bar (structure only, thresholds in 5.8), Scenario Bar (structure only, comparison in 5.7), Summary Financials landing tab with callout bars and section links. Progressive disclosure infrastructure (annual → quarterly → monthly). Completeness indicators per tab. Linked-column indicators (pre-Epic-7).
-3. **5.3: P&L Statement Tab** — Full P&L with drill-down, interpretation rows, input cell highlighting (visual distinction for input vs. computed). Accessibility: ARIA grid roles, non-color indicators.
-4. **5.4: Balance Sheet + Cash Flow Tabs** — Built together (tightly coupled through LOC and tax payable mechanics). Negative cash highlighting with icon. Inline audit check on balance sheet.
-5. **5.5: ROIC + Valuation + Audit Tabs** — Three simpler views, annual-only, built together. Audit view with navigation links to failing rows.
-6. **5.6: Quick Entry Input-Output Integration** — Enable inline editing in all statement tabs when mode === quick-entry. Reuse EditableCell from Epic 4. Tab navigation across input cells. "All Inputs" flat view as fallback. One-time orientation overlay. P&L as default landing tab for Quick Entry.
-7. **5.7: Scenario Comparison** — Multi-variable quick scenarios (revenue, COGS, OpEx sensitivity). Comparison columns with drill-down constraint rule. Comparison summary card with honest language. Brand-configurable sensitivity factors.
-8. **5.8: Guardian Bar + Dynamic Interpretation** — ROI Threshold Guardian with icons + colors, row-level interpretation with brand benchmarks, callout bar content. Real-time updates. Navigation links from Guardian to statement rows. Default thresholds (configurable in Epic 8).
-9. **5.9: Impact Strip + Document Preview** — Forms mode Impact Strip with context-sensitive metrics, delta indicators, miniature Guardian, and deep links. Dashboard Document Preview widget. Generate PDF button with completeness-aware labels. Empty/incomplete state handling.
-10. **5.10: Glossary + Contextual Help** — Glossary page, inline tooltip integration, expanded help panels, video content extraction.
+2. **5.2: Application Navigation + Reports Container + Summary Tab** — Sidebar navigation (All Plans, My Plan, Reports, Scenarios, Settings). Eliminate mode switcher entirely. Reports view with tab navigation (Summary, P&L, Balance Sheet, Cash Flow, ROIC, Valuation, Audit). Guardian Bar (structure only, thresholds in 5.8). Summary Financials as landing tab with callout bars and section links. Progressive disclosure infrastructure (annual → quarterly → monthly). Completeness indicators per tab. Linked-column indicators (pre-Epic-7).
+3. **5.3: P&L Statement Tab with Inline Editing** — Full P&L with drill-down, interpretation rows. Input cells are ALWAYS editable inline (no mode conditional). Visual distinction for input vs. computed cells (tinted background, dashed border, pencil icon). Tab navigation across input cells. Reuse EditableCell from Epic 4. Accessibility: ARIA grid roles, non-color indicators.
+4. **5.4: Balance Sheet + Cash Flow Tabs** — Built together (tightly coupled through LOC and tax payable mechanics). Inline editable inputs (AR Days, AP Days, etc.). Negative cash highlighting with icon. Inline audit check on balance sheet.
+5. **5.5: ROIC + Valuation + Audit Tabs** — Three simpler views, annual-only, built together. Valuation has editable EBITDA multiple inline. Audit view with navigation links to failing rows.
+6. **5.6: My Plan + Impact Strip** — My Plan structured form workspace with collapsible input sections. Impact Strip (sticky bottom bar) with context-sensitive metrics, delta indicators, miniature Guardian dots, and deep links to Reports tabs. Bidirectional data flow: editing in My Plan updates Reports, editing in Reports updates My Plan. This story connects the two doors.
+7. **5.7: Scenario Comparison** — Multi-variable quick scenarios (revenue, COGS, OpEx sensitivity). Comparison columns with drill-down constraint rule. Comparison summary card with honest language. Brand-configurable sensitivity factors. Scenarios as a sidebar destination.
+8. **5.8: Guardian Bar + Dynamic Interpretation** — ROI Threshold Guardian with icons + colors, row-level interpretation with brand benchmarks, callout bar content. Real-time updates in both Reports (inline editing) and My Plan (via Impact Strip miniature Guardian). Navigation links from Guardian to statement rows. Default thresholds (configurable in Epic 8).
+9. **5.9: Document Preview + PDF Generation** — Dashboard Document Preview widget. Generate PDF button in Reports with completeness-aware labels. Empty/incomplete state handling. Per-cell "BD" (Brand Default) indicator.
+10. **5.10: Glossary + Contextual Help** — Glossary page, inline tooltip integration in Reports, expanded help panels, form-level help in My Plan.
 
-This rewrite sequence addresses all six foundation points and all nine critique issues, and follows the retrospective lesson: design the experience first, then build it.
+**Critical implementation note for the developer:** There is NO mode switcher, NO mode state, NO conditional rendering based on a mode variable. The `planningMode` state from Epic 4 is retired. My Plan and Reports are separate routes with separate components that read from and write to the same plan state. If you find yourself writing `if (mode === 'quick-entry')` or `editable={mode === 'quick-entry'}`, you are violating this spec. Input cells in Reports are ALWAYS editable. Period.
+
+This rewrite sequence addresses all six foundation points and all nine critique issues, eliminates the mode-switching antipattern, and follows the retrospective lesson: design the experience first, then build it.
 
 ---
 
@@ -1044,23 +1117,24 @@ This rewrite sequence addresses all six foundation points and all nine critique 
 
 | Issue # | Problem | Resolution | Spec Section |
 |---------|---------|------------|-------------|
-| 1 | Forms mode users get worst experience (read-only statements, navigate away to edit) | Impact Strip pattern — persistent metrics at bottom of Forms panel with delta indicators and deep links | Part 1 (Mode-Specific Navigation) |
+| 1 | Forms mode users get worst experience (read-only statements, navigate away to edit) | v3: Eliminated modes entirely. My Plan has Impact Strip with deep links to Reports. Reports has always-editable input cells. Two doors, one room — no navigating away. | Part 1 (Two-Door Architecture) |
 | 2 | Scenario comparison + progressive disclosure = column explosion | Comparison mode locks drill-down to current level; monthly drill-down disables comparison | Part 4 (Interaction constraint) |
 | 3 | StatementTable is a mega-component disguised as small | Decomposed into 9-component family: StatementTable orchestrator + ColumnManager, SectionGroup, DataRow, EditableCell, ComputedCell, InterpretationRow, StickyContainer, ScenarioColumns | Part 10 (Component Architecture) |
-| 4 | Document Preview is redundant inside Financial Statements | Moved to Dashboard (preview widget) and Forms (via Impact Strip icon); Financial Statements gets "Generate PDF" button only | Part 7 (Document Preview) |
+| 4 | Document Preview is redundant inside Financial Statements | Moved to Dashboard (preview widget) and My Plan (via Impact Strip icon); Reports gets "Generate PDF" button only | Part 7 (Document Preview) |
 | 5 | No empty/incomplete state design | Per-tab completeness badges, per-cell "BD" (Brand Default) indicator, Guardian note for all-defaults state, Draft label on preview | Part 12 (Empty & Incomplete States) |
 | 6 | Quick scenarios only adjust revenue — false conviction | Multi-variable sensitivity: revenue (-15%), COGS (+2pp), OpEx (+10%) for conservative. Honest language in summary card. | Part 4 (Quick Scenario Sensitivity Model) |
 | 7 | No accessibility design | Full Part 15: non-color indicators for every color-coded element, ARIA grid roles, focus management, keyboard shortcuts | Part 15 (Accessibility) |
 | 8 | Per-year input timing problem (pre-Epic-7) | Linked columns with visual indicator (link icon, flash on broadcast, tooltip explaining constraint) | Part 3 (Pre-Epic-7 Per-Year Behavior) |
-| 9 | No transition from existing Quick Entry flat grid | P&L as default landing tab, "All Inputs" fallback view, one-time orientation overlay | Part 3 (Transition from Existing Quick Entry Grid) |
+| 9 | No transition from existing Quick Entry flat grid | v3: Quick Entry as a concept is retired. The flat grid is retired. Reports with inline-editable cells replaces it entirely. No "All Inputs" fallback needed, no orientation overlay needed. | Part 3 (Transition from Epic 4) |
 
 ---
 
 ## Approval
 
-**Status:** Revised — Self-Critique Complete, Ready for User Approval
+**Status:** Revised — Architecture Simplified, Ready for User Approval
 **Author:** Sally (UX Designer)
 **Date:** 2026-02-16
 **Revision History:**
 - v1 (2026-02-15): Initial draft addressing six foundation points
 - v2 (2026-02-16): Revised to address 9 issues from Sally's self-critique
+- v3 (2026-02-16): Architecture overhaul — eliminated mode switcher, established two-door architecture (My Plan / Reports), retired "Quick Entry" as a concept, made inline editing always-on in Reports, updated all user journeys and component architecture to reflect sidebar-based navigation
