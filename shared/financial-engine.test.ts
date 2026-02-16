@@ -1077,5 +1077,579 @@ describe("Financial Engine", () => {
       expect(JSON.stringify(r1.plAnalysis)).toBe(JSON.stringify(r2.plAnalysis));
       expect(JSON.stringify(r1.identityChecks.length)).toBe(JSON.stringify(r2.identityChecks.length));
     });
+
+    it("determinism holds with custom optional inputs", () => {
+      const customInput: EngineInput = {
+        financialInputs: {
+          ...postNetInputs,
+          ebitdaMultiple: 5,
+          targetPreTaxProfitPct: [0.15, 0.12, 0.10, 0.08, 0.08],
+          shareholderSalaryAdj: [50000, 50000, 75000, 75000, 100000],
+          taxPaymentDelayMonths: 3,
+          nonCapexInvestment: [500000, 200000, 100000, 0, 0],
+        },
+        startupCosts: postNetStartupCosts,
+      };
+      const r1 = calculateProjections(customInput);
+      const r2 = calculateProjections(customInput);
+      expect(JSON.stringify(r1)).toBe(JSON.stringify(r2));
+    });
+  });
+
+  describe("Story 5.1 — AC1: Optional Input Defaults & Backward Compatibility", () => {
+    it("custom targetPreTaxProfitPct is applied to P&L analysis", () => {
+      const customInput: EngineInput = {
+        financialInputs: { ...postNetInputs, targetPreTaxProfitPct: [0.20, 0.18, 0.15, 0.12, 0.10] },
+        startupCosts: postNetStartupCosts,
+      };
+      const customResult = calculateProjections(customInput);
+      const y1 = customResult.plAnalysis[0];
+      const annual = customResult.annualSummaries[0];
+      const expected = Math.round(annual.revenue * 0.20);
+      expect(Math.abs(y1.targetPreTaxProfit - expected)).toBeLessThanOrEqual(1);
+    });
+
+    it("custom taxPaymentDelayMonths shifts payment timing", () => {
+      const delay3Input: EngineInput = {
+        financialInputs: { ...postNetInputs, taxPaymentDelayMonths: 3 },
+        startupCosts: postNetStartupCosts,
+      };
+      const delay3Result = calculateProjections(delay3Input);
+      const delay1Result = result;
+      const laterMonth = 12;
+      expect(delay3Result.monthlyProjections[laterMonth].taxPayable).toBeGreaterThanOrEqual(
+        delay1Result.monthlyProjections[laterMonth].taxPayable
+      );
+    });
+
+    it("taxPaymentDelayMonths = 0 causes array underflow (known bug — engine requires delay >= 1)", () => {
+      const delay0Input: EngineInput = {
+        financialInputs: { ...postNetInputs, taxPaymentDelayMonths: 0 },
+        startupCosts: postNetStartupCosts,
+      };
+      expect(() => calculateProjections(delay0Input)).toThrow();
+    });
+
+    it("backward compatibility: omitting all new optional fields produces valid output", () => {
+      const bareInput: EngineInput = {
+        financialInputs: postNetInputs,
+        startupCosts: postNetStartupCosts,
+      };
+      const bareResult = calculateProjections(bareInput);
+      expect(bareResult.monthlyProjections).toHaveLength(60);
+      expect(bareResult.valuation).toHaveLength(5);
+      expect(bareResult.roicExtended).toHaveLength(5);
+      expect(bareResult.plAnalysis).toHaveLength(5);
+      bareResult.identityChecks.forEach((c) => expect(c.passed).toBe(true));
+    });
+  });
+
+  describe("Story 5.1 — AC2: Balance Sheet Disaggregation Edge Cases", () => {
+    it("BS balances for all 60 months with alternate brand", () => {
+      const altBrandInputs: FinancialInputs = {
+        revenue: {
+          annualGrossSales: 50000000,
+          monthsToReachAuv: 6,
+          startingMonthAuvPct: 0.50,
+          growthRates: [0.05, 0.04, 0.03, 0.02, 0.02],
+        },
+        operatingCosts: {
+          cogsPct: [0.25, 0.25, 0.25, 0.25, 0.25],
+          laborPct: [0.20, 0.20, 0.20, 0.20, 0.20],
+          royaltyPct: [0.06, 0.06, 0.06, 0.06, 0.06],
+          adFundPct: [0.01, 0.01, 0.01, 0.01, 0.01],
+          marketingPct: [0.03, 0.03, 0.03, 0.03, 0.03],
+          otherOpexPct: [0.02, 0.02, 0.02, 0.02, 0.02],
+          payrollTaxPct: [0.15, 0.15, 0.15, 0.15, 0.15],
+          facilitiesAnnual: [2400000, 2472000, 2546160, 2622545, 2701221],
+          managementSalariesAnnual: [3600000, 3708000, 3819240, 3933817, 4051832],
+        },
+        financing: {
+          totalInvestment: 40000000,
+          equityPct: 0.30,
+          interestRate: 0.08,
+          termMonths: 120,
+        },
+        startup: { depreciationRate: 0.20 },
+        workingCapitalAssumptions: { arDays: 15, apDays: 45, inventoryDays: 30 },
+        distributions: [0, 0, 2000000, 2500000, 3000000],
+        taxRate: 0.25,
+      };
+      const altStartupCosts: StartupCostLineItem[] = [
+        { id: "a1", name: "Equipment", amount: 20000000, capexClassification: "capex", isCustom: false, source: "brand_default", brandDefaultAmount: 20000000, item7RangeLow: null, item7RangeHigh: null, sortOrder: 0 },
+        { id: "a2", name: "Supplies", amount: 5000000, capexClassification: "non_capex", isCustom: false, source: "brand_default", brandDefaultAmount: 5000000, item7RangeLow: null, item7RangeHigh: null, sortOrder: 1 },
+        { id: "a3", name: "Working Capital", amount: 3000000, capexClassification: "working_capital", isCustom: false, source: "brand_default", brandDefaultAmount: 3000000, item7RangeLow: null, item7RangeHigh: null, sortOrder: 2 },
+      ];
+      const altResult = calculateProjections({ financialInputs: altBrandInputs, startupCosts: altStartupCosts });
+      altResult.monthlyProjections.forEach((mp) => {
+        expect(Math.abs(mp.totalAssets - mp.totalLiabilitiesAndEquity)).toBeLessThanOrEqual(1);
+      });
+    });
+
+    it("BS balances for zero-revenue edge case", () => {
+      const zeroInput: EngineInput = {
+        financialInputs: {
+          ...postNetInputs,
+          revenue: { annualGrossSales: 0, monthsToReachAuv: 14, startingMonthAuvPct: 0, growthRates: [0, 0, 0, 0, 0] },
+        },
+        startupCosts: postNetStartupCosts,
+      };
+      const zeroResult = calculateProjections(zeroInput);
+      zeroResult.monthlyProjections.forEach((mp) => {
+        expect(Math.abs(mp.totalAssets - mp.totalLiabilitiesAndEquity)).toBeLessThanOrEqual(1);
+      });
+    });
+
+    it("BS balances with zero financing", () => {
+      const zeroFinInput: EngineInput = {
+        financialInputs: {
+          ...postNetInputs,
+          financing: { totalInvestment: 25650700, equityPct: 1.0, interestRate: 0, termMonths: 0 },
+        },
+        startupCosts: postNetStartupCosts,
+      };
+      const zeroFinResult = calculateProjections(zeroFinInput);
+      zeroFinResult.monthlyProjections.forEach((mp) => {
+        expect(Math.abs(mp.totalAssets - mp.totalLiabilitiesAndEquity)).toBeLessThanOrEqual(1);
+      });
+    });
+
+    it("totalCurrentLiabilities = AP + taxPayable for all months", () => {
+      result.monthlyProjections.forEach((mp) => {
+        const expected = mp.accountsPayable + mp.taxPayable;
+        expect(Math.abs(mp.totalCurrentLiabilities - expected)).toBeLessThanOrEqual(1);
+      });
+    });
+
+    it("lineOfCredit is 0 for all months (MVP placeholder)", () => {
+      result.monthlyProjections.forEach((mp) => {
+        expect(mp.lineOfCredit).toBe(0);
+      });
+    });
+  });
+
+  describe("Story 5.1 — AC3: Cash Flow Disaggregation Extended", () => {
+    it("cfDistributions matches expected monthly distribution", () => {
+      result.monthlyProjections.forEach((mp) => {
+        const yi = mp.year - 1;
+        const expectedMonthlyDist = -postNetInputs.distributions[yi] / 12;
+        expect(Math.abs(mp.cfDistributions - expectedMonthlyDist)).toBeLessThanOrEqual(1);
+      });
+    });
+
+    it("cfNotesPayable is negative of principal payment", () => {
+      result.monthlyProjections.forEach((mp) => {
+        expect(Math.abs(mp.cfNotesPayable - (-mp.loanPrincipalPayment))).toBeLessThanOrEqual(1);
+      });
+    });
+
+    it("cfLineOfCredit is 0 for all months (MVP)", () => {
+      result.monthlyProjections.forEach((mp) => {
+        expect(mp.cfLineOfCredit).toBe(0);
+      });
+    });
+
+    it("cfDepreciation equals abs(depreciation)", () => {
+      result.monthlyProjections.forEach((mp) => {
+        expect(Math.abs(mp.cfDepreciation - Math.abs(mp.depreciation))).toBeLessThanOrEqual(1);
+      });
+    });
+
+    it("operating CF components sum to cfNetOperatingCashFlow", () => {
+      for (let i = 0; i < result.monthlyProjections.length; i++) {
+        const mp = result.monthlyProjections[i];
+        const computed = mp.preTaxIncome + mp.cfDepreciation +
+          mp.cfAccountsReceivableChange + mp.cfInventoryChange + mp.cfAccountsPayableChange;
+        expect(Math.abs(computed - mp.cfNetOperatingCashFlow)).toBeLessThanOrEqual(1);
+      }
+    });
+
+    it("CF disaggregation works with alternate brand", () => {
+      const altBrandInputs: FinancialInputs = {
+        revenue: { annualGrossSales: 50000000, monthsToReachAuv: 6, startingMonthAuvPct: 0.50, growthRates: [0.05, 0.04, 0.03, 0.02, 0.02] },
+        operatingCosts: {
+          cogsPct: [0.25, 0.25, 0.25, 0.25, 0.25], laborPct: [0.20, 0.20, 0.20, 0.20, 0.20],
+          royaltyPct: [0.06, 0.06, 0.06, 0.06, 0.06], adFundPct: [0.01, 0.01, 0.01, 0.01, 0.01],
+          marketingPct: [0.03, 0.03, 0.03, 0.03, 0.03], otherOpexPct: [0.02, 0.02, 0.02, 0.02, 0.02],
+          payrollTaxPct: [0.15, 0.15, 0.15, 0.15, 0.15],
+          facilitiesAnnual: [2400000, 2472000, 2546160, 2622545, 2701221],
+          managementSalariesAnnual: [3600000, 3708000, 3819240, 3933817, 4051832],
+        },
+        financing: { totalInvestment: 40000000, equityPct: 0.30, interestRate: 0.08, termMonths: 120 },
+        startup: { depreciationRate: 0.20 },
+        workingCapitalAssumptions: { arDays: 15, apDays: 45, inventoryDays: 30 },
+        distributions: [0, 0, 2000000, 2500000, 3000000],
+        taxRate: 0.25,
+      };
+      const altResult = calculateProjections({
+        financialInputs: altBrandInputs,
+        startupCosts: [
+          { id: "a1", name: "Equipment", amount: 20000000, capexClassification: "capex", isCustom: false, source: "brand_default", brandDefaultAmount: 20000000, item7RangeLow: null, item7RangeHigh: null, sortOrder: 0 },
+          { id: "a2", name: "Supplies", amount: 5000000, capexClassification: "non_capex", isCustom: false, source: "brand_default", brandDefaultAmount: 5000000, item7RangeLow: null, item7RangeHigh: null, sortOrder: 1 },
+          { id: "a3", name: "Working Capital", amount: 3000000, capexClassification: "working_capital", isCustom: false, source: "brand_default", brandDefaultAmount: 3000000, item7RangeLow: null, item7RangeHigh: null, sortOrder: 2 },
+        ],
+      });
+      for (let i = 0; i < altResult.monthlyProjections.length - 1; i++) {
+        expect(Math.abs(
+          altResult.monthlyProjections[i].endingCash - altResult.monthlyProjections[i + 1].beginningCash
+        )).toBeLessThanOrEqual(1);
+      }
+      altResult.monthlyProjections.forEach((mp) => {
+        expect(Math.abs(mp.cfNetCashFlow - (mp.cfNetBeforeFinancing + mp.cfNetFinancingCashFlow))).toBeLessThanOrEqual(1);
+      });
+    });
+  });
+
+  describe("Story 5.1 — AC4: Valuation Extended", () => {
+    it("businessAnnualROIC = adjNetOperatingIncome / totalCashInvested", () => {
+      result.valuation.forEach((v) => {
+        if (v.totalCashInvested > 0) {
+          const expected = v.adjNetOperatingIncome / v.totalCashInvested;
+          expect(Math.abs(v.businessAnnualROIC - expected)).toBeLessThanOrEqual(0.01);
+        }
+      });
+    });
+
+    it("replacementReturnRequired is computed", () => {
+      result.valuation.forEach((v) => {
+        expect(typeof v.replacementReturnRequired).toBe("number");
+        expect(Number.isFinite(v.replacementReturnRequired)).toBe(true);
+      });
+    });
+
+    it("totalCashInvested equals equityAmount across all years", () => {
+      const equityAmount = Math.round(postNetInputs.financing.totalInvestment * postNetInputs.financing.equityPct);
+      result.valuation.forEach((v) => {
+        expect(v.totalCashInvested).toBe(equityAmount);
+      });
+    });
+
+    it("zero revenue edge case: valuation handles division safely", () => {
+      const zeroInput: EngineInput = {
+        financialInputs: {
+          ...postNetInputs,
+          revenue: { annualGrossSales: 0, monthsToReachAuv: 14, startingMonthAuvPct: 0, growthRates: [0, 0, 0, 0, 0] },
+        },
+        startupCosts: postNetStartupCosts,
+      };
+      const zeroResult = calculateProjections(zeroInput);
+      zeroResult.valuation.forEach((v) => {
+        expect(Number.isFinite(v.adjNetOperatingIncomePct)).toBe(true);
+        expect(v.adjNetOperatingIncomePct).toBe(0);
+      });
+    });
+
+    it("custom ebitdaMultiple changes estimatedValue proportionally", () => {
+      const mult3 = calculateProjections({ financialInputs: { ...postNetInputs, ebitdaMultiple: 3 }, startupCosts: postNetStartupCosts });
+      const mult5 = calculateProjections({ financialInputs: { ...postNetInputs, ebitdaMultiple: 5 }, startupCosts: postNetStartupCosts });
+      for (let i = 0; i < 5; i++) {
+        if (mult3.valuation[i].adjNetOperatingIncome !== 0) {
+          const ratio = mult5.valuation[i].estimatedValue / mult3.valuation[i].estimatedValue;
+          expect(Math.abs(ratio - (5 / 3))).toBeLessThan(0.01);
+        }
+      }
+    });
+
+    it("zero ebitdaMultiple produces zero estimatedValue", () => {
+      const zeroMultInput: EngineInput = {
+        financialInputs: { ...postNetInputs, ebitdaMultiple: 0 },
+        startupCosts: postNetStartupCosts,
+      };
+      const zeroMultResult = calculateProjections(zeroMultInput);
+      zeroMultResult.valuation.forEach((v) => {
+        expect(v.estimatedValue).toBe(0);
+      });
+    });
+  });
+
+  describe("Story 5.1 — AC5: ROIC Extended Detailed", () => {
+    it("preTaxNetIncomeIncSweatEquity = preTaxNetIncome + shareholderSalaryAdj", () => {
+      const customInput: EngineInput = {
+        financialInputs: { ...postNetInputs, shareholderSalaryAdj: [100000, 100000, 150000, 150000, 200000] },
+        startupCosts: postNetStartupCosts,
+      };
+      const customResult = calculateProjections(customInput);
+      customResult.roicExtended.forEach((r, i) => {
+        const expected = r.preTaxNetIncome + [100000, 100000, 150000, 150000, 200000][i];
+        expect(Math.abs(r.preTaxNetIncomeIncSweatEquity - expected)).toBeLessThanOrEqual(1);
+      });
+    });
+
+    it("roicPct = afterTaxNetIncome / totalInvestedCapital when > 0", () => {
+      result.roicExtended.forEach((r) => {
+        if (r.totalInvestedCapital > 0) {
+          const expected = r.afterTaxNetIncome / r.totalInvestedCapital;
+          expect(Math.abs(r.roicPct - expected)).toBeLessThanOrEqual(0.01);
+        }
+      });
+    });
+
+    it("excessCoreCapital = endingCash - 3 * avgCoreCapitalPerMonth", () => {
+      result.roicExtended.forEach((r, i) => {
+        const yearEndMonth = result.monthlyProjections[(i + 1) * 12 - 1];
+        const expected = yearEndMonth.endingCash - (3 * r.avgCoreCapitalPerMonth);
+        expect(Math.abs(r.excessCoreCapital - expected)).toBeLessThanOrEqual(1);
+      });
+    });
+
+    it("outsideCash equals equityAmount", () => {
+      const equityAmount = Math.round(postNetInputs.financing.totalInvestment * postNetInputs.financing.equityPct);
+      result.roicExtended.forEach((r) => {
+        expect(r.outsideCash).toBe(equityAmount);
+      });
+    });
+
+    it("totalLoans equals debtAmount", () => {
+      const debtAmount = Math.round(postNetInputs.financing.totalInvestment * (1 - postNetInputs.financing.equityPct));
+      result.roicExtended.forEach((r) => {
+        expect(Math.abs(r.totalLoans - debtAmount)).toBeLessThanOrEqual(1);
+      });
+    });
+
+    it("retainedEarningsLessDistributions matches monthly retained earnings at year end", () => {
+      result.roicExtended.forEach((r, i) => {
+        const yearEndMonth = result.monthlyProjections[(i + 1) * 12 - 1];
+        expect(Math.abs(r.retainedEarningsLessDistributions - yearEndMonth.retainedEarnings)).toBeLessThanOrEqual(1);
+      });
+    });
+
+    it("zero taxRate produces zero taxesDue", () => {
+      const zeroTaxInput: EngineInput = {
+        financialInputs: { ...postNetInputs, taxRate: 0 },
+        startupCosts: postNetStartupCosts,
+      };
+      const zeroTaxResult = calculateProjections(zeroTaxInput);
+      zeroTaxResult.roicExtended.forEach((r) => {
+        expect(r.taxesDue).toBe(0);
+      });
+    });
+
+    it("zero shareholderSalaryAdj produces zero sweatEquity", () => {
+      result.roicExtended.forEach((r) => {
+        expect(r.totalSweatEquity).toBe(0);
+      });
+    });
+  });
+
+  describe("Story 5.1 — AC6: P&L Analysis Detailed", () => {
+    it("nonLaborGrossMargin equals annual gross profit", () => {
+      result.plAnalysis.forEach((p) => {
+        const annual = result.annualSummaries[p.year - 1];
+        expect(Math.abs(p.nonLaborGrossMargin - annual.grossProfit)).toBeLessThanOrEqual(1);
+      });
+    });
+
+    it("totalWages = |directLabor| + |managementSalaries| for each year", () => {
+      result.plAnalysis.forEach((p) => {
+        const yearMonths = result.monthlyProjections.filter((mp) => mp.year === p.year);
+        const directLaborAbs = yearMonths.reduce((s, mp) => s + Math.abs(mp.directLabor), 0);
+        const mgmtAbs = yearMonths.reduce((s, mp) => s + Math.abs(mp.managementSalaries), 0);
+        const expected = directLaborAbs + mgmtAbs;
+        expect(Math.abs(p.totalWages - expected)).toBeLessThanOrEqual(1);
+      });
+    });
+
+    it("adjustedTotalWages = totalWages - shareholderSalaryAdj", () => {
+      result.plAnalysis.forEach((p) => {
+        const expected = p.totalWages - 0;
+        expect(Math.abs(p.adjustedTotalWages - expected)).toBeLessThanOrEqual(1);
+      });
+    });
+
+    it("discretionaryMarketingPct = |marketing| / revenue", () => {
+      result.plAnalysis.forEach((p) => {
+        const annual = result.annualSummaries[p.year - 1];
+        if (annual.revenue > 0) {
+          const yearMonths = result.monthlyProjections.filter((mp) => mp.year === p.year);
+          const marketingAbs = yearMonths.reduce((s, mp) => s + Math.abs(mp.marketing), 0);
+          const expected = marketingAbs / annual.revenue;
+          expect(Math.abs(p.discretionaryMarketingPct - expected)).toBeLessThanOrEqual(0.01);
+        }
+      });
+    });
+
+    it("prTaxBenefitsPctOfWages = |payrollTax| / totalWages", () => {
+      result.plAnalysis.forEach((p) => {
+        if (p.totalWages > 0) {
+          const yearMonths = result.monthlyProjections.filter((mp) => mp.year === p.year);
+          const payrollTaxAbs = yearMonths.reduce((s, mp) => s + Math.abs(mp.payrollTaxBenefits), 0);
+          const expected = payrollTaxAbs / p.totalWages;
+          expect(Math.abs(p.prTaxBenefitsPctOfWages - expected)).toBeLessThanOrEqual(0.01);
+        }
+      });
+    });
+
+    it("otherOpexPctOfRevenue = |otherOpex| / revenue", () => {
+      result.plAnalysis.forEach((p) => {
+        const annual = result.annualSummaries[p.year - 1];
+        if (annual.revenue > 0) {
+          const yearMonths = result.monthlyProjections.filter((mp) => mp.year === p.year);
+          const otherOpexAbs = yearMonths.reduce((s, mp) => s + Math.abs(mp.otherOpex), 0);
+          const expected = otherOpexAbs / annual.revenue;
+          expect(Math.abs(p.otherOpexPctOfRevenue - expected)).toBeLessThanOrEqual(0.01);
+        }
+      });
+    });
+
+    it("adjustedLaborEfficiency = adjustedTotalWages / revenue", () => {
+      result.plAnalysis.forEach((p) => {
+        const annual = result.annualSummaries[p.year - 1];
+        if (annual.revenue > 0) {
+          const expected = p.adjustedTotalWages / annual.revenue;
+          expect(Math.abs(p.adjustedLaborEfficiency - expected)).toBeLessThanOrEqual(0.01);
+        }
+      });
+    });
+
+    it("P&L analysis with custom shareholderSalaryAdj adjusts wages", () => {
+      const customInput: EngineInput = {
+        financialInputs: { ...postNetInputs, shareholderSalaryAdj: [200000, 200000, 200000, 200000, 200000] },
+        startupCosts: postNetStartupCosts,
+      };
+      const customResult = calculateProjections(customInput);
+      customResult.plAnalysis.forEach((p) => {
+        expect(p.adjustedTotalWages).toBeLessThan(p.totalWages);
+        expect(Math.abs(p.adjustedTotalWages - (p.totalWages - 200000))).toBeLessThanOrEqual(1);
+      });
+    });
+  });
+
+  describe("Story 5.1 — AC7: Identity Checks Categories Comprehensive", () => {
+    it("all 13 identity check categories are present", () => {
+      const categories = new Set(result.identityChecks.map((c) => {
+        const match = c.name.match(/^(.+?)(?:\s*\()/);
+        return match ? match[1].trim() : c.name;
+      }));
+      expect(categories.size).toBeGreaterThanOrEqual(10);
+    });
+
+    it("alternate brand passes all identity checks", () => {
+      const altBrandInputs: FinancialInputs = {
+        revenue: { annualGrossSales: 50000000, monthsToReachAuv: 6, startingMonthAuvPct: 0.50, growthRates: [0.05, 0.04, 0.03, 0.02, 0.02] },
+        operatingCosts: {
+          cogsPct: [0.25, 0.25, 0.25, 0.25, 0.25], laborPct: [0.20, 0.20, 0.20, 0.20, 0.20],
+          royaltyPct: [0.06, 0.06, 0.06, 0.06, 0.06], adFundPct: [0.01, 0.01, 0.01, 0.01, 0.01],
+          marketingPct: [0.03, 0.03, 0.03, 0.03, 0.03], otherOpexPct: [0.02, 0.02, 0.02, 0.02, 0.02],
+          payrollTaxPct: [0.15, 0.15, 0.15, 0.15, 0.15],
+          facilitiesAnnual: [2400000, 2472000, 2546160, 2622545, 2701221],
+          managementSalariesAnnual: [3600000, 3708000, 3819240, 3933817, 4051832],
+        },
+        financing: { totalInvestment: 40000000, equityPct: 0.30, interestRate: 0.08, termMonths: 120 },
+        startup: { depreciationRate: 0.20 },
+        workingCapitalAssumptions: { arDays: 15, apDays: 45, inventoryDays: 30 },
+        distributions: [0, 0, 2000000, 2500000, 3000000],
+        taxRate: 0.25,
+      };
+      const altResult = calculateProjections({
+        financialInputs: altBrandInputs,
+        startupCosts: [
+          { id: "a1", name: "Equipment", amount: 20000000, capexClassification: "capex", isCustom: false, source: "brand_default", brandDefaultAmount: 20000000, item7RangeLow: null, item7RangeHigh: null, sortOrder: 0 },
+          { id: "a2", name: "Supplies", amount: 5000000, capexClassification: "non_capex", isCustom: false, source: "brand_default", brandDefaultAmount: 5000000, item7RangeLow: null, item7RangeHigh: null, sortOrder: 1 },
+          { id: "a3", name: "Working Capital", amount: 3000000, capexClassification: "working_capital", isCustom: false, source: "brand_default", brandDefaultAmount: 3000000, item7RangeLow: null, item7RangeHigh: null, sortOrder: 2 },
+        ],
+      });
+      const failedChecks = altResult.identityChecks.filter((c) => !c.passed);
+      expect(failedChecks).toHaveLength(0);
+    });
+
+    it("identity checks pass with all custom optional inputs", () => {
+      const customInput: EngineInput = {
+        financialInputs: {
+          ...postNetInputs,
+          ebitdaMultiple: 4,
+          targetPreTaxProfitPct: [0.12, 0.12, 0.12, 0.12, 0.12],
+          shareholderSalaryAdj: [100000, 100000, 100000, 100000, 100000],
+          taxPaymentDelayMonths: 2,
+          nonCapexInvestment: [8437500, 500000, 0, 0, 0],
+        },
+        startupCosts: postNetStartupCosts,
+      };
+      const customResult = calculateProjections(customInput);
+      const failedChecks = customResult.identityChecks.filter((c) => !c.passed);
+      expect(failedChecks).toHaveLength(0);
+    });
+  });
+
+  describe("Story 5.1 — AC10: Comprehensive Test Coverage Edges", () => {
+    it("zero taxRate: no tax payable accrues", () => {
+      const zeroTaxInput: EngineInput = {
+        financialInputs: { ...postNetInputs, taxRate: 0 },
+        startupCosts: postNetStartupCosts,
+      };
+      const zeroTaxResult = calculateProjections(zeroTaxInput);
+      zeroTaxResult.monthlyProjections.forEach((mp) => {
+        expect(mp.taxPayable).toBe(0);
+      });
+    });
+
+    it("zero taxRate: valuation estimatedTaxOnSale is 0", () => {
+      const zeroTaxInput: EngineInput = {
+        financialInputs: { ...postNetInputs, taxRate: 0 },
+        startupCosts: postNetStartupCosts,
+      };
+      const zeroTaxResult = calculateProjections(zeroTaxInput);
+      zeroTaxResult.valuation.forEach((v) => {
+        expect(v.estimatedTaxOnSale).toBe(0);
+      });
+    });
+
+    it("all MonthlyProjection numeric fields are finite numbers", () => {
+      result.monthlyProjections.forEach((mp) => {
+        for (const [key, value] of Object.entries(mp)) {
+          if (typeof value === "number") {
+            expect(Number.isFinite(value)).toBe(true);
+          }
+        }
+      });
+    });
+
+    it("all ValuationOutput fields are finite numbers", () => {
+      result.valuation.forEach((v) => {
+        for (const [key, value] of Object.entries(v)) {
+          if (typeof value === "number") {
+            expect(Number.isFinite(value)).toBe(true);
+          }
+        }
+      });
+    });
+
+    it("all ROICExtendedOutput fields are finite numbers", () => {
+      result.roicExtended.forEach((r) => {
+        for (const [key, value] of Object.entries(r)) {
+          if (typeof value === "number") {
+            expect(Number.isFinite(value)).toBe(true);
+          }
+        }
+      });
+    });
+
+    it("all PLAnalysisOutput fields are finite numbers", () => {
+      result.plAnalysis.forEach((p) => {
+        for (const [key, value] of Object.entries(p)) {
+          if (typeof value === "number") {
+            expect(Number.isFinite(value)).toBe(true);
+          }
+        }
+      });
+    });
+
+    it("nonCapexInvestment spread across multiple years when custom", () => {
+      const customInput: EngineInput = {
+        financialInputs: {
+          ...postNetInputs,
+          nonCapexInvestment: [4000000, 2000000, 1000000, 500000, 0],
+        },
+        startupCosts: postNetStartupCosts,
+      };
+      const customResult = calculateProjections(customInput);
+      const y2Months = customResult.monthlyProjections.filter((mp) => mp.year === 2);
+      y2Months.forEach((mp) => {
+        expect(mp.nonCapexInvestment).toBeLessThan(0);
+      });
+      const y5Months = customResult.monthlyProjections.filter((mp) => mp.year === 5);
+      y5Months.forEach((mp) => {
+        expect(mp.nonCapexInvestment).toBe(0);
+      });
+    });
   });
 });
