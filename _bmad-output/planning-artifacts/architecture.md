@@ -24,11 +24,13 @@ _This document builds collaboratively through step-by-step discovery. Sections a
 
 ### Requirements Overview
 
-**Functional Requirements (58 FRs across 11 categories):**
+**Functional Requirements (87 FRs across 12 categories):**
+
+*Updated 2026-02-15 via Sprint Change Proposal — added FR7a-FR7n (financial statement views, per-year inputs, help content, PDF generation), FR74-FR83 (engine computation extensions).*
 
 | Category | FR Count | Architectural Implication |
 |----------|----------|--------------------------|
-| Financial Planning & Calculation (FR1-FR10) | 10 | Core computation engine — deterministic, parameterized, with accounting identity checks. Must support live-updating < 2s. |
+| Financial Planning & Calculation (FR1-FR10, FR7a-FR7n, FR74-FR83) | 24 | Core computation engine + financial statement output layer — deterministic, parameterized, with 13 accounting identity checks. Must support live-updating < 2s. Statement views render 60-month tabular documents. |
 | Guided Planning Experience (FR11-FR19) | 9 | AI-powered consulting conversation (Story Mode), form-based guided experience (Normal Mode), spreadsheet interface (Expert Mode). Multi-session with auto-save, crash recovery, and ever-present booking link. |
 | Advisory & Guardrails (FR20-FR23) | 4 | Business rules layer on top of the financial engine — advisory, never blocking. Integrates naturally into AI advisor conversation in Story Mode. |
 | Document Generation & Management (FR24-FR27) | 4 | Server-side PDF generation with immutable output storage and FTC-compliant disclaimers. |
@@ -371,6 +373,13 @@ ai_conversations[] (Story Mode chat history)
   ├── plan_id (FK → plans)
   ├── messages (JSONB array — role, content, timestamp, extracted_values)
   └── total_tokens_used: integer
+
+brand_account_managers[] (many-to-many: brands ↔ account manager users)
+  ├── brand_id (FK → brands, NOT NULL)
+  ├── account_manager_id (FK → users, NOT NULL)
+  ├── booking_url: text (nullable — per-brand booking URL for this manager)
+  ├── created_at: timestamp
+  └── UNIQUE(brand_id, account_manager_id)
 ```
 
 **Per-Field Metadata Pattern (within financial_inputs JSONB):**
@@ -575,6 +584,20 @@ Demo Mode:
   POST   /api/admin/demo/franchisor            (Enter Franchisor Demo Mode)
   POST   /api/admin/demo/exit                  (Exit any demo mode)
   POST   /api/admin/demo/reset/:brandId        (Reset demo data to brand defaults)
+
+Financial Statements (Sprint Change Proposal 2026-02-15):
+  GET    /api/plans/:id/statements/pl          (P&L Statement — 60-month tabular)
+  GET    /api/plans/:id/statements/balance-sheet (Balance Sheet — 60-month tabular)
+  GET    /api/plans/:id/statements/cash-flow   (Cash Flow Statement — 60-month tabular)
+  GET    /api/plans/:id/statements/summary     (Summary Financials — annual columns)
+  GET    /api/plans/:id/statements/roic        (Returns on Invested Capital — annual)
+  GET    /api/plans/:id/statements/valuation   (Valuation analysis — annual)
+  GET    /api/plans/:id/statements/audit       (Audit/integrity checks — 13 checks)
+
+Help Content:
+  GET    /api/help/glossary                    (Glossary terms — platform-level)
+  GET    /api/help/fields                      (Field-level help content — tooltips + expanded guidance)
+  GET    /api/help/fields/:fieldId             (Single field help content)
 ```
 
 **Error Handling Standard:**
@@ -865,6 +888,132 @@ function calculateProjections(input: EngineInput): EngineOutput {
 8. Balance sheet snapshots (assets, liabilities, equity)
 9. ROI metrics (break-even month, IRR, annual ROI %)
 10. Accounting identity checks (assertions)
+
+---
+
+### Engine Extension Design (Sprint Change Proposal 2026-02-15, CP-2)
+
+The financial engine requires extension to support the full financial statement output layer. All extensions are additive — existing engine computation and 140+ tests are unaffected.
+
+**A. New Engine Inputs:**
+
+```typescript
+interface EngineInputExtension {
+  ebitdaMultiple: number;                        // For valuation calculations (e.g., 5.0x)
+  targetPreTaxProfitPct: [number, number, number, number, number]; // Per-year target pre-tax profit %
+  shareholderSalaryAdj: [number, number, number, number, number]; // Per-year shareholder salary adjustment ($)
+  taxPaymentDelayMonths: number;                 // Tax payable timing on balance sheet (e.g., 9)
+  nonCapexInvestment: [number, number, number, number, number];   // Per-year non-capex investment ($)
+}
+```
+
+**B. New Monthly Output Fields (17+):**
+
+Balance Sheet disaggregation:
+- `taxPayable`, `lineOfCredit`, `commonStock`, `retainedEarnings`
+- `totalCurrentAssets`, `totalAssets`, `totalCurrentLiabilities`, `totalLiabilities`
+- `totalEquity`, `totalLiabilitiesAndEquity`
+
+Cash Flow disaggregation:
+- Operating: `cfAccountsReceivableChange`, `cfInventoryChange`, `cfOtherAssetsChange`, `cfAccountsPayableChange`, `cfTaxPayableChange`, `cfNetOperatingCashFlow`
+- Investing: `cfCapexPurchase`, `cfNetBeforeFinancing`
+- Financing: `cfNotesPayable`, `cfLineOfCredit`, `cfInterestExpense`, `cfDistributions`, `cfEquityIssuance`, `cfNetFinancingCashFlow`
+- Net: `cfNetCashFlow`, `beginningCash`, `endingCash`
+
+**C. New Output Sections:**
+
+```typescript
+interface ValuationOutput {
+  year: number;
+  adjustedNetOperatingIncome: number;  // EBITDA - Shareholder Salary Adj
+  ebitdaMultiple: number;
+  estimatedBusinessValue: number;
+  estimatedTaxOnSale: number;
+  netAfterTaxProceeds: number;
+  totalCashInvested: number;
+  replacementReturnRequired: number;   // % benchmark
+  // + additional fields (11 total per year)
+}
+
+interface ROICOutputExtended {
+  year: number;
+  totalCashInvested: number;           // Equity + Debt (constant)
+  totalSweatEquity: number;            // Cumulative shareholder salary adj
+  retainedEarnings: number;            // Cumulative net income - distributions
+  totalInvestedCapital: number;        // Cash + Sweat + Retained
+  afterTaxNetIncome: number;
+  roicPct: number;                     // After-Tax NI / Total Invested Capital
+  // + additional fields (15 total per year)
+}
+
+interface AuditChecksExtended {
+  checks: AuditCheck[];                // 13 checks total (currently 4)
+}
+
+interface AuditCheck {
+  id: string;
+  name: string;
+  description: string;
+  passed: boolean;
+  expected: number;
+  actual: number;
+  tolerance: number;
+}
+```
+
+**D. P&L Analysis Lines (12+ computed lines):**
+- Adjusted Pre-tax Profit, Target Pre-tax Profit, Above/Below Target
+- Non-Labor Gross Margin, Total Wages, Adjusted Total Wages
+- Salary Cap @ target %, (Over)/Under Cap
+- Labor Efficiency, Adjusted Labor Efficiency
+- Discretionary Marketing %, PR Taxes & Benefits as % of All Wages, Other OpEx as % of Revenue
+
+**E. Extended EngineOutput:**
+
+```typescript
+interface EngineOutput {
+  // ... existing fields ...
+  monthlyProjections: MonthlyProjection[];  // Extended with new Balance Sheet + Cash Flow fields
+  annualSummary: AnnualSummary[];           // Extended with P&L analysis lines
+  roiMetrics: ROIMetrics;
+  cashFlow: CashFlowProjection;
+  balanceSheet: BalanceSheetSnapshot[];
+  identityChecks: AuditCheck[];             // Extended from 4 → 13 checks
+  valuation: ValuationOutput[];             // NEW — per-year valuation
+  roicExtended: ROICOutputExtended[];       // NEW — per-year extended ROIC
+  plAnalysis: PLAnalysisLines[];            // NEW — per-year P&L analysis
+}
+```
+
+### Help Content Data Model (Sprint Change Proposal 2026-02-15, Addendum)
+
+Help content is platform-level text data — not per-brand, not per-user. Stored as static data served via API.
+
+```typescript
+interface GlossaryTerm {
+  id: string;
+  term: string;
+  definition: string;
+  relatedTerms: string[];               // IDs of related glossary terms
+}
+
+interface FieldHelpContent {
+  fieldId: string;                       // Matches engine field identifier
+  tooltip: string;                       // Short tooltip text (1-2 sentences)
+  expandedGuidance: string;              // Full help panel text (paragraphs)
+  isDecomposedField: boolean;            // true for Forms-mode sub-fields
+  parentFieldId?: string;                // For decomposed sub-fields, points to consolidated field
+  source: 'spreadsheet_comment' | 'video_extraction' | 'authored';
+}
+```
+
+**Content Inventory:**
+- 15 glossary terms (definitions only — benchmarks come from brand-specific defaults)
+- 33 tooltip texts from spreadsheet cell comments (consolidated fields)
+- ~20 new tooltip texts to author (decomposed sub-fields in Forms mode)
+- 25 Loom videos to extract teaching content from (prerequisite content task)
+
+**Storage Decision:** Help content is static data compiled into the application bundle (TypeScript data files in `shared/help-content/`). No database table needed — content changes require a deployment, which is appropriate for authoritative financial guidance.
 
 ---
 

@@ -4,6 +4,7 @@ inputDocuments:
   - _bmad-output/planning-artifacts/prd.md
   - _bmad-output/planning-artifacts/architecture.md
   - _bmad-output/planning-artifacts/ux-design-specification.md
+  - _bmad-output/planning-artifacts/sprint-change-proposal-2026-02-15.md
 ---
 
 # Katalyst Growth Planner - Epic Breakdown
@@ -194,6 +195,20 @@ This document provides the complete epic and story breakdown for the Katalyst Gr
 | FR5 | Epic 3 | Add, remove, reorder custom startup cost line items |
 | FR6 | Epic 3 | Classify custom line items as CapEx or non-CapEx |
 | FR7 | Epic 3, 4 | View live-updating summary financial metrics |
+| FR7a | Epic 5 | View complete P&L Statement as tabular financial document |
+| FR7b | Epic 5 | View complete Balance Sheet as tabular financial document |
+| FR7c | Epic 5 | View complete Cash Flow Statement as tabular financial document |
+| FR7d | Epic 5 | View Summary Financials page with annual overview |
+| FR7e | Epic 5 | View Returns on Invested Capital (ROIC) analysis |
+| FR7f | Epic 5 | View Valuation analysis |
+| FR7g | Epic 5 | View Audit/integrity check results |
+| FR7h | Epic 5 | Quick Entry editable input cells within financial statement views |
+| FR7i | Epic 7 | Per-year (Y1-Y5) input values for all assumptions |
+| FR7j | Epic 7 | Input Assumptions include all reference spreadsheet fields |
+| FR7k | Epic 5 | Glossary page with financial term definitions |
+| FR7l | Epic 5 | Contextual help for every input field |
+| FR7m | Epic 5 | Forms mode composite field decomposition |
+| FR7n | Epic 6 | Generate and download professional PDF business plan package |
 | FR8 | Epic 3 | Validate accounting identities on every calculation |
 | FR9 | Epic 3 | Deterministic outputs for identical inputs |
 | FR10 | Epic 3 | Single parameterized model accepts brand-specific seeds |
@@ -206,50 +221,50 @@ This document provides the complete epic and story breakdown for the Katalyst Gr
 | FR17 | Epic 4 | Auto-save progress periodically |
 | FR18 | Epic 4 | Recover progress after unexpected interruption |
 | FR19 | Epic 4 | See consultant booking link throughout experience |
-| FR20 | Epic 5 | Flag inputs outside FDD/brand ranges with advisory nudges |
-| FR21 | Epic 5 | Identify weak business cases with guidance |
-| FR22 | Epic 5 | Suggest consultant booking for weak cases |
-| FR23 | Epic 5 | All advisory nudges are informational, never blocking |
-| FR24 | Epic 7 | Generate lender-grade PDF business plan package |
-| FR25 | Epic 7 | Include FTC-compliant disclaimers in documents |
-| FR26 | Epic 7 | View list of previously generated documents |
-| FR27 | Epic 7 | Download any previously generated document |
+| FR20 | Epic 8 | Flag inputs outside FDD/brand ranges with advisory nudges |
+| FR21 | Epic 8 | Identify weak business cases with guidance |
+| FR22 | Epic 8 | Suggest consultant booking for weak cases |
+| FR23 | Epic 8 | All advisory nudges are informational, never blocking |
+| FR24 | Epic 6 | Generate lender-grade PDF business plan package |
+| FR25 | Epic 6 | Include FTC-compliant disclaimers in documents |
+| FR26 | Epic 6 | View list of previously generated documents |
+| FR27 | Epic 6 | Download any previously generated document |
 | FR28 | Epic 1 | Katalyst admin creates franchisee invitations |
 | FR29 | Epic 1 | Guided onboarding with account setup and assessment |
 | FR30 | Epic 1 | Katalyst admin creates franchisor admin invitations |
 | FR31 | Epic 1 | Authentication (Google OAuth for Katalyst admins; method TBD for franchisees) |
 | FR32 | Epic 1 | Role-based data isolation |
-| FR33 | Epic 8 | View description of data shared with franchisor |
-| FR34 | Epic 8 | Opt in to share financial details with franchisor |
-| FR35 | Epic 8 | Revoke data sharing opt-in at any time |
-| FR36 | Epic 8 | Franchisor sees pipeline status by default |
-| FR37 | Epic 8 | Franchisor sees financial details only with opt-in |
-| FR38 | Epic 8 | Data sharing enforced at API level |
+| FR33 | Epic 11 | View description of data shared with franchisor |
+| FR34 | Epic 11 | Opt in to share financial details with franchisor |
+| FR35 | Epic 11 | Revoke data sharing opt-in at any time |
+| FR36 | Epic 11 | Franchisor sees pipeline status by default |
+| FR37 | Epic 11 | Franchisor sees financial details only with opt-in |
+| FR38 | Epic 11 | Data sharing enforced at API level |
 | FR39 | Epic 2 | Create and configure new franchise brand |
 | FR40 | Epic 2 | Define startup cost template for a brand |
 | FR41 | Epic 3 | Validate brand config against known-good spreadsheets (Story 3.7, relocated from Epic 2) |
 | FR42 | Epic 2 | Assign account manager to each franchisee |
 | FR43 | Epic 2 | Reassign account managers |
 | FR44 | Epic 2 | Configure brand-level settings (identity, colors, etc.) |
-| FR45 | Epic 8 | Franchisor pipeline dashboard |
-| FR46 | Epic 8 | Katalyst cross-brand dashboard |
-| FR47 | Epic 8 | Katalyst view individual plan details |
-| FR48 | Epic 8 | Franchisor acknowledge/review franchisee plans |
+| FR45 | Epic 11 | Franchisor pipeline dashboard |
+| FR46 | Epic 11 | Katalyst cross-brand dashboard |
+| FR47 | Epic 11 | Katalyst view individual plan details |
+| FR48 | Epic 11 | Franchisor acknowledge/review franchisee plans |
 | FR49 | Epic 2 | Brand identity visible throughout experience |
-| FR50 | Epic 6 | AI Planning Advisor conversational interface |
-| FR51 | Epic 6 | AI extracts structured inputs from conversation |
-| FR52 | Epic 6 | View, verify, correct AI-populated values |
-| FR53 | Epic 6 | AI accesses brand parameters and plan state |
-| FR54 | Epic 6 | Graceful degradation when AI unavailable |
-| FR55 | Epic 9 | Initiate Advisory Board Meeting (Phase 2) |
-| FR56 | Epic 9 | Multiple domain-specific advisor personas (Phase 2) |
-| FR57 | Epic 9 | Accept/reject Advisory Board suggestions (Phase 2) |
-| FR58 | Epic 9 | Configurable persona definitions (Phase 2) |
+| FR50 | Epic 9 | AI Planning Advisor conversational interface |
+| FR51 | Epic 9 | AI extracts structured inputs from conversation |
+| FR52 | Epic 9 | View, verify, correct AI-populated values |
+| FR53 | Epic 9 | AI accesses brand parameters and plan state |
+| FR54 | Epic 9 | Graceful degradation when AI unavailable |
+| FR55 | Epic 12 | Initiate Advisory Board Meeting (Phase 2) |
+| FR56 | Epic 12 | Multiple domain-specific advisor personas (Phase 2) |
+| FR57 | Epic 12 | Accept/reject Advisory Board suggestions (Phase 2) |
+| FR58 | Epic 12 | Configurable persona definitions (Phase 2) |
 | FR59-FR65 | Epic ST | Admin "View As" impersonation of franchisees |
 | FR66-FR69 | Epic ST | Per-brand Franchisee Demo Mode |
 | FR70-FR73 | Epic ST | Franchisor Demo Mode with fictitious brand |
 
-**Coverage Summary:** 73/73 FRs mapped. All functional requirements covered. 40 stories across 8 MVP epics (+ 1 deferred Phase 2 epic + 1 admin support tools epic).
+**Coverage Summary:** 87/87 FRs mapped (73 original + 14 new FR7a-FR7n). All functional requirements covered. Stories across 11 MVP epics (+ 1 deferred Phase 2 epic + 1 admin support tools epic).
 
 ## Epic List
 
@@ -273,27 +288,44 @@ Franchisees can build financial plans using two manual input paradigms — Forms
 **FRs covered:** FR11, FR12, FR13, FR15, FR16, FR17, FR18, FR19
 **NFRs addressed:** NFR2 (< 1s transitions), NFR5 (non-blocking auto-save), NFR13 (2-min auto-save), NFR14 (concurrent edit handling), NFR25 (desktop 1024px+), NFR28 (200ms feedback)
 
-### Epic 5: Advisory Guardrails & Smart Guidance
+### Epic 5: Financial Statement Views & Output Layer
+Render every spreadsheet output sheet as interactive financial statement views. Includes P&L Statement, Balance Sheet, Cash Flow Statement, Summary Financials, ROIC, Valuation, and Audit views. Also includes Glossary, Quick Entry interactive statements, and contextual help content.
+**FRs covered:** FR7a, FR7b, FR7c, FR7d, FR7e, FR7f, FR7g, FR7h, FR7k, FR7l, FR7m
+**NFRs addressed:** NFR1 (< 2s recalculation), NFR27 (consistent financial formatting)
+**Stories:** To be defined by Create Epics and Stories workflow. UX design authority: `ux-financial-statements-spec.md`
+
+### Epic 6: Document Generation & Vault
+Generate lender-grade PDF business plan packages and maintain document history with download capability. Elevated from old Epic 7.
+**FRs covered:** FR7n, FR24, FR25, FR26, FR27
+**NFRs addressed:** NFR3 (< 30s PDF generation), NFR18 (immutable documents)
+**Stories:** To be defined by Create Epics and Stories workflow.
+
+### Epic 7: Per-Year Inputs & Multi-Plan Management
+Support per-year (Y1-Y5) input values for all financial assumptions and plan CRUD operations.
+**FRs covered:** FR7i, FR7j
+**Stories:** To be defined by Create Epics and Stories workflow.
+
+### Epic 8: Advisory Guardrails & Smart Guidance
 System provides non-blocking advisory nudges when franchisee inputs fall outside FDD Item 7 ranges or brand averages. Identifies weak business cases with actionable guidance on which inputs to reconsider. Suggests consultant booking when appropriate. All guidance is advisory — never blocks the franchisee.
 **FRs covered:** FR20, FR21, FR22, FR23
 **NFRs addressed:** NFR26 (plain-language messages), NFR27 (consistent financial formatting)
 
-### Epic 6: AI Planning Advisor (Planning Assistant)
+### Epic 9: AI Planning Advisor (Planning Assistant)
 Franchisees can have a natural-language conversation with an AI advisor in a split-screen layout. The advisor extracts structured financial inputs from conversation and populates the plan in real time with confidence-based extraction (confident/tentative/uncertain). Graceful degradation to Forms/Quick Entry when AI is unavailable.
 **FRs covered:** FR50, FR51, FR52, FR53, FR54
 **NFRs addressed:** NFR22 (< 5s AI response), NFR23 (AI value validation), NFR24 (graceful degradation)
 
-### Epic 7: Scenario Comparison & Document Generation
-Franchisees can model Good/Better/Best scenarios, compare them side by side to build conviction, and generate lender-grade PDF business plan packages with FTC-compliant disclaimers. Includes document history and re-download capability.
-**FRs covered:** FR24, FR25, FR26, FR27
-**NFRs addressed:** NFR3 (< 30s PDF generation), NFR18 (immutable documents)
+### Epic 10: Scenario Comparison
+Franchisees can model Good/Better/Best scenarios, compare them side by side to build conviction. Scenario management deferred from old Epic 7.
+**FRs covered:** *(scenario FRs to be defined)*
+**Status:** Deferred — depends on financial statement views (Epic 5) being complete
 
-### Epic 8: Data Sharing, Privacy & Pipeline Dashboards
+### Epic 11: Data Sharing, Privacy & Pipeline Dashboards
 Franchisees control data sharing with their franchisor via explicit opt-in/revoke. Franchisor admins see pipeline dashboards with planning status. Katalyst admins see cross-brand operational intelligence. Privacy boundaries enforced at the API level.
 **FRs covered:** FR33, FR34, FR35, FR36, FR37, FR38, FR45, FR46, FR47, FR48
 **NFRs addressed:** NFR4 (< 3s dashboard loads), NFR9-10 (role-based access, query-level isolation)
 
-### Epic 9: Advisory Board Meeting (Phase 2 — Deferred)
+### Epic 12: Advisory Board Meeting (Phase 2 — Deferred)
 Franchisees can stress-test their plan with multiple AI advisor personas who provide cross-cutting domain feedback. Persona definitions are data-driven and configurable.
 **FRs covered:** FR55, FR56, FR57, FR58
 **Status:** Deferred to Phase 2 per PRD decision
@@ -302,7 +334,7 @@ Franchisees can stress-test their plan with multiple AI advisor personas who pro
 Katalyst admins can impersonate franchisees ("View As") for support and validation, enter per-brand franchisee demo mode for sales demos, and enter franchisor demo mode with a fictitious brand.
 **FRs covered:** FR59-FR73
 **NFRs addressed:** NFR9 (amended), NFR10 (amended), NFR29 (new), NFR30 (new)
-**Priority:** ST-1, ST-2 immediate; ST-3 after ST-2; ST-4 blocked until Epic 8.2
+**Priority:** ST-1, ST-2 immediate; ST-3 after ST-2; ST-4 blocked until Epic 11.2
 
 ---
 
@@ -867,11 +899,63 @@ So that I can get help whenever I need it without leaving the planning experienc
 
 ---
 
-## Epic 5: Advisory Guardrails & Smart Guidance
+## Epic 5: Financial Statement Views & Output Layer
+
+*Stories for this epic will be defined by the Create Epics and Stories workflow using `ux-financial-statements-spec.md` as the UX design authority and the Sprint Change Proposal (2026-02-15) CP-4 as the scope definition.*
+
+*Planned stories (10): P&L Statement View, Balance Sheet View, Cash Flow Statement View, Summary Financials View, ROIC View, Valuation View, Audit/Integrity Checks View, Glossary & Financial Term Reference, Quick Entry Interactive Financial Statements, Contextual Help & Guidance Content.*
+
+---
+
+## Epic 6: Document Generation & Vault
+
+Generate lender-grade PDF business plan packages and maintain document history with download capability. Elevated from old Epic 7 (stories 7.2 and 7.3).
+
+### Story 6.1: PDF Document Generation
+
+As a franchisee,
+I want to generate a professional PDF business plan package,
+So that I can walk into a bank meeting feeling confident and prepared (FR24, FR25).
+
+**Acceptance Criteria:**
+
+**Given** I have a completed plan (optionally with scenarios)
+**When** I click "Generate Package"
+**Then** a PDF package is generated within 30 seconds (NFR3) containing: pro forma P&L, cash flow projection, balance sheet, break-even analysis, and executive summary
+**And** the document header reads "[Franchisee Name]'s [Brand] Plan" — franchisee name before brand name
+**And** professional formatting with brand identity (logo, colors) and Katalyst design — consistent typography, proper page breaks, branded headers/footers, and financial tables with formatting that matches or exceeds what a financial consultant would produce
+**And** FTC-compliant disclaimers state that projections are franchisee-created, not franchisor representations (FR25)
+**And** financial values use consistent formatting throughout (NFR27)
+**And** a live document preview is visible during planning so the franchisee can see the artifact taking shape
+
+### Story 6.2: Document History & Downloads
+
+As a franchisee,
+I want to view and download my previously generated documents,
+So that I can access any version of my plan at any time (FR26, FR27).
+
+**Acceptance Criteria:**
+
+**Given** I have generated one or more document packages
+**When** I view my document list
+**Then** I see all previously generated documents with timestamps and plan version metadata
+**And** I can download any previous document
+**And** generated documents are immutable — changes to the plan after generation do not alter existing documents (NFR18)
+**And** documents are stored with metadata in PostgreSQL and binary PDF in Replit Object Storage
+
+---
+
+## Epic 7: Per-Year Inputs & Multi-Plan Management
+
+*Stories for this epic will be defined by the Create Epics and Stories workflow. Planned stories (2): Per-Year Input Columns, Plan CRUD & Navigation.*
+
+---
+
+## Epic 8: Advisory Guardrails & Smart Guidance
 
 System provides non-blocking advisory nudges when franchisee inputs fall outside expected ranges, flags weak business cases with actionable guidance, and suggests consultant booking.
 
-### Story 5.1: Input Range Validation & Advisory Nudges
+### Story 8.1: Input Range Validation & Advisory Nudges
 
 As a franchisee,
 I want to be notified when my inputs are unusual compared to brand norms,
@@ -887,7 +971,7 @@ So that I can make informed decisions about my assumptions (FR20, FR23).
 **And** nudges appear inline near the relevant field, not as disruptive modals or toasts
 **And** in Quick Entry mode, out-of-range values show a subtle Gurple background with range tooltip on hover
 
-### Story 5.2: Weak Business Case Detection & Actionable Guidance
+### Story 8.2: Weak Business Case Detection & Actionable Guidance
 
 As a franchisee,
 I want to be informed when my overall business case looks challenging,
@@ -906,11 +990,11 @@ So that I can understand what to adjust before committing (FR21, FR22).
 
 ---
 
-## Epic 6: AI Planning Advisor (Planning Assistant)
+## Epic 9: AI Planning Advisor (Planning Assistant)
 
 Franchisees can have a natural-language conversation with an AI advisor in a split-screen layout. The advisor extracts structured financial inputs from conversation and populates the plan in real time.
 
-### Story 6.1: LLM Integration & Conversation API
+### Story 9.1: LLM Integration & Conversation API
 
 As a developer,
 I want a server-side LLM proxy that streams AI responses and extracts financial values,
@@ -927,7 +1011,7 @@ So that the Planning Assistant can have intelligent conversations about the fran
 **And** the AI responds within 5 seconds with a visual typing indicator shown while processing (NFR22)
 **And** AI-extracted values are validated against field type and range before being written to financial inputs (NFR23)
 
-### Story 6.2: Split-Screen Planning Assistant Interface
+### Story 9.2: Split-Screen Planning Assistant Interface
 
 As a franchisee (Sam),
 I want to have a conversation with the AI advisor while seeing my plan update live,
@@ -945,7 +1029,7 @@ So that I can describe my business situation and watch my plan build itself (FR5
 **And** below 1024px viewport, panels stack into a tabbed interface (Chat | Dashboard) with an accent-colored dot indicator on the Dashboard tab when recalculation occurs
 **And** the sidebar collapses in Planning Assistant mode for maximum immersion (Direction F)
 
-### Story 6.3: AI Value Extraction & Field Population
+### Story 9.3: AI Value Extraction & Field Population
 
 As a franchisee,
 I want the AI to extract financial values from my conversation and populate my plan,
@@ -963,7 +1047,7 @@ So that I don't have to fill out forms — I just talk about my business (FR51, 
 **And** all AI-populated values are clearly distinguishable from manual entries and brand defaults
 **And** I can click any AI-populated field to edit it directly, and the AI acknowledges the correction naturally
 
-### Story 6.4: Graceful Degradation & Mode Continuity
+### Story 9.4: Graceful Degradation & Mode Continuity
 
 As a franchisee,
 I want to continue planning even when the AI service is unavailable,
@@ -982,11 +1066,11 @@ So that my work is never blocked by a technical issue (FR54).
 
 ---
 
-## Epic 7: Scenario Comparison & Document Generation
+## Epic 10: Scenario Comparison
 
-Franchisees can model Good/Better/Best scenarios, compare them side by side to build conviction, and generate lender-grade PDF business plan packages.
+Franchisees can model Good/Better/Best scenarios, compare them side by side to build conviction. Scenario management deferred from old Epic 7.
 
-### Story 7.1: Scenario Management & Comparison
+### Story 10.1: Scenario Management & Comparison
 
 As a franchisee,
 I want to create and compare multiple scenarios for my business plan,
@@ -1003,45 +1087,13 @@ So that I can build conviction that my plan works even in conservative cases.
 **And** scenario data is stored per plan — each plan supports multiple scenarios
 **And** creating scenarios is low-friction — the AI advisor suggests it when the base plan is complete
 
-### Story 7.2: PDF Document Generation
-
-As a franchisee,
-I want to generate a professional PDF business plan package,
-So that I can walk into a bank meeting feeling confident and prepared (FR24, FR25).
-
-**Acceptance Criteria:**
-
-**Given** I have a completed plan (optionally with scenarios)
-**When** I click "Generate Package"
-**Then** a PDF package is generated within 30 seconds (NFR3) containing: pro forma P&L, cash flow projection, balance sheet, break-even analysis, and executive summary
-**And** the document header reads "[Franchisee Name]'s [Brand] Plan" — franchisee name before brand name
-**And** professional formatting with brand identity (logo, colors) and Katalyst design — consistent typography, proper page breaks, branded headers/footers, and financial tables with formatting that matches or exceeds what a financial consultant would produce
-**And** FTC-compliant disclaimers state that projections are franchisee-created, not franchisor representations (FR25)
-**And** financial values use consistent formatting throughout (NFR27)
-**And** a live document preview is visible during planning so the franchisee can see the artifact taking shape
-
-### Story 7.3: Document History & Downloads
-
-As a franchisee,
-I want to view and download my previously generated documents,
-So that I can access any version of my plan at any time (FR26, FR27).
-
-**Acceptance Criteria:**
-
-**Given** I have generated one or more document packages
-**When** I view my document list
-**Then** I see all previously generated documents with timestamps and plan version metadata
-**And** I can download any previous document
-**And** generated documents are immutable — changes to the plan after generation do not alter existing documents (NFR18)
-**And** documents are stored with metadata in PostgreSQL and binary PDF in Replit Object Storage
-
 ---
 
-## Epic 8: Data Sharing, Privacy & Pipeline Dashboards
+## Epic 11: Data Sharing, Privacy & Pipeline Dashboards
 
 Franchisees control data sharing with their franchisor via explicit opt-in/revoke. Franchisor admins see pipeline dashboards. Katalyst admins see cross-brand operational intelligence.
 
-### Story 8.1: Franchisee Data Sharing Controls
+### Story 11.1: Franchisee Data Sharing Controls
 
 As a franchisee,
 I want to control what financial data my franchisor can see,
@@ -1058,7 +1110,7 @@ So that I share details only when I'm comfortable doing so (FR33, FR34, FR35).
 **And** my pipeline status (planning stage, target market, timeline) is always visible to the franchisor regardless of opt-in (FR36)
 **And** my financial details are visible to the franchisor only when I have explicitly opted in (FR37)
 
-### Story 8.2: Franchisor Pipeline Dashboard
+### Story 11.2: Franchisor Pipeline Dashboard
 
 As a franchisor admin,
 I want to see a dashboard of all my brand's franchisees and their planning progress,
@@ -1075,7 +1127,7 @@ So that I have pipeline visibility into development activity (FR45, FR48).
 **And** if the brand has the acknowledgment feature enabled, I can acknowledge/review a franchisee's plan as a status signal (FR48)
 **And** data isolation ensures I see only my brand's franchisees (NFR10)
 
-### Story 8.3: Katalyst Admin Cross-Brand Dashboard
+### Story 11.3: Katalyst Admin Cross-Brand Dashboard
 
 As a Katalyst admin,
 I want to view operational intelligence across all brands,
@@ -1093,13 +1145,13 @@ So that I can support franchisees and monitor platform health (FR46, FR47).
 
 ---
 
-## Epic 9: Advisory Board Meeting (Phase 2 — Deferred)
+## Epic 12: Advisory Board Meeting (Phase 2 — Deferred)
 
 Franchisees can stress-test their plan with multiple AI advisor personas who provide cross-cutting domain feedback. Persona definitions are data-driven and configurable.
 
 *Stories for this epic will be created when Phase 2 planning begins. FRs covered: FR55, FR56, FR57, FR58.*
 
-> **Pre-Planning Note:** Before story creation begins for Epic 9, review the **BMad Builder** project for applicable patterns, agent orchestration techniques, and persona management architecture. The Advisory Board Meeting feature's multi-persona orchestration is inspired by BMAD party mode, and the BMad Builder may contain updated patterns, templates, or tooling relevant to implementation.
+> **Pre-Planning Note:** Before story creation begins for Epic 12, review the **BMad Builder** project for applicable patterns, agent orchestration techniques, and persona management architecture. The Advisory Board Meeting feature's multi-persona orchestration is inspired by BMAD party mode, and the BMad Builder may contain updated patterns, templates, or tooling relevant to implementation.
 > Reference: https://github.com/bmad-code-org/bmad-builder
 
 ---
@@ -1109,7 +1161,7 @@ Franchisees can stress-test their plan with multiple AI advisor personas who pro
 Katalyst admins need tools to validate the franchisee/franchisor experience, support clients shoulder-to-shoulder, and demo the platform to prospects. This epic delivers "View As" impersonation for real user data, per-brand franchisee demo mode, and a franchisor demo mode with a fictitious brand.
 
 **Scope:** Katalyst admins only. Franchisors and franchisees never see or access these tools.
-**Dependency:** Stories ST-1 and ST-2 have no external dependencies. Story ST-3 depends on brand financial parameters (Epic 2, done). Story ST-4 is blocked until Epic 8 delivers the franchisor dashboard — it should not be started until Story 8.2 is complete.
+**Dependency:** Stories ST-1 and ST-2 have no external dependencies. Story ST-3 depends on brand financial parameters (Epic 2, done). Story ST-4 is blocked until Epic 11 delivers the franchisor dashboard — it should not be started until Story 11.2 is complete.
 
 **Priority:** Stories ST-1 and ST-2 are immediate — needed for validating Epic 3 code reviews and all subsequent franchisee-facing work. Stories ST-3 and ST-4 follow.
 

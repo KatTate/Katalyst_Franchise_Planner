@@ -35,7 +35,7 @@
 # - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
 
 generated: 2026-02-09
-updated: 2026-02-15
+updated: 2026-02-16
 project: Katalyst Growth Planner
 project_key: NOKEY
 tracking_system: file-system
@@ -54,6 +54,15 @@ story_location: _bmad-output/implementation-artifacts
 #   - Old Epic 9 (Advisory Board) renumbered to Epic 12
 #   - Pre-implementation: resolve carried tech debt (CP-8)
 #   - See: sprint-change-proposal-2026-02-15.md
+# 2026-02-16: Correct Course handoff actions completed
+#   - PRD updated with FR7a-FR7n (14 new functional requirements)
+#   - epics.md restructured: new Epics 5-7, renumbered 8-12, Epic 5/7 story placeholders
+#   - architecture.md updated: brand_account_managers table, engine extension design,
+#     financial statement API endpoints, help content data model
+#   - CP-8 tech debt: invitations.ts as-any replaced with typed InsertUser cast;
+#     storage.ts as-any retained (drizzle-zod type compatibility — documented)
+#   - UX design authority created: ux-financial-statements-spec.md (1,067 lines)
+#   - Ready for: Create Epics and Stories workflow (Phase 3)
 
 development_status:
   # Epic 1: Auth, Onboarding & User Management

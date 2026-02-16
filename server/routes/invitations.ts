@@ -3,7 +3,7 @@ import { z } from "zod";
 import crypto from "crypto";
 import bcrypt from "bcrypt";
 import { storage } from "../storage";
-import type { Invitation } from "@shared/schema";
+import type { Invitation, InsertUser } from "@shared/schema";
 import { requireAuth, requireRole } from "../middleware/auth";
 
 const router = Router();
@@ -177,32 +177,37 @@ router.post("/accept", async (req: Request, res: Response) => {
 
   const passwordHash = await bcrypt.hash(password, 12);
 
-  const createData: Record<string, any> = {
-    email: invitation.email,
-    passwordHash,
-    displayName: display_name,
-    role: invitation.role,
-    brandId: invitation.brandId,
-    onboardingCompleted: false,
-  };
+  let accountManagerId: string | undefined;
+  let bookingUrl: string | undefined;
 
   if (invitation.brandId && (invitation.role === "franchisee")) {
     const brand = await storage.getBrand(invitation.brandId);
     if (brand?.defaultAccountManagerId) {
-      createData.accountManagerId = brand.defaultAccountManagerId;
+      accountManagerId = brand.defaultAccountManagerId;
       const brandManager = await storage.getBrandAccountManager(
         invitation.brandId,
         brand.defaultAccountManagerId
       );
       if (brandManager?.bookingUrl) {
-        createData.bookingUrl = brandManager.bookingUrl;
+        bookingUrl = brandManager.bookingUrl;
       } else if (brand.defaultBookingUrl) {
-        createData.bookingUrl = brand.defaultBookingUrl;
+        bookingUrl = brand.defaultBookingUrl;
       }
     }
   }
 
-  const user = await storage.createUser(createData as any);
+  const createData = {
+    email: invitation.email,
+    passwordHash,
+    displayName: display_name,
+    role: invitation.role as "franchisee" | "franchisor" | "katalyst_admin",
+    brandId: invitation.brandId,
+    onboardingCompleted: false,
+    ...(accountManagerId && { accountManagerId }),
+    ...(bookingUrl && { bookingUrl }),
+  };
+
+  const user = await storage.createUser(createData as InsertUser);
 
   await storage.markInvitationAccepted(invitation.id);
 
