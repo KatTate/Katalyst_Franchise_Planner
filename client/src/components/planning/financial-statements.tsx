@@ -1,4 +1,4 @@
-import { useState, useCallback, useMemo, useEffect } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -14,7 +14,6 @@ export type StatementTabId = "summary" | "pnl" | "balance-sheet" | "cash-flow" |
 interface FinancialStatementsProps {
   planId: string;
   defaultTab?: StatementTabId;
-  onBack?: () => void;
 }
 
 const TAB_DEFS: { id: StatementTabId; label: string }[] = [
@@ -44,7 +43,7 @@ function useMediaQuery(query: string): boolean {
   return matches;
 }
 
-export function FinancialStatements({ planId, defaultTab = "summary", onBack }: FinancialStatementsProps) {
+export function FinancialStatements({ planId, defaultTab = "summary" }: FinancialStatementsProps) {
   const { output, isLoading, isFetching, error, invalidateOutputs } = usePlanOutputs(planId);
   const [activeTab, setActiveTab] = useState<StatementTabId>(defaultTab);
   const isWide = useMediaQuery("(min-width: 1024px)");

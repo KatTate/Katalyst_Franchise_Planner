@@ -21,6 +21,7 @@ import { ImpersonationProvider, useImpersonation } from "@/contexts/Impersonatio
 import { ImpersonationBanner } from "@/components/ImpersonationBanner";
 import { DemoModeProvider, useDemoMode } from "@/contexts/DemoModeContext";
 import { DemoModeBanner } from "@/components/DemoModeBanner";
+import { WorkspaceViewProvider } from "@/contexts/WorkspaceViewContext";
 
 function ProtectedRoute({ component: Component }: { component: () => JSX.Element | null }) {
   const { isAuthenticated, isLoading } = useAuth();
@@ -158,7 +159,9 @@ function AuthenticatedLayout() {
   return (
     <ImpersonationProvider>
       <DemoModeProvider>
-        <AuthenticatedLayoutInner />
+        <WorkspaceViewProvider>
+          <AuthenticatedLayoutInner />
+        </WorkspaceViewProvider>
       </DemoModeProvider>
     </ImpersonationProvider>
   );

@@ -4,7 +4,8 @@ import { useAuth } from "@/hooks/use-auth";
 import { useBrandTheme } from "@/hooks/use-brand-theme";
 import { useImpersonation } from "@/contexts/ImpersonationContext";
 import { useDemoMode } from "@/contexts/DemoModeContext";
-import { Home, Mail, Building2, LogOut, CalendarCheck } from "lucide-react";
+import { useWorkspaceView } from "@/contexts/WorkspaceViewContext";
+import { Home, Mail, Building2, LogOut, CalendarCheck, ClipboardList, BarChart3 } from "lucide-react";
 import {
   Sidebar,
   SidebarContent,
@@ -36,6 +37,7 @@ export function AppSidebar() {
   const { brand } = useBrandTheme();
   const { active: isImpersonating } = useImpersonation();
   const { active: isDemoMode } = useDemoMode();
+  const { workspaceView, navigateToStatements, navigateToMyPlan } = useWorkspaceView();
   const [location, setLocation] = useLocation();
   const [showLogoutDialog, setShowLogoutDialog] = useState(false);
   const [logoError, setLogoError] = useState(false);
@@ -58,6 +60,8 @@ export function AppSidebar() {
     { title: "Brands", url: "/admin/brands", icon: Building2, visible: isRealKatalystAdmin && !hideAdminNav },
     { title: "Invitations", url: "/admin/invitations", icon: Mail, visible: isRealAdmin && !hideAdminNav },
   ].filter((item) => item.visible);
+
+  const isInPlanWorkspace = /^\/plans\/[^/]+$/.test(location);
 
   const displayUser = user._realUser ?? user;
   const initials = displayUser.displayName
@@ -91,7 +95,7 @@ export function AppSidebar() {
                 {navItems.map((item) => (
                   <SidebarMenuItem key={item.title}>
                     <SidebarMenuButton
-                      isActive={location === item.url}
+                      isActive={location === item.url && !isInPlanWorkspace}
                       onClick={() => setLocation(item.url)}
                       data-testid={`nav-${item.title.toLowerCase()}`}
                     >
@@ -103,6 +107,36 @@ export function AppSidebar() {
               </SidebarMenu>
             </SidebarGroupContent>
           </SidebarGroup>
+
+          {isInPlanWorkspace && (
+            <SidebarGroup>
+              <SidebarGroupLabel data-testid="text-sidebar-plan-section">Plan</SidebarGroupLabel>
+              <SidebarGroupContent>
+                <SidebarMenu>
+                  <SidebarMenuItem>
+                    <SidebarMenuButton
+                      isActive={workspaceView === "dashboard"}
+                      onClick={navigateToMyPlan}
+                      data-testid="nav-my-plan"
+                    >
+                      <ClipboardList />
+                      <span>My Plan</span>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                  <SidebarMenuItem>
+                    <SidebarMenuButton
+                      isActive={workspaceView === "statements"}
+                      onClick={() => navigateToStatements("summary")}
+                      data-testid="nav-reports"
+                    >
+                      <BarChart3 />
+                      <span>Reports</span>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                </SidebarMenu>
+              </SidebarGroupContent>
+            </SidebarGroup>
+          )}
         </SidebarContent>
         <SidebarFooter>
           {user.bookingUrl && user.accountManagerId && (

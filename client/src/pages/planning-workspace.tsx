@@ -13,12 +13,11 @@ import { apiRequest, queryClient } from "@/lib/queryClient";
 import { PlanningHeader } from "@/components/planning/planning-header";
 import { InputPanel } from "@/components/planning/input-panel";
 import { DashboardPanel } from "@/components/planning/dashboard-panel";
-import { FinancialStatements, type StatementTabId } from "@/components/planning/financial-statements";
+import { FinancialStatements } from "@/components/planning/financial-statements";
 import { QuickStartOverlay } from "@/components/shared/quick-start-overlay";
+import { useWorkspaceView } from "@/contexts/WorkspaceViewContext";
 import type { ExperienceTier } from "@/components/planning/mode-switcher";
 import type { Brand, Plan } from "@shared/schema";
-
-export type WorkspaceView = "dashboard" | "statements";
 
 export default function PlanningWorkspace() {
   const params = useParams<{ planId: string }>();
@@ -26,6 +25,7 @@ export default function PlanningWorkspace() {
   const { user } = useAuth();
   const { plan, isLoading: planLoading, error: planError, saveStatus, queueSave, retrySave, flushSave, isSaving, hasUnsavedChanges } = usePlanAutoSave(planId);
   const { setOpen } = useSidebar();
+  const { workspaceView, statementsDefaultTab, navigateToStatements } = useWorkspaceView();
 
   const brandId = plan?.brandId;
   const { data: brand } = useQuery<Brand>({
@@ -46,18 +46,6 @@ export default function PlanningWorkspace() {
   const [activeMode, setActiveMode] = useState<ExperienceTier>(
     getStoredMode() ?? user?.preferredTier ?? "forms"
   );
-
-  const [workspaceView, setWorkspaceView] = useState<WorkspaceView>("dashboard");
-  const [statementsDefaultTab, setStatementsDefaultTab] = useState<StatementTabId>("summary");
-
-  const handleNavigateToStatements = useCallback((tab?: StatementTabId) => {
-    if (tab) setStatementsDefaultTab(tab);
-    setWorkspaceView("statements");
-  }, []);
-
-  const handleBackToDashboard = useCallback(() => {
-    setWorkspaceView("dashboard");
-  }, []);
 
   const hasUserSynced = useRef(false);
   useEffect(() => {
@@ -81,54 +69,6 @@ export default function PlanningWorkspace() {
       if (saveTierRef.current) clearTimeout(saveTierRef.current);
     };
   }, []);
-
-  const pendingModeRef = useRef<ExperienceTier | null>(null);
-
-  useEffect(() => {
-    if (!isSaving && !hasUnsavedChanges && pendingModeRef.current) {
-      const nextMode = pendingModeRef.current;
-      pendingModeRef.current = null;
-      setActiveMode(nextMode);
-      try { localStorage.setItem(`plan-mode-${planId}`, nextMode); } catch {}
-
-      if (saveTierRef.current) clearTimeout(saveTierRef.current);
-      saveTierRef.current = setTimeout(async () => {
-        try {
-          await apiRequest("PATCH", "/api/auth/me", { preferredTier: nextMode });
-          queryClient.invalidateQueries({ queryKey: ["/api/auth/me"] });
-        } catch {
-        }
-      }, 500);
-    }
-  }, [isSaving, hasUnsavedChanges, planId]);
-
-  const handleModeChange = useCallback(
-    (mode: ExperienceTier) => {
-      if (isSaving) {
-        pendingModeRef.current = mode;
-        return;
-      }
-
-      if (hasUnsavedChanges) {
-        pendingModeRef.current = mode;
-        flushSave();
-        return;
-      }
-
-      setActiveMode(mode);
-      try { localStorage.setItem(`plan-mode-${planId}`, mode); } catch {}
-
-      if (saveTierRef.current) clearTimeout(saveTierRef.current);
-      saveTierRef.current = setTimeout(async () => {
-        try {
-          await apiRequest("PATCH", "/api/auth/me", { preferredTier: mode });
-          queryClient.invalidateQueries({ queryKey: ["/api/auth/me"] });
-        } catch {
-        }
-      }, 500);
-    },
-    [isSaving, hasUnsavedChanges, flushSave]
-  );
 
   const handleQuickStartComplete = useCallback(() => {
     queryClient.invalidateQueries({ queryKey: planKey(planId) });
@@ -186,19 +126,14 @@ export default function PlanningWorkspace() {
     <div data-testid="planning-workspace" className="flex flex-col h-full">
       <PlanningHeader
         planName={plan.name || "My Plan"}
-        activeMode={activeMode}
-        onModeChange={handleModeChange}
         saveStatus={saveStatus}
         onRetrySave={retrySave}
-        workspaceView={workspaceView}
-        onViewChange={setWorkspaceView}
       />
       <div className="flex-1 min-h-0">
         {workspaceView === "statements" ? (
           <FinancialStatements
             planId={planId}
             defaultTab={statementsDefaultTab}
-            onBack={handleBackToDashboard}
           />
         ) : (
           <ResizablePanelGroup direction="horizontal">
@@ -212,7 +147,7 @@ export default function PlanningWorkspace() {
               <div className="h-full" style={{ minWidth: 480 }}>
                 <DashboardPanel
                   planId={planId}
-                  onNavigateToStatements={handleNavigateToStatements}
+                  onNavigateToStatements={navigateToStatements}
                 />
               </div>
             </ResizablePanel>
