@@ -137,7 +137,7 @@ development_status:
   epic-5: in-progress
   5-1-financial-engine-extension: done
   5-2-financial-statements-container-summary-tab: done
-  5-3-pl-statement-tab: ready-for-dev
+  5-3-pl-statement-tab: review
   5-4-balance-sheet-cash-flow-tabs: backlog
   5-5-roic-valuation-audit-tabs: backlog
   5-6-quick-entry-input-output-integration: backlog

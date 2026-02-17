@@ -1,6 +1,6 @@
 # Story 5.3: P&L Statement Tab
 
-Status: ready-for-dev
+Status: review
 
 ## Story
 
@@ -225,9 +225,18 @@ In the current financial model, Discretionary Marketing is equivalent to Marketi
 ## Dev Agent Record
 
 ### Agent Model Used
+Claude 4.6 Opus (Replit Agent)
 
 ### Completion Notes
+The existing implementation (~570 lines) was already comprehensive. Three targeted enhancements were made:
+1. Made P&L callout bar sticky (AC1) — added `sticky top-0 z-30` class
+2. Fixed total row double top border (AC8) — changed from `border-t-2` to `border-t-[3px] border-double`
+3. Added P&L Analysis field handling for sub-annual drill-down — created `PL_ANALYSIS_FIELDS` Set to route these annual-only fields to `getAnnualValue` regardless of drill-down level, preventing zero-value display at quarterly/monthly granularity
+
+All 17 acceptance criteria verified as met. No new packages, API endpoints, or UI component files added.
 
 ### File List
+- `client/src/components/planning/statements/pnl-tab.tsx` — MODIFIED (sticky callout bar, double border for total rows, P&L Analysis field sub-annual handling)
 
 ### Testing Summary
+E2E Playwright test passed all 21 steps: dev login, navigate to P&L tab, verify callout bar metrics, all 8 sections present, P&L Analysis collapsed by default, section expand/collapse toggle, interpretation rows with correct text, computed cell tooltip with explanation/formula/glossary link, Pre-Tax Income total row styling.
