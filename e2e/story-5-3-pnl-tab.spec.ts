@@ -342,6 +342,51 @@ test.describe("Story 5.3: P&L Statement Tab", () => {
     ).toBeVisible({ timeout: 5_000 });
   });
 
+  test("AC13: Multiple computed rows have tooltips", async ({ page }) => {
+    await loginAndNavigateToPnl(page);
+
+    const computedRowsWithTooltips = [
+      "pnl-value-annual-revenue-y1",
+      "pnl-value-total-cogs-y1",
+      "pnl-value-gross-profit-y1",
+      "pnl-value-gp-pct-y1",
+      "pnl-value-total-opex-y1",
+      "pnl-value-ebitda-y1",
+      "pnl-value-pretax-income-y1",
+    ];
+
+    for (const testId of computedRowsWithTooltips) {
+      const cell = page.locator(`[data-testid='${testId}']`);
+      await expect(cell).toBeVisible();
+      const cursorHelp = cell.locator("span.cursor-help");
+      await expect(cursorHelp).toBeAttached();
+    }
+  });
+
+  test("AC16: Monthly Revenue shows average at annual level", async ({
+    page,
+  }) => {
+    await loginAndNavigateToPnl(page);
+
+    const monthlyRevText = await page
+      .locator("[data-testid='pnl-value-monthly-revenue-y1']")
+      .textContent();
+    const annualRevText = await page
+      .locator("[data-testid='pnl-value-annual-revenue-y1']")
+      .textContent();
+
+    const parseCurrency = (s: string | null) =>
+      parseInt((s || "").replace(/[$,]/g, ""), 10);
+    const monthlyRevValue = parseCurrency(monthlyRevText);
+    const annualRevValue = parseCurrency(annualRevText);
+
+    expect(monthlyRevValue).toBeGreaterThan(0);
+    expect(annualRevValue).toBeGreaterThan(0);
+
+    const expectedAverage = Math.round(annualRevValue / 12);
+    expect(Math.abs(monthlyRevValue - expectedAverage)).toBeLessThanOrEqual(1);
+  });
+
   test("Currency values formatted as $X,XXX and percentages as X.X%", async ({
     page,
   }) => {
@@ -381,6 +426,7 @@ function makeField(value: number) {
     brandDefault: value,
     source: "brand_default" as const,
     isCustom: false,
+    item7Range: null,
     lastModifiedAt: null,
   };
 }
