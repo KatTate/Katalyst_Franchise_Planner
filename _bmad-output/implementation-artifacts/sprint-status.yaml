@@ -73,6 +73,13 @@ story_location: _bmad-output/implementation-artifacts
 #   - architecture.md synced (cfOtherAssetsChange → cfDepreciation)
 #   - 173 tests passing (49 existing + 124 new), zero regressions
 #   - Story status confirmed: done
+# 2026-02-17: Story 5.2 adversarial code review completed
+#   - 2 HIGH, 3 MEDIUM, 2 LOW findings — all resolved
+#   - H1/H2: getQuarterlyValue percentage averaging fix (was summing → 3x values)
+#   - M1: ExperienceTier type moved out of retired mode-switcher.tsx
+#   - L1: hover:bg-muted/30 → hover-elevate; L2: as-any cast → EnrichedAnnualSummary type
+#   - M2/M3: analysis-only (sub-sections and ColumnHeaders are intentional design)
+#   - LSP clean, story status: done
 
 development_status:
   # Epic 1: Auth, Onboarding & User Management
@@ -129,7 +136,7 @@ development_status:
   # UX design authority: ux-financial-statements-spec.md (v2, 2026-02-16)
   epic-5: in-progress
   5-1-financial-engine-extension: done
-  5-2-financial-statements-container-summary-tab: review
+  5-2-financial-statements-container-summary-tab: done
   5-3-pl-statement-tab: backlog
   5-4-balance-sheet-cash-flow-tabs: backlog
   5-5-roic-valuation-audit-tabs: backlog

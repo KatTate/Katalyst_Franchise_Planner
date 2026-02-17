@@ -1,6 +1,6 @@
 # Story 5.2: Financial Statements Container & Summary Tab
 
-Status: review
+Status: done
 
 ## Story
 
@@ -296,16 +296,35 @@ All other ACs were already satisfied by the existing implementation:
 
 ### File List
 
-- `client/src/components/planning/statements/statement-table.tsx` — MODIFIED (sticky section headers, shadows, keyboard navigation props)
-- `client/src/components/planning/statements/column-manager.tsx` — REVIEWED (no changes needed)
-- `client/src/components/planning/statements/summary-tab.tsx` — REVIEWED (no changes needed)
+- `client/src/components/planning/statements/statement-table.tsx` — MODIFIED (sticky section headers, shadows, keyboard navigation props; CR: hover-elevate fix)
+- `client/src/components/planning/statements/column-manager.tsx` — MODIFIED (CR: percentage field averaging in getQuarterlyValue, format parameter added)
+- `client/src/components/planning/statements/summary-tab.tsx` — MODIFIED (CR: EnrichedAnnualSummary type, removed as-any cast)
 - `client/src/components/planning/statements/callout-bar.tsx` — REVIEWED (no changes needed)
 - `client/src/components/planning/statements/statement-section.tsx` — REVIEWED (no changes needed)
 - `client/src/components/planning/financial-statements.tsx` — REVIEWED (no changes needed)
 - `client/src/components/planning/dashboard-panel.tsx` — REVIEWED (no changes needed)
 - `client/src/components/planning/planning-header.tsx` — REVIEWED (no changes needed)
-- `client/src/pages/planning-workspace.tsx` — REVIEWED (no changes needed)
+- `client/src/pages/planning-workspace.tsx` — MODIFIED (CR: ExperienceTier type moved here from mode-switcher.tsx)
+- `client/src/components/planning/input-panel.tsx` — MODIFIED (CR: ExperienceTier import updated)
 - `client/src/components/app-sidebar.tsx` — REVIEWED (no changes needed)
+
+### Adversarial Code Review (2026-02-17)
+
+**Reviewer:** Claude 4.6 Opus (BMAD code-review workflow)
+
+**Findings (7 total: 2 HIGH, 3 MEDIUM, 2 LOW):**
+
+| # | Severity | File | Finding | Resolution |
+|---|----------|------|---------|------------|
+| H1 | HIGH | column-manager.tsx | `getQuarterlyValue` summed percentage fields (COGS%, GP%, etc.) across 3 months, producing 3x values (e.g., 90% instead of 30%) | Added `PERCENTAGE_FIELDS` set and `format` parameter; percentage fields now average instead of sum |
+| H2 | HIGH | column-manager.tsx | `getAnnualValue` lacked field type classification — all fields treated as summable | Added `format` parameter propagation so percentage vs currency distinction is explicit |
+| M1 | MEDIUM | planning-workspace.tsx, input-panel.tsx | `ExperienceTier` type imported from retired `mode-switcher.tsx` | Moved type to `planning-workspace.tsx`, updated imports |
+| M2 | MEDIUM | summary-tab.tsx | P&L section uses 7 internal sub-groups vs AC12's flat list | No change — sub-groups are internal table formatting within one collapsible section; improves readability |
+| M3 | MEDIUM | column-manager.tsx | `ColumnHeaders` component and Expand All/Collapse All controls appear unused | No change — forward infrastructure for Stories 5.3-5.5 detail tabs; summary tab intentionally uses annual-only |
+| L1 | LOW | statement-table.tsx | `hover:bg-muted/30` used on table rows instead of design system elevation utilities | Replaced with `hover-elevate` class per project design guidelines |
+| L2 | LOW | summary-tab.tsx | `computeCogsPct` returned `as any` cast to bypass type checking | Introduced `EnrichedAnnualSummary` type alias (`AnnualSummary & { cogsPct, directLaborPct, opexPct }`), renamed function to `computeEnrichedSummaries` |
+
+**All findings resolved. LSP clean across all 10 implementation files.**
 
 ### Testing Summary
 
