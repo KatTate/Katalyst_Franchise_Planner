@@ -7,6 +7,7 @@ import { RefreshCw, FileText } from "lucide-react";
 import { usePlanOutputs } from "@/hooks/use-plan-outputs";
 import { CalloutBar } from "./statements/callout-bar";
 import { SummaryTab } from "./statements/summary-tab";
+import { PnlTab } from "./statements/pnl-tab";
 import type { EngineOutput } from "@shared/financial-engine";
 
 export type StatementTabId = "summary" | "pnl" | "balance-sheet" | "cash-flow" | "roic" | "valuation" | "audit";
@@ -161,7 +162,7 @@ export function FinancialStatements({ planId, defaultTab = "summary" }: Financia
             </TabsContent>
 
             <TabsContent value="pnl" className="mt-0">
-              <PlaceholderTab name="P&L Statement" description="Detailed profit & loss breakdown with all revenue and expense lines." />
+              <PnlTab output={output} />
             </TabsContent>
 
             <TabsContent value="balance-sheet" className="mt-0">
