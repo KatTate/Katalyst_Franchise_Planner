@@ -206,6 +206,13 @@ const PNL_SECTIONS: PnlSectionDef[] = [
   },
 ];
 
+const PL_ANALYSIS_FIELDS = new Set([
+  "adjustedPreTaxProfit", "targetPreTaxProfit", "aboveBelowTarget",
+  "salaryCapAtTarget", "overUnderCap", "laborEfficiency",
+  "adjustedLaborEfficiency", "discretionaryMarketingPct",
+  "prTaxBenefitsPctOfWages", "otherOpexPctOfRevenue",
+]);
+
 function formatValue(value: number, format: "currency" | "pct"): string {
   if (format === "pct") return `${(value * 100).toFixed(1)}%`;
   return formatCents(value);
@@ -255,6 +262,10 @@ function getCellValue(
       return getQuarterlyValue("marketing", col.year, col.quarter, monthly, format);
     }
     return 0;
+  }
+
+  if (PL_ANALYSIS_FIELDS.has(field)) {
+    return getAnnualValue(field, col.year, enriched, plAnalysis);
   }
 
   if (col.level === "annual") {
@@ -377,7 +388,7 @@ function PnlCalloutBar({ enriched }: { enriched: EnrichedAnnual[] }) {
   if (!y1) return null;
   return (
     <div
-      className="flex flex-wrap items-center gap-4 px-4 py-3 border-b bg-muted/30"
+      className="flex flex-wrap items-center gap-4 px-4 py-3 border-b bg-muted/30 sticky top-0 z-30"
       data-testid="pnl-callout-bar"
     >
       <CalloutMetric
@@ -468,7 +479,7 @@ interface PnlRowProps {
 
 function PnlRow({ row, columns, enriched, monthly, plAnalysis }: PnlRowProps) {
   const rowClass = row.isTotal
-    ? "font-semibold border-t-2 border-b"
+    ? "font-semibold border-t-[3px] border-double border-b"
     : row.isSubtotal
       ? "font-medium border-t"
       : "";
