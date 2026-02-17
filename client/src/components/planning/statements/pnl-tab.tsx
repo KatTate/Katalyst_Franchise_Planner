@@ -1,5 +1,6 @@
-import { useMemo, useCallback } from "react";
-import { Pencil } from "lucide-react";
+import { useMemo, useState, useCallback } from "react";
+import { Pencil, ChevronDown, ChevronRight } from "lucide-react";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { formatCents } from "@/lib/format-currency";
 import { useColumnManager, ColumnHeaders } from "./column-manager";
 import type { EngineOutput, MonthlyProjection, AnnualSummary, PLAnalysisOutput } from "@shared/financial-engine";
@@ -8,6 +9,11 @@ import { getAnnualValue, getQuarterlyValue, getMonthlyValue } from "./column-man
 
 interface PnlTabProps {
   output: EngineOutput;
+}
+
+interface CellTooltip {
+  explanation: string;
+  formula: string;
 }
 
 interface PnlRowDef {
@@ -21,15 +27,18 @@ interface PnlRowDef {
   indent?: number;
   interpretationId?: string;
   interpretation?: (enriched: EnrichedAnnual[]) => string | null;
+  tooltip?: CellTooltip;
 }
 
 interface PnlSectionDef {
   key: string;
   title: string;
   rows: PnlRowDef[];
+  defaultExpanded?: boolean;
 }
 
 type EnrichedAnnual = AnnualSummary & {
+  monthlyRevenue: number;
   cogsPct: number;
   materialsCogs: number;
   royalties: number;
@@ -39,6 +48,7 @@ type EnrichedAnnual = AnnualSummary & {
   payrollTaxBenefits: number;
   facilities: number;
   marketing: number;
+  discretionaryMarketing: number;
   otherOpex: number;
   nonCapexInvestment: number;
   opexPct: number;
@@ -49,8 +59,10 @@ function computeEnrichedAnnuals(monthly: MonthlyProjection[], annuals: AnnualSum
     const yearMonths = monthly.filter((m) => m.year === a.year);
     const sum = (fn: (m: MonthlyProjection) => number) => yearMonths.reduce((s, m) => s + fn(m), 0);
     const revenue = a.revenue;
+    const annualMarketing = sum((m) => m.marketing);
     return {
       ...a,
+      monthlyRevenue: yearMonths.length > 0 ? Math.round(revenue / yearMonths.length) : 0,
       cogsPct: revenue !== 0 ? a.totalCogs / revenue : 0,
       materialsCogs: sum((m) => m.materialsCogs),
       royalties: sum((m) => m.royalties),
@@ -59,7 +71,8 @@ function computeEnrichedAnnuals(monthly: MonthlyProjection[], annuals: AnnualSum
       managementSalaries: sum((m) => m.managementSalaries),
       payrollTaxBenefits: sum((m) => m.payrollTaxBenefits),
       facilities: sum((m) => m.facilities),
-      marketing: sum((m) => m.marketing),
+      marketing: annualMarketing,
+      discretionaryMarketing: annualMarketing,
       otherOpex: sum((m) => m.otherOpex),
       nonCapexInvestment: sum((m) => m.nonCapexInvestment),
       opexPct: revenue !== 0 ? a.totalOpex / revenue : 0,
@@ -72,8 +85,8 @@ const PNL_SECTIONS: PnlSectionDef[] = [
     key: "revenue",
     title: "Revenue",
     rows: [
-      { key: "monthly-revenue", label: "Monthly Revenue", field: "revenue", format: "currency", isInput: true },
-      { key: "annual-revenue", label: "Annual Revenue", field: "revenue", format: "currency", isSubtotal: true },
+      { key: "monthly-revenue", label: "Monthly Revenue", field: "monthlyRevenue", format: "currency", isInput: true },
+      { key: "annual-revenue", label: "Annual Revenue", field: "revenue", format: "currency", isSubtotal: true, tooltip: { explanation: "Total revenue earned during the year", formula: "Sum of monthly revenue" } },
     ],
   },
   {
@@ -81,10 +94,10 @@ const PNL_SECTIONS: PnlSectionDef[] = [
     title: "Cost of Sales",
     rows: [
       { key: "cogs-pct", label: "COGS %", field: "cogsPct", format: "pct", isInput: true },
-      { key: "materials-cogs", label: "Materials / COGS", field: "materialsCogs", format: "currency", indent: 1 },
-      { key: "royalties", label: "Royalties", field: "royalties", format: "currency", indent: 1 },
-      { key: "ad-fund", label: "Ad Fund", field: "adFund", format: "currency", indent: 1 },
-      { key: "total-cogs", label: "Total Cost of Sales", field: "totalCogs", format: "currency", isSubtotal: true },
+      { key: "materials-cogs", label: "Materials / COGS", field: "materialsCogs", format: "currency", indent: 1, tooltip: { explanation: "Direct materials cost based on your COGS percentage", formula: "Revenue x COGS %" } },
+      { key: "royalties", label: "Royalties", field: "royalties", format: "currency", indent: 1, tooltip: { explanation: "Franchise royalty fees paid to the brand", formula: "Revenue x Royalty rate" } },
+      { key: "ad-fund", label: "Ad Fund", field: "adFund", format: "currency", indent: 1, tooltip: { explanation: "Required advertising fund contribution", formula: "Revenue x Ad fund rate" } },
+      { key: "total-cogs", label: "Total Cost of Sales", field: "totalCogs", format: "currency", isSubtotal: true, tooltip: { explanation: "All costs directly tied to generating revenue", formula: "Materials + Royalties + Ad Fund" } },
     ],
   },
   {
@@ -97,6 +110,7 @@ const PNL_SECTIONS: PnlSectionDef[] = [
         field: "grossProfit",
         format: "currency",
         isSubtotal: true,
+        tooltip: { explanation: "Revenue remaining after cost of sales", formula: "Revenue - Total Cost of Sales" },
         interpretationId: "interp-gross-profit",
         interpretation: (enriched) => {
           const y1 = enriched[0];
@@ -105,7 +119,7 @@ const PNL_SECTIONS: PnlSectionDef[] = [
           return `${pct}% gross margin in Year 1`;
         },
       },
-      { key: "gp-pct", label: "Gross Margin %", field: "grossProfitPct", format: "pct" },
+      { key: "gp-pct", label: "Gross Margin %", field: "grossProfitPct", format: "pct", tooltip: { explanation: "Percentage of revenue retained after cost of sales", formula: "Gross Profit / Revenue" } },
     ],
   },
   {
@@ -115,27 +129,28 @@ const PNL_SECTIONS: PnlSectionDef[] = [
       { key: "direct-labor", label: "Direct Labor", field: "directLabor", format: "currency", isInput: true, indent: 1 },
       { key: "dl-pct", label: "Direct Labor %", field: "directLaborPct", format: "pct", isInput: true, indent: 1 },
       { key: "mgmt-salaries", label: "Management Salaries", field: "managementSalaries", format: "currency", isInput: true, indent: 1 },
-      { key: "payroll-tax", label: "Payroll Tax & Benefits", field: "payrollTaxBenefits", format: "currency", indent: 1 },
+      { key: "payroll-tax", label: "Payroll Tax & Benefits", field: "payrollTaxBenefits", format: "currency", indent: 1, tooltip: { explanation: "Employer payroll taxes and employee benefits", formula: "(Direct Labor + Mgmt Salaries) x Payroll Tax rate" } },
       { key: "facilities", label: "Facilities", field: "facilities", format: "currency", isInput: true, indent: 1 },
       { key: "marketing", label: "Marketing / Advertising", field: "marketing", format: "currency", isInput: true, indent: 1 },
+      { key: "disc-marketing", label: "Discretionary Marketing", field: "discretionaryMarketing", format: "currency", indent: 1, tooltip: { explanation: "Owner-directed marketing spend beyond required brand contributions", formula: "Same as Marketing in current model" } },
       { key: "other-opex", label: "Other OpEx", field: "otherOpex", format: "currency", isInput: true, indent: 1 },
-      { key: "total-opex", label: "Total Operating Expenses", field: "totalOpex", format: "currency", isSubtotal: true },
+      { key: "total-opex", label: "Total Operating Expenses", field: "totalOpex", format: "currency", isSubtotal: true, tooltip: { explanation: "Total cost of running the business day-to-day", formula: "Sum of all operating expense line items" } },
     ],
   },
   {
     key: "ebitda",
     title: "EBITDA",
     rows: [
-      { key: "ebitda", label: "EBITDA", field: "ebitda", format: "currency", isSubtotal: true },
-      { key: "ebitda-pct", label: "EBITDA Margin %", field: "ebitdaPct", format: "pct" },
+      { key: "ebitda", label: "EBITDA", field: "ebitda", format: "currency", isSubtotal: true, tooltip: { explanation: "Earnings before interest, taxes, depreciation, and amortization", formula: "Gross Profit - Direct Labor - Total Operating Expenses" } },
+      { key: "ebitda-pct", label: "EBITDA Margin %", field: "ebitdaPct", format: "pct", tooltip: { explanation: "EBITDA as a percentage of revenue", formula: "EBITDA / Revenue" } },
     ],
   },
   {
     key: "below-ebitda",
     title: "Below EBITDA",
     rows: [
-      { key: "depreciation", label: "Depreciation & Amortization", field: "depreciation", format: "currency", indent: 1 },
-      { key: "interest", label: "Interest Expense", field: "interestExpense", format: "currency", indent: 1 },
+      { key: "depreciation", label: "Depreciation & Amortization", field: "depreciation", format: "currency", indent: 1, tooltip: { explanation: "Non-cash expense spreading equipment cost over its useful life", formula: "CapEx / Depreciation years" } },
+      { key: "interest", label: "Interest Expense", field: "interestExpense", format: "currency", indent: 1, tooltip: { explanation: "Cost of borrowing on your loan balance", formula: "Average loan balance x Interest rate" } },
     ],
   },
   {
@@ -148,6 +163,7 @@ const PNL_SECTIONS: PnlSectionDef[] = [
         field: "preTaxIncome",
         format: "currency",
         isTotal: true,
+        tooltip: { explanation: "Your bottom-line profit before taxes", formula: "EBITDA - Depreciation - Interest Expense" },
         interpretationId: "interp-pretax-income",
         interpretation: (enriched) => {
           const y1 = enriched[0];
@@ -156,23 +172,25 @@ const PNL_SECTIONS: PnlSectionDef[] = [
           return `${pct}% pre-tax margin in Year 1`;
         },
       },
-      { key: "pretax-pct", label: "Pre-Tax Margin %", field: "preTaxIncomePct", format: "pct" },
+      { key: "pretax-pct", label: "Pre-Tax Margin %", field: "preTaxIncomePct", format: "pct", tooltip: { explanation: "Pre-tax profit as a percentage of revenue", formula: "Pre-Tax Income / Revenue" } },
     ],
   },
   {
     key: "pl-analysis",
     title: "P&L Analysis",
+    defaultExpanded: false,
     rows: [
-      { key: "adj-pretax", label: "Adjusted Pre-Tax Profit", field: "adjustedPreTaxProfit", format: "currency" },
-      { key: "target-pretax", label: "Target Pre-Tax Profit", field: "targetPreTaxProfit", format: "currency" },
-      { key: "above-below-target", label: "Above / Below Target", field: "aboveBelowTarget", format: "currency" },
-      { key: "salary-cap", label: "Salary Cap at Target", field: "salaryCapAtTarget", format: "currency" },
-      { key: "over-under-cap", label: "(Over) / Under Cap", field: "overUnderCap", format: "currency" },
+      { key: "adj-pretax", label: "Adjusted Pre-Tax Profit", field: "adjustedPreTaxProfit", format: "currency", tooltip: { explanation: "Pre-tax income adjusted for owner compensation", formula: "Pre-Tax Income + Owner salary adjustment" } },
+      { key: "target-pretax", label: "Target Pre-Tax Profit", field: "targetPreTaxProfit", format: "currency", tooltip: { explanation: "The profit level your plan should aim for", formula: "Revenue x Target Pre-Tax Profit %" } },
+      { key: "above-below-target", label: "Above / Below Target", field: "aboveBelowTarget", format: "currency", tooltip: { explanation: "How far your adjusted profit is from the target", formula: "Adjusted Pre-Tax - Target Pre-Tax" } },
+      { key: "salary-cap", label: "Salary Cap at Target", field: "salaryCapAtTarget", format: "currency", tooltip: { explanation: "Maximum owner salary to still hit the target profit", formula: "Derived from target profit and operating expenses" } },
+      { key: "over-under-cap", label: "(Over) / Under Cap", field: "overUnderCap", format: "currency", tooltip: { explanation: "Whether your management salary is within the cap", formula: "Salary Cap - Actual Management Salaries" } },
       {
         key: "labor-eff",
         label: "Labor Efficiency",
         field: "laborEfficiency",
         format: "pct",
+        tooltip: { explanation: "What portion of gross profit goes to all wages", formula: "Total wages / Gross Profit" },
         interpretationId: "interp-labor-eff",
         interpretation: (enriched) => {
           const y1 = enriched[0];
@@ -180,10 +198,10 @@ const PNL_SECTIONS: PnlSectionDef[] = [
           return "Ratio of gross profit consumed by all wages";
         },
       },
-      { key: "adj-labor-eff", label: "Adjusted Labor Efficiency", field: "adjustedLaborEfficiency", format: "pct" },
-      { key: "disc-mktg-pct", label: "Discretionary Marketing %", field: "discretionaryMarketingPct", format: "pct" },
-      { key: "pr-tax-ben-pct", label: "PR Taxes & Benefits % of Wages", field: "prTaxBenefitsPctOfWages", format: "pct" },
-      { key: "other-opex-pct-rev", label: "Other OpEx % of Revenue", field: "otherOpexPctOfRevenue", format: "pct" },
+      { key: "adj-labor-eff", label: "Adjusted Labor Efficiency", field: "adjustedLaborEfficiency", format: "pct", tooltip: { explanation: "Labor efficiency excluding owner salary", formula: "Wages (excl. owner salary) / Gross Profit" } },
+      { key: "disc-mktg-pct", label: "Discretionary Marketing %", field: "discretionaryMarketingPct", format: "pct", tooltip: { explanation: "Discretionary marketing as a share of revenue", formula: "Discretionary Marketing / Revenue" } },
+      { key: "pr-tax-ben-pct", label: "PR Taxes & Benefits % of Wages", field: "prTaxBenefitsPctOfWages", format: "pct", tooltip: { explanation: "Payroll burden relative to total wages", formula: "Payroll Taxes & Benefits / Total Wages" } },
+      { key: "other-opex-pct-rev", label: "Other OpEx % of Revenue", field: "otherOpexPctOfRevenue", format: "pct", tooltip: { explanation: "Miscellaneous operating costs as a share of revenue", formula: "Other Operating Expenses / Revenue" } },
     ],
   },
 ];
@@ -201,6 +219,44 @@ function getCellValue(
   plAnalysis: PLAnalysisOutput[],
   format: "currency" | "pct"
 ): number {
+  if (field === "monthlyRevenue") {
+    if (col.level === "annual") {
+      const ea = enriched[col.year - 1];
+      return ea ? ea.monthlyRevenue : 0;
+    }
+    if (col.level === "monthly" && col.month) {
+      return getMonthlyValue("revenue", col.year, col.month, monthly);
+    }
+    if (col.level === "quarterly" && col.quarter) {
+      const startMonth = (col.year - 1) * 12 + (col.quarter - 1) * 3;
+      let sum = 0;
+      let count = 0;
+      for (let i = 0; i < 3; i++) {
+        const mp = monthly[startMonth + i];
+        if (mp) {
+          sum += mp.revenue;
+          count++;
+        }
+      }
+      return count > 0 ? Math.round(sum / count) : 0;
+    }
+    return 0;
+  }
+
+  if (field === "discretionaryMarketing") {
+    if (col.level === "annual") {
+      const ea = enriched[col.year - 1];
+      return ea ? ea.discretionaryMarketing : 0;
+    }
+    if (col.level === "monthly" && col.month) {
+      return getMonthlyValue("marketing", col.year, col.month, monthly);
+    }
+    if (col.level === "quarterly" && col.quarter) {
+      return getQuarterlyValue("marketing", col.year, col.quarter, monthly, format);
+    }
+    return 0;
+  }
+
   if (col.level === "annual") {
     return getAnnualValue(field, col.year, enriched, plAnalysis);
   }
@@ -233,6 +289,18 @@ export function PnlTab({ output }: PnlTabProps) {
   const columns = getColumns();
   const annualCols = columns.filter((c) => c.level === "annual");
   const visibleCols = hasAnyDrillDown ? columns : annualCols;
+
+  const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>(() => {
+    const initial: Record<string, boolean> = {};
+    PNL_SECTIONS.forEach((s) => {
+      initial[s.key] = s.defaultExpanded ?? true;
+    });
+    return initial;
+  });
+
+  const toggleSection = useCallback((key: string) => {
+    setExpandedSections((prev) => ({ ...prev, [key]: !prev[key] }));
+  }, []);
 
   return (
     <div className="space-y-0 pb-8" data-testid="pnl-tab">
@@ -293,6 +361,8 @@ export function PnlTab({ output }: PnlTabProps) {
                 enriched={enriched}
                 monthly={monthlyProjections}
                 plAnalysis={plAnalysis}
+                isExpanded={expandedSections[section.key] ?? true}
+                onToggle={() => toggleSection(section.key)}
               />
             ))}
           </tbody>
@@ -346,32 +416,44 @@ interface PnlSectionProps {
   enriched: EnrichedAnnual[];
   monthly: MonthlyProjection[];
   plAnalysis: PLAnalysisOutput[];
+  isExpanded: boolean;
+  onToggle: () => void;
 }
 
-function PnlSection({ section, columns, enriched, monthly, plAnalysis }: PnlSectionProps) {
+function PnlSection({ section, columns, enriched, monthly, plAnalysis, isExpanded, onToggle }: PnlSectionProps) {
   return (
     <>
       <tr
-        className="bg-muted/40 sticky top-0 z-20"
+        className="bg-muted/40 sticky top-0 z-20 cursor-pointer hover-elevate"
         data-testid={`pnl-section-${section.key}`}
+        onClick={onToggle}
+        role="row"
       >
         <td
           className="py-2 px-3 font-semibold text-xs uppercase tracking-wide text-muted-foreground sticky left-0 bg-muted/40 z-20"
           colSpan={columns.length + 1}
         >
-          {section.title}
+          <span className="flex items-center gap-1">
+            {isExpanded ? (
+              <ChevronDown className="h-3.5 w-3.5 shrink-0" />
+            ) : (
+              <ChevronRight className="h-3.5 w-3.5 shrink-0" />
+            )}
+            {section.title}
+          </span>
         </td>
       </tr>
-      {section.rows.map((row) => (
-        <PnlRow
-          key={row.key}
-          row={row}
-          columns={columns}
-          enriched={enriched}
-          monthly={monthly}
-          plAnalysis={plAnalysis}
-        />
-      ))}
+      {isExpanded &&
+        section.rows.map((row) => (
+          <PnlRow
+            key={row.key}
+            row={row}
+            columns={columns}
+            enriched={enriched}
+            monthly={monthly}
+            plAnalysis={plAnalysis}
+          />
+        ))}
     </>
   );
 }
@@ -426,6 +508,37 @@ function PnlRow({ row, columns, enriched, monthly, plAnalysis }: PnlRowProps) {
         {columns.map((col) => {
           const value = getCellValue(row.field, col, enriched, monthly, plAnalysis, row.format);
           const isNegative = value < 0;
+          const cellContent = formatValue(value, row.format);
+
+          if (!row.isInput && row.tooltip) {
+            return (
+              <td
+                key={col.key}
+                className={`py-1.5 px-3 text-right font-mono tabular-nums text-sm whitespace-nowrap${isNegative ? " text-amber-700 dark:text-amber-400" : ""}`}
+                data-testid={`pnl-value-${row.key}-${col.key}`}
+                role="gridcell"
+                aria-readonly="true"
+              >
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <span className="cursor-help">{cellContent}</span>
+                  </TooltipTrigger>
+                  <TooltipContent side="top" className="max-w-[260px]">
+                    <p className="text-xs font-medium">{row.tooltip.explanation}</p>
+                    <p className="text-xs text-muted-foreground mt-0.5">{row.tooltip.formula}</p>
+                    <a
+                      href="#glossary"
+                      className="text-xs text-primary underline mt-1 inline-block"
+                      data-testid={`glossary-link-${row.key}`}
+                    >
+                      View in glossary
+                    </a>
+                  </TooltipContent>
+                </Tooltip>
+              </td>
+            );
+          }
+
           return (
             <td
               key={col.key}
@@ -434,7 +547,7 @@ function PnlRow({ row, columns, enriched, monthly, plAnalysis }: PnlRowProps) {
               role="gridcell"
               aria-readonly={row.isInput ? "false" : "true"}
             >
-              {formatValue(value, row.format)}
+              {cellContent}
             </td>
           );
         })}
