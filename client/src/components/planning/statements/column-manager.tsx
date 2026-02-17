@@ -206,15 +206,21 @@ export function getQuarterlyValue(
   field: string,
   year: number,
   quarter: number,
-  monthly: MonthlyProjection[]
+  monthly: MonthlyProjection[],
+  format?: "currency" | "pct" | "number" | "months"
 ): number {
   const startMonth = (year - 1) * 12 + (quarter - 1) * 3;
   let sum = 0;
+  let count = 0;
   for (let i = 0; i < 3; i++) {
     const mp = monthly[startMonth + i];
     if (mp && field in mp) {
       sum += (mp as any)[field];
+      count++;
     }
+  }
+  if (format === "pct" && count > 0) {
+    return Math.round((sum / count) * 10000) / 10000;
   }
   return Math.round(sum * 100) / 100;
 }

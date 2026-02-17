@@ -4,7 +4,7 @@ import { formatCents } from "@/lib/format-currency";
 import { formatROI, formatBreakEven } from "@/components/shared/summary-metrics";
 import { StatementSection } from "./statement-section";
 import { StatementTable, type SectionDef } from "./statement-table";
-import type { EngineOutput } from "@shared/financial-engine";
+import type { EngineOutput, AnnualSummary } from "@shared/financial-engine";
 
 interface SummaryTabProps {
   output: EngineOutput;
@@ -120,18 +120,24 @@ const cfSummarySections: SectionDef[] = [
   },
 ];
 
-function computeCogsPct(annualSummaries: EngineOutput["annualSummaries"]): EngineOutput["annualSummaries"] {
+type EnrichedAnnualSummary = AnnualSummary & {
+  cogsPct: number;
+  directLaborPct: number;
+  opexPct: number;
+};
+
+function computeEnrichedSummaries(annualSummaries: EngineOutput["annualSummaries"]): EnrichedAnnualSummary[] {
   return annualSummaries.map((s) => ({
     ...s,
     cogsPct: s.revenue !== 0 ? s.totalCogs / s.revenue : 0,
     directLaborPct: s.revenue !== 0 ? s.directLabor / s.revenue : 0,
     opexPct: s.revenue !== 0 ? s.totalOpex / s.revenue : 0,
-  })) as any;
+  }));
 }
 
 export function SummaryTab({ output, onNavigateToTab }: SummaryTabProps) {
   const { annualSummaries, monthlyProjections, roiMetrics, plAnalysis, identityChecks } = output;
-  const enrichedSummaries = computeCogsPct(annualSummaries);
+  const enrichedSummaries = computeEnrichedSummaries(annualSummaries);
   const total5yrPreTax = annualSummaries.reduce((sum, s) => sum + s.preTaxIncome, 0);
   const y1Margin = annualSummaries[0]?.revenue
     ? (annualSummaries[0].preTaxIncome / annualSummaries[0].revenue)

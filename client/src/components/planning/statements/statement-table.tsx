@@ -57,13 +57,14 @@ function getCellValue(
   monthlyProjections: MonthlyProjection[],
   plAnalysis?: PLAnalysisOutput[],
   roicExtended?: ROICExtendedOutput[],
-  valuation?: ValuationOutput[]
+  valuation?: ValuationOutput[],
+  format?: RowDef["format"]
 ): number {
   if (col.level === "annual") {
     return getAnnualValue(field, col.year, annualSummaries, plAnalysis, roicExtended, valuation);
   }
   if (col.level === "quarterly" && col.quarter) {
-    return getQuarterlyValue(field, col.year, col.quarter, monthlyProjections);
+    return getQuarterlyValue(field, col.year, col.quarter, monthlyProjections, format);
   }
   if (col.level === "monthly" && col.month) {
     return getMonthlyValue(field, col.year, col.month, monthlyProjections);
@@ -259,7 +260,7 @@ function DataRow({
 
   return (
     <>
-      <tr className={`${rowClass} hover:bg-muted/30 transition-colors`} data-testid={`row-${row.key}`}>
+      <tr className={`${rowClass} hover-elevate`} data-testid={`row-${row.key}`}>
         <td
           className="py-1.5 px-3 text-sm sticky left-0 bg-background z-10 min-w-[180px] shadow-[2px_0_4px_-2px_rgba(0,0,0,0.06)]"
           style={{ paddingLeft }}
@@ -274,7 +275,8 @@ function DataRow({
             monthlyProjections,
             plAnalysis,
             roicExtended,
-            valuation
+            valuation,
+            row.format
           );
           return (
             <td

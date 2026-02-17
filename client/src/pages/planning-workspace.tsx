@@ -16,7 +16,7 @@ import { FinancialStatements } from "@/components/planning/financial-statements"
 import { QuickStartOverlay } from "@/components/shared/quick-start-overlay";
 import { SummaryMetrics } from "@/components/shared/summary-metrics";
 import { useWorkspaceView } from "@/contexts/WorkspaceViewContext";
-import type { ExperienceTier } from "@/components/planning/mode-switcher";
+import type { ExperienceTier } from "@/components/planning/input-panel";
 import type { Brand, Plan } from "@shared/schema";
 
 export default function PlanningWorkspace() {
