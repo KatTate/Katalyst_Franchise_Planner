@@ -30,6 +30,8 @@ interface StatementTableProps {
   roicExtended?: ROICExtendedOutput[];
   valuation?: ValuationOutput[];
   columns?: ColumnDef[];
+  onDrillDown?: (year: number) => void;
+  onDrillUp?: (year: number) => void;
   testIdPrefix: string;
 }
 
@@ -77,6 +79,8 @@ export function StatementTable({
   roicExtended,
   valuation,
   columns,
+  onDrillDown,
+  onDrillUp,
   testIdPrefix,
 }: StatementTableProps) {
   const defaultCols: ColumnDef[] = [1, 2, 3, 4, 5].map((y) => ({
@@ -106,14 +110,29 @@ export function StatementTable({
       <table className="w-full text-sm">
         <thead>
           <tr className="border-b">
-            <th className="text-left py-2 px-3 font-medium text-muted-foreground sticky left-0 bg-background z-10 min-w-[180px]">
+            <th className="text-left py-2 px-3 font-medium text-muted-foreground sticky left-0 bg-background z-10 min-w-[180px] shadow-[2px_0_4px_-2px_rgba(0,0,0,0.06)]">
               &nbsp;
             </th>
             {annualCols.map((col) => (
               <th
                 key={col.key}
-                className="text-right py-2 px-3 font-medium text-muted-foreground whitespace-nowrap"
+                className={`text-right py-2 px-3 font-medium text-muted-foreground whitespace-nowrap${onDrillDown ? " cursor-pointer select-none" : ""}`}
                 data-testid={`header-${col.key}`}
+                tabIndex={onDrillDown ? 0 : undefined}
+                onClick={onDrillDown ? () => onDrillDown(col.year) : undefined}
+                onKeyDown={
+                  onDrillDown
+                    ? (e) => {
+                        if (e.key === "Enter") {
+                          e.preventDefault();
+                          onDrillDown(col.year);
+                        } else if (e.key === "Escape" && onDrillUp) {
+                          e.preventDefault();
+                          onDrillUp(col.year);
+                        }
+                      }
+                    : undefined
+                }
               >
                 {col.label}
               </th>
@@ -173,12 +192,12 @@ function TableSection({
   return (
     <>
       <tr
-        className="cursor-pointer hover-elevate"
+        className="cursor-pointer hover-elevate sticky top-0 z-20 bg-background shadow-[0_1px_3px_0_rgba(0,0,0,0.05)]"
         onClick={onToggle}
         data-testid={`section-${section.key}`}
       >
         <td
-          className="py-2 px-3 font-semibold text-xs uppercase tracking-wide text-muted-foreground sticky left-0 bg-background z-10"
+          className="py-2 px-3 font-semibold text-xs uppercase tracking-wide text-muted-foreground sticky left-0 bg-background z-20"
           colSpan={columns.length + 1}
         >
           <span className="flex items-center gap-1">
@@ -242,7 +261,7 @@ function DataRow({
     <>
       <tr className={`${rowClass} hover:bg-muted/30 transition-colors`} data-testid={`row-${row.key}`}>
         <td
-          className="py-1.5 px-3 text-sm sticky left-0 bg-background z-10 min-w-[180px]"
+          className="py-1.5 px-3 text-sm sticky left-0 bg-background z-10 min-w-[180px] shadow-[2px_0_4px_-2px_rgba(0,0,0,0.06)]"
           style={{ paddingLeft }}
         >
           {row.label}

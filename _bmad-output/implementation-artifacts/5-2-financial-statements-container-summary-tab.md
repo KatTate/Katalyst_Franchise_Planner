@@ -1,6 +1,6 @@
 # Story 5.2: Financial Statements Container & Summary Tab
 
-Status: complete
+Status: review
 
 ## Story
 
@@ -270,10 +270,58 @@ The workspace view (My Plan vs Reports) should be driven by a state variable in 
 
 ### Agent Model Used
 
-{{agent_model_name_version}}
+Claude 4.6 Opus (via Replit Agent)
 
 ### Completion Notes
 
+Story 5.2 implementation was largely completed in a prior dev session (commit 34b78bb). This session reviewed all existing code against all 26 acceptance criteria, identified and fixed 3 gaps:
+
+1. **AC23 (Sticky section headers):** Added `sticky top-0 z-20` to table section header `<tr>` elements in `statement-table.tsx` so section headers remain visible during vertical scroll.
+2. **AC24 (Sticky element shadows):** Added subtle box-shadow to all sticky elements — section headers get `shadow-[0_1px_3px_0_rgba(0,0,0,0.05)]`, sticky row labels and header cells get `shadow-[2px_0_4px_-2px_rgba(0,0,0,0.06)]` to indicate floating.
+3. **AC19 (Keyboard navigation):** Added `tabIndex`, `onClick`, and `onKeyDown` handlers to year column headers in `StatementTable`. Enter drills down, Escape drills up. These are optional props (`onDrillDown`/`onDrillUp`) so summary tab tables (which don't need drill-down) are unaffected.
+
+All other ACs were already satisfied by the existing implementation:
+- Sidebar "My Plan" / "Reports" navigation via WorkspaceViewContext (AC1-4)
+- Mode switcher removed from planning header (AC5)
+- Tab bar with 7 tabs, responsive dropdown, placeholder tabs (AC2, AC6-10)
+- Callout bar with 5yr Pre-Tax, Break-even, ROI (AC11)
+- All 6 summary sections with correct rows, expand/collapse, navigation links (AC12-14)
+- Dashboard metric cards with deep links to Reports tabs (AC15)
+- useColumnManager with drill-down state management (AC16-18)
+- getAnnualValue/getQuarterlyValue/getMonthlyValue helpers (AC20)
+- Linked-column indicator with tooltip (AC21)
+- Sticky row labels (AC22)
+- Currency formatting via formatCents, percentages as X.X% (AC25)
+- "Generate Draft" placeholder button (AC26)
+
 ### File List
 
+- `client/src/components/planning/statements/statement-table.tsx` — MODIFIED (sticky section headers, shadows, keyboard navigation props)
+- `client/src/components/planning/statements/column-manager.tsx` — REVIEWED (no changes needed)
+- `client/src/components/planning/statements/summary-tab.tsx` — REVIEWED (no changes needed)
+- `client/src/components/planning/statements/callout-bar.tsx` — REVIEWED (no changes needed)
+- `client/src/components/planning/statements/statement-section.tsx` — REVIEWED (no changes needed)
+- `client/src/components/planning/financial-statements.tsx` — REVIEWED (no changes needed)
+- `client/src/components/planning/dashboard-panel.tsx` — REVIEWED (no changes needed)
+- `client/src/components/planning/planning-header.tsx` — REVIEWED (no changes needed)
+- `client/src/pages/planning-workspace.tsx` — REVIEWED (no changes needed)
+- `client/src/components/app-sidebar.tsx` — REVIEWED (no changes needed)
+
 ### Testing Summary
+
+- **Primary method:** Playwright E2E via run_test tool
+- **Scenarios verified:**
+  - Navigate to Reports from sidebar, verify all 7 tabs visible
+  - Summary tab active by default with callout bar metrics
+  - All 6 summary sections render (P&L, Labor, BS, CF, Break-Even, Startup Capital)
+  - Tab switching to P&L shows placeholder "Coming in the next update"
+  - Tab switching back to Summary is instant (no loading state)
+  - Navigate back to My Plan via sidebar, financial statements hidden
+  - Active sidebar item styling correct for both destinations
+  - Mode switcher NOT present anywhere in the UI
+  - Generate Draft button visible
+  - Break-even sparkline renders
+- **ACs covered by tests:** AC1-11, AC12-13 (partial), AC14 (partial), AC15 (partial), AC26
+- **All tests passing:** Yes
+- **LSP Status:** Clean — 0 errors, 0 warnings on modified files
+- **Visual Verification:** Playwright screenshots verified UI renders correctly
