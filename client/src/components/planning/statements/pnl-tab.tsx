@@ -24,6 +24,7 @@ interface PnlRowDef {
   isInput?: boolean;
   isSubtotal?: boolean;
   isTotal?: boolean;
+  isExpense?: boolean;
   indent?: number;
   interpretationId?: string;
   interpretation?: (enriched: EnrichedAnnual[]) => string | null;
@@ -50,8 +51,6 @@ type EnrichedAnnual = AnnualSummary & {
   marketing: number;
   discretionaryMarketing: number;
   otherOpex: number;
-  nonCapexInvestment: number;
-  opexPct: number;
 };
 
 function computeEnrichedAnnuals(monthly: MonthlyProjection[], annuals: AnnualSummary[]): EnrichedAnnual[] {
@@ -74,8 +73,6 @@ function computeEnrichedAnnuals(monthly: MonthlyProjection[], annuals: AnnualSum
       marketing: annualMarketing,
       discretionaryMarketing: annualMarketing,
       otherOpex: sum((m) => m.otherOpex),
-      nonCapexInvestment: sum((m) => m.nonCapexInvestment),
-      opexPct: revenue !== 0 ? a.totalOpex / revenue : 0,
     };
   });
 }
@@ -94,10 +91,10 @@ const PNL_SECTIONS: PnlSectionDef[] = [
     title: "Cost of Sales",
     rows: [
       { key: "cogs-pct", label: "COGS %", field: "cogsPct", format: "pct", isInput: true },
-      { key: "materials-cogs", label: "Materials / COGS", field: "materialsCogs", format: "currency", indent: 1, tooltip: { explanation: "Direct materials cost based on your COGS percentage", formula: "Revenue x COGS %" } },
-      { key: "royalties", label: "Royalties", field: "royalties", format: "currency", indent: 1, tooltip: { explanation: "Franchise royalty fees paid to the brand", formula: "Revenue x Royalty rate" } },
-      { key: "ad-fund", label: "Ad Fund", field: "adFund", format: "currency", indent: 1, tooltip: { explanation: "Required advertising fund contribution", formula: "Revenue x Ad fund rate" } },
-      { key: "total-cogs", label: "Total Cost of Sales", field: "totalCogs", format: "currency", isSubtotal: true, tooltip: { explanation: "All costs directly tied to generating revenue", formula: "Materials + Royalties + Ad Fund" } },
+      { key: "materials-cogs", label: "Materials / COGS", field: "materialsCogs", format: "currency", indent: 1, isExpense: true, tooltip: { explanation: "Direct materials cost based on your COGS percentage", formula: "Revenue x COGS %" } },
+      { key: "royalties", label: "Royalties", field: "royalties", format: "currency", indent: 1, isExpense: true, tooltip: { explanation: "Franchise royalty fees paid to the brand", formula: "Revenue x Royalty rate" } },
+      { key: "ad-fund", label: "Ad Fund", field: "adFund", format: "currency", indent: 1, isExpense: true, tooltip: { explanation: "Required advertising fund contribution", formula: "Revenue x Ad fund rate" } },
+      { key: "total-cogs", label: "Total Cost of Sales", field: "totalCogs", format: "currency", isSubtotal: true, isExpense: true, tooltip: { explanation: "All costs directly tied to generating revenue", formula: "Materials + Royalties + Ad Fund" } },
     ],
   },
   {
@@ -126,22 +123,22 @@ const PNL_SECTIONS: PnlSectionDef[] = [
     key: "opex",
     title: "Operating Expenses",
     rows: [
-      { key: "direct-labor", label: "Direct Labor", field: "directLabor", format: "currency", isInput: true, indent: 1 },
+      { key: "direct-labor", label: "Direct Labor", field: "directLabor", format: "currency", isInput: true, isExpense: true, indent: 1 },
       { key: "dl-pct", label: "Direct Labor %", field: "directLaborPct", format: "pct", isInput: true, indent: 1 },
-      { key: "mgmt-salaries", label: "Management Salaries", field: "managementSalaries", format: "currency", isInput: true, indent: 1 },
-      { key: "payroll-tax", label: "Payroll Tax & Benefits", field: "payrollTaxBenefits", format: "currency", indent: 1, tooltip: { explanation: "Employer payroll taxes and employee benefits", formula: "(Direct Labor + Mgmt Salaries) x Payroll Tax rate" } },
-      { key: "facilities", label: "Facilities", field: "facilities", format: "currency", isInput: true, indent: 1 },
-      { key: "marketing", label: "Marketing / Advertising", field: "marketing", format: "currency", isInput: true, indent: 1 },
-      { key: "disc-marketing", label: "Discretionary Marketing", field: "discretionaryMarketing", format: "currency", indent: 1, tooltip: { explanation: "Owner-directed marketing spend beyond required brand contributions", formula: "Same as Marketing in current model" } },
-      { key: "other-opex", label: "Other OpEx", field: "otherOpex", format: "currency", isInput: true, indent: 1 },
-      { key: "total-opex", label: "Total Operating Expenses", field: "totalOpex", format: "currency", isSubtotal: true, tooltip: { explanation: "Total cost of running the business day-to-day", formula: "Sum of all operating expense line items" } },
+      { key: "mgmt-salaries", label: "Management Salaries", field: "managementSalaries", format: "currency", isInput: true, isExpense: true, indent: 1 },
+      { key: "payroll-tax", label: "Payroll Tax & Benefits", field: "payrollTaxBenefits", format: "currency", indent: 1, isExpense: true, tooltip: { explanation: "Employer payroll taxes and employee benefits", formula: "(Direct Labor + Mgmt Salaries) x Payroll Tax rate" } },
+      { key: "facilities", label: "Facilities", field: "facilities", format: "currency", isInput: true, isExpense: true, indent: 1 },
+      { key: "marketing", label: "Marketing / Advertising", field: "marketing", format: "currency", isInput: true, isExpense: true, indent: 1 },
+      { key: "disc-marketing", label: "Discretionary Marketing", field: "discretionaryMarketing", format: "currency", indent: 1, isExpense: true, tooltip: { explanation: "Owner-directed marketing spend beyond required brand contributions", formula: "Same as Marketing in current model" } },
+      { key: "other-opex", label: "Other OpEx", field: "otherOpex", format: "currency", isInput: true, isExpense: true, indent: 1 },
+      { key: "total-opex", label: "Total Operating Expenses", field: "totalOpex", format: "currency", isSubtotal: true, isExpense: true, tooltip: { explanation: "Total cost of running the business day-to-day", formula: "Sum of all operating expense line items" } },
     ],
   },
   {
     key: "ebitda",
     title: "EBITDA",
     rows: [
-      { key: "ebitda", label: "EBITDA", field: "ebitda", format: "currency", isSubtotal: true, tooltip: { explanation: "Earnings before interest, taxes, depreciation, and amortization", formula: "Gross Profit - Direct Labor - Total Operating Expenses" } },
+      { key: "ebitda", label: "EBITDA", field: "ebitda", format: "currency", isSubtotal: true, tooltip: { explanation: "Earnings before interest, taxes, depreciation, and amortization", formula: "Gross Profit - Total Operating Expenses" } },
       { key: "ebitda-pct", label: "EBITDA Margin %", field: "ebitdaPct", format: "pct", tooltip: { explanation: "EBITDA as a percentage of revenue", formula: "EBITDA / Revenue" } },
     ],
   },
@@ -149,8 +146,8 @@ const PNL_SECTIONS: PnlSectionDef[] = [
     key: "below-ebitda",
     title: "Below EBITDA",
     rows: [
-      { key: "depreciation", label: "Depreciation & Amortization", field: "depreciation", format: "currency", indent: 1, tooltip: { explanation: "Non-cash expense spreading equipment cost over its useful life", formula: "CapEx / Depreciation years" } },
-      { key: "interest", label: "Interest Expense", field: "interestExpense", format: "currency", indent: 1, tooltip: { explanation: "Cost of borrowing on your loan balance", formula: "Average loan balance x Interest rate" } },
+      { key: "depreciation", label: "Depreciation & Amortization", field: "depreciation", format: "currency", indent: 1, isExpense: true, tooltip: { explanation: "Non-cash expense spreading equipment cost over its useful life", formula: "CapEx / Depreciation years" } },
+      { key: "interest", label: "Interest Expense", field: "interestExpense", format: "currency", indent: 1, isExpense: true, tooltip: { explanation: "Cost of borrowing on your loan balance", formula: "Average loan balance x Interest rate" } },
     ],
   },
   {
@@ -213,9 +210,10 @@ const PL_ANALYSIS_FIELDS = new Set([
   "prTaxBenefitsPctOfWages", "otherOpexPctOfRevenue",
 ]);
 
-function formatValue(value: number, format: "currency" | "pct"): string {
-  if (format === "pct") return `${(value * 100).toFixed(1)}%`;
-  return formatCents(value);
+function formatValue(value: number, format: "currency" | "pct", absDisplay?: boolean): string {
+  const displayVal = absDisplay ? Math.abs(value) : value;
+  if (format === "pct") return `${(displayVal * 100).toFixed(1)}%`;
+  return formatCents(displayVal);
 }
 
 function getCellValue(
@@ -435,10 +433,18 @@ function PnlSection({ section, columns, enriched, monthly, plAnalysis, isExpande
   return (
     <>
       <tr
-        className="bg-muted/40 sticky top-0 z-20 cursor-pointer hover-elevate"
+        className="bg-muted/40 cursor-pointer hover-elevate"
         data-testid={`pnl-section-${section.key}`}
         onClick={onToggle}
+        onKeyDown={(e) => {
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            onToggle();
+          }
+        }}
+        tabIndex={0}
         role="row"
+        aria-expanded={isExpanded}
       >
         <td
           className="py-2 px-3 font-semibold text-xs uppercase tracking-wide text-muted-foreground sticky left-0 bg-muted/40 z-20"
@@ -518,8 +524,8 @@ function PnlRow({ row, columns, enriched, monthly, plAnalysis }: PnlRowProps) {
         </td>
         {columns.map((col) => {
           const value = getCellValue(row.field, col, enriched, monthly, plAnalysis, row.format);
-          const isNegative = value < 0;
-          const cellContent = formatValue(value, row.format);
+          const isNegative = value < 0 && !row.isExpense;
+          const cellContent = formatValue(value, row.format, row.isExpense);
 
           if (!row.isInput && row.tooltip) {
             return (
@@ -539,8 +545,10 @@ function PnlRow({ row, columns, enriched, monthly, plAnalysis }: PnlRowProps) {
                     <p className="text-xs text-muted-foreground mt-0.5">{row.tooltip.formula}</p>
                     <a
                       href="#glossary"
-                      className="text-xs text-primary underline mt-1 inline-block"
+                      className="text-xs text-primary/50 mt-1 inline-block"
                       data-testid={`glossary-link-${row.key}`}
+                      aria-disabled="true"
+                      onClick={(e) => e.preventDefault()}
                     >
                       View in glossary
                     </a>

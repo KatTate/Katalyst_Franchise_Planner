@@ -80,6 +80,13 @@ story_location: _bmad-output/implementation-artifacts
 #   - L1: hover:bg-muted/30 → hover-elevate; L2: as-any cast → EnrichedAnnualSummary type
 #   - M2/M3: analysis-only (sub-sections and ColumnHeaders are intentional design)
 #   - LSP clean, story status: done
+# 2026-02-17: Story 5.3 adversarial code review completed
+#   - 0 HIGH, 3 MEDIUM, 3 LOW findings — all resolved
+#   - M1: Math.abs() added for expense row display (Dev Notes sign convention)
+#   - M2: Section header sticky removed (z-index conflict with callout bar)
+#   - M3: Section header keyboard accessibility (tabIndex, aria-expanded, onKeyDown)
+#   - L1: EBITDA tooltip formula corrected; L2: dead code removed; L3: glossary link placeholder
+#   - LSP clean, story status: done
 
 development_status:
   # Epic 1: Auth, Onboarding & User Management
@@ -137,7 +144,7 @@ development_status:
   epic-5: in-progress
   5-1-financial-engine-extension: done
   5-2-financial-statements-container-summary-tab: done
-  5-3-pl-statement-tab: review
+  5-3-pl-statement-tab: done
   5-4-balance-sheet-cash-flow-tabs: backlog
   5-5-roic-valuation-audit-tabs: backlog
   5-6-quick-entry-input-output-integration: backlog

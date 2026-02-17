@@ -1,6 +1,6 @@
 # Story 5.3: P&L Statement Tab
 
-Status: review
+Status: done
 
 ## Story
 
@@ -235,8 +235,23 @@ The existing implementation (~570 lines) was already comprehensive. Three target
 
 All 17 acceptance criteria verified as met. No new packages, API endpoints, or UI component files added.
 
+### Code Review Record (2026-02-17)
+**Reviewer:** Claude 4.6 Opus (Adversarial Code Review)
+**Findings:** 0 HIGH, 3 MEDIUM, 3 LOW — all resolved
+
+**Issues Fixed:**
+- M1: Added selective `Math.abs()` via `isExpense` row flag so expense rows display as positive values per Dev Notes sign convention; profit/analysis rows preserve true negatives with amber styling
+- M2: Removed `sticky top-0` from section header rows to prevent z-index conflict with callout bar
+- M3: Added `tabIndex={0}`, `aria-expanded`, and `onKeyDown` (Enter/Space) to section header rows for keyboard accessibility
+- L1: Corrected EBITDA tooltip formula from "Gross Profit - Direct Labor - Total Operating Expenses" to "Gross Profit - Total Operating Expenses" (Direct Labor is already part of Total OpEx)
+- L2: Removed dead code — unused `nonCapexInvestment` and `opexPct` fields from `EnrichedAnnual` type and `computeEnrichedAnnuals`
+- L3: Glossary `<a href="#glossary">` retained as link per AC12 but styled disabled (`aria-disabled`, `preventDefault`) until Story 5.10 provides the glossary
+
+**LSP:** Clean — 0 errors, 0 warnings
+**All 17 ACs verified as satisfied post-review**
+
 ### File List
-- `client/src/components/planning/statements/pnl-tab.tsx` — MODIFIED (sticky callout bar, double border for total rows, P&L Analysis field sub-annual handling)
+- `client/src/components/planning/statements/pnl-tab.tsx` — MODIFIED (sticky callout bar, double border for total rows, P&L Analysis field sub-annual handling, Math.abs for expenses, section header accessibility, tooltip formula fix, dead code removal, glossary link placeholder)
 
 ### Testing Summary
 E2E Playwright test passed all 21 steps: dev login, navigate to P&L tab, verify callout bar metrics, all 8 sections present, P&L Analysis collapsed by default, section expand/collapse toggle, interpretation rows with correct text, computed cell tooltip with explanation/formula/glossary link, Pre-Tax Income total row styling.
