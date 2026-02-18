@@ -140,13 +140,13 @@ so that every decision I make is informed by its financial impact (FR7d).
 
 - **CRITICAL — CalloutBar currently only renders for Summary context.** It must be enhanced to accept `activeTab: StatementTabId` and `output: EngineOutput` props, then render tab-specific content. The existing `annualSummaries` and `roiMetrics` props may be replaced with a single `output` prop for richer access to all statement data.
 
-- **CRITICAL — Per-tab callout metric computations:**
-  - P&L margin: `output.annualSummaries[0].preTaxIncome / output.annualSummaries[0].revenue * 100` (Year 1 pre-tax margin %)
-  - Balance Sheet D/E ratio: `output.annualSummaries[2].totalDebt / output.annualSummaries[2].totalEquity` (Year 3 debt-to-equity)
-  - Cash Flow lowest point: Iterate `output.monthlyProjections` to find the month with the lowest `endingCash`. Report the amount and month number.
-  - ROIC: `output.roiMetrics.fiveYearROIPct` and `output.roiMetrics.breakEvenMonth`
-  - Valuation: `output.annualSummaries[4].ebitda * output.annualSummaries[4].ebitdaMultiple` (Year 5 business value) — **WARNING:** Verify that `ebitdaMultiple` is available on `AnnualSummary`. If not, it may be on `EngineOutput` directly or computed separately.
-  - Audit: Count passing/failing checks from `output.auditChecks` array — **WARNING:** Verify `auditChecks` exists on `EngineOutput`. If audit data is structured differently, adapt accordingly.
+- **CRITICAL — Per-tab callout metric computations (verified field names from `shared/financial-engine.ts`):**
+  - P&L margin: `output.annualSummaries[0].preTaxIncome / output.annualSummaries[0].revenue * 100` (Year 1 pre-tax margin %). Also available as `output.annualSummaries[0].preTaxIncomePct`.
+  - Balance Sheet D/E ratio: `AnnualSummary` has `totalLiabilities` and `totalEquity` (NOT `totalDebt`). Debt-to-equity = `totalLiabilities / totalEquity`. Use Year 3: `output.annualSummaries[2]`.
+  - Cash Flow lowest point: Iterate `output.monthlyProjections` to find the month with the lowest `endingCash`. Report the amount and month number. `MonthlyProjection.endingCash` is confirmed.
+  - ROIC: `output.roiMetrics.fiveYearROIPct` and `output.roiMetrics.breakEvenMonth` — both confirmed on `ROIMetrics`.
+  - Valuation: Use `output.valuation[4].estimatedValue` (Year 5 estimated business value) and `output.valuation[4].ebitdaMultiple`. The `ValuationOutput` interface has these fields. Do NOT look for `ebitdaMultiple` on `AnnualSummary` — it lives on `ValuationOutput`.
+  - Audit: Count passing/failing checks from `output.identityChecks` (NOT `auditChecks`). Field is `identityChecks: IdentityCheckResult[]` where each has `{ name, passed, expected, actual, tolerance }`. Count: `output.identityChecks.filter(c => c.passed).length` of `output.identityChecks.length`.
 
 - **CRITICAL — Brand benchmark access for interpretation rows:** For P&L interpretation rows comparing COGS%, Labor%, etc. to brand ranges, access `financialInputs.operatingCosts.cogsPct.brandDefault` and `.item7Range` for the brand's typical range. Format as: "30% — within PostNet typical range (28-32%)". If `brandDefault` is null, show only "30%" without benchmark text.
 
@@ -156,16 +156,21 @@ so that every decision I make is informed by its financial impact (FR7d).
 
 - **CalloutBar hidden during comparison:** The existing `{!comparisonActive && <CalloutBar ... />}` logic in `financial-statements.tsx` (line 273) already handles this correctly. No change needed for this condition.
 
-- **EngineOutput field availability check:** Before writing callout content, verify these fields exist on `EngineOutput`:
-  - `annualSummaries[].preTaxIncome` — confirmed (used in existing callout)
-  - `annualSummaries[].revenue` — confirmed (used in P&L tab)
-  - `annualSummaries[].totalDebt` — check if this field exists for Balance Sheet D/E ratio
-  - `annualSummaries[].totalEquity` — check if this field exists
-  - `annualSummaries[].ebitda` — likely exists (used in valuation tab)
-  - `monthlyProjections[].endingCash` — confirmed (used in guardian-engine)
-  - `roiMetrics.breakEvenMonth` — confirmed
+- **EngineOutput field availability (VERIFIED against `shared/financial-engine.ts` lines 243-346):**
+  - `annualSummaries[].preTaxIncome` — confirmed
+  - `annualSummaries[].preTaxIncomePct` — confirmed (pre-computed margin %)
+  - `annualSummaries[].revenue` — confirmed
+  - `annualSummaries[].totalLiabilities` — confirmed (use for D/E ratio — there is NO `totalDebt` field)
+  - `annualSummaries[].totalEquity` — confirmed
+  - `annualSummaries[].ebitda` — confirmed
+  - `monthlyProjections[].endingCash` — confirmed
+  - `roiMetrics.breakEvenMonth` — confirmed (number | null)
   - `roiMetrics.fiveYearROIPct` — confirmed
-  - If any field is missing, the callout for that tab should gracefully degrade to a simpler message using only available fields.
+  - `valuation[].estimatedValue` — confirmed (Year 5 business value)
+  - `valuation[].ebitdaMultiple` — confirmed (on ValuationOutput, NOT AnnualSummary)
+  - `identityChecks[]` — confirmed (IdentityCheckResult with name, passed, expected, actual, tolerance)
+  - There is NO `auditChecks` field — the correct field name is `identityChecks`
+  - If any field is unexpectedly missing at runtime, the callout for that tab should gracefully degrade to a simpler message using only available fields.
 
 ### File Change Summary
 
