@@ -1,6 +1,6 @@
 # Story 5.6: Quick Entry Input-Output Integration
 
-Status: in-progress
+Status: review
 
 ## Story
 
@@ -192,9 +192,42 @@ so that I work inside the financial document I already understand — the financ
 ## Dev Agent Record
 
 ### Agent Model Used
+Claude 4.6 Opus (Replit Agent)
 
 ### Completion Notes
 
+**Implemented (P&L inline editing — 5 editable rows):**
+- Created `input-field-map.ts` with verified INPUT_FIELD_MAP mapping 5 P&L row keys to PlanFinancialInputs paths
+- Created `inline-editable-cell.tsx` component: click-to-edit, Tab/Shift+Tab/Enter/Escape keyboard nav, 200ms flash animation, committedRef guard to prevent double-commit on blur+Tab
+- Modified `pnl-tab.tsx` to accept editing props, wire InlineEditableCell for input rows, manage editing/flashing state
+- Modified `financial-statements.tsx` to accept and pass financialInputs, onCellEdit, isSaving props
+- Modified `planning-workspace.tsx` to thread plan financialInputs, queueSave, and isSaving to FinancialStatements
+- Added CSS keyframe animation `animate-flash-linked` for linked-column visual feedback
+- Display shows formatted raw input value (from plan cache) for immediate optimistic feedback after edits
+
+**Deferred / Out of Scope:**
+- **EBITDA Multiple editing (AC7):** Deferred — ebitdaMultiple is on FinancialInputs (engine input), not PlanFinancialInputs (plan JSONB). No save path exists without schema changes. Valuation tab remains display-only.
+- **Management Salaries row:** Excluded — hardcoded to 0 in engine, no 1:1 PlanFinancialInputs mapping (managementSalaries is computed from laborPct + wages, not a direct input)
+- **Facilities row:** Excluded — computed from rent + utilities + insurance (3 separate inputs), no single-field mapping
+- **Balance Sheet tab (AC5):** Read-only as specified — working capital assumptions not in PlanFinancialInputs
+- **Cash Flow tab (AC6):** Read-only as specified — all values are computed
+- **quick-entry-mode.tsx retirement (AC12):** Not deleted per spec — remains referenced but no new features added
+
+**ACs verified:** AC1 ✓, AC2 ✓, AC3 ✓, AC4 ✓, AC5 ✓, AC6 ✓, AC7 deferred, AC8 ✓ (preserved from 5.3-5.5), AC9 ✓, AC10 ✓, AC11 ✓, AC12 ✓, AC13 ✓
+
 ### File List
+- `client/src/components/planning/statements/input-field-map.ts` — CREATED
+- `client/src/components/planning/statements/inline-editable-cell.tsx` — CREATED
+- `client/src/components/planning/statements/pnl-tab.tsx` — MODIFIED
+- `client/src/components/planning/financial-statements.tsx` — MODIFIED
+- `client/src/pages/planning-workspace.tsx` — MODIFIED
+- `client/src/index.css` — MODIFIED (flash animation keyframe)
 
 ### Testing Summary
+- Playwright e2e test: click-to-edit Monthly Revenue → type value → Enter commits → display updates immediately (AC1, AC2)
+- Playwright e2e test: Tab navigates Monthly Revenue → COGS % → Direct Labor % (AC3)
+- Playwright e2e test: Escape cancels edit, restores original value (AC3)
+- Playwright e2e test: all year columns show same value (linked columns, AC4)
+- Playwright e2e test: value persists after commit ($45,000 displayed correctly)
+- Verified no mode gating — editing works regardless of experience tier (AC11)
+- LSP clean — no diagnostics

@@ -93,6 +93,15 @@ story_location: _bmad-output/implementation-artifacts
 #   - Container: BalanceSheetTab and CashFlowTab replace PlaceholderTab components
 #   - 20/20 acceptance criteria verified against code, LSP clean
 #   - Story status: done
+# 2026-02-18: Story 5.6 implementation completed (commit 4385698f, 6e33a51a)
+#   - P&L inline editing: 5 editable rows (monthly-revenue, cogs-pct, dl-pct, marketing, other-opex)
+#   - InlineEditableCell component: click-to-edit, Tab/Shift+Tab/Enter/Escape, flash animation
+#   - Linked columns: all year columns update simultaneously with 200ms flash feedback
+#   - Optimistic display: raw input values shown immediately from plan cache
+#   - Double-commit guard (committedRef) prevents blur+Tab duplicate saves
+#   - AC7 (EBITDA Multiple) deferred: ebitdaMultiple not in PlanFinancialInputs schema
+#   - Playwright e2e tests passing, LSP clean
+#   - Story status: review
 
 development_status:
   # Epic 1: Auth, Onboarding & User Management
@@ -153,7 +162,7 @@ development_status:
   5-3-pl-statement-tab: done
   5-4-balance-sheet-cash-flow-tabs: done
   5-5-roic-valuation-audit-tabs: in-progress
-  5-6-quick-entry-input-output-integration: ready-for-dev
+  5-6-quick-entry-input-output-integration: review
   5-7-scenario-comparison: backlog
   5-8-guardian-bar-dynamic-interpretation: backlog
   5-9-impact-strip-document-preview-widget: backlog
