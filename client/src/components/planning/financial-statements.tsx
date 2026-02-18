@@ -10,6 +10,9 @@ import { SummaryTab } from "./statements/summary-tab";
 import { PnlTab } from "./statements/pnl-tab";
 import { BalanceSheetTab } from "./statements/balance-sheet-tab";
 import { CashFlowTab } from "./statements/cash-flow-tab";
+import { RoicTab } from "./statements/roic-tab";
+import { ValuationTab } from "./statements/valuation-tab";
+import { AuditTab } from "./statements/audit-tab";
 import type { EngineOutput } from "@shared/financial-engine";
 
 export type StatementTabId = "summary" | "pnl" | "balance-sheet" | "cash-flow" | "roic" | "valuation" | "audit";
@@ -212,30 +215,19 @@ export function FinancialStatements({ planId, defaultTab = "summary" }: Financia
             </TabsContent>
 
             <TabsContent value="roic" className="mt-0">
-              <PlaceholderTab name="ROIC Analysis" description="Return on invested capital metrics and analysis." />
+              <RoicTab output={output} />
             </TabsContent>
 
             <TabsContent value="valuation" className="mt-0">
-              <PlaceholderTab name="Valuation" description="Business valuation estimates based on EBITDA multiples." />
+              <ValuationTab output={output} />
             </TabsContent>
 
             <TabsContent value="audit" className="mt-0">
-              <PlaceholderTab name="Audit / Integrity Checks" description="Financial identity checks and data consistency verification." />
+              <AuditTab output={output} onNavigateToTab={handleNavigateToTab} />
             </TabsContent>
           </div>
         </div>
       </Tabs>
-    </div>
-  );
-}
-
-function PlaceholderTab({ name, description }: { name: string; description: string }) {
-  return (
-    <div className="flex flex-col items-center justify-center py-16 text-center" data-testid={`placeholder-${name.toLowerCase().replace(/\s+/g, '-')}`}>
-      <FileText className="h-10 w-10 text-muted-foreground mb-4" />
-      <h3 className="text-lg font-semibold mb-2">{name}</h3>
-      <p className="text-sm text-muted-foreground max-w-sm">{description}</p>
-      <p className="text-xs text-muted-foreground mt-2">Coming in the next update.</p>
     </div>
   );
 }
