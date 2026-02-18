@@ -17,6 +17,7 @@ import {
   SidebarMenuItem,
   SidebarHeader,
   SidebarFooter,
+  useSidebar,
 } from "@/components/ui/sidebar";
 import { Separator } from "@/components/ui/separator";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -36,6 +37,7 @@ import {
 export function AppSidebar() {
   const { user, logout } = useAuth();
   const { brand } = useBrandTheme();
+  const { state: sidebarState } = useSidebar();
   const { active: isImpersonating } = useImpersonation();
   const { active: isDemoMode } = useDemoMode();
   const {
@@ -88,13 +90,13 @@ export function AppSidebar() {
 
   return (
     <>
-      <Sidebar>
+      <Sidebar collapsible="icon">
         {showBrandLogo && (
-          <SidebarHeader className="p-4">
+          <SidebarHeader className={sidebarState === "collapsed" ? "p-1 items-center" : "p-4"}>
             <img
               src={brand.logoUrl!}
               alt={brandLabel}
-              className="max-h-10 object-contain"
+              className={sidebarState === "collapsed" ? "max-h-7 max-w-7 object-contain" : "max-h-10 object-contain"}
               onError={() => setLogoError(true)}
               data-testid="img-brand-logo"
             />
@@ -111,6 +113,7 @@ export function AppSidebar() {
                       isActive={location === item.url && !isInPlanWorkspace}
                       onClick={() => setLocation(item.url)}
                       data-testid={item.testId}
+                      tooltip={item.title}
                     >
                       <item.icon />
                       <span>{item.title}</span>
@@ -137,6 +140,7 @@ export function AppSidebar() {
                       isActive={workspaceView === "my-plan"}
                       onClick={navigateToMyPlan}
                       data-testid="nav-my-plan"
+                      tooltip="My Plan"
                     >
                       <ClipboardList />
                       <span>My Plan</span>
@@ -147,6 +151,7 @@ export function AppSidebar() {
                       isActive={workspaceView === "reports"}
                       onClick={() => navigateToStatements("summary")}
                       data-testid="nav-reports"
+                      tooltip="Reports"
                     >
                       <BarChart3 />
                       <span>Reports</span>
@@ -157,6 +162,7 @@ export function AppSidebar() {
                       isActive={workspaceView === "scenarios"}
                       onClick={navigateToScenarios}
                       data-testid="nav-scenarios"
+                      tooltip="Scenarios"
                     >
                       <FlaskConical />
                       <span>Scenarios</span>
@@ -167,6 +173,7 @@ export function AppSidebar() {
                       isActive={workspaceView === "settings"}
                       onClick={navigateToSettings}
                       data-testid="nav-settings"
+                      tooltip="Settings"
                     >
                       <Settings />
                       <span>Settings</span>
@@ -186,6 +193,7 @@ export function AppSidebar() {
                     <SidebarMenuButton
                       onClick={() => window.open(user.bookingUrl, '_blank', 'noopener,noreferrer')}
                       data-testid="nav-help-booking"
+                      tooltip={user.accountManagerName ? `Talk to ${user.accountManagerName}` : "Book Consultation"}
                     >
                       <CalendarCheck />
                       <span className="truncate">
@@ -201,7 +209,7 @@ export function AppSidebar() {
           )}
         </SidebarContent>
         <SidebarFooter>
-          {hasBrandContext && (
+          {hasBrandContext && sidebarState === "expanded" && (
             <div className="px-3 pb-2">
               <Separator className="mb-2" />
               <p
@@ -213,30 +221,34 @@ export function AppSidebar() {
               </p>
             </div>
           )}
-          <div className="flex items-center gap-2 p-2">
-            <Avatar className="h-8 w-8">
+          <div className={`flex items-center gap-2 p-2 ${sidebarState === "collapsed" ? "justify-center" : ""}`}>
+            <Avatar className="h-8 w-8 shrink-0">
               {user.profileImageUrl && (
                 <AvatarImage src={user.profileImageUrl} alt={displayUser.displayName || user.email} />
               )}
               <AvatarFallback data-testid="text-sidebar-avatar">{initials}</AvatarFallback>
             </Avatar>
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium truncate" data-testid="text-sidebar-user-name">
-                {displayUser.displayName || user.email}
-              </p>
-              <p className="text-xs text-muted-foreground truncate" data-testid="text-sidebar-user-role">
-                {realRole.replace(/_/g, " ")}
-              </p>
-            </div>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => setShowLogoutDialog(true)}
-              title="Sign out"
-              data-testid="button-sidebar-logout"
-            >
-              <LogOut className="h-4 w-4" />
-            </Button>
+            {sidebarState === "expanded" && (
+              <>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium truncate" data-testid="text-sidebar-user-name">
+                    {displayUser.displayName || user.email}
+                  </p>
+                  <p className="text-xs text-muted-foreground truncate" data-testid="text-sidebar-user-role">
+                    {realRole.replace(/_/g, " ")}
+                  </p>
+                </div>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => setShowLogoutDialog(true)}
+                  title="Sign out"
+                  data-testid="button-sidebar-logout"
+                >
+                  <LogOut className="h-4 w-4" />
+                </Button>
+              </>
+            )}
           </div>
         </SidebarFooter>
       </Sidebar>
