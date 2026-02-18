@@ -1,14 +1,21 @@
-import { useMemo, useState, useCallback } from "react";
+import { useMemo, useState, useCallback, useRef } from "react";
 import { Pencil, ChevronDown, ChevronRight } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { formatCents } from "@/lib/format-currency";
 import { useColumnManager, ColumnToolbar, GroupedTableHead } from "./column-manager";
-import type { EngineOutput, MonthlyProjection, AnnualSummary, PLAnalysisOutput } from "@shared/financial-engine";
+import { InlineEditableCell } from "./inline-editable-cell";
+import { INPUT_FIELD_MAP, isEditableRow } from "./input-field-map";
+import type { EngineOutput, MonthlyProjection, AnnualSummary, PLAnalysisOutput, PlanFinancialInputs, FinancialFieldValue } from "@shared/financial-engine";
 import type { ColumnDef } from "./column-manager";
 import { getAnnualValue, getQuarterlyValue, getMonthlyValue } from "./column-manager";
+import { parseFieldInput, formatFieldValue } from "@/lib/field-metadata";
+import type { FormatType } from "@/lib/field-metadata";
 
 interface PnlTabProps {
   output: EngineOutput;
+  financialInputs?: PlanFinancialInputs | null;
+  onCellEdit?: (category: string, fieldName: string, rawInput: string, inputFormat: FormatType) => void;
+  isSaving?: boolean;
 }
 
 interface CellTooltip {
@@ -278,7 +285,21 @@ function getCellValue(
   return 0;
 }
 
-export function PnlTab({ output }: PnlTabProps) {
+function getEditableRowKeys(): string[] {
+  const keys: string[] = [];
+  for (const section of PNL_SECTIONS) {
+    for (const row of section.rows) {
+      if (isEditableRow(row.key)) {
+        keys.push(row.key);
+      }
+    }
+  }
+  return keys;
+}
+
+const EDITABLE_ROW_ORDER = getEditableRowKeys();
+
+export function PnlTab({ output, financialInputs, onCellEdit, isSaving }: PnlTabProps) {
   const { annualSummaries, monthlyProjections, plAnalysis } = output;
   const enriched = useMemo(
     () => computeEnrichedAnnuals(monthlyProjections, annualSummaries),
@@ -311,6 +332,70 @@ export function PnlTab({ output }: PnlTabProps) {
     setExpandedSections((prev) => ({ ...prev, [key]: !prev[key] }));
   }, []);
 
+  const [editingCell, setEditingCell] = useState<string | null>(null);
+  const [flashingRows, setFlashingRows] = useState<Set<string>>(new Set());
+  const flashTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const handleStartEdit = useCallback((rowKey: string, colKey: string) => {
+    if (isSaving || !onCellEdit || !financialInputs) return;
+    if (!isEditableRow(rowKey)) return;
+    setEditingCell(`${rowKey}:${colKey}`);
+  }, [isSaving, onCellEdit, financialInputs]);
+
+  const handleCancelEdit = useCallback(() => {
+    setEditingCell(null);
+  }, []);
+
+  const handleCommitEdit = useCallback((rowKey: string, rawInput: string) => {
+    if (!onCellEdit || !financialInputs) return;
+    const mapping = INPUT_FIELD_MAP[rowKey];
+    if (!mapping) return;
+    onCellEdit(mapping.category, mapping.fieldName, rawInput, mapping.inputFormat);
+    setEditingCell(null);
+
+    const flashKeys = new Set<string>();
+    visibleCols.forEach((col) => {
+      const cellKey = `${rowKey}:${col.key}`;
+      if (cellKey !== editingCell) {
+        flashKeys.add(cellKey);
+      }
+    });
+    setFlashingRows(flashKeys);
+    if (flashTimeoutRef.current) clearTimeout(flashTimeoutRef.current);
+    flashTimeoutRef.current = setTimeout(() => {
+      setFlashingRows(new Set());
+    }, 250);
+  }, [onCellEdit, financialInputs, editingCell, visibleCols]);
+
+  const handleTabNav = useCallback((rowKey: string, direction: "next" | "prev") => {
+    const idx = EDITABLE_ROW_ORDER.indexOf(rowKey);
+    if (idx === -1) return;
+    const nextIdx = direction === "next" ? idx + 1 : idx - 1;
+    if (nextIdx >= 0 && nextIdx < EDITABLE_ROW_ORDER.length) {
+      const nextRowKey = EDITABLE_ROW_ORDER[nextIdx];
+      const nextSection = PNL_SECTIONS.find((s) => s.rows.some((r) => r.key === nextRowKey));
+      if (nextSection && !expandedSections[nextSection.key]) {
+        setExpandedSections((prev) => ({ ...prev, [nextSection.key]: true }));
+      }
+      const firstCol = visibleCols[0];
+      if (firstCol) {
+        setEditingCell(`${nextRowKey}:${firstCol.key}`);
+      }
+    }
+  }, [visibleCols, expandedSections]);
+
+  const getRawValue = useCallback((rowKey: string): number => {
+    if (!financialInputs) return 0;
+    const mapping = INPUT_FIELD_MAP[rowKey];
+    if (!mapping) return 0;
+    const categoryObj = financialInputs[mapping.category as keyof PlanFinancialInputs];
+    if (!categoryObj) return 0;
+    const field = categoryObj[mapping.fieldName as keyof typeof categoryObj] as FinancialFieldValue;
+    return field?.currentValue ?? 0;
+  }, [financialInputs]);
+
+  const canEdit = !!financialInputs && !!onCellEdit;
+
   return (
     <div className="space-y-0 pb-8" data-testid="pnl-tab">
       <PnlCalloutBar enriched={enriched} />
@@ -318,7 +403,7 @@ export function PnlTab({ output }: PnlTabProps) {
         onExpandAll={expandAll}
         onCollapseAll={collapseAll}
         hasAnyDrillDown={hasAnyDrillDown}
-        showLinkedIndicator={false}
+        showLinkedIndicator={canEdit}
       />
       <div className="overflow-x-auto" data-testid="pnl-table">
         <table className="w-full text-sm" role="grid" aria-label="Profit and Loss Statement">
@@ -341,6 +426,13 @@ export function PnlTab({ output }: PnlTabProps) {
                 plAnalysis={plAnalysis}
                 isExpanded={expandedSections[section.key] ?? true}
                 onToggle={() => toggleSection(section.key)}
+                editingCell={editingCell}
+                flashingRows={flashingRows}
+                onStartEdit={canEdit ? handleStartEdit : undefined}
+                onCancelEdit={handleCancelEdit}
+                onCommitEdit={handleCommitEdit}
+                onTabNav={handleTabNav}
+                getRawValue={getRawValue}
               />
             ))}
           </tbody>
@@ -396,9 +488,19 @@ interface PnlSectionProps {
   plAnalysis: PLAnalysisOutput[];
   isExpanded: boolean;
   onToggle: () => void;
+  editingCell: string | null;
+  flashingRows: Set<string>;
+  onStartEdit?: (rowKey: string, colKey: string) => void;
+  onCancelEdit: () => void;
+  onCommitEdit: (rowKey: string, rawInput: string) => void;
+  onTabNav: (rowKey: string, direction: "next" | "prev") => void;
+  getRawValue: (rowKey: string) => number;
 }
 
-function PnlSection({ section, columns, enriched, monthly, plAnalysis, isExpanded, onToggle }: PnlSectionProps) {
+function PnlSection({
+  section, columns, enriched, monthly, plAnalysis, isExpanded, onToggle,
+  editingCell, flashingRows, onStartEdit, onCancelEdit, onCommitEdit, onTabNav, getRawValue,
+}: PnlSectionProps) {
   return (
     <>
       <tr
@@ -438,6 +540,13 @@ function PnlSection({ section, columns, enriched, monthly, plAnalysis, isExpande
             enriched={enriched}
             monthly={monthly}
             plAnalysis={plAnalysis}
+            editingCell={editingCell}
+            flashingRows={flashingRows}
+            onStartEdit={onStartEdit}
+            onCancelEdit={onCancelEdit}
+            onCommitEdit={onCommitEdit}
+            onTabNav={onTabNav}
+            getRawValue={getRawValue}
           />
         ))}
     </>
@@ -450,9 +559,19 @@ interface PnlRowProps {
   enriched: EnrichedAnnual[];
   monthly: MonthlyProjection[];
   plAnalysis: PLAnalysisOutput[];
+  editingCell: string | null;
+  flashingRows: Set<string>;
+  onStartEdit?: (rowKey: string, colKey: string) => void;
+  onCancelEdit: () => void;
+  onCommitEdit: (rowKey: string, rawInput: string) => void;
+  onTabNav: (rowKey: string, direction: "next" | "prev") => void;
+  getRawValue: (rowKey: string) => number;
 }
 
-function PnlRow({ row, columns, enriched, monthly, plAnalysis }: PnlRowProps) {
+function PnlRow({
+  row, columns, enriched, monthly, plAnalysis,
+  editingCell, flashingRows, onStartEdit, onCancelEdit, onCommitEdit, onTabNav, getRawValue,
+}: PnlRowProps) {
   const rowClass = row.isTotal
     ? "font-semibold border-t-[3px] border-double border-b"
     : row.isSubtotal
@@ -464,6 +583,9 @@ function PnlRow({ row, columns, enriched, monthly, plAnalysis }: PnlRowProps) {
   const inputCellClass = row.isInput
     ? "bg-primary/5 border-l-2 border-dashed border-primary/20"
     : "";
+
+  const canEditThisRow = row.isInput && isEditableRow(row.key) && !!onStartEdit;
+  const mapping = canEditThisRow ? INPUT_FIELD_MAP[row.key] : null;
 
   const interpText = row.interpretation ? row.interpretation(enriched) : null;
   const interpId = row.interpretationId;
@@ -494,6 +616,35 @@ function PnlRow({ row, columns, enriched, monthly, plAnalysis }: PnlRowProps) {
         {columns.map((col) => {
           const value = getCellValue(row.field, col, enriched, monthly, plAnalysis, row.format);
           const isNegative = value < 0 && !row.isExpense;
+
+          if (canEditThisRow && mapping) {
+            const cellKey = `${row.key}:${col.key}`;
+            const isEditingThis = editingCell === cellKey;
+            const isFlashing = flashingRows.has(cellKey);
+            const rawValue = getRawValue(row.key);
+
+            const displayFormatted = formatFieldValue(rawValue, mapping.inputFormat);
+
+            return (
+              <InlineEditableCell
+                key={col.key}
+                displayValue={displayFormatted}
+                rawValue={rawValue}
+                inputFormat={mapping.inputFormat}
+                isEditing={isEditingThis}
+                onStartEdit={() => onStartEdit!(row.key, col.key)}
+                onCancel={onCancelEdit}
+                onCommit={(rawInput) => onCommitEdit(row.key, rawInput)}
+                onTabNext={() => onTabNav(row.key, "next")}
+                onTabPrev={() => onTabNav(row.key, "prev")}
+                testId={`pnl-value-${row.key}-${col.key}`}
+                ariaLabel={`${row.label}, ${col.label}`}
+                className={`${inputCellClass}${isNegative ? " text-amber-700 dark:text-amber-400" : ""}`}
+                isFlashing={isFlashing}
+              />
+            );
+          }
+
           const cellContent = formatValue(value, row.format, row.isExpense);
 
           if (!row.isInput && row.tooltip) {

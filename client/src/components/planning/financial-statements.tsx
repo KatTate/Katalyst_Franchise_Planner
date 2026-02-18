@@ -13,13 +13,20 @@ import { CashFlowTab } from "./statements/cash-flow-tab";
 import { RoicTab } from "./statements/roic-tab";
 import { ValuationTab } from "./statements/valuation-tab";
 import { AuditTab } from "./statements/audit-tab";
-import type { EngineOutput } from "@shared/financial-engine";
+import { parseFieldInput } from "@/lib/field-metadata";
+import { updateFieldValue } from "@shared/plan-initialization";
+import type { EngineOutput, PlanFinancialInputs, FinancialFieldValue } from "@shared/financial-engine";
+import type { FormatType } from "@/lib/field-metadata";
+import type { Plan } from "@shared/schema";
 
 export type StatementTabId = "summary" | "pnl" | "balance-sheet" | "cash-flow" | "roic" | "valuation" | "audit";
 
 interface FinancialStatementsProps {
   planId: string;
   defaultTab?: StatementTabId;
+  plan?: Plan | null;
+  queueSave?: (data: Partial<Plan>) => void;
+  isSaving?: boolean;
 }
 
 const TAB_DEFS: { id: StatementTabId; label: string }[] = [
@@ -49,13 +56,37 @@ function useMediaQuery(query: string): boolean {
   return matches;
 }
 
-export function FinancialStatements({ planId, defaultTab = "summary" }: FinancialStatementsProps) {
+export function FinancialStatements({ planId, defaultTab = "summary", plan, queueSave, isSaving = false }: FinancialStatementsProps) {
   const { output, isLoading, isFetching, error, invalidateOutputs } = usePlanOutputs(planId);
   const [activeTab, setActiveTab] = useState<StatementTabId>(defaultTab);
   const isWide = useMediaQuery("(min-width: 1024px)");
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const scrollPositions = useRef<Record<string, number>>({});
   const pendingScrollTo = useRef<string | null>(null);
+
+  const financialInputs = plan?.financialInputs ?? null;
+
+  const handleCellEdit = useCallback(
+    (category: string, fieldName: string, rawInput: string, inputFormat: FormatType) => {
+      if (!financialInputs || !queueSave) return;
+      const parsedValue = parseFieldInput(rawInput, inputFormat);
+      if (isNaN(parsedValue)) return;
+      const categoryObj = financialInputs[category as keyof PlanFinancialInputs];
+      if (!categoryObj) return;
+      const field = categoryObj[fieldName as keyof typeof categoryObj] as FinancialFieldValue;
+      if (!field || parsedValue === field.currentValue) return;
+      const updatedField = updateFieldValue(field, parsedValue, new Date().toISOString());
+      const updatedInputs: PlanFinancialInputs = {
+        ...financialInputs,
+        [category]: {
+          ...categoryObj,
+          [fieldName]: updatedField,
+        },
+      };
+      queueSave({ financialInputs: updatedInputs });
+    },
+    [financialInputs, queueSave]
+  );
 
   useEffect(() => {
     setActiveTab(defaultTab);
@@ -203,7 +234,12 @@ export function FinancialStatements({ planId, defaultTab = "summary" }: Financia
             </TabsContent>
 
             <TabsContent value="pnl" className="mt-0">
-              <PnlTab output={output} />
+              <PnlTab
+                output={output}
+                financialInputs={financialInputs}
+                onCellEdit={queueSave ? handleCellEdit : undefined}
+                isSaving={isSaving}
+              />
             </TabsContent>
 
             <TabsContent value="balance-sheet" className="mt-0">

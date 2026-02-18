@@ -307,3 +307,12 @@
 .impersonation-banner-pulse {
   animation: impersonation-pulse 2s ease-in-out infinite;
 }
+
+@keyframes flash-linked {
+  0% { background-color: hsl(var(--primary) / 0.15); }
+  100% { background-color: transparent; }
+}
+
+.animate-flash-linked {
+  animation: flash-linked 200ms ease-out forwards;
+}

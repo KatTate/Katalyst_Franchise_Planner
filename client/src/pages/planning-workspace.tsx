@@ -137,6 +137,9 @@ export default function PlanningWorkspace() {
           <FinancialStatements
             planId={planId}
             defaultTab={statementsDefaultTab}
+            plan={plan}
+            queueSave={queueSave}
+            isSaving={isSaving}
           />
         );
       case "scenarios":

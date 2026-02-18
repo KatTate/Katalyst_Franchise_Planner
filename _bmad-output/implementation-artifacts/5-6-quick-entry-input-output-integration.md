@@ -1,6 +1,6 @@
 # Story 5.6: Quick Entry Input-Output Integration
 
-Status: ready-for-dev
+Status: in-progress
 
 ## Story
 
