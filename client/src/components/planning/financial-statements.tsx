@@ -6,8 +6,10 @@ import { Button } from "@/components/ui/button";
 import { RefreshCw, FileText } from "lucide-react";
 import { usePlanOutputs } from "@/hooks/use-plan-outputs";
 import { CalloutBar } from "./statements/callout-bar";
+import { GuardianBar } from "./statements/guardian-bar";
 import { ScenarioBar } from "./statements/scenario-bar";
 import { ScenarioSummaryCard } from "./statements/scenario-summary-card";
+import { computeGuardianState } from "@/lib/guardian-engine";
 import { SummaryTab } from "./statements/summary-tab";
 import { PnlTab } from "./statements/pnl-tab";
 import { BalanceSheetTab } from "./statements/balance-sheet-tab";
@@ -71,6 +73,11 @@ export function FinancialStatements({ planId, defaultTab = "summary", plan, queu
 
   const financialInputs = plan?.financialInputs ?? null;
   const startupCosts = plan?.startupCosts ?? null;
+
+  const guardianState = useMemo(() => {
+    if (!output) return null;
+    return computeGuardianState(output, undefined, financialInputs, startupCosts);
+  }, [output, financialInputs, startupCosts]);
 
   const [comparisonActive, setComparisonActive] = useState(false);
 
@@ -204,6 +211,12 @@ export function FinancialStatements({ planId, defaultTab = "summary", plan, queu
 
   return (
     <div data-testid="financial-statements" className="h-full flex flex-col">
+      {guardianState && !guardianState.allDefaults && (
+        <GuardianBar
+          state={guardianState}
+          onNavigate={handleNavigateToTab}
+        />
+      )}
       <Tabs
         value={activeTab}
         onValueChange={handleTabChange}

@@ -277,26 +277,34 @@ function ValCalloutBar({ enriched }: { enriched: EnrichedValYear[] }) {
 
   return (
     <div
-      className="flex flex-wrap items-center gap-4 px-4 py-3 border-b bg-muted/30 sticky top-0 z-30"
+      className="px-4 py-3 border-b bg-muted/30 sticky top-0 z-30"
       data-testid="valuation-callout-bar"
     >
-      <CalloutMetric
-        label={`Estimated Enterprise Value (Y${y5.year})`}
-        value={formatCents(y5.val.estimatedValue)}
-        testId="val-callout-value-y5"
-      />
-      <div className="w-px h-8 bg-border" />
-      <CalloutMetric
-        label={`Net After-Tax Proceeds (Y${y5.year})`}
-        value={formatCents(y5.val.netAfterTaxProceeds)}
-        testId="val-callout-net-proceeds-y5"
-      />
-      <div className="w-px h-8 bg-border" />
-      <CalloutMetric
-        label="EBITDA Multiple"
-        value={`${y5.val.ebitdaMultiple.toFixed(1)}x`}
-        testId="val-callout-multiple"
-      />
+      <div className="flex flex-wrap items-center gap-4">
+        <CalloutMetric
+          label={`Estimated Enterprise Value (Y${y5.year})`}
+          value={formatCents(y5.val.estimatedValue)}
+          testId="val-callout-value-y5"
+        />
+        <div className="w-px h-8 bg-border" />
+        <CalloutMetric
+          label={`Net After-Tax Proceeds (Y${y5.year})`}
+          value={formatCents(y5.val.netAfterTaxProceeds)}
+          testId="val-callout-net-proceeds-y5"
+        />
+        <div className="w-px h-8 bg-border" />
+        <CalloutMetric
+          label="EBITDA Multiple"
+          value={`${y5.val.ebitdaMultiple.toFixed(1)}x`}
+          testId="val-callout-multiple"
+        />
+      </div>
+      <p
+        className="text-xs text-muted-foreground mt-1.5"
+        data-testid="val-callout-interpretation"
+      >
+        Estimated business value at Year {y5.year}: {formatCents(y5.val.estimatedValue)} based on {y5.val.ebitdaMultiple.toFixed(1)}x EBITDA multiple.
+      </p>
     </div>
   );
 }

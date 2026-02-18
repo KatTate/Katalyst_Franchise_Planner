@@ -52,6 +52,14 @@ export default {
           border: "var(--destructive-border)",
         },
         ring: "hsl(var(--ring) / <alpha-value>)",
+        guardian: {
+          healthy: "hsl(var(--guardian-healthy) / <alpha-value>)",
+          "healthy-foreground": "hsl(var(--guardian-healthy-foreground) / <alpha-value>)",
+          attention: "hsl(var(--guardian-attention) / <alpha-value>)",
+          "attention-foreground": "hsl(var(--guardian-attention-foreground) / <alpha-value>)",
+          concerning: "hsl(var(--guardian-concerning) / <alpha-value>)",
+          "concerning-foreground": "hsl(var(--guardian-concerning-foreground) / <alpha-value>)",
+        },
         chart: {
           "1": "hsl(var(--chart-1) / <alpha-value>)",
           "2": "hsl(var(--chart-2) / <alpha-value>)",

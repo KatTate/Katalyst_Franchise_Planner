@@ -94,7 +94,8 @@ const CF_SECTIONS: CfSectionDef[] = [
         interpretation: (annuals) => {
           const y1 = annuals[0];
           if (!y1) return null;
-          return `${formatCents(y1.netCashFlow)} net cash flow in Year 1`;
+          if (y1.netCashFlow < 0) return `${formatCents(y1.netCashFlow)} net cash flow in Year 1 — cash is being consumed, typical during startup ramp-up`;
+          return `${formatCents(y1.netCashFlow)} net cash flow in Year 1 — positive cash generation`;
         },
       },
       { key: "beginning-cash", label: "Beginning Cash", field: "beginningCash", format: "currency", tooltip: { explanation: "Cash balance at the start of the period", formula: "Prior period ending cash" } },
@@ -346,27 +347,38 @@ function CfCalloutBar({
 
   return (
     <div
-      className="flex flex-wrap items-center gap-4 px-4 py-3 border-b bg-muted/30 sticky top-0 z-30"
+      className="px-4 py-3 border-b bg-muted/30 sticky top-0 z-30"
       data-testid="cf-callout-bar"
     >
-      <CalloutMetric
-        label="Net Cash Flow (Y1)"
-        value={formatCents(y1.netCashFlow)}
-        testId="cf-callout-net-cf-y1"
-      />
-      <div className="w-px h-8 bg-border" />
-      <CalloutMetric
-        label="Ending Cash (Y5)"
-        value={y5 ? formatCents(y5.endingCash) : "N/A"}
-        testId="cf-callout-ending-cash-y5"
-      />
-      <div className="w-px h-8 bg-border" />
-      <div className="flex flex-col">
-        <span className="text-xs text-muted-foreground font-medium uppercase tracking-wide">Lowest Cash Point</span>
-        <span className="text-lg font-semibold font-mono tabular-nums" data-testid="cf-callout-lowest-cash">
-          M{lowestCash.month}: {formatCents(lowestCash.value)}
-        </span>
+      <div className="flex flex-wrap items-center gap-4">
+        <CalloutMetric
+          label="Net Cash Flow (Y1)"
+          value={formatCents(y1.netCashFlow)}
+          testId="cf-callout-net-cf-y1"
+        />
+        <div className="w-px h-8 bg-border" />
+        <CalloutMetric
+          label="Ending Cash (Y5)"
+          value={y5 ? formatCents(y5.endingCash) : "N/A"}
+          testId="cf-callout-ending-cash-y5"
+        />
+        <div className="w-px h-8 bg-border" />
+        <div className="flex flex-col">
+          <span className="text-xs text-muted-foreground font-medium uppercase tracking-wide">Lowest Cash Point</span>
+          <span className="text-lg font-semibold font-mono tabular-nums" data-testid="cf-callout-lowest-cash">
+            M{lowestCash.month}: {formatCents(lowestCash.value)}
+          </span>
+        </div>
       </div>
+      <p
+        className="text-xs text-muted-foreground mt-1.5"
+        data-testid="cf-callout-interpretation"
+      >
+        Lowest cash point: {formatCents(lowestCash.value)} in Month {lowestCash.month}.{" "}
+        {lowestCash.value < 0
+          ? "You may need additional reserves to cover this shortfall."
+          : "Cash stays positive throughout the projection period."}
+      </p>
     </div>
   );
 }

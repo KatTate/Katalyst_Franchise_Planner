@@ -1,4 +1,3 @@
-import { Card, CardContent } from "@/components/ui/card";
 import { formatCents } from "@/lib/format-currency";
 import { formatROI, formatBreakEven } from "@/components/shared/summary-metrics";
 import type { AnnualSummary, ROIMetrics } from "@shared/financial-engine";
@@ -19,6 +18,9 @@ function breakEvenCalendarDate(breakEvenMonth: number | null, planStartDate?: st
 export function CalloutBar({ annualSummaries, roiMetrics, planStartDate }: CalloutBarProps) {
   const total5yrPreTax = annualSummaries.reduce((sum, s) => sum + s.preTaxIncome, 0);
   const calendarDate = breakEvenCalendarDate(roiMetrics.breakEvenMonth, planStartDate);
+  const breakEvenText = roiMetrics.breakEvenMonth !== null
+    ? `Break-even: Month ${roiMetrics.breakEvenMonth} (${calendarDate}).`
+    : "Break-even has not been reached within the 5-year projection period.";
 
   return (
     <div
@@ -45,6 +47,12 @@ export function CalloutBar({ annualSummaries, roiMetrics, planStartDate }: Callo
           testId="value-5yr-roi"
         />
       </div>
+      <p
+        className="text-xs text-muted-foreground px-4 pb-2"
+        data-testid="callout-interpretation"
+      >
+        Your 5-year total pre-tax income: {formatCents(total5yrPreTax)}. {breakEvenText}
+      </p>
     </div>
   );
 }

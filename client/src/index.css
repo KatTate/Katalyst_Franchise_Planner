@@ -37,6 +37,12 @@
   --accent-foreground: 210 6% 12%;
   --destructive: 0 72% 38%;
   --destructive-foreground: 0 10% 98%;
+  --guardian-healthy: 145 63% 42%;
+  --guardian-healthy-foreground: 145 10% 98%;
+  --guardian-attention: 45 80% 45%;
+  --guardian-attention-foreground: 45 10% 15%;
+  --guardian-concerning: 280 12% 65%;
+  --guardian-concerning-foreground: 280 10% 98%;
   --input: 210 12% 72%;
   --ring: 211 85% 42%;
   --chart-1: 211 85% 35%;
@@ -121,6 +127,12 @@
   --accent-foreground: 210 6% 95%;
   --destructive: 0 72% 32%;
   --destructive-foreground: 0 10% 98%;
+  --guardian-healthy: 145 63% 35%;
+  --guardian-healthy-foreground: 145 10% 98%;
+  --guardian-attention: 45 80% 40%;
+  --guardian-attention-foreground: 45 10% 15%;
+  --guardian-concerning: 280 12% 55%;
+  --guardian-concerning-foreground: 280 10% 98%;
   --input: 210 12% 35%;
   --ring: 211 85% 48%;
   --chart-1: 211 85% 65%;

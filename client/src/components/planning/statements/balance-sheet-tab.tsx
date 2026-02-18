@@ -147,7 +147,12 @@ const BS_SECTIONS: BsSectionDef[] = [
         interpretationId: "interp-total-assets",
         interpretation: (enriched) => {
           const y1 = enriched[0];
+          const y5 = enriched[4];
           if (!y1) return null;
+          if (y5) {
+            const growth = y5.totalAssets > y1.totalAssets ? "growing" : "declining";
+            return `${formatCents(y1.totalAssets)} in Year 1, ${growth} to ${formatCents(y5.totalAssets)} by Year 5`;
+          }
           return `${formatCents(y1.totalAssets)} in total assets at end of Year 1`;
         },
       },
@@ -184,7 +189,21 @@ const BS_SECTIONS: BsSectionDef[] = [
     rows: [
       { key: "common-stock", label: "Common Stock / Paid-in Capital", field: "commonStock", format: "currency", indent: 1, tooltip: { explanation: "Capital invested by the owner(s)", formula: "Initial equity investment" } },
       { key: "retained-earnings", label: "Retained Earnings", field: "retainedEarnings", format: "currency", indent: 1, tooltip: { explanation: "Accumulated profits reinvested in the business", formula: "Cumulative Net Income - Distributions" } },
-      { key: "total-equity", label: "Total Capital", field: "totalEquity", format: "currency", isSubtotal: true, tooltip: { explanation: "Owner's stake in the business", formula: "Common Stock + Retained Earnings" } },
+      {
+        key: "total-equity",
+        label: "Total Capital",
+        field: "totalEquity",
+        format: "currency",
+        isSubtotal: true,
+        tooltip: { explanation: "Owner's stake in the business", formula: "Common Stock + Retained Earnings" },
+        interpretationId: "interp-total-equity",
+        interpretation: (enriched) => {
+          const y1 = enriched[0];
+          if (!y1) return null;
+          if (y1.totalEquity < 0) return `Negative equity of ${formatCents(y1.totalEquity)} in Year 1 — accumulated losses exceed invested capital`;
+          return `${formatCents(y1.totalEquity)} owner equity in Year 1 — your stake in the business`;
+        },
+      },
     ],
   },
   {
@@ -497,40 +516,55 @@ export function BalanceSheetTab({ output, scenarioOutputs }: BalanceSheetTabProp
 
 function BsCalloutBar({ enriched, identityPassed }: { enriched: EnrichedBsAnnual[]; identityPassed: boolean }) {
   const y1 = enriched[0];
+  const y3 = enriched[2];
   if (!y1) return null;
+  const debtToEquityY3 = y3 && y3.totalEquity !== 0 ? (y3.totalLiabilities / y3.totalEquity) : null;
   return (
     <div
-      className="flex flex-wrap items-center gap-4 px-4 py-3 border-b bg-muted/30 sticky top-0 z-30"
+      className="px-4 py-3 border-b bg-muted/30 sticky top-0 z-30"
       data-testid="bs-callout-bar"
     >
-      <CalloutMetric
-        label="Total Assets (Y1)"
-        value={formatCents(y1.totalAssets)}
-        testId="bs-callout-total-assets-y1"
-      />
-      <div className="w-px h-8 bg-border" />
-      <CalloutMetric
-        label="Total Equity (Y1)"
-        value={formatCents(y1.totalEquity)}
-        testId="bs-callout-total-equity-y1"
-      />
-      <div className="w-px h-8 bg-border" />
-      <div className="flex flex-col">
-        <span className="text-xs text-muted-foreground font-medium uppercase tracking-wide">Balance Sheet</span>
-        <span className="flex items-center gap-1.5" data-testid="bs-callout-identity-status">
-          {identityPassed ? (
-            <>
-              <Check className="h-4 w-4 text-green-600 dark:text-green-400" />
-              <span className="text-sm font-medium text-green-700 dark:text-green-400">Balanced</span>
-            </>
-          ) : (
-            <>
-              <AlertTriangle className="h-4 w-4 text-destructive" />
-              <span className="text-sm font-medium text-destructive">Imbalanced</span>
-            </>
-          )}
-        </span>
+      <div className="flex flex-wrap items-center gap-4">
+        <CalloutMetric
+          label="Total Assets (Y1)"
+          value={formatCents(y1.totalAssets)}
+          testId="bs-callout-total-assets-y1"
+        />
+        <div className="w-px h-8 bg-border" />
+        <CalloutMetric
+          label="Total Equity (Y1)"
+          value={formatCents(y1.totalEquity)}
+          testId="bs-callout-total-equity-y1"
+        />
+        <div className="w-px h-8 bg-border" />
+        <div className="flex flex-col">
+          <span className="text-xs text-muted-foreground font-medium uppercase tracking-wide">Balance Sheet</span>
+          <span className="flex items-center gap-1.5" data-testid="bs-callout-identity-status">
+            {identityPassed ? (
+              <>
+                <Check className="h-4 w-4 text-green-600 dark:text-green-400" />
+                <span className="text-sm font-medium text-green-700 dark:text-green-400">Balanced</span>
+              </>
+            ) : (
+              <>
+                <AlertTriangle className="h-4 w-4 text-destructive" />
+                <span className="text-sm font-medium text-destructive">Imbalanced</span>
+              </>
+            )}
+          </span>
+        </div>
       </div>
+      {debtToEquityY3 !== null && (
+        <p
+          className="text-xs text-muted-foreground mt-1.5"
+          data-testid="bs-callout-interpretation"
+        >
+          Debt-to-equity ratio: {debtToEquityY3.toFixed(1)}:1 by Year 3.{" "}
+          {debtToEquityY3 <= 3
+            ? "Lenders typically look for below 3:1."
+            : "Above 3:1 may raise concerns with lenders."}
+        </p>
+      )}
     </div>
   );
 }

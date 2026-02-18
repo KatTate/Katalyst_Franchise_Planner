@@ -123,7 +123,10 @@ const PNL_SECTIONS: PnlSectionDef[] = [
           const y1 = enriched[0];
           if (!y1 || y1.revenue === 0) return null;
           const pct = (y1.grossProfitPct * 100).toFixed(1);
-          return `${pct}% gross margin in Year 1`;
+          const pctNum = y1.grossProfitPct * 100;
+          if (pctNum >= 60) return `${pct}% gross margin in Year 1 — strong margin to cover operating expenses`;
+          if (pctNum >= 40) return `${pct}% gross margin in Year 1 — moderate margin, keep cost of sales controlled`;
+          return `${pct}% gross margin in Year 1 — tight margin, review cost of sales assumptions`;
         },
       },
       { key: "gp-pct", label: "Gross Margin %", field: "grossProfitPct", format: "pct", tooltip: { explanation: "Percentage of revenue retained after cost of sales", formula: "Gross Profit / Revenue" } },
@@ -176,7 +179,9 @@ const PNL_SECTIONS: PnlSectionDef[] = [
           const y1 = enriched[0];
           if (!y1 || y1.revenue === 0) return null;
           const pct = (y1.preTaxIncomePct * 100).toFixed(1);
-          return `${pct}% pre-tax margin in Year 1`;
+          if (y1.preTaxIncome < 0) return `${pct}% pre-tax margin in Year 1 — projected loss, review expenses and ramp-up timeline`;
+          if (y1.preTaxIncomePct < 0.05) return `${pct}% pre-tax margin in Year 1 — thin margin, small changes in revenue or costs could swing profitability`;
+          return `${pct}% pre-tax margin in Year 1 — healthy profit margin`;
         },
       },
       { key: "pretax-pct", label: "Pre-Tax Margin %", field: "preTaxIncomePct", format: "pct", tooltip: { explanation: "Pre-tax profit as a percentage of revenue", formula: "Pre-Tax Income / Revenue" } },
@@ -202,7 +207,10 @@ const PNL_SECTIONS: PnlSectionDef[] = [
         interpretation: (enriched) => {
           const y1 = enriched[0];
           if (!y1 || y1.revenue === 0) return null;
-          return "Ratio of gross profit consumed by all wages";
+          const labPct = y1.laborEfficiency * 100;
+          if (labPct > 70) return `${labPct.toFixed(0)}% of gross profit goes to wages — labor-heavy, consider staffing mix`;
+          if (labPct > 50) return `${labPct.toFixed(0)}% of gross profit goes to wages — typical for service businesses`;
+          return `${labPct.toFixed(0)}% of gross profit goes to wages — efficient labor cost structure`;
         },
       },
       { key: "adj-labor-eff", label: "Adjusted Labor Efficiency", field: "adjustedLaborEfficiency", format: "pct", tooltip: { explanation: "Labor efficiency excluding owner salary", formula: "Wages (excl. owner salary) / Gross Profit" } },
@@ -522,28 +530,40 @@ export function PnlTab({ output, financialInputs, onCellEdit, isSaving, scenario
 function PnlCalloutBar({ enriched }: { enriched: EnrichedAnnual[] }) {
   const y1 = enriched[0];
   if (!y1) return null;
+  const marginPct = (y1.preTaxIncomePct * 100).toFixed(1);
   return (
     <div
-      className="flex flex-wrap items-center gap-4 px-4 py-3 border-b bg-muted/30 sticky top-0 z-30"
+      className="px-4 py-3 border-b bg-muted/30 sticky top-0 z-30"
       data-testid="pnl-callout-bar"
     >
-      <CalloutMetric
-        label="Annual Revenue (Y1)"
-        value={formatCents(y1.revenue)}
-        testId="pnl-callout-revenue-y1"
-      />
-      <div className="w-px h-8 bg-border" />
-      <CalloutMetric
-        label="Pre-Tax Income (Y1)"
-        value={formatCents(y1.preTaxIncome)}
-        testId="pnl-callout-pretax-y1"
-      />
-      <div className="w-px h-8 bg-border" />
-      <CalloutMetric
-        label="Pre-Tax Margin %"
-        value={`${(y1.preTaxIncomePct * 100).toFixed(1)}%`}
-        testId="pnl-callout-margin-y1"
-      />
+      <div className="flex flex-wrap items-center gap-4">
+        <CalloutMetric
+          label="Annual Revenue (Y1)"
+          value={formatCents(y1.revenue)}
+          testId="pnl-callout-revenue-y1"
+        />
+        <div className="w-px h-8 bg-border" />
+        <CalloutMetric
+          label="Pre-Tax Income (Y1)"
+          value={formatCents(y1.preTaxIncome)}
+          testId="pnl-callout-pretax-y1"
+        />
+        <div className="w-px h-8 bg-border" />
+        <CalloutMetric
+          label="Pre-Tax Margin %"
+          value={`${marginPct}%`}
+          testId="pnl-callout-margin-y1"
+        />
+      </div>
+      <p
+        className="text-xs text-muted-foreground mt-1.5"
+        data-testid="pnl-callout-interpretation"
+      >
+        Year 1 pre-tax margin: {marginPct}%.{" "}
+        {y1.preTaxIncome >= 0
+          ? "Your business is projected to be profitable in Year 1."
+          : "Your Year 1 projections show a net loss. Review revenue and expense assumptions."}
+      </p>
     </div>
   );
 }
