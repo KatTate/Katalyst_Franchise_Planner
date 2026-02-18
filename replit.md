@@ -56,10 +56,10 @@ When the user triggers an agent or workflow, the AI MUST load the referenced fil
 ## System Architecture
 
 **UI/UX Decisions:**
-- **User-facing mode labels:** "Planning Assistant", "Forms", and "Quick Entry" are consistently visible.
-- **Layout:** "Direction F (Hybrid Adaptive)" featuring a sidebar that collapses in "Planning Assistant" mode and expands in "Forms/Quick Entry" modes.
-- **Color Scheme:** "Gurple" (Mystical #A9A2AA) is used for AI confidence and informational panels.
-- **White-label Approach:** A branded shell with Katalyst identity, designed to allow future brand customization.
+- **Navigation architecture:** Two-door sidebar model (My Plan + Reports). No mode switcher. No "Quick Entry" mode — inline editing in Reports replaces it. See `_bmad-output/planning-artifacts/ux-design-specification-consolidated.md` (authoritative UX spec).
+- **AI Planning Assistant:** Called "Planning Assistant" — NOT named after the human account manager (they are separate entities). Slide-in panel feature within My Plan, not a workspace mode.
+- **Color Scheme:** "Gurple" (Mystical #A9A2AA) is used for advisory/informational panels. Red is reserved for actual errors only.
+- **White-label Approach:** A branded shell with Katalyst identity. Only `--primary`, `--primary-foreground`, and `--ring` are overridden per brand. `--katalyst-brand` escape hatch for "Powered by Katalyst" elements.
 
 **Technical Implementations & System Design:**
 - **Authentication:** Supports a dual model with Google OAuth for Katalyst administrators (`@katgroupinc.com`) and invitation-based password authentication for franchisees and franchisors.
@@ -67,7 +67,7 @@ When the user triggers an agent or workflow, the AI MUST load the referenced fil
 - **Database Schema:** Key tables include `brands`, `users`, `invitations`, `brand_account_managers`, and `plans`, which incorporates `financialInputs`, `projections`, and `startupCosts` as JSONB data types.
 - **Session Management:** PostgreSQL-backed sessions with a 24-hour expiry are implemented using `connect-pg-simple`.
 - **Role-Based Access Control (RBAC):** Access is controlled via middleware functions such as `requireAuth()`, `requireRole()`, `scopeToUser()`, and `projectForRole()`.
-- **Onboarding:** A guided 3-question flow is provided to recommend appropriate user tiers (Planning Assistant, Forms, or Quick Entry).
+- **Onboarding:** A guided flow introduces the user to My Plan (structured forms) and Reports (interactive financial statements with inline editing).
 - **BMad File Structure:** The project's internal file structure includes `_bmad/` for the BMad Method toolkit, `_bmad-output/` for generated artifacts, `_config/` for manifests, and `_memory/` for agent memory.
 - **Financial Engine:** A pure TypeScript computation engine (`shared/financial-engine.ts`) processes `FinancialInputs` to generate 60-month projections covering Profit & Loss, cash flow, balance sheet, and ROI. All currency values are stored in cents, calculations are pre-tax, and utilize simple monthly growth. Extended in Story 5.1 to compute Balance Sheet disaggregation, Cash Flow disaggregation, Valuation, ROIC Extended, P&L Analysis, and audit checks.
 - **Financial Statements View:** A workspace view toggle (Dashboard/Statements) in the planning header allows switching between the dashboard and a 7-tab financial statements container (`client/src/components/planning/financial-statements.tsx`). Components are in `client/src/components/planning/statements/` with CalloutBar, StatementSection, ColumnManager (progressive disclosure: annual→quarterly→monthly), StatementTable (data-driven row/section definitions), and SummaryTab. Dashboard metric cards link to specific statement tabs.

@@ -291,7 +291,7 @@ When Sam's account manager Denise thinks Sam's revenue estimate is too optimisti
 
 4. **Reset to default is per-field and reversible.** Every field Sam has edited shows a subtle "reset" affordance. One click restores the brand default.
 
-5. **Consultant booking is ever-present but non-intrusive.** A persistent "Talk to [Manager Name]" element in the sidebar Help section is always reachable without cluttering the planning workspace.
+5. **Consultant booking is ever-present but non-intrusive.** A persistent "Book time with [Account Manager Name]" element is always reachable (sidebar footer or header utility area) without cluttering the planning workspace. This is separate from the AI Planning Assistant — it connects the user to their human account manager.
 
 ---
 
@@ -477,7 +477,7 @@ The sidebar is the single, persistent navigation structure. There is no mode swi
 |  Settings                                  |
 |                                            |
 |  -- HELP --                                |
-|  Talk to [Manager Name]                    |
+|  Planning Assistant                        |
 |                                            |
 +--------------------------------------------+
 ```
@@ -491,7 +491,7 @@ The sidebar is the single, persistent navigation structure. There is no mode swi
 | Reports | Tabbed financial statements with inline editing — the power-user input surface | Maria (primary), Sam & Chris (review) |
 | Scenarios | Good/Better/Best scenario comparison | All |
 | Settings | Plan-level settings — name, brand, projection period | All |
-| Talk to [Manager Name] | AI Planning Assistant in conversational format, contextual to active plan | Sam |
+| Planning Assistant | AI Planning Assistant in conversational format, contextual to active plan. This is the AI — not the human account manager. | Sam |
 
 **Critical design rules:**
 
@@ -501,7 +501,7 @@ The sidebar is the single, persistent navigation structure. There is no mode swi
 
 3. **Data flows both directions.** If Maria edits Monthly AUV inline in the P&L (within Reports), the value in My Plan's Revenue section reflects it. If Sam enters his rent in My Plan's Facilities section, the P&L in Reports updates. One plan, two interaction surfaces.
 
-4. **The AI Planning Assistant is a feature, not a destination.** It's available from within My Plan as a slide-in panel. The "Talk to [Manager Name]" sidebar item opens the same assistant from a conversational starting point.
+4. **The AI Planning Assistant is a feature, not a destination.** It's available from within My Plan as a slide-in panel. The "Planning Assistant" sidebar item in the Help section opens the same assistant from a conversational starting point — useful for first-time users who want guidance before diving into forms.
 
 5. **If you find yourself writing `if (mode === 'quick-entry')` or `editable={mode === 'quick-entry'}`, you are violating this spec.** Input cells in Reports are ALWAYS editable. Period.
 
@@ -590,7 +590,7 @@ The AI Planning Assistant is accessible from three places:
 |-------------|----------|----------|-----------------|
 | **Floating action button** | Bottom-right corner of My Plan | Opens the AI panel as a slide-in from the right edge | Sam, Chris |
 | **Header icon** | My Plan header bar | Same slide-in panel behavior | Sam, Chris |
-| **"Talk to [Manager Name]"** | Sidebar Help section | Opens the AI panel with a conversational greeting as the starting point — useful for first-time users who want guidance before diving into forms | Sam |
+| **"Planning Assistant"** | Sidebar Help section | Opens the AI panel with a conversational greeting as the starting point — useful for first-time users who want guidance before diving into forms | Sam |
 
 All three entry points open the **same AI panel component** — they differ only in the initial context and greeting.
 
@@ -705,13 +705,15 @@ The following defines the integration boundary for the AI Planning Assistant —
 - Each plan has one conversation thread. There is no "start new conversation" — the AI maintains continuity.
 - When the plan is deleted, the conversation is deleted.
 
-### Persona Anchoring: "Talk to [Manager Name]"
+### AI Identity: Planning Assistant (Not the Human Manager)
 
-The "Talk to [Manager Name]" sidebar item personalizes the AI assistant with the brand's account manager identity:
+The AI Planning Assistant is its own entity — it is NOT personified as the human account manager. The sidebar item reads **"Planning Assistant"**, and the AI introduces itself as such:
 
-- **[Manager Name]** is populated from the plan's assigned account manager (from the `brand_account_managers` table). If no manager is assigned, the sidebar item reads "Talk to Your Advisor."
-- The AI persona mirrors the account manager's name in conversation: "Hi Sam, I'm Denise, your Katalyst planning advisor for PostNet."
-- The persona is a thin wrapper — the underlying AI behavior is identical regardless of which account manager name is displayed. The personalization creates warmth and trust, not different capabilities.
+> "Hi Sam, I'm your Planning Assistant. I'm here to help you build your PostNet business plan."
+
+**Critical distinction:** The human account manager (e.g., Denise) is a real person the franchisee can book time with via the "Book time with [Account Manager Name]" link in the sidebar footer. The AI Planning Assistant is a separate tool that helps with plan-building. Conflating the two would create false expectations — if Sam thinks the AI IS Denise, he'll expect Denise-level judgment, availability, and accountability.
+
+The AI Planning Assistant will ultimately receive a specialized persona, but that persona is the AI's own identity — not a mirror of any human team member. For MVP, "Planning Assistant" is the name and identity.
 
 ### Emotional Design for the AI Assistant
 
