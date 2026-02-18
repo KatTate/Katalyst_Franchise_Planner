@@ -3,24 +3,44 @@
   <critical>You MUST have already loaded and processed: {installed_path}/workflow.yaml</critical>
   <critical>Communicate all responses in {communication_language} and generate all documents in {document_output_language}</critical>
 
-  <critical>🔥 CRITICAL MISSION: You are creating the ULTIMATE story context engine that prevents LLM developer mistakes, omissions or
-    disasters! 🔥</critical>
-  <critical>Your purpose is NOT to copy from epics — it's to create a comprehensive, optimized story file that gives the DEV agent
-    EVERYTHING needed for flawless implementation. The story file is an intent-and-constraint document, NOT an implementation script.</critical>
+  <!-- ============================================================== -->
+  <!-- SCOPE RESTRICTION — READ THIS FIRST, OBEY IT THROUGHOUT        -->
+  <!-- ============================================================== -->
+  <critical>SCOPE RESTRICTION — READ THIS FIRST, OBEY IT THROUGHOUT:
+    YOUR ONLY OUTPUT IS A MARKDOWN STORY FILE. You are a technical writer, not a developer.
+    You are producing a DOCUMENT — an intent-and-constraint guide for a dev agent. You are NOT implementing the story.
+    The story file tells the dev agent WHAT to build and WHAT constraints to follow. It is NOT an implementation script.
+    DO NOT write a Tasks/Subtasks section. The dev agent creates its own plan from acceptance criteria and dev notes.
+    The quality bar: Could a competent developer read the AC and dev notes and build the right thing without a task list?</critical>
+
+  <!-- ============================================================== -->
+  <!-- FORBIDDEN ACTIONS — VIOLATION OF ANY = WORKFLOW FAILURE         -->
+  <!-- ============================================================== -->
+  <critical>FORBIDDEN ACTIONS — VIOLATION OF ANY = WORKFLOW FAILURE:
+    - DO NOT write, create, edit, or modify any application source code files (.ts, .tsx, .js, .jsx, .css, .py, .sql, etc.)
+    - DO NOT create task lists, todo items, or implementation plans using write_task_list or any planning tool
+    - DO NOT install, uninstall, or modify any packages or dependencies
+    - DO NOT modify database schemas, API routes, components, or any application file
+    - DO NOT start, stop, or restart application servers or development workflows (internal BMAD workflow invocations like advanced-elicitation and party-mode ARE permitted)
+    - DO NOT run application tests, build commands, or any development tooling
+    - DO NOT suggest deploying or publishing anything
+    - The ONLY files you may WRITE to are: (1) the story output markdown file, (2) sprint-status.yaml
+    - All other file access during this workflow is READ-ONLY for context gathering
+    - If you catch yourself about to perform a forbidden action, STOP immediately and return to writing the story document</critical>
+
+  <!-- ============================================================== -->
+  <!-- WORKFLOW MISSION AND GUIDELINES                                 -->
+  <!-- ============================================================== -->
   <critical>COMMON LLM MISTAKES TO PREVENT: reinventing wheels, wrong libraries, wrong file locations, breaking regressions, ignoring UX,
     vague implementations, lying about completion, not learning from past work</critical>
-  <critical>The quality bar: Could a competent developer (or AI agent) read the acceptance criteria and dev notes and build the right
-    thing without a task list? If yes, the story is complete. If no, the acceptance criteria or dev notes are missing something.</critical>
-  <critical>DO NOT write a Tasks/Subtasks section. The dev agent creates its own implementation plan from the acceptance criteria and
-    dev notes. Pre-writing implementation steps removes the agent's ability to plan effectively.</critical>
-  <critical>🚨 EXHAUSTIVE ANALYSIS REQUIRED: You must thoroughly analyze ALL artifacts to extract critical context — do NOT be lazy or skim!
+  <critical>EXHAUSTIVE ANALYSIS REQUIRED: You must thoroughly analyze ALL artifacts to extract critical context — do NOT be lazy or skim!
     This is the most important function in the entire development process!</critical>
-  <critical>🔬 UTILIZE SUBPROCESSES AND SUBAGENTS: Use research subagents, subprocesses or parallel processing if available to thoroughly
+  <critical>UTILIZE SUBPROCESSES AND SUBAGENTS: Use research subagents, subprocesses or parallel processing if available to thoroughly
     analyze different artifacts simultaneously and thoroughly</critical>
-  <critical>❓ SAVE QUESTIONS: If you think of questions or clarifications during analysis, save them for the end after the complete story is
+  <critical>SAVE QUESTIONS: If you think of questions or clarifications during analysis, save them for the end after the complete story is
     written</critical>
-  <critical>🎯 ZERO USER INTERVENTION: Process should be fully automated except for initial epic/story selection or missing documents</critical>
-  <critical>💡 REPLIT TIP: For best results, run this workflow in a fresh chat to maximize available context for artifact analysis</critical>
+  <critical>ZERO USER INTERVENTION: Process should be fully automated except for initial epic/story selection or missing documents</critical>
+  <critical>REPLIT TIP: For best results, run this workflow in a fresh chat to maximize available context for artifact analysis</critical>
 
   <step n="1" goal="Determine target story">
     <check if="user provided the story identifier — a path, epic-story number (e.g. 2-4, 1.6, epic 1 story 5), or story key">

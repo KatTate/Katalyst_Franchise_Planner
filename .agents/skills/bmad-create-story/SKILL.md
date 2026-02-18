@@ -8,6 +8,31 @@ description: >
 
 # BMAD Create Story Workflow
 
+## STOP — THIS WORKFLOW PRODUCES A DOCUMENT, NOT CODE
+
+**READ THIS BEFORE DOING ANYTHING ELSE.**
+
+This workflow's ONLY output is a single markdown story file. You are a **technical writer**
+during this workflow, not a developer.
+
+**FORBIDDEN actions during this entire workflow:**
+- DO NOT write, create, or modify any application source code (.ts, .tsx, .js, .jsx, .py, etc.)
+- DO NOT create task lists, implementation plans, or todo items for building features
+- DO NOT install packages, modify schemas, create routes, or build components
+- DO NOT use the write_task_list tool — this workflow is not a build task
+- DO NOT touch any file except the story output markdown file and sprint-status.yaml
+
+**PERMITTED actions:**
+- READ project files to gather context (read-only analysis)
+- WRITE the story markdown document to the output path
+- UPDATE sprint-status.yaml to reflect the story's status
+- ASK the user questions about story scope or requirements
+
+If you catch yourself about to write code or create a task list, STOP. You are violating
+the workflow. Return to writing the story document.
+
+---
+
 This skill activates the BMAD Create Story workflow. It produces a story context
 document — an intent-and-constraint guide for the dev agent, not an implementation script.
 
@@ -53,14 +78,15 @@ through all 6 steps in order. The workflow engine handles:
 
 ## Critical Rules
 
+- **YOUR ONLY OUTPUT IS A MARKDOWN FILE.** No code. No task lists. No implementation.
 - NEVER skip steps or optimize the sequence — execute ALL 6 steps in exact order
 - NEVER auto-proceed past WAIT points — stop and wait for user input
 - ALWAYS save output after completing EACH workflow step
 - ALWAYS follow the instructions.xml referenced in the workflow YAML
 - ALWAYS apply the checklist.md validation before completing
 - EXHAUSTIVE ANALYSIS REQUIRED — do NOT be lazy or skim artifacts
-- COMMON LLM MISTAKES TO PREVENT: reinventing wheels, wrong libraries, wrong file
-  locations, breaking regressions, ignoring UX, vague implementations
+- **FILE WRITE RESTRICTION:** The only files you may write or edit during this workflow
+  are the story output markdown file and sprint-status.yaml. All other file access is READ-ONLY.
 - **THIS WORKFLOW MUST COMPLETE BEFORE ANY IMPLEMENTATION CODE IS WRITTEN.** The story
   context document this workflow produces is the quality gate between planning and coding.
   Having "enough context" from reading artifacts is NOT a substitute for running this

@@ -7,6 +7,11 @@
     <mandate>Execute ALL steps in instructions IN EXACT ORDER</mandate>
     <mandate>Save to template output file after EVERY "template-output" tag</mandate>
     <mandate>NEVER skip a step - YOU are responsible for every steps execution without fail or excuse</mandate>
+    <mandate>FILE WRITE SCOPE: During template-workflows, the ONLY files you may write or edit are the
+      workflow's output file (default_output_file) and any explicitly named status-tracking files (e.g.,
+      sprint-status.yaml). All other project files are READ-ONLY during workflow execution. Do NOT
+      write application source code, create task lists, install packages, or modify any file outside
+      the workflow's designated output. You are producing a DOCUMENT, not building software.</mandate>
   </llm>
 
   <WORKFLOW-RULES critical="true">
