@@ -1,5 +1,5 @@
-import { useState, useCallback } from "react";
-import { ChevronDown, ChevronRight, Link2, ChevronsDownUp, ChevronsUpDown } from "lucide-react";
+import { useState, useCallback, useMemo } from "react";
+import { ChevronUp, Link2, ChevronsDownUp, ChevronsUpDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import type { MonthlyProjection } from "@shared/financial-engine";
@@ -110,33 +110,23 @@ export function useColumnManager() {
   };
 }
 
-interface ColumnHeadersProps {
-  columns: ColumnDef[];
-  getDrillLevel: (year: number) => DrillLevel;
-  onDrillDown: (year: number) => void;
-  onDrillUp: (year: number) => void;
+interface ColumnToolbarProps {
   onExpandAll: () => void;
   onCollapseAll: () => void;
   hasAnyDrillDown: boolean;
   showLinkedIndicator?: boolean;
 }
 
-export function ColumnHeaders({
-  columns,
-  getDrillLevel,
-  onDrillDown,
-  onDrillUp,
+export function ColumnToolbar({
   onExpandAll,
   onCollapseAll,
   hasAnyDrillDown,
   showLinkedIndicator = true,
-}: ColumnHeadersProps) {
-  const yearColumns = columns.filter((c) => c.level === "annual");
-
+}: ColumnToolbarProps) {
   return (
-    <div className="flex flex-col">
+    <div className="flex items-center justify-end gap-1 px-2 py-1">
       {showLinkedIndicator && (
-        <div className="flex items-center justify-end gap-1 px-2 py-1">
+        <>
           <Tooltip>
             <TooltipTrigger asChild>
               <span className="flex items-center gap-1 text-xs text-muted-foreground cursor-help">
@@ -151,28 +141,309 @@ export function ColumnHeaders({
             </TooltipContent>
           </Tooltip>
           <div className="flex-1" />
-          <Button
-            variant="ghost"
-            size="sm"
-            className="h-6 px-2 text-xs"
-            onClick={hasAnyDrillDown ? onCollapseAll : onExpandAll}
-            data-testid="button-toggle-drill"
-          >
-            {hasAnyDrillDown ? (
-              <>
-                <ChevronsDownUp className="h-3 w-3 mr-1" />
-                Collapse All
-              </>
-            ) : (
-              <>
-                <ChevronsUpDown className="h-3 w-3 mr-1" />
-                Expand All
-              </>
-            )}
-          </Button>
-        </div>
+        </>
       )}
+      {!showLinkedIndicator && <div className="flex-1" />}
+      <Button
+        variant="ghost"
+        size="sm"
+        className="h-6 px-2 text-xs"
+        onClick={hasAnyDrillDown ? onCollapseAll : onExpandAll}
+        data-testid="button-toggle-drill"
+      >
+        {hasAnyDrillDown ? (
+          <>
+            <ChevronsDownUp className="h-3 w-3 mr-1" />
+            Collapse All
+          </>
+        ) : (
+          <>
+            <ChevronsUpDown className="h-3 w-3 mr-1" />
+            Expand All
+          </>
+        )}
+      </Button>
     </div>
+  );
+}
+
+interface YearGroup {
+  year: number;
+  level: DrillLevel;
+  totalCols: number;
+  annualCol: ColumnDef;
+  quarterCols: ColumnDef[];
+  monthColsByQuarter: Record<number, ColumnDef[]>;
+}
+
+interface GroupedTableHeadProps {
+  columns: ColumnDef[];
+  getDrillLevel: (year: number) => DrillLevel;
+  onDrillDown: (year: number) => void;
+  onDrillUp: (year: number) => void;
+  hasAnyDrillDown: boolean;
+  testIdPrefix?: string;
+}
+
+export function GroupedTableHead({
+  columns,
+  getDrillLevel,
+  onDrillDown,
+  onDrillUp,
+  hasAnyDrillDown,
+  testIdPrefix = "",
+}: GroupedTableHeadProps) {
+  const headerInfo = useMemo(() => {
+    const years: YearGroup[] = [];
+    for (let y = 1; y <= 5; y++) {
+      const level = getDrillLevel(y);
+      const yearCols = columns.filter((c) => c.year === y);
+      const annualCol = yearCols.find((c) => c.level === "annual")!;
+      const quarterCols = yearCols
+        .filter((c) => c.level === "quarterly")
+        .sort((a, b) => (a.quarter ?? 0) - (b.quarter ?? 0));
+      const monthCols = yearCols
+        .filter((c) => c.level === "monthly")
+        .sort((a, b) => (a.month ?? 0) - (b.month ?? 0));
+
+      const monthColsByQuarter: Record<number, ColumnDef[]> = {};
+      for (const mc of monthCols) {
+        const q = Math.ceil((mc.month ?? 1) / 3);
+        if (!monthColsByQuarter[q]) monthColsByQuarter[q] = [];
+        monthColsByQuarter[q].push(mc);
+      }
+
+      years.push({
+        year: y,
+        level,
+        totalCols: yearCols.length,
+        annualCol,
+        quarterCols,
+        monthColsByQuarter,
+      });
+    }
+
+    const hasQuarterly = years.some((y) => y.level !== "annual");
+    const hasMonthly = years.some((y) => y.level === "monthly");
+    const rowCount = hasMonthly ? 3 : hasQuarterly ? 2 : 1;
+
+    return { years, rowCount };
+  }, [columns, getDrillLevel]);
+
+  const { years, rowCount } = headerInfo;
+  const pfx = testIdPrefix ? `${testIdPrefix}-` : "";
+
+  const labelCellClass =
+    "text-left py-2 px-3 font-medium text-muted-foreground sticky left-0 z-10 min-w-[200px] shadow-[2px_0_4px_-2px_rgba(0,0,0,0.06)]";
+
+  if (rowCount === 1) {
+    return (
+      <thead>
+        <tr className="border-b">
+          <th className={`${labelCellClass} bg-background`} scope="col">
+            &nbsp;
+          </th>
+          {years.map((yg, idx) => (
+            <th
+              key={yg.annualCol.key}
+              className={`text-right py-2 px-3 font-medium text-muted-foreground whitespace-nowrap cursor-pointer select-none${idx > 0 ? " border-l border-border/30" : ""}`}
+              data-testid={`${pfx}header-${yg.annualCol.key}`}
+              scope="col"
+              tabIndex={0}
+              onClick={() => onDrillDown(yg.year)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  e.preventDefault();
+                  onDrillDown(yg.year);
+                }
+              }}
+            >
+              {yg.annualCol.label}
+            </th>
+          ))}
+        </tr>
+      </thead>
+    );
+  }
+
+  return (
+    <thead>
+      <tr className="border-b bg-muted/40">
+        <th
+          className={`${labelCellClass} bg-muted/40`}
+          scope="col"
+          rowSpan={rowCount}
+        >
+          &nbsp;
+        </th>
+        {years.map((yg, idx) => {
+          const borderClass = idx > 0 ? " border-l-2 border-border/40" : "";
+
+          if (yg.level === "annual") {
+            return (
+              <th
+                key={yg.annualCol.key}
+                className={`text-right py-2 px-3 font-medium text-muted-foreground whitespace-nowrap cursor-pointer select-none bg-muted/40${borderClass}`}
+                data-testid={`${pfx}header-${yg.annualCol.key}`}
+                scope="col"
+                rowSpan={rowCount}
+                tabIndex={0}
+                onClick={() => onDrillDown(yg.year)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    e.preventDefault();
+                    onDrillDown(yg.year);
+                  }
+                  if (e.key === "Escape") {
+                    e.preventDefault();
+                    onDrillUp(yg.year);
+                  }
+                }}
+              >
+                {yg.annualCol.label}
+              </th>
+            );
+          }
+
+          const levelLabel = yg.level === "quarterly" ? "Quarterly" : "Monthly";
+          return (
+            <th
+              key={`year-group-${yg.year}`}
+              className={`text-center py-2 px-3 font-medium text-muted-foreground whitespace-nowrap bg-muted/40${borderClass}`}
+              colSpan={yg.totalCols}
+              scope="colgroup"
+              data-testid={`${pfx}header-group-y${yg.year}`}
+            >
+              <span className="flex items-center justify-center gap-1.5">
+                <span data-testid={`${pfx}breadcrumb-y${yg.year}`}>
+                  Year {yg.year} &#x25B8; {levelLabel}
+                </span>
+                <button
+                  className="inline-flex items-center justify-center rounded-md p-0.5 text-muted-foreground hover-elevate"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onDrillUp(yg.year);
+                  }}
+                  data-testid={`button-collapse-year-${yg.year}`}
+                  aria-label={`Collapse Year ${yg.year}`}
+                >
+                  <ChevronUp className="h-3.5 w-3.5" />
+                </button>
+              </span>
+            </th>
+          );
+        })}
+      </tr>
+
+      <tr className="border-b">
+        {years.flatMap((yg) => {
+          if (yg.level === "annual") return [];
+
+          const cells: JSX.Element[] = [];
+          const remainingRows = rowCount - 1;
+
+          cells.push(
+            <th
+              key={`${yg.annualCol.key}-sub`}
+              className="text-right py-1.5 px-3 text-xs font-medium text-muted-foreground whitespace-nowrap border-l-2 border-border/40 cursor-pointer select-none"
+              scope="col"
+              rowSpan={remainingRows}
+              tabIndex={0}
+              onClick={() => onDrillDown(yg.year)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  e.preventDefault();
+                  onDrillDown(yg.year);
+                }
+              }}
+              data-testid={`${pfx}header-${yg.annualCol.key}`}
+            >
+              Total
+            </th>
+          );
+
+          if (yg.level === "quarterly") {
+            yg.quarterCols.forEach((qc) => {
+              cells.push(
+                <th
+                  key={qc.key}
+                  className="text-right py-1.5 px-3 text-xs font-medium text-muted-foreground whitespace-nowrap cursor-pointer select-none"
+                  scope="col"
+                  rowSpan={remainingRows}
+                  tabIndex={0}
+                  onClick={() => onDrillDown(yg.year)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      e.preventDefault();
+                      onDrillDown(yg.year);
+                    }
+                  }}
+                  data-testid={`${pfx}header-${qc.key}`}
+                >
+                  {qc.label}
+                </th>
+              );
+            });
+          } else {
+            yg.quarterCols.forEach((qc) => {
+              const months = yg.monthColsByQuarter[qc.quarter ?? 0] ?? [];
+              const colSpan = 1 + months.length;
+              cells.push(
+                <th
+                  key={qc.key}
+                  className="text-center py-1.5 px-3 text-xs font-medium text-muted-foreground whitespace-nowrap bg-muted/20"
+                  scope="colgroup"
+                  colSpan={colSpan}
+                  data-testid={`${pfx}header-qgroup-${qc.key}`}
+                >
+                  {qc.label}
+                </th>
+              );
+            });
+          }
+
+          return cells;
+        })}
+      </tr>
+
+      {rowCount === 3 && (
+        <tr className="border-b">
+          {years.flatMap((yg) => {
+            if (yg.level !== "monthly") return [];
+
+            const cells: JSX.Element[] = [];
+            yg.quarterCols.forEach((qc) => {
+              cells.push(
+                <th
+                  key={`${qc.key}-subtotal`}
+                  className="text-right py-1 px-2 text-[11px] font-medium text-muted-foreground/70 whitespace-nowrap"
+                  scope="col"
+                  data-testid={`${pfx}header-${qc.key}`}
+                >
+                  {qc.label}
+                </th>
+              );
+
+              const months = yg.monthColsByQuarter[qc.quarter ?? 0] ?? [];
+              months.forEach((mc) => {
+                cells.push(
+                  <th
+                    key={mc.key}
+                    className="text-right py-1 px-2 text-[11px] font-medium text-muted-foreground/70 whitespace-nowrap"
+                    scope="col"
+                    data-testid={`${pfx}header-${mc.key}`}
+                  >
+                    {mc.label}
+                  </th>
+                );
+              });
+            });
+
+            return cells;
+          })}
+        </tr>
+      )}
+    </thead>
   );
 }
 

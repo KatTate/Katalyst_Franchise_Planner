@@ -2,7 +2,7 @@ import { useMemo, useState, useCallback } from "react";
 import { Pencil, ChevronDown, ChevronRight } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { formatCents } from "@/lib/format-currency";
-import { useColumnManager, ColumnHeaders } from "./column-manager";
+import { useColumnManager, ColumnToolbar, GroupedTableHead } from "./column-manager";
 import type { EngineOutput, MonthlyProjection, AnnualSummary, PLAnalysisOutput } from "@shared/financial-engine";
 import type { ColumnDef } from "./column-manager";
 import { getAnnualValue, getQuarterlyValue, getMonthlyValue } from "./column-manager";
@@ -314,11 +314,7 @@ export function PnlTab({ output }: PnlTabProps) {
   return (
     <div className="space-y-0 pb-8" data-testid="pnl-tab">
       <PnlCalloutBar enriched={enriched} />
-      <ColumnHeaders
-        columns={columns}
-        getDrillLevel={getDrillLevel}
-        onDrillDown={drillDown}
-        onDrillUp={drillUp}
+      <ColumnToolbar
         onExpandAll={expandAll}
         onCollapseAll={collapseAll}
         hasAnyDrillDown={hasAnyDrillDown}
@@ -326,41 +322,14 @@ export function PnlTab({ output }: PnlTabProps) {
       />
       <div className="overflow-x-auto" data-testid="pnl-table">
         <table className="w-full text-sm" role="grid" aria-label="Profit and Loss Statement">
-          <thead>
-            <tr className="border-b">
-              <th
-                className="text-left py-2 px-3 font-medium text-muted-foreground sticky left-0 bg-background z-10 min-w-[200px] shadow-[2px_0_4px_-2px_rgba(0,0,0,0.06)]"
-                scope="col"
-              >
-                &nbsp;
-              </th>
-              {visibleCols.map((col) => (
-                <th
-                  key={col.key}
-                  className={`text-right py-2 px-3 font-medium text-muted-foreground whitespace-nowrap${col.level === "annual" ? " cursor-pointer select-none" : ""}`}
-                  data-testid={`pnl-header-${col.key}`}
-                  scope="col"
-                  tabIndex={col.level === "annual" ? 0 : undefined}
-                  onClick={col.level === "annual" ? () => drillDown(col.year) : undefined}
-                  onKeyDown={
-                    col.level === "annual"
-                      ? (e) => {
-                          if (e.key === "Enter") {
-                            e.preventDefault();
-                            drillDown(col.year);
-                          } else if (e.key === "Escape") {
-                            e.preventDefault();
-                            drillUp(col.year);
-                          }
-                        }
-                      : undefined
-                  }
-                >
-                  {col.label}
-                </th>
-              ))}
-            </tr>
-          </thead>
+          <GroupedTableHead
+            columns={columns}
+            getDrillLevel={getDrillLevel}
+            onDrillDown={drillDown}
+            onDrillUp={drillUp}
+            hasAnyDrillDown={hasAnyDrillDown}
+            testIdPrefix="pnl"
+          />
           <tbody>
             {PNL_SECTIONS.map((section) => (
               <PnlSection

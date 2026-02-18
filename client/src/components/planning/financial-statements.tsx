@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -48,14 +48,50 @@ export function FinancialStatements({ planId, defaultTab = "summary" }: Financia
   const { output, isLoading, isFetching, error, invalidateOutputs } = usePlanOutputs(planId);
   const [activeTab, setActiveTab] = useState<StatementTabId>(defaultTab);
   const isWide = useMediaQuery("(min-width: 1024px)");
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const scrollPositions = useRef<Record<string, number>>({});
+  const pendingScrollTo = useRef<string | null>(null);
 
   useEffect(() => {
     setActiveTab(defaultTab);
   }, [defaultTab]);
 
-  const handleNavigateToTab = useCallback((tab: string, _scrollTo?: string) => {
-    setActiveTab(tab as StatementTabId);
+  const saveScrollPosition = useCallback((tabId: string) => {
+    if (scrollContainerRef.current) {
+      scrollPositions.current[tabId] = scrollContainerRef.current.scrollTop;
+    }
   }, []);
+
+  const restoreScrollPosition = useCallback((tabId: string) => {
+    if (scrollContainerRef.current) {
+      const saved = scrollPositions.current[tabId];
+      scrollContainerRef.current.scrollTop = saved ?? 0;
+    }
+  }, []);
+
+  const handleTabChange = useCallback((newTab: string) => {
+    saveScrollPosition(activeTab);
+    setActiveTab(newTab as StatementTabId);
+    requestAnimationFrame(() => {
+      if (pendingScrollTo.current) {
+        const target = document.querySelector(`[data-testid="${pendingScrollTo.current}"]`);
+        if (target) {
+          target.scrollIntoView({ behavior: "smooth", block: "start" });
+          pendingScrollTo.current = null;
+          return;
+        }
+        pendingScrollTo.current = null;
+      }
+      restoreScrollPosition(newTab);
+    });
+  }, [activeTab, saveScrollPosition, restoreScrollPosition]);
+
+  const handleNavigateToTab = useCallback((tab: string, scrollTo?: string) => {
+    if (scrollTo) {
+      pendingScrollTo.current = scrollTo;
+    }
+    handleTabChange(tab);
+  }, [handleTabChange]);
 
   if (isLoading) {
     return (
@@ -105,7 +141,7 @@ export function FinancialStatements({ planId, defaultTab = "summary" }: Financia
     <div data-testid="financial-statements" className="h-full flex flex-col">
       <Tabs
         value={activeTab}
-        onValueChange={(v) => setActiveTab(v as StatementTabId)}
+        onValueChange={handleTabChange}
         className="flex flex-col h-full"
       >
         <div className="border-b px-4 flex items-center gap-3 shrink-0">
@@ -155,7 +191,7 @@ export function FinancialStatements({ planId, defaultTab = "summary" }: Financia
           roiMetrics={output.roiMetrics}
         />
 
-        <div className="flex-1 overflow-auto">
+        <div className="flex-1 overflow-auto" ref={scrollContainerRef} data-testid="statements-scroll-container">
           <div className="p-4">
             <TabsContent value="summary" className="mt-0">
               <SummaryTab output={output} onNavigateToTab={handleNavigateToTab} />
