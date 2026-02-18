@@ -85,7 +85,11 @@ export function FinancialStatements({ planId, defaultTab = "summary", plan, queu
 
   const handleActivateComparison = useCallback(() => {
     setComparisonActive(true);
-  }, []);
+    toast({
+      description: "Comparison view available at annual level. Drill-down is disabled during comparison.",
+      duration: 3000,
+    });
+  }, [toast]);
 
   const handleDeactivateComparison = useCallback(() => {
     setComparisonActive(false);

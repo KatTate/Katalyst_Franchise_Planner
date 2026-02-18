@@ -6,7 +6,7 @@ import { StatementSection } from "./statement-section";
 import { StatementTable, type SectionDef } from "./statement-table";
 import type { EngineOutput, AnnualSummary } from "@shared/financial-engine";
 
-import type { ScenarioOutputs } from "@/lib/scenario-engine";
+import { SCENARIO_COLORS, type ScenarioOutputs, type ScenarioId } from "@/lib/scenario-engine";
 
 interface SummaryTabProps {
   output: EngineOutput;
@@ -234,57 +234,165 @@ export function SummaryTab({ output, onNavigateToTab, scenarioOutputs }: Summary
         testId="section-break-even"
       >
         <div className="space-y-3">
-          <div className="flex flex-wrap items-center gap-6">
-            <div>
-              <p className="text-xs text-muted-foreground font-medium uppercase tracking-wide">
-                Break-even Month
-              </p>
-              <p className="text-lg font-semibold font-mono" data-testid="value-breakeven-month">
-                {formatBreakEven(roiMetrics.breakEvenMonth)}
-              </p>
-            </div>
-            <div>
-              <p className="text-xs text-muted-foreground font-medium uppercase tracking-wide">
-                Estimated Date
-              </p>
-              <p className="text-lg font-semibold" data-testid="value-breakeven-date">
-                {breakEvenDate()}
-              </p>
-            </div>
-          </div>
-          {roiMetrics.breakEvenMonth !== null && (
-            <p className="text-sm text-muted-foreground" data-testid="text-breakeven-interp">
-              You'd start making money by {breakEvenDate()}
-            </p>
+          {scenarioOutputs ? (
+            <ScenarioBreakEvenComparison scenarioOutputs={scenarioOutputs} />
+          ) : (
+            <>
+              <div className="flex flex-wrap items-center gap-6">
+                <div>
+                  <p className="text-xs text-muted-foreground font-medium uppercase tracking-wide">
+                    Break-even Month
+                  </p>
+                  <p className="text-lg font-semibold font-mono" data-testid="value-breakeven-month">
+                    {formatBreakEven(roiMetrics.breakEvenMonth)}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground font-medium uppercase tracking-wide">
+                    Estimated Date
+                  </p>
+                  <p className="text-lg font-semibold" data-testid="value-breakeven-date">
+                    {breakEvenDate()}
+                  </p>
+                </div>
+              </div>
+              {roiMetrics.breakEvenMonth !== null && (
+                <p className="text-sm text-muted-foreground" data-testid="text-breakeven-interp">
+                  You'd start making money by {breakEvenDate()}
+                </p>
+              )}
+              <BreakEvenSparkline monthlyProjections={monthlyProjections} />
+            </>
           )}
-          <BreakEvenSparkline monthlyProjections={monthlyProjections} />
         </div>
       </StatementSection>
 
       <StatementSection
-        title="Startup Capital Summary"
-        defaultExpanded={false}
+        title={scenarioOutputs ? "Year 1 Key Metrics — Scenario Comparison" : "Startup Capital Summary"}
+        defaultExpanded={!!scenarioOutputs || false}
         testId="section-startup-capital"
       >
-        <div className="grid grid-cols-2 gap-4">
-          <div>
-            <p className="text-xs text-muted-foreground font-medium uppercase tracking-wide">
-              Total Investment
-            </p>
-            <p className="text-lg font-semibold font-mono" data-testid="value-total-investment-summary">
-              {formatCents(roiMetrics.totalStartupInvestment)}
-            </p>
+        {scenarioOutputs ? (
+          <ScenarioKeyMetrics scenarioOutputs={scenarioOutputs} />
+        ) : (
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <p className="text-xs text-muted-foreground font-medium uppercase tracking-wide">
+                Total Investment
+              </p>
+              <p className="text-lg font-semibold font-mono" data-testid="value-total-investment-summary">
+                {formatCents(roiMetrics.totalStartupInvestment)}
+              </p>
+            </div>
+            <div>
+              <p className="text-xs text-muted-foreground font-medium uppercase tracking-wide">
+                5-Year Cumulative Cash Flow
+              </p>
+              <p className="text-lg font-semibold font-mono" data-testid="value-5yr-cum-cf">
+                {formatCents(roiMetrics.fiveYearCumulativeCashFlow)}
+              </p>
+            </div>
           </div>
-          <div>
-            <p className="text-xs text-muted-foreground font-medium uppercase tracking-wide">
-              5-Year Cumulative Cash Flow
-            </p>
-            <p className="text-lg font-semibold font-mono" data-testid="value-5yr-cum-cf">
-              {formatCents(roiMetrics.fiveYearCumulativeCashFlow)}
-            </p>
-          </div>
-        </div>
+        )}
       </StatementSection>
+    </div>
+  );
+}
+
+function ScenarioBreakEvenComparison({ scenarioOutputs }: { scenarioOutputs: ScenarioOutputs }) {
+  const SCENARIOS: { id: ScenarioId; label: string }[] = [
+    { id: "base", label: "Base Case" },
+    { id: "conservative", label: "Conservative" },
+    { id: "optimistic", label: "Optimistic" },
+  ];
+
+  return (
+    <div className="grid grid-cols-3 gap-4" data-testid="scenario-breakeven-comparison">
+      {SCENARIOS.map((s) => {
+        const output = scenarioOutputs[s.id];
+        const breakEvenMonth = output.roiMetrics.breakEvenMonth;
+
+        return (
+          <div key={s.id} className={`rounded-md p-3 ${SCENARIO_COLORS[s.id].bg}`}>
+            <div className="flex items-center gap-1.5 mb-2">
+              <span className={`inline-block h-2 w-2 rounded-full ${SCENARIO_COLORS[s.id].dot}`} />
+              <p className="text-xs text-muted-foreground font-medium uppercase tracking-wide">{s.label}</p>
+            </div>
+            <p className="text-lg font-semibold font-mono" data-testid={`value-breakeven-${s.id}`}>
+              {formatBreakEven(breakEvenMonth)}
+            </p>
+            <p className="text-xs text-muted-foreground mt-1">
+              {breakEvenMonth === null
+                ? "Does not break even within 5 years"
+                : `Month ${breakEvenMonth}`}
+            </p>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+function ScenarioKeyMetrics({ scenarioOutputs }: { scenarioOutputs: ScenarioOutputs }) {
+  const SCENARIOS: { id: ScenarioId; label: string }[] = [
+    { id: "base", label: "Base Case" },
+    { id: "conservative", label: "Conservative" },
+    { id: "optimistic", label: "Optimistic" },
+  ];
+
+  const metrics: { label: string; getValue: (o: EngineOutput) => number; format: "currency" | "pct" }[] = [
+    { label: "Year 1 Revenue", getValue: (o) => o.annualSummaries[0]?.revenue ?? 0, format: "currency" },
+    { label: "Year 1 Pre-Tax Income", getValue: (o) => o.annualSummaries[0]?.preTaxIncome ?? 0, format: "currency" },
+    { label: "Year 1 Net Margin", getValue: (o) => {
+      const rev = o.annualSummaries[0]?.revenue ?? 0;
+      const pti = o.annualSummaries[0]?.preTaxIncome ?? 0;
+      return rev !== 0 ? pti / rev : 0;
+    }, format: "pct" },
+    { label: "5-Year Cum. Cash Flow", getValue: (o) => o.roiMetrics.fiveYearCumulativeCashFlow, format: "currency" },
+  ];
+
+  return (
+    <div className="overflow-x-auto" data-testid="scenario-key-metrics">
+      <table className="w-full text-sm">
+        <thead>
+          <tr className="border-b">
+            <th className="py-2 px-3 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground min-w-[160px]">
+              Metric
+            </th>
+            {SCENARIOS.map((s) => (
+              <th
+                key={s.id}
+                className={`py-2 px-3 text-right text-xs font-semibold uppercase tracking-wide text-muted-foreground whitespace-nowrap ${SCENARIO_COLORS[s.id].bg}`}
+              >
+                <span className="flex items-center justify-end gap-1">
+                  <span className={`inline-block h-1.5 w-1.5 rounded-full ${SCENARIO_COLORS[s.id].dot}`} />
+                  {s.label}
+                </span>
+              </th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>
+          {metrics.map((m) => (
+            <tr key={m.label} className="border-b last:border-b-0">
+              <td className="py-2 px-3 text-sm font-medium">{m.label}</td>
+              {SCENARIOS.map((s) => {
+                const value = m.getValue(scenarioOutputs[s.id]);
+                const isNeg = value < 0;
+                return (
+                  <td
+                    key={s.id}
+                    className={`py-2 px-3 text-right font-mono tabular-nums text-sm whitespace-nowrap ${SCENARIO_COLORS[s.id].bg}${isNeg ? " text-amber-700 dark:text-amber-400" : ""}`}
+                    data-testid={`metric-${m.label.replace(/\s+/g, "-").toLowerCase()}-${s.id}`}
+                  >
+                    {m.format === "pct" ? `${(value * 100).toFixed(1)}%` : formatCents(value)}
+                  </td>
+                );
+              })}
+            </tr>
+          ))}
+        </tbody>
+      </table>
     </div>
   );
 }

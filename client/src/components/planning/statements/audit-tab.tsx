@@ -1,5 +1,5 @@
 import { useMemo, useState, useCallback } from "react";
-import { Check, AlertTriangle, ChevronDown, ChevronRight, ExternalLink } from "lucide-react";
+import { Check, AlertTriangle, ChevronDown, ChevronRight, ExternalLink, Info } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -86,6 +86,15 @@ export function AuditTab({ output, onNavigateToTab, comparisonActive }: AuditTab
 
   return (
     <div className="space-y-4 pb-8" data-testid="audit-tab">
+      {comparisonActive && (
+        <div
+          className="flex items-center gap-2 px-4 py-2 text-sm text-muted-foreground bg-muted/30 border-b"
+          data-testid="audit-comparison-note"
+        >
+          <Info className="h-3.5 w-3.5 shrink-0" />
+          Showing base case checks only. Scenario comparison does not apply to audit integrity checks.
+        </div>
+      )}
       <AuditSummary
         passedCategories={passedCategories}
         totalCategories={totalCategories}
