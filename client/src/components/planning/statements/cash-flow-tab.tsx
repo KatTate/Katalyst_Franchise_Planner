@@ -1,14 +1,14 @@
-import { useMemo, useState, useCallback } from "react";
+import { useMemo, useState, useCallback, useEffect } from "react";
 import { Pencil, ChevronDown, ChevronRight, Check, AlertTriangle, ArrowDown } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { formatCents } from "@/lib/format-currency";
 import { useColumnManager, ColumnToolbar, GroupedTableHead } from "./column-manager";
 import type { EngineOutput, MonthlyProjection, AnnualSummary } from "@shared/financial-engine";
 import type { ColumnDef } from "./column-manager";
-import { getMonthlyValue } from "./column-manager";
+import { getMonthlyValue, getQuarterlyValue } from "./column-manager";
 
 import { SCENARIO_COLORS, type ScenarioId, type ScenarioOutputs } from "@/lib/scenario-engine";
-import { ComparisonTableHead } from "./comparison-table-head";
+import { ComparisonTableHead, buildComparisonColumns, type ComparisonColumnDef } from "./comparison-table-head";
 
 interface CashFlowTabProps {
   output: EngineOutput;
@@ -197,14 +197,28 @@ export function CashFlowTab({ output, scenarioOutputs }: CashFlowTabProps) {
   const comparisonActive = !!scenarioOutputs;
 
   const {
+    drillState,
     drillDown,
     drillUp,
     getColumns,
     expandAll,
     collapseAll,
+    collapseMonthlyToQuarterly,
+    hasMonthlyDrill,
     hasAnyDrillDown,
     getDrillLevel,
   } = useColumnManager();
+
+  useEffect(() => {
+    if (comparisonActive && hasMonthlyDrill) {
+      collapseMonthlyToQuarterly();
+    }
+  }, [comparisonActive, hasMonthlyDrill, collapseMonthlyToQuarterly]);
+
+  const comparisonCols = useMemo(
+    () => comparisonActive ? buildComparisonColumns(drillState) : [],
+    [comparisonActive, drillState]
+  );
 
   const columns = getColumns();
   const annualCols = columns.filter((c) => c.level === "annual");
@@ -237,6 +251,7 @@ export function CashFlowTab({ output, scenarioOutputs }: CashFlowTabProps) {
   const SCENARIOS: ScenarioId[] = ["base", "conservative", "optimistic"];
 
   if (comparisonActive && scenarioOutputs) {
+    const totalCompCols = comparisonCols.length;
     return (
       <div className="space-y-0 pb-8" data-testid="cash-flow-tab">
         <CfCalloutBar annuals={annualSummaries} lowestCash={lowestCash} />
@@ -249,7 +264,7 @@ export function CashFlowTab({ output, scenarioOutputs }: CashFlowTabProps) {
         />
         <div className="overflow-x-auto" data-testid="cf-table">
           <table className="w-full text-sm" role="grid" aria-label="Cash Flow Statement — Scenario Comparison">
-            <ComparisonTableHead drillState={{}} testIdPrefix="cf" />
+            <ComparisonTableHead drillState={drillState} testIdPrefix="cf" />
             <tbody>
               {CF_SECTIONS.map((section) => {
                 const isExpanded = expandedSections[section.key] ?? true;
@@ -258,6 +273,8 @@ export function CashFlowTab({ output, scenarioOutputs }: CashFlowTabProps) {
                     key={section.key}
                     section={section}
                     scenarioOutputs={scenarioOutputs}
+                    comparisonCols={comparisonCols}
+                    totalCols={totalCompCols}
                     isExpanded={isExpanded}
                     onToggle={() => toggleSection(section.key)}
                   />
@@ -549,20 +566,36 @@ function CfRow({ row, columns, annuals, monthly }: CfRowProps) {
   );
 }
 
+function getComparisonCfCellValue(
+  field: string,
+  col: ComparisonColumnDef,
+  annuals: AnnualSummary[],
+  monthly: MonthlyProjection[],
+): number {
+  if (col.level === "annual") {
+    return getCfAnnualValue(field, col.year, annuals, monthly);
+  }
+  if (col.level === "quarterly" && col.quarter) {
+    return getCfCellValue(field, { key: col.key, label: col.label, year: col.year, quarter: col.quarter, level: "quarterly" }, annuals, monthly);
+  }
+  return 0;
+}
+
 function ComparisonCfSection({
   section,
   scenarioOutputs,
+  comparisonCols,
+  totalCols,
   isExpanded,
   onToggle,
 }: {
   section: CfSectionDef;
   scenarioOutputs: ScenarioOutputs;
+  comparisonCols: ComparisonColumnDef[];
+  totalCols: number;
   isExpanded: boolean;
   onToggle: () => void;
 }) {
-  const SCENARIOS: ScenarioId[] = ["base", "conservative", "optimistic"];
-  const totalCols = 5 * 3;
-
   return (
     <>
       <tr
@@ -605,26 +638,25 @@ function ComparisonCfSection({
               >
                 {row.label}
               </td>
-              {Array.from({ length: 5 }, (_, yi) => {
-                const year = yi + 1;
-                return SCENARIOS.map((scenario, sIdx) => {
-                  const annuals = scenarioOutputs[scenario].annualSummaries;
-                  const monthly = scenarioOutputs[scenario].monthlyProjections;
-                  const value = getCfAnnualValue(row.field, year, annuals, monthly);
-                  const isNegative = value < 0;
-                  const cellContent = formatCents(value);
+              {comparisonCols.map((col, colIdx) => {
+                const scenario = col.scenario;
+                const annuals = scenarioOutputs[scenario].annualSummaries;
+                const monthly = scenarioOutputs[scenario].monthlyProjections;
+                const value = getComparisonCfCellValue(row.field, col, annuals, monthly);
+                const isNegative = value < 0;
+                const cellContent = formatCents(value);
+                const isYearBoundary = colIdx > 0 && col.year !== comparisonCols[colIdx - 1].year;
 
-                  return (
-                    <td
-                      key={`y${year}-${scenario}`}
-                      className={`py-1.5 px-3 text-right font-mono tabular-nums text-sm whitespace-nowrap ${SCENARIO_COLORS[scenario].bg}${isNegative ? " text-amber-700 dark:text-amber-400" : ""}${sIdx === 0 && yi > 0 ? " border-l-2 border-border/40" : ""}`}
-                      data-testid={`cf-value-${row.key}-y${year}-${scenario}`}
-                      role="gridcell"
-                    >
-                      {cellContent}
-                    </td>
-                  );
-                });
+                return (
+                  <td
+                    key={col.key}
+                    className={`py-1.5 px-3 text-right font-mono tabular-nums text-sm whitespace-nowrap ${SCENARIO_COLORS[scenario].bg}${isNegative ? " text-amber-700 dark:text-amber-400" : ""}${isYearBoundary ? " border-l-2 border-border/40" : ""}`}
+                    data-testid={`cf-value-${row.key}-${col.key}`}
+                    role="gridcell"
+                  >
+                    {cellContent}
+                  </td>
+                );
               })}
             </tr>
           );

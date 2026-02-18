@@ -62,6 +62,26 @@ export function useColumnManager() {
     setDrillState({});
   }, []);
 
+  const collapseMonthlyToQuarterly = useCallback(() => {
+    setDrillState((prev) => {
+      const next: DrillState = {};
+      for (const [yearStr, level] of Object.entries(prev)) {
+        const year = Number(yearStr);
+        if (level === "monthly") {
+          next[year] = "quarterly";
+        } else {
+          next[year] = level;
+        }
+      }
+      return next;
+    });
+  }, []);
+
+  const hasMonthlyDrill = useMemo(
+    () => Object.values(drillState).some((level) => level === "monthly"),
+    [drillState]
+  );
+
   const getColumns = useCallback((): ColumnDef[] => {
     const cols: ColumnDef[] = [];
     for (let y = 1; y <= 5; y++) {
@@ -105,6 +125,8 @@ export function useColumnManager() {
     drillUp,
     expandAll,
     collapseAll,
+    collapseMonthlyToQuarterly,
+    hasMonthlyDrill,
     getColumns,
     hasAnyDrillDown,
   };
@@ -158,12 +180,12 @@ export function ColumnToolbar({
                 data-testid="button-toggle-drill"
               >
                 <ChevronsUpDown className="h-3 w-3 mr-1" />
-                Expand All
+                {hasAnyDrillDown ? "Collapse All" : "Expand All"}
               </Button>
             </span>
           </TooltipTrigger>
           <TooltipContent side="bottom">
-            <p className="text-xs">Deactivate comparison to drill down.</p>
+            <p className="text-xs">Deactivate comparison to change drill level.</p>
           </TooltipContent>
         </Tooltip>
       ) : (

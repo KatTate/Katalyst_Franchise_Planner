@@ -1,6 +1,6 @@
 # Story 5.7: Scenario Comparison
 
-Status: in-progress
+Status: review
 
 ## Story
 
@@ -233,9 +233,46 @@ so that I can build conviction that my plan works even in a challenging environm
 ## Dev Agent Record
 
 ### Agent Model Used
+Claude 4.6 Opus (via Replit Agent)
 
 ### Completion Notes
+All 16 acceptance criteria implemented and verified. Key implementation decisions:
+- Created `scenario-engine.ts` as pure computation utility in `client/src/lib/`
+- Built `ComparisonTableHead` as separate component (Option 1 from Dev Notes) supporting both annual and quarterly drill with scenario sub-columns
+- Used `buildComparisonColumns()` to generate column definitions dynamically based on drill state
+- AC10 (quarterly drill preservation): Each tab passes real `drillState` to `ComparisonTableHead` and comparison row renderers iterate `comparisonCols` instead of hardcoded 5×3 grids
+- AC11 (monthly auto-collapse): Added `collapseMonthlyToQuarterly()` to `useColumnManager` and `useEffect` in each tab to auto-collapse when comparison activates
+- Summary tab enhanced with `ScenarioBreakEvenComparison` and `ScenarioKeyMetrics` components
+- Audit tab shows "base case only" note during comparison
+- Toast notification on comparison activation about drill-down availability
 
 ### File List
+| File | Action |
+|------|--------|
+| `client/src/lib/scenario-engine.ts` | CREATE |
+| `client/src/components/planning/statements/scenario-bar.tsx` | CREATE |
+| `client/src/components/planning/statements/scenario-summary-card.tsx` | CREATE |
+| `client/src/components/planning/statements/comparison-table-head.tsx` | CREATE |
+| `client/src/components/planning/financial-statements.tsx` | MODIFY |
+| `client/src/components/planning/statements/column-manager.tsx` | MODIFY |
+| `client/src/components/planning/statements/pnl-tab.tsx` | MODIFY |
+| `client/src/components/planning/statements/balance-sheet-tab.tsx` | MODIFY |
+| `client/src/components/planning/statements/cash-flow-tab.tsx` | MODIFY |
+| `client/src/components/planning/statements/summary-tab.tsx` | MODIFY |
+| `client/src/components/planning/statements/roic-tab.tsx` | MODIFY |
+| `client/src/components/planning/statements/valuation-tab.tsx` | MODIFY |
+| `client/src/components/planning/statements/audit-tab.tsx` | MODIFY |
 
 ### Testing Summary
+Playwright e2e tests verified:
+- Scenario Bar presence and interaction (AC1, AC2)
+- Conservative and Optimistic scenario activation/deactivation (AC3, AC4, AC8)
+- Triple-column comparison layout across P&L, Balance Sheet, Cash Flow tabs (AC6)
+- Comparison summary card with scenario-specific values (AC7)
+- Drill-down disabled during comparison (AC9, AC12)
+- Quarterly drill state preserved when entering comparison (AC10)
+- Monthly auto-collapse to quarterly on comparison activation (AC11)
+- ROIC and Valuation tabs show comparison columns (AC13)
+- Audit tab shows base case only (AC14)
+- Inline editing restricted to base case columns (AC15)
+- data-testid coverage on all required elements (AC16)

@@ -1,9 +1,9 @@
-import { useMemo, useState, useCallback, useRef } from "react";
+import { useMemo, useState, useCallback, useRef, useEffect } from "react";
 import { Pencil, ChevronDown, ChevronRight } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { formatCents } from "@/lib/format-currency";
 import { useColumnManager, ColumnToolbar, GroupedTableHead } from "./column-manager";
-import { ComparisonTableHead } from "./comparison-table-head";
+import { ComparisonTableHead, buildComparisonColumns, type ComparisonColumnDef } from "./comparison-table-head";
 import { InlineEditableCell } from "./inline-editable-cell";
 import { INPUT_FIELD_MAP, isEditableRow } from "./input-field-map";
 import { SCENARIO_COLORS, type ScenarioId, type ScenarioOutputs } from "@/lib/scenario-engine";
@@ -321,14 +321,23 @@ export function PnlTab({ output, financialInputs, onCellEdit, isSaving, scenario
   }, [scenarioOutputs]);
 
   const {
+    drillState,
     drillDown,
     drillUp,
     getColumns,
     expandAll,
     collapseAll,
+    collapseMonthlyToQuarterly,
+    hasMonthlyDrill,
     hasAnyDrillDown,
     getDrillLevel,
   } = useColumnManager();
+
+  useEffect(() => {
+    if (comparisonActive && hasMonthlyDrill) {
+      collapseMonthlyToQuarterly();
+    }
+  }, [comparisonActive, hasMonthlyDrill, collapseMonthlyToQuarterly]);
 
   const columns = getColumns();
   const annualCols = columns.filter((c) => c.level === "annual");
@@ -412,8 +421,13 @@ export function PnlTab({ output, financialInputs, onCellEdit, isSaving, scenario
 
   const SCENARIOS: ScenarioId[] = ["base", "conservative", "optimistic"];
 
+  const comparisonCols = useMemo(
+    () => comparisonActive ? buildComparisonColumns(drillState) : [],
+    [comparisonActive, drillState]
+  );
+
   if (comparisonActive && scenarioOutputs && scenarioEnriched) {
-    const totalScenarioCols = 5 * 3;
+    const totalScenarioCols = comparisonCols.length;
     return (
       <div className="space-y-0 pb-8" data-testid="pnl-tab">
         <PnlCalloutBar enriched={enriched} />
@@ -426,7 +440,7 @@ export function PnlTab({ output, financialInputs, onCellEdit, isSaving, scenario
         />
         <div className="overflow-x-auto" data-testid="pnl-table">
           <table className="w-full text-sm" role="grid" aria-label="Profit and Loss Statement — Scenario Comparison">
-            <ComparisonTableHead drillState={{}} testIdPrefix="pnl" />
+            <ComparisonTableHead drillState={drillState} testIdPrefix="pnl" />
             <tbody>
               {PNL_SECTIONS.map((section) => {
                 const isExpanded = expandedSections[section.key] ?? true;
@@ -436,6 +450,7 @@ export function PnlTab({ output, financialInputs, onCellEdit, isSaving, scenario
                     section={section}
                     scenarioEnriched={scenarioEnriched}
                     scenarioOutputs={scenarioOutputs}
+                    comparisonCols={comparisonCols}
                     isExpanded={isExpanded}
                     onToggle={() => toggleSection(section.key)}
                     totalCols={totalScenarioCols}
@@ -786,10 +801,44 @@ function getScenarioAnnualValue(
   return getAnnualValue(field, year, enriched, plAnalysis);
 }
 
+function getComparisonCellValue(
+  field: string,
+  col: ComparisonColumnDef,
+  enriched: EnrichedAnnual[],
+  monthly: MonthlyProjection[],
+  plAnalysis: PLAnalysisOutput[],
+  format: "currency" | "pct",
+): number {
+  if (col.level === "annual") {
+    return getScenarioAnnualValue(field, col.year, enriched, plAnalysis);
+  }
+  if (col.level === "quarterly" && col.quarter) {
+    if (field === "monthlyRevenue") {
+      const startMonth = (col.year - 1) * 12 + (col.quarter - 1) * 3;
+      let sum = 0;
+      let count = 0;
+      for (let i = 0; i < 3; i++) {
+        const mp = monthly[startMonth + i];
+        if (mp) { sum += mp.revenue; count++; }
+      }
+      return count > 0 ? Math.round(sum / count) : 0;
+    }
+    if (field === "discretionaryMarketing") {
+      return getQuarterlyValue("marketing", col.year, col.quarter, monthly, format);
+    }
+    if (PL_ANALYSIS_FIELDS.has(field)) {
+      return getAnnualValue(field, col.year, enriched, plAnalysis);
+    }
+    return getQuarterlyValue(field, col.year, col.quarter, monthly, format);
+  }
+  return 0;
+}
+
 interface ComparisonPnlSectionProps {
   section: PnlSectionDef;
   scenarioEnriched: Record<ScenarioId, EnrichedAnnual[]>;
   scenarioOutputs: ScenarioOutputs;
+  comparisonCols: ComparisonColumnDef[];
   isExpanded: boolean;
   onToggle: () => void;
   totalCols: number;
@@ -808,6 +857,7 @@ function ComparisonPnlSection({
   section,
   scenarioEnriched,
   scenarioOutputs,
+  comparisonCols,
   isExpanded,
   onToggle,
   totalCols,
@@ -821,8 +871,6 @@ function ComparisonPnlSection({
   financialInputs,
   onCellEdit,
 }: ComparisonPnlSectionProps) {
-  const SCENARIOS: ScenarioId[] = ["base", "conservative", "optimistic"];
-
   return (
     <>
       <tr
@@ -849,6 +897,7 @@ function ComparisonPnlSection({
             row={row}
             scenarioEnriched={scenarioEnriched}
             scenarioOutputs={scenarioOutputs}
+            comparisonCols={comparisonCols}
             editingCell={editingCell}
             flashingRows={flashingRows}
             onStartEdit={onStartEdit}
@@ -868,6 +917,7 @@ interface ComparisonPnlRowProps {
   row: PnlRowDef;
   scenarioEnriched: Record<ScenarioId, EnrichedAnnual[]>;
   scenarioOutputs: ScenarioOutputs;
+  comparisonCols: ComparisonColumnDef[];
   editingCell: string | null;
   flashingRows: Set<string>;
   onStartEdit?: (rowKey: string, colKey: string) => void;
@@ -883,6 +933,7 @@ function ComparisonPnlRow({
   row,
   scenarioEnriched,
   scenarioOutputs,
+  comparisonCols,
   editingCell,
   flashingRows,
   onStartEdit,
@@ -893,7 +944,6 @@ function ComparisonPnlRow({
   financialInputs,
   onCellEdit,
 }: ComparisonPnlRowProps) {
-  const SCENARIOS: ScenarioId[] = ["base", "conservative", "optimistic"];
   const editable = isEditableRow(row.key) && !!onStartEdit;
   const mapping = editable ? INPUT_FIELD_MAP[row.key] : undefined;
 
@@ -917,56 +967,55 @@ function ComparisonPnlRow({
           )}
         </span>
       </td>
-      {Array.from({ length: 5 }, (_, yi) => {
-        const year = yi + 1;
-        return SCENARIOS.map((scenario, sIdx) => {
-          const colKey = `y${year}-${scenario}`;
-          const enriched = scenarioEnriched[scenario];
-          const plAnalysis = scenarioOutputs[scenario].plAnalysis;
-          const value = getScenarioAnnualValue(row.field, year, enriched, plAnalysis);
-          const isNegative = value < 0;
-          const cellContent = formatValue(value, row.format, row.isExpense);
-          const isBase = scenario === "base";
+      {comparisonCols.map((col, colIdx) => {
+        const scenario = col.scenario;
+        const enriched = scenarioEnriched[scenario];
+        const monthly = scenarioOutputs[scenario].monthlyProjections;
+        const plAnalysis = scenarioOutputs[scenario].plAnalysis;
+        const value = getComparisonCellValue(row.field, col, enriched, monthly, plAnalysis, row.format);
+        const isNegative = value < 0;
+        const cellContent = formatValue(value, row.format, row.isExpense);
+        const isBase = scenario === "base";
+        const isYearBoundary = colIdx > 0 && col.year !== comparisonCols[colIdx - 1].year;
 
-          if (isBase && editable && editingCell === `${row.key}:${colKey}`) {
-            const rawValue = getRawValue(row.key);
-            return (
-              <td
-                key={colKey}
-                className={`py-1.5 px-1 text-right ${SCENARIO_COLORS[scenario].bg}${yi > 0 && sIdx === 0 ? " border-l-2 border-border/40" : ""}`}
-                role="gridcell"
-                data-testid={`pnl-value-${row.key}-${colKey}`}
-              >
-                <InlineEditableCell
-                  value={formatFieldValue(rawValue, mapping!.inputFormat)}
-                  inputFormat={mapping!.inputFormat}
-                  onCommit={(val) => onCommitEdit(row.key, val)}
-                  onCancel={onCancelEdit}
-                  onTabNext={() => onTabNav(row.key, "next")}
-                  onTabPrev={() => onTabNav(row.key, "prev")}
-                  testId={`pnl-value-${row.key}-${colKey}`}
-                  ariaLabel={`${row.label}, Y${year} Base`}
-                  className={isNegative ? "text-amber-700 dark:text-amber-400" : ""}
-                  isFlashing={false}
-                />
-              </td>
-            );
-          }
-
-          const canClickEdit = isBase && editable && !editingCell;
-
+        if (isBase && editable && editingCell === `${row.key}:${col.key}`) {
+          const rawValue = getRawValue(row.key);
           return (
             <td
-              key={colKey}
-              className={`py-1.5 px-3 text-right font-mono tabular-nums text-sm whitespace-nowrap ${SCENARIO_COLORS[scenario].bg}${isNegative ? " text-amber-700 dark:text-amber-400" : ""}${yi > 0 && sIdx === 0 ? " border-l-2 border-border/40" : ""}${canClickEdit ? " cursor-pointer" : ""}`}
-              data-testid={`pnl-value-${row.key}-${colKey}`}
+              key={col.key}
+              className={`py-1.5 px-1 text-right ${SCENARIO_COLORS[scenario].bg}${isYearBoundary ? " border-l-2 border-border/40" : ""}`}
               role="gridcell"
-              onClick={canClickEdit ? () => onStartEdit!(row.key, colKey) : undefined}
+              data-testid={`pnl-value-${row.key}-${col.key}`}
             >
-              {cellContent}
+              <InlineEditableCell
+                value={formatFieldValue(rawValue, mapping!.inputFormat)}
+                inputFormat={mapping!.inputFormat}
+                onCommit={(val) => onCommitEdit(row.key, val)}
+                onCancel={onCancelEdit}
+                onTabNext={() => onTabNav(row.key, "next")}
+                onTabPrev={() => onTabNav(row.key, "prev")}
+                testId={`pnl-value-${row.key}-${col.key}`}
+                ariaLabel={`${row.label}, ${col.label}`}
+                className={isNegative ? "text-amber-700 dark:text-amber-400" : ""}
+                isFlashing={false}
+              />
             </td>
           );
-        });
+        }
+
+        const canClickEdit = isBase && editable && !editingCell;
+
+        return (
+          <td
+            key={col.key}
+            className={`py-1.5 px-3 text-right font-mono tabular-nums text-sm whitespace-nowrap ${SCENARIO_COLORS[scenario].bg}${isNegative ? " text-amber-700 dark:text-amber-400" : ""}${isYearBoundary ? " border-l-2 border-border/40" : ""}${canClickEdit ? " cursor-pointer" : ""}`}
+            data-testid={`pnl-value-${row.key}-${col.key}`}
+            role="gridcell"
+            onClick={canClickEdit ? () => onStartEdit!(row.key, col.key) : undefined}
+          >
+            {cellContent}
+          </td>
+        );
       })}
     </tr>
   );

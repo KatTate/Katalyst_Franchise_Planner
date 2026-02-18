@@ -1,4 +1,4 @@
-import { useMemo, useState, useCallback } from "react";
+import { useMemo, useState, useCallback, useEffect } from "react";
 import { Pencil, ChevronDown, ChevronRight, Check, AlertTriangle, ArrowDown } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { formatCents } from "@/lib/format-currency";
@@ -8,7 +8,7 @@ import type { ColumnDef } from "./column-manager";
 import { getAnnualValue, getQuarterlyValue, getMonthlyValue } from "./column-manager";
 
 import { SCENARIO_COLORS, type ScenarioId, type ScenarioOutputs } from "@/lib/scenario-engine";
-import { ComparisonTableHead } from "./comparison-table-head";
+import { ComparisonTableHead, buildComparisonColumns, type ComparisonColumnDef } from "./comparison-table-head";
 
 interface BalanceSheetTabProps {
   output: EngineOutput;
@@ -369,14 +369,28 @@ export function BalanceSheetTab({ output, scenarioOutputs }: BalanceSheetTabProp
   }, [scenarioOutputs]);
 
   const {
+    drillState,
     drillDown,
     drillUp,
     getColumns,
     expandAll,
     collapseAll,
+    collapseMonthlyToQuarterly,
+    hasMonthlyDrill,
     hasAnyDrillDown,
     getDrillLevel,
   } = useColumnManager();
+
+  useEffect(() => {
+    if (comparisonActive && hasMonthlyDrill) {
+      collapseMonthlyToQuarterly();
+    }
+  }, [comparisonActive, hasMonthlyDrill, collapseMonthlyToQuarterly]);
+
+  const comparisonCols = useMemo(
+    () => comparisonActive ? buildComparisonColumns(drillState) : [],
+    [comparisonActive, drillState]
+  );
 
   const columns = getColumns();
   const annualCols = columns.filter((c) => c.level === "annual");
@@ -400,6 +414,7 @@ export function BalanceSheetTab({ output, scenarioOutputs }: BalanceSheetTabProp
   const SCENARIOS: ScenarioId[] = ["base", "conservative", "optimistic"];
 
   if (comparisonActive && scenarioOutputs && scenarioEnriched) {
+    const totalCompCols = comparisonCols.length;
     return (
       <div className="space-y-0 pb-8" data-testid="balance-sheet-tab">
         <BsCalloutBar enriched={enriched} identityPassed={bsCheckPassed} />
@@ -412,7 +427,7 @@ export function BalanceSheetTab({ output, scenarioOutputs }: BalanceSheetTabProp
         />
         <div className="overflow-x-auto" data-testid="bs-table">
           <table className="w-full text-sm" role="grid" aria-label="Balance Sheet — Scenario Comparison">
-            <ComparisonTableHead drillState={{}} testIdPrefix="bs" />
+            <ComparisonTableHead drillState={drillState} testIdPrefix="bs" />
             <tbody>
               {BS_SECTIONS.map((section) => {
                 const isExpanded = expandedSections[section.key] ?? true;
@@ -422,6 +437,8 @@ export function BalanceSheetTab({ output, scenarioOutputs }: BalanceSheetTabProp
                     section={section}
                     scenarioEnriched={scenarioEnriched}
                     scenarioOutputs={scenarioOutputs}
+                    comparisonCols={comparisonCols}
+                    totalCols={totalCompCols}
                     isExpanded={isExpanded}
                     onToggle={() => toggleSection(section.key)}
                   />
@@ -695,22 +712,39 @@ function BsRow({ row, columns, enriched, monthly, roicExtended }: BsRowProps) {
   );
 }
 
+function getComparisonBsCellValue(
+  field: string,
+  col: ComparisonColumnDef,
+  enriched: EnrichedBsAnnual[],
+  monthly: MonthlyProjection[],
+  roicExt: ROICExtendedOutput[],
+): number {
+  if (col.level === "annual") {
+    return getBsAnnualValue(field, col.year, enriched, roicExt);
+  }
+  if (col.level === "quarterly" && col.quarter) {
+    return getBsCellValue(field, { key: col.key, label: col.label, year: col.year, quarter: col.quarter, level: "quarterly" }, enriched, monthly, roicExt);
+  }
+  return 0;
+}
+
 function ComparisonBsSection({
   section,
   scenarioEnriched,
   scenarioOutputs,
+  comparisonCols,
+  totalCols,
   isExpanded,
   onToggle,
 }: {
   section: BsSectionDef;
   scenarioEnriched: Record<ScenarioId, EnrichedBsAnnual[]>;
   scenarioOutputs: ScenarioOutputs;
+  comparisonCols: ComparisonColumnDef[];
+  totalCols: number;
   isExpanded: boolean;
   onToggle: () => void;
 }) {
-  const SCENARIOS: ScenarioId[] = ["base", "conservative", "optimistic"];
-  const totalCols = 5 * 3;
-
   return (
     <>
       <tr
@@ -753,26 +787,26 @@ function ComparisonBsSection({
               >
                 {row.label}
               </td>
-              {Array.from({ length: 5 }, (_, yi) => {
-                const year = yi + 1;
-                return SCENARIOS.map((scenario, sIdx) => {
-                  const enriched = scenarioEnriched[scenario];
-                  const roicExt = scenarioOutputs[scenario].roicExtended;
-                  const value = getBsAnnualValue(row.field, year, enriched, roicExt);
-                  const isNegative = value < 0;
-                  const cellContent = formatBsValue(value, row.format);
+              {comparisonCols.map((col, colIdx) => {
+                const scenario = col.scenario;
+                const enriched = scenarioEnriched[scenario];
+                const monthly = scenarioOutputs[scenario].monthlyProjections;
+                const roicExt = scenarioOutputs[scenario].roicExtended;
+                const value = getComparisonBsCellValue(row.field, col, enriched, monthly, roicExt);
+                const isNegative = value < 0;
+                const cellContent = formatBsValue(value, row.format);
+                const isYearBoundary = colIdx > 0 && col.year !== comparisonCols[colIdx - 1].year;
 
-                  return (
-                    <td
-                      key={`y${year}-${scenario}`}
-                      className={`py-1.5 px-3 text-right font-mono tabular-nums text-sm whitespace-nowrap ${SCENARIO_COLORS[scenario].bg}${isNegative ? " text-amber-700 dark:text-amber-400" : ""}${sIdx === 0 && yi > 0 ? " border-l-2 border-border/40" : ""}`}
-                      data-testid={`bs-value-${row.key}-y${year}-${scenario}`}
-                      role="gridcell"
-                    >
-                      {cellContent}
-                    </td>
-                  );
-                });
+                return (
+                  <td
+                    key={col.key}
+                    className={`py-1.5 px-3 text-right font-mono tabular-nums text-sm whitespace-nowrap ${SCENARIO_COLORS[scenario].bg}${isNegative ? " text-amber-700 dark:text-amber-400" : ""}${isYearBoundary ? " border-l-2 border-border/40" : ""}`}
+                    data-testid={`bs-value-${row.key}-${col.key}`}
+                    role="gridcell"
+                  >
+                    {cellContent}
+                  </td>
+                );
               })}
             </tr>
           );
