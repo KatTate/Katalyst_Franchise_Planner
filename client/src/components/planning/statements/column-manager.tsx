@@ -147,7 +147,7 @@ export function ColumnToolbar({
       <Button
         variant="ghost"
         size="sm"
-        className="h-6 px-2 text-xs"
+        className="text-xs"
         onClick={hasAnyDrillDown ? onCollapseAll : onExpandAll}
         data-testid="button-toggle-drill"
       >

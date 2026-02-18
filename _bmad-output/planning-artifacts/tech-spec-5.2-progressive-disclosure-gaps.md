@@ -2,8 +2,8 @@
 title: 'Story 5.2 Progressive Disclosure & Infrastructure Gaps'
 slug: '5-2-progressive-disclosure-gaps'
 created: '2026-02-17'
-status: 'in-progress'
-stepsCompleted: []
+status: 'done'
+stepsCompleted: ['AC1', 'AC2', 'AC3', 'AC4', 'AC5', 'AC6', 'AC7']
 tech_stack: ['react', 'typescript', 'tailwindcss', 'shadcn-ui', 'lucide-react']
 files_to_modify:
   - 'client/src/components/planning/statements/column-manager.tsx'

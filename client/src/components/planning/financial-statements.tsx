@@ -160,7 +160,7 @@ export function FinancialStatements({ planId, defaultTab = "summary" }: Financia
             </TabsList>
           ) : (
             <div className="py-2 flex-1">
-              <Select value={activeTab} onValueChange={(v) => setActiveTab(v as StatementTabId)}>
+              <Select value={activeTab} onValueChange={handleTabChange}>
                 <SelectTrigger className="w-full" data-testid="select-statement-tab">
                   <SelectValue />
                 </SelectTrigger>
