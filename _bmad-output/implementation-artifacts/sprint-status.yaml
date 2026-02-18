@@ -87,6 +87,12 @@ story_location: _bmad-output/implementation-artifacts
 #   - M3: Section header keyboard accessibility (tabIndex, aria-expanded, onKeyDown)
 #   - L1: EBITDA tooltip formula corrected; L2: dead code removed; L3: glossary link placeholder
 #   - LSP clean, story status: done
+# 2026-02-18: Story 5.4 completed (commit 99531198)
+#   - Balance Sheet tab: verified and fixed cumulative depreciation calculation
+#   - Cash Flow tab: new component with 4 sections, identity check, amber negative cash
+#   - Container: BalanceSheetTab and CashFlowTab replace PlaceholderTab components
+#   - 20/20 acceptance criteria verified against code, LSP clean
+#   - Story status: done
 
 development_status:
   # Epic 1: Auth, Onboarding & User Management
@@ -145,7 +151,7 @@ development_status:
   5-1-financial-engine-extension: done
   5-2-financial-statements-container-summary-tab: done
   5-3-pl-statement-tab: done
-  5-4-balance-sheet-cash-flow-tabs: in-progress
+  5-4-balance-sheet-cash-flow-tabs: done
   5-5-roic-valuation-audit-tabs: backlog
   5-6-quick-entry-input-output-integration: backlog
   5-7-scenario-comparison: backlog
