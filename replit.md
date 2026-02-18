@@ -53,6 +53,21 @@ _bmad-output/             # Generated artifacts go here
 
 When the user triggers an agent or workflow, the AI MUST load the referenced file and follow its activation steps in exact order. The AI must not summarize, skip, or improvise. When a workflow says WAIT for user input, the AI MUST stop and wait. The AI MUST NOT auto-proceed, simulate user responses, or skip ahead. When implementing a story (DS workflow), the AI MUST follow ALL steps including: updating story status to "in-progress" at start, filling the Dev Agent Record at completion, updating sprint-status.yaml, and setting status to "review" when done. The AI should always adopt the correct agent persona for the task. For any workflow execution, the AI MUST first load and follow `_bmad/core/tasks/workflow.xml` — this is the core execution engine. The AI must read the COMPLETE file and execute ALL steps in EXACT ORDER, never skipping a step.
 
+### HARD STOP: No Implementation Without an Approved Story Document
+
+**DO NOT write, create, or modify any implementation code (application source files, components, routes, styles, tests) unless ALL of the following are true:**
+
+1. A completed story context document exists in `_bmad-output/implementation-artifacts/` for the story being implemented (e.g., `5-4-balance-sheet-cash-flow-tabs.md`).
+2. That document was produced by running the `bmad-create-story` (CS) workflow to completion, including the quality checklist validation.
+3. The user has approved the story document or explicitly said to proceed with implementation.
+4. Implementation is being done inside an active `bmad-dev-story` (DS) workflow execution.
+
+**If any of these conditions is not met, you MUST NOT write code.** Having "enough context" from reading planning artifacts is NOT a substitute for the story document. The story document IS the quality gate — it validates acceptance criteria completeness, identifies anti-patterns, and flags integration gotchas BEFORE code is written. Skipping it means skipping the safeguard.
+
+**If the user asks you to implement a story and no story document exists yet, your ONLY valid response is:** "The story context document hasn't been created yet. Let me run the create-story workflow first." Then run `bmad-create-story`.
+
+This rule exists because an agent once skipped the story document, jumped straight to implementation, and produced code that bypassed all BMAD quality checks. That must never happen again.
+
 ## System Architecture
 
 **UI/UX Decisions:**
