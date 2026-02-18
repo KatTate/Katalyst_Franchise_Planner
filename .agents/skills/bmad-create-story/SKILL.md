@@ -61,6 +61,11 @@ through all 6 steps in order. The workflow engine handles:
 - EXHAUSTIVE ANALYSIS REQUIRED — do NOT be lazy or skim artifacts
 - COMMON LLM MISTAKES TO PREVENT: reinventing wheels, wrong libraries, wrong file
   locations, breaking regressions, ignoring UX, vague implementations
+- **THIS WORKFLOW MUST COMPLETE BEFORE ANY IMPLEMENTATION CODE IS WRITTEN.** The story
+  context document this workflow produces is the quality gate between planning and coding.
+  Having "enough context" from reading artifacts is NOT a substitute for running this
+  workflow. If you skip this workflow and start writing code directly, you are violating
+  the BMAD process. No exceptions.
 
 ## What's Next
 

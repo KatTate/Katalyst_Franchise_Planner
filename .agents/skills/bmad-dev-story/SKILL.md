@@ -37,6 +37,16 @@ through all steps in order. The workflow engine handles:
 - Instructions execution from the workflow's instructions.xml
 - Checklist validation from the workflow's checklist.md
 
+## Precondition Gate — MANDATORY
+
+**Before activating this workflow, verify that a completed story context document exists:**
+
+1. Check `_bmad-output/implementation-artifacts/` for a story file matching the target story (e.g., `5-4-balance-sheet-cash-flow-tabs.md`).
+2. If NO story document exists, **DO NOT proceed with this workflow.** Instead, tell the user: "No story document exists for this story yet. I need to run create-story (CS) first to produce it." Then activate `bmad-create-story` instead.
+3. If a story document exists but its Status is NOT `ready-for-dev` or `in-progress`, **DO NOT proceed.** Tell the user the current status and ask how to proceed.
+
+**This gate exists because an agent once skipped story creation entirely and jumped straight to writing implementation code, bypassing all BMAD quality checks. The story document is the quality gate — without it, acceptance criteria completeness, anti-patterns, and integration gotchas are unvalidated.**
+
 ## Critical Rules
 
 - This workflow has **11 steps**. You are NOT done until step 11 is complete.
@@ -47,6 +57,7 @@ through all steps in order. The workflow engine handles:
 - The agent plans its OWN implementation approach from acceptance criteria — do not use pre-scripted task checklists
 - Steps 10 and 11 (update story/sprint status, communicate completion) are MANDATORY — these are the steps most commonly skipped and must always be executed
 - Do NOT stop after implementation. You MUST continue through testing, verification, documentation updates, and completion communication.
+- **NEVER write implementation code outside of this workflow.** If you find yourself writing application code (components, routes, styles, tests) without having loaded a story file through Step 1, you are violating the BMAD process. Stop immediately.
 
 ## Step Summary
 
