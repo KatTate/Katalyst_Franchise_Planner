@@ -1,8 +1,15 @@
+---
+status: SUPERSEDED
+superseded_by: _bmad-output/planning-artifacts/ux-design-specification-consolidated.md
+superseded_date: 2026-02-18
+superseded_reason: "Consolidated with ux-design-specification.md into single authoritative UX spec. All content preserved in consolidated document with v3 architecture taking precedence."
+---
+
 # UX Specification: Financial Statement Experience
 
 **Author:** Sally (UX Designer)
 **Date:** 2026-02-16
-**Status:** Revised — Architecture Simplified
+**Status:** SUPERSEDED — See ux-design-specification-consolidated.md
 **Revision:** v3 — Eliminates mode switcher; establishes My Plan / Reports two-door architecture
 **Foundation:** John's Six Points from Party Mode Retrospective Review
 **Input Documents:**

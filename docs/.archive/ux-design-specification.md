@@ -1,4 +1,8 @@
 ---
+status: SUPERSEDED
+superseded_by: _bmad-output/planning-artifacts/ux-design-specification-consolidated.md
+superseded_date: 2026-02-18
+superseded_reason: "Consolidated with ux-financial-statements-spec.md into single authoritative UX spec. Mode switcher architecture retired. Quick Entry retired. AI Planning Assistant repositioned from workspace mode to contextual feature."
 stepsCompleted: [1, 2, 3, 4, 5, 6, 7, 8]
 inputDocuments:
   - _bmad-output/planning-artifacts/prd.md
