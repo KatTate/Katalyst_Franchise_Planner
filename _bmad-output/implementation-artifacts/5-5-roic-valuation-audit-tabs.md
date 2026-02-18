@@ -411,3 +411,42 @@ Simple HTML table:
 - `client/src/components/planning/statements/callout-bar.tsx` — reference for sticky callout bar component pattern
 - `client/src/components/planning/financial-statements.tsx` — container where tabs are wired, `PlaceholderTab` to be replaced
 - `client/src/lib/format-currency.ts` — `formatCents` utility for currency display
+
+## Dev Agent Record
+
+### Agent Model Used
+Claude 4.6 Opus (Replit Agent)
+
+### Completion Notes
+Implemented all three tab components (ROIC, Valuation, Audit) and wired them into the Financial Statements container, replacing the `PlaceholderTab` instances. Key implementation details:
+
+1. **ROIC Tab** (`roic-tab.tsx`, ~279 lines): Annual-only 6-column table with 3 collapsible sections (Invested Capital, Return Analysis, Core Capital Analysis), all expanded by default. Sticky callout bar with plain-language ROIC interpretation ("for every dollar you invested, you earned $X.XX back"). 15 data rows mapped from `roicExtended` engine output. All cells read-only with tooltips.
+
+2. **Valuation Tab** (`valuation-tab.tsx`, ~370 lines): Annual-only 6-column table with 4 collapsible sections (EBITDA Basis, Adjustments, After-Tax Proceeds, Returns). Sticky callout bar showing Enterprise Value (Y5) and Net After-Tax Proceeds (Y5). EBITDA Multiple row has input cell visual distinction (tinted bg, dashed border, pencil icon on hover) — visual-only, no inline editing (deferred to Story 5.6). Working Capital Adjustment and Total Cash Extracted computed locally from monthly projections.
+
+3. **Audit Tab** (`audit-tab.tsx`, ~267 lines): Diagnostic checklist layout (not tabular). Summary header showing "X of Y checks passing". Check categories grouped by engine identity check name prefix. Passing categories show green checkmark, collapsed by default. Failing categories show destructive alert, auto-expanded with per-check detail (Expected, Actual, Tolerance). Navigation links to relevant statement tabs via `onNavigateToTab` callback.
+
+4. **Container Wiring** (`financial-statements.tsx`): Imported all 3 new components, replaced `PlaceholderTab` instances, removed `PlaceholderTab` definition.
+
+Key decisions:
+- Audit tab uses actual engine identity check name prefixes (e.g., "Monthly BS identity", "Annual BS identity") rather than the AC-listed category names, since the actual engine names differ from what the story AC listed. 15 categories configured vs. the 13 mentioned in ACs, because the engine produces more distinct check groups.
+- Valuation `outstandingDebt` uses `roicExtended[y].totalLoans` per Dev Notes guidance for reference spreadsheet consistency.
+- Negative values use amber advisory color (`text-amber-700 dark:text-amber-400`) per AC20; destructive red only for failed audit checks.
+
+### File List
+- `client/src/components/planning/statements/roic-tab.tsx` — CREATED (ROIC tab: annual table, 3 sections, callout bar, tooltips, ARIA roles)
+- `client/src/components/planning/statements/valuation-tab.tsx` — CREATED (Valuation tab: annual table, 4 sections, callout bar, input cell visual distinction, computed fields)
+- `client/src/components/planning/statements/audit-tab.tsx` — CREATED (Audit tab: diagnostic checklist, check categories, pass/fail icons, navigation links)
+- `client/src/components/planning/financial-statements.tsx` — MODIFIED (imported 3 new tabs, replaced PlaceholderTab instances, removed PlaceholderTab definition)
+
+### Testing Summary
+- **Test approach:** Code inspection against all 24 acceptance criteria; Playwright E2E verification of tab rendering, sections, callout bars, and navigation (2026-02-18)
+- **Test files created/modified:** None (pure UI presentation story — no unit tests per Dev Notes)
+- **AC coverage:** All 24 ACs verified through code inspection and E2E testing
+- **All tests passing:** Yes (no regressions — no existing tests modified)
+
+### LSP Status
+Clean — 0 errors, 0 warnings across all 4 modified/created files (verified 2026-02-18)
+
+### Visual Verification
+Playwright E2E testing performed (2026-02-18) — ROIC, Valuation, and Audit tabs verified rendering within Financial Statements container.
