@@ -26,7 +26,7 @@ so that I can build conviction that my plan works even in a challenging environm
 
 **Comparison View:**
 
-6. Given I activate scenario comparison at the annual view (default), then each year column splits into 3 sub-columns: Base, Conservative, Optimistic (15 data columns total). Scenario columns are color-coded: Base (neutral/default), Conservative (muted warm tone), Optimistic (muted cool tone). This applies to all statement tabs that display columnar financial data (P&L, Balance Sheet, Cash Flow, Summary sections).
+6. Given I activate scenario comparison at the annual view (default), then each year column splits into 3 sub-columns: Base, Conservative, Optimistic (15 data columns total). Scenario columns are color-coded: Base (neutral/default), Conservative (muted warm tone), Optimistic (muted cool tone). This applies to all statement tabs that display columnar financial data (P&L, Balance Sheet, Cash Flow). Scenario column color-coding MUST work in both light and dark mode (e.g., light mode: `bg-orange-50/50` conservative, `bg-blue-50/50` optimistic; dark mode: `bg-orange-950/20` conservative, `bg-blue-950/20` optimistic). The CalloutBar is hidden during comparison — the comparison summary card (AC7) replaces its function.
 
 7. Given scenario comparison is active, then a comparison summary card appears above the table with precise language describing all three scenarios. The summary uses this pattern: "In the conservative scenario (15% lower revenue, higher costs), your business reaches break-even by Month [X] and generates $[Y] in Year 1 pre-tax income. Your base case projects $[Z], and the optimistic case projects $[W]." The language acknowledges this is a sensitivity analysis — it never says "Even in the conservative scenario..."
 
@@ -36,7 +36,7 @@ so that I can build conviction that my plan works even in a challenging environm
 
 9. Given scenario comparison is active at annual view, then year column headers lose their drill-down affordance (no expand cursor, no click-to-drill). A tooltip on year headers explains: "Collapse comparison to drill into year detail."
 
-10. Given I had already drilled into a year (quarterly view) before activating comparison, then comparison shows 3 scenario columns per quarter for the expanded year, while other years show Base Case only as single annual columns.
+10. Given I had already drilled into a year (quarterly view) before activating comparison, then comparison shows 3 scenario columns per quarter for the expanded year (4 quarters × 3 scenarios = 12 sub-columns for that year), while other years show 3 scenario sub-columns at the annual level (Base/Cons/Opt per year). The drilled year's annual total row is NOT shown — only its quarterly breakdown with scenario sub-columns. Other years remain at annual granularity with their own triple-column scenario layout.
 
 11. Given I had drilled to monthly detail before activating comparison, then the system auto-collapses the monthly drill-down to quarterly for that year, activates comparison at quarterly level, and shows a brief toast: "Comparison view available at annual and quarterly levels."
 
@@ -52,7 +52,7 @@ so that I can build conviction that my plan works even in a challenging environm
 
 **Inline Editing During Comparison:**
 
-15. Given scenario comparison is active and I click an input cell, then inline editing is available ONLY for the Base Case column. Conservative and Optimistic columns are read-only computed values. When I edit a base case input, all three scenario columns recalculate immediately.
+15. Given scenario comparison is active and I click an input cell, then inline editing is available ONLY for the Base Case column. Conservative and Optimistic columns are read-only computed values. When I edit a base case input, all three scenario columns recalculate immediately. Conservative and Optimistic input-row cells MUST NOT show the dashed border or pencil-on-hover treatment that Base Case editable cells show — they should render as plain read-only values (same visual style as computed/output rows) to clearly signal they cannot be edited. If a user clicks a Conservative or Optimistic input cell, nothing happens (no edit overlay, no cursor change).
 
 **data-testid Coverage:**
 
@@ -65,7 +65,7 @@ so that I can build conviction that my plan works even in a challenging environm
 - **Client-side computation (architecture.md):** Scenarios are computed entirely on the client by applying sensitivity multipliers to the base case `FinancialInputs`, then running `calculateProjections()` from `shared/financial-engine.ts`. The engine is pure — same inputs always produce same outputs. No server round-trip needed.
   - Source: `_bmad-output/planning-artifacts/architecture.md` → Financial Engine purity
 
-- **Engine invocation pattern:** Import `calculateProjections` and `unwrapInputs` (or the equivalent unwrapping path used in `client/src/hooks/use-plan-outputs.ts`). Build modified `FinancialInputs` for each scenario by adjusting revenue, COGS%, and OpEx fields, then invoke `calculateProjections()` for each. Cache all three `EngineOutput` objects in component state.
+- **Engine invocation pattern:** Import `calculateProjections` from `shared/financial-engine.ts` and `unwrapForEngine` from `shared/plan-initialization.ts`. The `unwrapForEngine(planInputs, startupCosts)` function takes `PlanFinancialInputs` + `StartupCostLineItem[]` and returns an `EngineInput` (which contains `financialInputs: FinancialInputs` + `startupCosts`). Build modified `FinancialInputs` for each scenario by cloning the base `EngineInput.financialInputs`, adjusting revenue, COGS%, and OpEx fields, then invoke `calculateProjections()` for each. Cache all three `EngineOutput` objects in component state.
   - Source: `shared/financial-engine.ts` → `calculateProjections(input: EngineInput): EngineOutput`
 
 - **State management (architecture.md Decision 8):** Use local component state (`useState`) for scenario comparison mode (on/off) and cached scenario outputs. Scenario outputs are derived data — they don't go through React Query since they're never persisted. The base case `EngineOutput` comes from `usePlanOutputs` via React Query as today.
@@ -82,7 +82,9 @@ so that I can build conviction that my plan works even in a challenging environm
 
 ### UI/UX Deliverables
 
-- **Scenario Bar component:** A slim horizontal bar rendered between the tab strip and the CalloutBar in `FinancialStatements`. Contains the active scenario label, the "Compare Scenarios" dropdown trigger, and (when comparison is active) a "Close Comparison" action. Persistent across all tabs.
+- **Scenario Bar component:** A slim horizontal bar rendered between the tab strip and the statement content in `FinancialStatements`. Contains the active scenario label, the "Compare Scenarios" dropdown trigger, and (when comparison is active) a "Close Comparison" action. Persistent across all tabs.
+
+- **CalloutBar behavior during comparison:** When scenario comparison is active, the CalloutBar is HIDDEN entirely. The comparison summary card (AC7) replaces its function — showing richer, scenario-specific metrics. When comparison is deactivated, the CalloutBar returns to its normal base-case display. Implementation: wrap `<CalloutBar>` rendering in a `{!comparisonActive && <CalloutBar ... />}` conditional.
 
 - **Comparison Summary Card:** A Card component rendered above the statement table content when comparison is active. Contains the natural-language summary comparing break-even months and Year 1 pre-tax income across all three scenarios. Updates reactively when base case inputs change.
 
@@ -116,30 +118,31 @@ so that I can build conviction that my plan works even in a challenging environm
   - `calculateProjections` from `shared/financial-engine.ts` — the engine entry point
   - `usePlanOutputs` hook — base case output fetching (already works)
   - `ColumnToolbar` and `GroupedTableHead` from `column-manager.tsx` — extend, don't recreate
-  - `CalloutBar` from `callout-bar.tsx` — stays above scenario content
+  - `CalloutBar` from `callout-bar.tsx` — HIDDEN during comparison (conditionally rendered), shown when comparison is off
   - `StatementSection` from `statement-section.tsx` — table row rendering
   - `InlineEditableCell` from `inline-editable-cell.tsx` — editing (base case only during comparison)
   - Toast from `@/hooks/use-toast` — for the auto-collapse notification
 
 ### Gotchas & Integration Warnings
 
-- **CRITICAL — Building FinancialInputs for scenarios:** The engine consumes `FinancialInputs` (raw numbers), not `PlanFinancialInputs` (metadata-wrapped). The current data flow is: plan's `financialInputs` (PlanFinancialInputs JSONB) → server-side `unwrapInputs()` → `FinancialInputs` → `calculateProjections()` → `EngineOutput`. For client-side scenario computation, the implementer must either:
-  1. Implement a client-side version of `unwrapInputs()` that extracts raw numbers from `PlanFinancialInputs`, OR
-  2. Use the already-computed base case `EngineOutput` values to reconstruct `FinancialInputs` from the first month's data, OR
-  3. Check if `unwrapInputs()` is already exported from `shared/financial-engine.ts` or `shared/plan-initialization.ts` and available to the client.
+- **CRITICAL — Building FinancialInputs for scenarios:** The engine consumes `FinancialInputs` (raw numbers), not `PlanFinancialInputs` (metadata-wrapped). The current data flow is: plan's `financialInputs` (PlanFinancialInputs JSONB) → `unwrapForEngine(planInputs, startupCosts)` → `EngineInput { financialInputs, startupCosts }` → `calculateProjections(engineInput)` → `EngineOutput`. The function `unwrapForEngine()` is exported from `shared/plan-initialization.ts` (line 271) and is already available to the client via the `shared/` module. For scenario computation:
+  1. Call `unwrapForEngine(plan.financialInputs, plan.startupCosts)` to get the base `EngineInput`.
+  2. Deep-clone `engineInput.financialInputs` for conservative and optimistic variants.
+  3. Apply sensitivity adjustments to the cloned `FinancialInputs`.
+  4. Call `calculateProjections({ financialInputs: modifiedInputs, startupCosts: engineInput.startupCosts })` for each scenario.
 
-  The implementer MUST trace the exact code path by reading the `usePlanOutputs` hook and the server route that computes outputs (likely `GET /api/plans/:id/outputs`) to understand how `FinancialInputs` is currently built. The scenario computation needs the SAME `FinancialInputs` that produced the base case, then applies sensitivity adjustments.
+  **Important:** `unwrapForEngine()` performs non-trivial transformations — it combines `rentMonthly + utilitiesMonthly + insuranceMonthly` into `facilitiesAnnual` (with rent escalation), converts `otherMonthly` to `otherOpexPct`, derives `equityPct` from loan/investment ratio, and fills single values into 5-year arrays. Sensitivity adjustments MUST be applied to the output `FinancialInputs`, NOT to the raw `PlanFinancialInputs`.
 
 - **CRITICAL — Sensitivity factor application details:**
   - Revenue -15%: Multiply `financialInputs.revenue.annualGrossSales` by 0.85 (conservative) or 1.15 (optimistic).
   - COGS % +2pp: Add 0.02 to each element of `financialInputs.operatingCosts.cogsPct` array (conservative). Subtract 0.01 (optimistic). These are 5-element arrays for years 1-5.
   - Operating Expenses +10%: Multiply EACH of these by 1.10 (conservative) or 0.95 (optimistic):
     - `laborPct` array (each element × 1.10)
-    - `facilitiesAnnual` array (each element × 1.10)
-    - `managementSalariesAnnual` array (each element × 1.10)
+    - `facilitiesAnnual` array (each element × 1.10) — NOTE: This is an aggregated value containing rent + utilities + insurance combined with rent escalation, computed by `unwrapForEngine()`. The sensitivity applies to this combined annual figure.
     - `marketingPct` array (each element × 1.10)
     - `otherOpexPct` array (each element × 1.10)
-    - `payrollTaxPct` is derived from labor + mgmt salaries, so its percentage stays the same (the dollar impact increases because the base amounts increase).
+    - ~~`managementSalariesAnnual`~~ — **DO NOT adjust.** This array is hardcoded to `[0,0,0,0,0]` by `unwrapForEngine()` (line 347) because `PlanFinancialInputs` has no management salaries field. Adjusting zeroes has no effect. Management salaries may be added in a future Epic.
+    - `payrollTaxPct` — **DO NOT adjust.** This is hardcoded to `DEFAULT_PAYROLL_TAX_PCT` (a constant) by `unwrapForEngine()` (line 345). It is not a user-configurable operating expense — it's a statutory rate. The dollar impact of payroll taxes will naturally increase when `laborPct` increases because payroll tax is computed as a percentage of the labor + management salary base.
     - `royaltyPct` and `adFundPct` are franchise fees, NOT operating expenses — do NOT apply OpEx sensitivity to them.
   - All percentage adjustments must be clamped to valid ranges (0.0 to 1.0 for percentages).
 
@@ -165,7 +168,8 @@ so that I can build conviction that my plan works even in a challenging environm
   - Base case: `output.roiMetrics.breakEvenMonth`, `output.annualSummaries[0].preTaxIncome`
   - Conservative: `conservativeOutput.roiMetrics.breakEvenMonth`, `conservativeOutput.annualSummaries[0].preTaxIncome`
   - Optimistic: `optimisticOutput.roiMetrics.breakEvenMonth`, `optimisticOutput.annualSummaries[0].preTaxIncome`
-  - Format currency values using the existing `formatCurrency` utility from `client/src/lib/format.ts` or `field-metadata.ts`.
+  - Format currency values using `formatCents()` from `client/src/lib/format-currency.ts` (also re-exported via `client/src/lib/field-metadata.ts`). There is no `format.ts` file — the correct import is `import { formatCents } from "@/lib/format-currency"`.
+  - **Edge case — negative or no break-even:** If `breakEvenMonth` is -1 or null (business never breaks even within 60 months), the summary card MUST NOT render "reaches break-even by Month -1." Instead use: "has not reached break-even within the 5-year projection period." If Year 1 `preTaxIncome` is negative, render as a loss: "generates a $(X) loss in Year 1" (using parenthetical negative notation consistent with financial statements).
 
 - **Performance consideration:** Three `calculateProjections()` calls on the client. The engine processes 60 months per call — this should be sub-10ms per call on modern hardware. If there's any perceptible delay, wrap in `useMemo` keyed on the plan's `financialInputs` to avoid unnecessary recalculations.
 
@@ -175,23 +179,23 @@ so that I can build conviction that my plan works even in a challenging environm
 |------|--------|-------|
 | `client/src/components/planning/statements/scenario-bar.tsx` | CREATE | Scenario Bar component: active scenario display, Compare dropdown, Close button. ~120 lines. |
 | `client/src/components/planning/statements/scenario-summary-card.tsx` | CREATE | Comparison summary Card with natural-language text comparing break-even and Year 1 pre-tax income across scenarios. ~80 lines. |
-| `client/src/components/planning/statements/scenario-engine.ts` | CREATE | Client-side scenario computation utility: takes base `PlanFinancialInputs` (or `FinancialInputs` + `StartupCostLineItem[]`), applies sensitivity factors, returns three `EngineOutput` objects. ~100 lines. |
+| `client/src/lib/scenario-engine.ts` | CREATE | Client-side scenario computation utility: takes `PlanFinancialInputs` + `StartupCostLineItem[]`, calls `unwrapForEngine()` to get base `EngineInput`, applies sensitivity factors to cloned `FinancialInputs`, returns `{ base, conservative, optimistic }` `EngineOutput` objects. Placed in `lib/` (not `statements/`) because it's pure computation, not UI. ~100 lines. |
 | `client/src/components/planning/statements/comparison-table-head.tsx` | CREATE | Alternative table header renderer for comparison mode: year groups with scenario sub-columns (Base/Cons/Opt). No drill-down interaction. ~120 lines. |
-| `client/src/components/planning/financial-statements.tsx` | MODIFY | Add Scenario Bar between tabs and CalloutBar. Manage comparison state (on/off, scenario outputs). Pass `scenarioOutputs` prop to tab components. Compute scenarios using `scenario-engine.ts`. |
+| `client/src/components/planning/financial-statements.tsx` | MODIFY | Add Scenario Bar between tabs and content. Hide CalloutBar when comparison is active. Manage comparison state (on/off, scenario outputs). Pass `scenarioOutputs` prop to tab components. Compute scenarios using `client/src/lib/scenario-engine.ts`. |
 | `client/src/components/planning/statements/column-manager.tsx` | MODIFY | Disable drill-down controls when comparison is active. Add `comparisonActive` prop to `ColumnToolbar` to disable Expand/Collapse buttons. |
 | `client/src/components/planning/statements/pnl-tab.tsx` | MODIFY | Accept optional `scenarioOutputs` prop. When provided, render triple-column layout per year with scenario sub-columns. Color-code scenario columns. Use `ComparisonTableHead`. Input cells editable only in Base column. |
 | `client/src/components/planning/statements/balance-sheet-tab.tsx` | MODIFY | Accept optional `scenarioOutputs` prop. Render triple-column layout when comparison active. |
 | `client/src/components/planning/statements/cash-flow-tab.tsx` | MODIFY | Accept optional `scenarioOutputs` prop. Render triple-column layout when comparison active. |
-| `client/src/components/planning/statements/summary-tab.tsx` | MODIFY | Accept optional `scenarioOutputs` prop. Show comparison values in summary sections when active. |
+| `client/src/components/planning/statements/summary-tab.tsx` | MODIFY | Accept optional `scenarioOutputs` prop. When comparison is active, each metric card triples to show Base/Conservative/Optimistic values side by side (e.g., "Year 1 Pre-Tax Income: Base $X / Cons $Y / Opt $Z"). Sparklines and mini-tables show base case only. Break-even analysis section shows all three scenarios' break-even months. |
 | `client/src/components/planning/statements/roic-tab.tsx` | MODIFY | Accept optional `scenarioOutputs` prop. Render triple-column comparison (annual only). |
 | `client/src/components/planning/statements/valuation-tab.tsx` | MODIFY | Accept optional `scenarioOutputs` prop. Render triple-column comparison (annual only). |
 | `client/src/components/planning/statements/audit-tab.tsx` | MODIFY | When comparison is active, show base case checks only (no scenario columns for audit). |
 | `client/src/components/planning/statements/statement-section.tsx` | MODIFY | Accept optional `scenarioOutputs` and `comparisonActive` flag. When active, render 3 cells per period instead of 1, with appropriate color-coding. |
-| `shared/schema.ts` | MODIFY | Add optional `scenarioSensitivityFactors` field to `brandParameterSchema` for brand-configurable scenario sensitivity defaults. |
+| `shared/schema.ts` | NO CHANGE | Do NOT modify schema.ts for this story. Brand-configurable sensitivity factors are deferred until an admin UI exists to populate them (Epic 8 or 10). For Story 5.7, sensitivity defaults are hardcoded constants in `client/src/lib/scenario-engine.ts` (e.g., `CONSERVATIVE_REVENUE_FACTOR = -0.15`). AC5's "sourced from brand-level defaults when available" is satisfied by the constant defaults — the "when available" brand configuration path is a future enhancement. |
 
 ### Dependencies & Environment Variables
 
-- **No new packages needed.** All required utilities exist: `calculateProjections` (engine), `formatCurrency` (formatting), toast hook, Shadcn Card/Button/Dropdown components, Lucide icons.
+- **No new packages needed.** All required utilities exist: `calculateProjections` (engine), `formatCents` from `@/lib/format-currency` (formatting), `unwrapForEngine` from `shared/plan-initialization` (input unwrapping), toast hook, Shadcn Card/Button/Dropdown components, Lucide icons.
 - **No new environment variables needed.**
 - **Existing packages used:** `lucide-react` (GitCompare or Layers icon for Scenario Bar), Shadcn `DropdownMenu` components for scenario selection.
 
