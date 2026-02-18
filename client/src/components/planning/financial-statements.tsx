@@ -8,6 +8,8 @@ import { usePlanOutputs } from "@/hooks/use-plan-outputs";
 import { CalloutBar } from "./statements/callout-bar";
 import { SummaryTab } from "./statements/summary-tab";
 import { PnlTab } from "./statements/pnl-tab";
+import { BalanceSheetTab } from "./statements/balance-sheet-tab";
+import { CashFlowTab } from "./statements/cash-flow-tab";
 import type { EngineOutput } from "@shared/financial-engine";
 
 export type StatementTabId = "summary" | "pnl" | "balance-sheet" | "cash-flow" | "roic" | "valuation" | "audit";
@@ -202,11 +204,11 @@ export function FinancialStatements({ planId, defaultTab = "summary" }: Financia
             </TabsContent>
 
             <TabsContent value="balance-sheet" className="mt-0">
-              <PlaceholderTab name="Balance Sheet" description="Assets, liabilities, and equity breakdown by year." />
+              <BalanceSheetTab output={output} />
             </TabsContent>
 
             <TabsContent value="cash-flow" className="mt-0">
-              <PlaceholderTab name="Cash Flow Statement" description="Operating, investing, and financing cash flows." />
+              <CashFlowTab output={output} />
             </TabsContent>
 
             <TabsContent value="roic" className="mt-0">

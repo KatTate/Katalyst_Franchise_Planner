@@ -145,7 +145,7 @@ development_status:
   5-1-financial-engine-extension: done
   5-2-financial-statements-container-summary-tab: done
   5-3-pl-statement-tab: done
-  5-4-balance-sheet-cash-flow-tabs: ready-for-dev
+  5-4-balance-sheet-cash-flow-tabs: in-progress
   5-5-roic-valuation-audit-tabs: backlog
   5-6-quick-entry-input-output-integration: backlog
   5-7-scenario-comparison: backlog

@@ -81,8 +81,9 @@ function computeEnrichedBsAnnuals(monthly: MonthlyProjection[], annuals: AnnualS
     const arDso = monthlyRevenue !== 0 ? (ar / monthlyRevenue) * 30 : 0;
     const apPctOfCogs = a.totalCogs !== 0 ? ap / a.totalCogs : 0;
 
-    const totalDepreciation = yearMonths.reduce((s, m) => s + m.depreciation, 0);
-    const grossFA = nfa + totalDepreciation * a.year;
+    const yearEndIdx = (a.year) * 12;
+    const cumDepreciation = monthly.slice(0, yearEndIdx).reduce((s, m) => s + m.depreciation, 0);
+    const grossFA = nfa + cumDepreciation;
 
     return {
       ...a,
@@ -91,7 +92,7 @@ function computeEnrichedBsAnnuals(monthly: MonthlyProjection[], annuals: AnnualS
       inventory: inv,
       totalCurrentAssets: tca,
       grossFixedAssets: grossFA,
-      accumulatedDepreciation: -(totalDepreciation * a.year),
+      accumulatedDepreciation: -cumDepreciation,
       netFixedAssets: nfa,
       accountsPayable: ap,
       taxPayable: tp,
