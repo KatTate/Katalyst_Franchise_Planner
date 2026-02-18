@@ -7,8 +7,12 @@ import type { EngineOutput, MonthlyProjection, AnnualSummary, ROICExtendedOutput
 import type { ColumnDef } from "./column-manager";
 import { getAnnualValue, getQuarterlyValue, getMonthlyValue } from "./column-manager";
 
+import { SCENARIO_COLORS, type ScenarioId, type ScenarioOutputs } from "@/lib/scenario-engine";
+import { ComparisonTableHead } from "./comparison-table-head";
+
 interface BalanceSheetTabProps {
   output: EngineOutput;
+  scenarioOutputs?: ScenarioOutputs | null;
 }
 
 interface CellTooltip {
@@ -331,12 +335,38 @@ function getBsCellValue(
   return 0;
 }
 
-export function BalanceSheetTab({ output }: BalanceSheetTabProps) {
+function getBsAnnualValue(
+  field: string,
+  year: number,
+  enriched: EnrichedBsAnnual[],
+  roicExtended: ROICExtendedOutput[],
+): number {
+  if (ROIC_EXTENDED_FIELDS.has(field)) {
+    return getAnnualValue(field, year, enriched, undefined, roicExtended);
+  }
+  const ea = enriched[year - 1];
+  if (!ea) return 0;
+  if (field in ea) return (ea as any)[field];
+  return 0;
+}
+
+export function BalanceSheetTab({ output, scenarioOutputs }: BalanceSheetTabProps) {
   const { annualSummaries, monthlyProjections, identityChecks, roicExtended } = output;
   const enriched = useMemo(
     () => computeEnrichedBsAnnuals(monthlyProjections, annualSummaries),
     [monthlyProjections, annualSummaries]
   );
+
+  const comparisonActive = !!scenarioOutputs;
+
+  const scenarioEnriched = useMemo(() => {
+    if (!scenarioOutputs) return null;
+    return {
+      base: computeEnrichedBsAnnuals(scenarioOutputs.base.monthlyProjections, scenarioOutputs.base.annualSummaries),
+      conservative: computeEnrichedBsAnnuals(scenarioOutputs.conservative.monthlyProjections, scenarioOutputs.conservative.annualSummaries),
+      optimistic: computeEnrichedBsAnnuals(scenarioOutputs.optimistic.monthlyProjections, scenarioOutputs.optimistic.annualSummaries),
+    };
+  }, [scenarioOutputs]);
 
   const {
     drillDown,
@@ -366,6 +396,43 @@ export function BalanceSheetTab({ output }: BalanceSheetTabProps) {
 
   const bsIdentityCheck = identityChecks.find((c) => c.name.toLowerCase().includes("balance sheet") || c.name.toLowerCase().includes("assets = liabilities"));
   const bsCheckPassed = bsIdentityCheck ? bsIdentityCheck.passed : true;
+
+  const SCENARIOS: ScenarioId[] = ["base", "conservative", "optimistic"];
+
+  if (comparisonActive && scenarioOutputs && scenarioEnriched) {
+    return (
+      <div className="space-y-0 pb-8" data-testid="balance-sheet-tab">
+        <BsCalloutBar enriched={enriched} identityPassed={bsCheckPassed} />
+        <ColumnToolbar
+          onExpandAll={expandAll}
+          onCollapseAll={collapseAll}
+          hasAnyDrillDown={hasAnyDrillDown}
+          showLinkedIndicator={false}
+          comparisonActive
+        />
+        <div className="overflow-x-auto" data-testid="bs-table">
+          <table className="w-full text-sm" role="grid" aria-label="Balance Sheet — Scenario Comparison">
+            <ComparisonTableHead drillState={{}} testIdPrefix="bs" />
+            <tbody>
+              {BS_SECTIONS.map((section) => {
+                const isExpanded = expandedSections[section.key] ?? true;
+                return (
+                  <ComparisonBsSection
+                    key={section.key}
+                    section={section}
+                    scenarioEnriched={scenarioEnriched}
+                    scenarioOutputs={scenarioOutputs}
+                    isExpanded={isExpanded}
+                    onToggle={() => toggleSection(section.key)}
+                  />
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-0 pb-8" data-testid="balance-sheet-tab">
@@ -624,6 +691,92 @@ function BsRow({ row, columns, enriched, monthly, roicExtended }: BsRowProps) {
           </td>
         </tr>
       )}
+    </>
+  );
+}
+
+function ComparisonBsSection({
+  section,
+  scenarioEnriched,
+  scenarioOutputs,
+  isExpanded,
+  onToggle,
+}: {
+  section: BsSectionDef;
+  scenarioEnriched: Record<ScenarioId, EnrichedBsAnnual[]>;
+  scenarioOutputs: ScenarioOutputs;
+  isExpanded: boolean;
+  onToggle: () => void;
+}) {
+  const SCENARIOS: ScenarioId[] = ["base", "conservative", "optimistic"];
+  const totalCols = 5 * 3;
+
+  return (
+    <>
+      <tr
+        className="bg-muted/40 cursor-pointer hover-elevate"
+        data-testid={`bs-section-${section.key}`}
+        onClick={onToggle}
+        role="row"
+        aria-expanded={isExpanded}
+      >
+        <td
+          className="py-2 px-3 font-semibold text-xs uppercase tracking-wide text-muted-foreground sticky left-0 bg-muted/40 z-20"
+          colSpan={totalCols + 1}
+        >
+          <span className="flex items-center gap-1">
+            {isExpanded ? <ChevronDown className="h-3.5 w-3.5 shrink-0" /> : <ChevronRight className="h-3.5 w-3.5 shrink-0" />}
+            {section.title}
+          </span>
+        </td>
+      </tr>
+      {isExpanded &&
+        section.rows.map((row) => {
+          const rowClass = row.isTotal
+            ? "font-semibold border-t-[3px] border-double border-b"
+            : row.isSubtotal
+              ? "font-medium border-t"
+              : "";
+          const paddingLeft = row.indent ? `${12 + row.indent * 16}px` : undefined;
+
+          return (
+            <tr
+              key={row.key}
+              className={`${rowClass} hover-elevate group`}
+              data-testid={`bs-row-${row.key}`}
+              role="row"
+            >
+              <td
+                className="py-1.5 px-3 text-sm sticky left-0 bg-background z-10 min-w-[200px] shadow-[2px_0_4px_-2px_rgba(0,0,0,0.06)]"
+                style={{ paddingLeft }}
+                role="rowheader"
+              >
+                {row.label}
+              </td>
+              {Array.from({ length: 5 }, (_, yi) => {
+                const year = yi + 1;
+                return SCENARIOS.map((scenario, sIdx) => {
+                  const enriched = scenarioEnriched[scenario];
+                  const roicExt = scenarioOutputs[scenario].roicExtended;
+                  const value = getBsAnnualValue(row.field, year, enriched, roicExt);
+                  const isNegative = value < 0;
+                  const cellContent = formatBsValue(value, row.format);
+
+                  return (
+                    <td
+                      key={`y${year}-${scenario}`}
+                      className={`py-1.5 px-3 text-right font-mono tabular-nums text-sm whitespace-nowrap ${SCENARIO_COLORS[scenario].bg}${isNegative ? " text-amber-700 dark:text-amber-400" : ""}${sIdx === 0 && yi > 0 ? " border-l-2 border-border/40" : ""}`}
+                      data-testid={`bs-value-${row.key}-y${year}-${scenario}`}
+                      role="gridcell"
+                    >
+                      {cellContent}
+                    </td>
+                  );
+                });
+              })}
+            </tr>
+          );
+        })}
     </>
   );
 }

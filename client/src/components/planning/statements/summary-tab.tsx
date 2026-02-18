@@ -6,9 +6,12 @@ import { StatementSection } from "./statement-section";
 import { StatementTable, type SectionDef } from "./statement-table";
 import type { EngineOutput, AnnualSummary } from "@shared/financial-engine";
 
+import type { ScenarioOutputs } from "@/lib/scenario-engine";
+
 interface SummaryTabProps {
   output: EngineOutput;
   onNavigateToTab: (tab: string, scrollTo?: string) => void;
+  scenarioOutputs?: ScenarioOutputs | null;
 }
 
 const plSummarySections: SectionDef[] = [
@@ -135,7 +138,7 @@ function computeEnrichedSummaries(annualSummaries: EngineOutput["annualSummaries
   }));
 }
 
-export function SummaryTab({ output, onNavigateToTab }: SummaryTabProps) {
+export function SummaryTab({ output, onNavigateToTab, scenarioOutputs }: SummaryTabProps) {
   const { annualSummaries, monthlyProjections, roiMetrics, plAnalysis, identityChecks } = output;
   const enrichedSummaries = computeEnrichedSummaries(annualSummaries);
   const total5yrPreTax = annualSummaries.reduce((sum, s) => sum + s.preTaxIncome, 0);

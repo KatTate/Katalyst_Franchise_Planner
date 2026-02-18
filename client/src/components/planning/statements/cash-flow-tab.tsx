@@ -7,8 +7,12 @@ import type { EngineOutput, MonthlyProjection, AnnualSummary } from "@shared/fin
 import type { ColumnDef } from "./column-manager";
 import { getMonthlyValue } from "./column-manager";
 
+import { SCENARIO_COLORS, type ScenarioId, type ScenarioOutputs } from "@/lib/scenario-engine";
+import { ComparisonTableHead } from "./comparison-table-head";
+
 interface CashFlowTabProps {
   output: EngineOutput;
+  scenarioOutputs?: ScenarioOutputs | null;
 }
 
 interface CellTooltip {
@@ -165,8 +169,32 @@ function getCfCellValue(
   return 0;
 }
 
-export function CashFlowTab({ output }: CashFlowTabProps) {
+function getCfAnnualValue(
+  field: string,
+  year: number,
+  annuals: AnnualSummary[],
+  monthly: MonthlyProjection[],
+): number {
+  const a = annuals[year - 1];
+  if (CF_POINT_IN_TIME_FIELDS.has(field)) {
+    if (field === "endingCash") return a ? a.endingCash : 0;
+    if (field === "beginningCash") {
+      const startIdx = (year - 1) * 12;
+      const mp = monthly[startIdx];
+      return mp ? mp.beginningCash : 0;
+    }
+    return 0;
+  }
+  if (field === "cfNetOperatingCashFlow") return a ? a.operatingCashFlow : 0;
+  if (field === "cfNetCashFlow") return a ? a.netCashFlow : 0;
+  const yearMonths = monthly.filter((m) => m.year === year);
+  return yearMonths.reduce((s, m) => s + ((m as any)[field] ?? 0), 0);
+}
+
+export function CashFlowTab({ output, scenarioOutputs }: CashFlowTabProps) {
   const { annualSummaries, monthlyProjections } = output;
+
+  const comparisonActive = !!scenarioOutputs;
 
   const {
     drillDown,
@@ -205,6 +233,42 @@ export function CashFlowTab({ output }: CashFlowTabProps) {
     });
     return { month: minMonth, value: minVal === Infinity ? 0 : minVal };
   }, [monthlyProjections]);
+
+  const SCENARIOS: ScenarioId[] = ["base", "conservative", "optimistic"];
+
+  if (comparisonActive && scenarioOutputs) {
+    return (
+      <div className="space-y-0 pb-8" data-testid="cash-flow-tab">
+        <CfCalloutBar annuals={annualSummaries} lowestCash={lowestCash} />
+        <ColumnToolbar
+          onExpandAll={expandAll}
+          onCollapseAll={collapseAll}
+          hasAnyDrillDown={hasAnyDrillDown}
+          showLinkedIndicator={false}
+          comparisonActive
+        />
+        <div className="overflow-x-auto" data-testid="cf-table">
+          <table className="w-full text-sm" role="grid" aria-label="Cash Flow Statement — Scenario Comparison">
+            <ComparisonTableHead drillState={{}} testIdPrefix="cf" />
+            <tbody>
+              {CF_SECTIONS.map((section) => {
+                const isExpanded = expandedSections[section.key] ?? true;
+                return (
+                  <ComparisonCfSection
+                    key={section.key}
+                    section={section}
+                    scenarioOutputs={scenarioOutputs}
+                    isExpanded={isExpanded}
+                    onToggle={() => toggleSection(section.key)}
+                  />
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-0 pb-8" data-testid="cash-flow-tab">
@@ -481,6 +545,90 @@ function CfRow({ row, columns, annuals, monthly }: CfRowProps) {
           </td>
         </tr>
       )}
+    </>
+  );
+}
+
+function ComparisonCfSection({
+  section,
+  scenarioOutputs,
+  isExpanded,
+  onToggle,
+}: {
+  section: CfSectionDef;
+  scenarioOutputs: ScenarioOutputs;
+  isExpanded: boolean;
+  onToggle: () => void;
+}) {
+  const SCENARIOS: ScenarioId[] = ["base", "conservative", "optimistic"];
+  const totalCols = 5 * 3;
+
+  return (
+    <>
+      <tr
+        className="bg-muted/40 cursor-pointer hover-elevate"
+        data-testid={`cf-section-${section.key}`}
+        onClick={onToggle}
+        role="row"
+        aria-expanded={isExpanded}
+      >
+        <td
+          className="py-2 px-3 font-semibold text-xs uppercase tracking-wide text-muted-foreground sticky left-0 bg-muted/40 z-20"
+          colSpan={totalCols + 1}
+        >
+          <span className="flex items-center gap-1">
+            {isExpanded ? <ChevronDown className="h-3.5 w-3.5 shrink-0" /> : <ChevronRight className="h-3.5 w-3.5 shrink-0" />}
+            {section.title}
+          </span>
+        </td>
+      </tr>
+      {isExpanded &&
+        section.rows.map((row) => {
+          const rowClass = row.isTotal
+            ? "font-semibold border-t-[3px] border-double border-b"
+            : row.isSubtotal
+              ? "font-medium border-t"
+              : "";
+          const paddingLeft = row.indent ? `${12 + row.indent * 16}px` : undefined;
+
+          return (
+            <tr
+              key={row.key}
+              className={`${rowClass} hover-elevate group`}
+              data-testid={`cf-row-${row.key}`}
+              role="row"
+            >
+              <td
+                className="py-1.5 px-3 text-sm sticky left-0 bg-background z-10 min-w-[200px] shadow-[2px_0_4px_-2px_rgba(0,0,0,0.06)]"
+                style={{ paddingLeft }}
+                role="rowheader"
+              >
+                {row.label}
+              </td>
+              {Array.from({ length: 5 }, (_, yi) => {
+                const year = yi + 1;
+                return SCENARIOS.map((scenario, sIdx) => {
+                  const annuals = scenarioOutputs[scenario].annualSummaries;
+                  const monthly = scenarioOutputs[scenario].monthlyProjections;
+                  const value = getCfAnnualValue(row.field, year, annuals, monthly);
+                  const isNegative = value < 0;
+                  const cellContent = formatCents(value);
+
+                  return (
+                    <td
+                      key={`y${year}-${scenario}`}
+                      className={`py-1.5 px-3 text-right font-mono tabular-nums text-sm whitespace-nowrap ${SCENARIO_COLORS[scenario].bg}${isNegative ? " text-amber-700 dark:text-amber-400" : ""}${sIdx === 0 && yi > 0 ? " border-l-2 border-border/40" : ""}`}
+                      data-testid={`cf-value-${row.key}-y${year}-${scenario}`}
+                      role="gridcell"
+                    >
+                      {cellContent}
+                    </td>
+                  );
+                });
+              })}
+            </tr>
+          );
+        })}
     </>
   );
 }

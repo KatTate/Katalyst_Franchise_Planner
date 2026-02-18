@@ -115,6 +115,7 @@ interface ColumnToolbarProps {
   onCollapseAll: () => void;
   hasAnyDrillDown: boolean;
   showLinkedIndicator?: boolean;
+  comparisonActive?: boolean;
 }
 
 export function ColumnToolbar({
@@ -122,6 +123,7 @@ export function ColumnToolbar({
   onCollapseAll,
   hasAnyDrillDown,
   showLinkedIndicator = true,
+  comparisonActive = false,
 }: ColumnToolbarProps) {
   return (
     <div className="flex items-center justify-end gap-1 px-2 py-1">
@@ -144,25 +146,47 @@ export function ColumnToolbar({
         </>
       )}
       {!showLinkedIndicator && <div className="flex-1" />}
-      <Button
-        variant="ghost"
-        size="sm"
-        className="text-xs"
-        onClick={hasAnyDrillDown ? onCollapseAll : onExpandAll}
-        data-testid="button-toggle-drill"
-      >
-        {hasAnyDrillDown ? (
-          <>
-            <ChevronsDownUp className="h-3 w-3 mr-1" />
-            Collapse All
-          </>
-        ) : (
-          <>
-            <ChevronsUpDown className="h-3 w-3 mr-1" />
-            Expand All
-          </>
-        )}
-      </Button>
+      {comparisonActive ? (
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <span>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="text-xs"
+                disabled
+                data-testid="button-toggle-drill"
+              >
+                <ChevronsUpDown className="h-3 w-3 mr-1" />
+                Expand All
+              </Button>
+            </span>
+          </TooltipTrigger>
+          <TooltipContent side="bottom">
+            <p className="text-xs">Deactivate comparison to drill down.</p>
+          </TooltipContent>
+        </Tooltip>
+      ) : (
+        <Button
+          variant="ghost"
+          size="sm"
+          className="text-xs"
+          onClick={hasAnyDrillDown ? onCollapseAll : onExpandAll}
+          data-testid="button-toggle-drill"
+        >
+          {hasAnyDrillDown ? (
+            <>
+              <ChevronsDownUp className="h-3 w-3 mr-1" />
+              Collapse All
+            </>
+          ) : (
+            <>
+              <ChevronsUpDown className="h-3 w-3 mr-1" />
+              Expand All
+            </>
+          )}
+        </Button>
+      )}
     </div>
   );
 }

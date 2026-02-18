@@ -1,6 +1,6 @@
 # Story 5.7: Scenario Comparison
 
-Status: ready-for-dev
+Status: in-progress
 
 ## Story
 

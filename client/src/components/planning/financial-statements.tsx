@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect, useRef } from "react";
+import { useState, useCallback, useEffect, useRef, useMemo } from "react";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -6,6 +6,8 @@ import { Button } from "@/components/ui/button";
 import { RefreshCw, FileText } from "lucide-react";
 import { usePlanOutputs } from "@/hooks/use-plan-outputs";
 import { CalloutBar } from "./statements/callout-bar";
+import { ScenarioBar } from "./statements/scenario-bar";
+import { ScenarioSummaryCard } from "./statements/scenario-summary-card";
 import { SummaryTab } from "./statements/summary-tab";
 import { PnlTab } from "./statements/pnl-tab";
 import { BalanceSheetTab } from "./statements/balance-sheet-tab";
@@ -15,6 +17,8 @@ import { ValuationTab } from "./statements/valuation-tab";
 import { AuditTab } from "./statements/audit-tab";
 import { parseFieldInput } from "@/lib/field-metadata";
 import { updateFieldValue } from "@shared/plan-initialization";
+import { computeScenarioOutputs, type ScenarioOutputs } from "@/lib/scenario-engine";
+import { useToast } from "@/hooks/use-toast";
 import type { EngineOutput, PlanFinancialInputs, FinancialFieldValue } from "@shared/financial-engine";
 import type { FormatType } from "@/lib/field-metadata";
 import type { Plan } from "@shared/schema";
@@ -63,8 +67,29 @@ export function FinancialStatements({ planId, defaultTab = "summary", plan, queu
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const scrollPositions = useRef<Record<string, number>>({});
   const pendingScrollTo = useRef<string | null>(null);
+  const { toast } = useToast();
 
   const financialInputs = plan?.financialInputs ?? null;
+  const startupCosts = plan?.startupCosts ?? null;
+
+  const [comparisonActive, setComparisonActive] = useState(false);
+
+  const scenarioOutputs: ScenarioOutputs | null = useMemo(() => {
+    if (!comparisonActive || !financialInputs || !startupCosts) return null;
+    try {
+      return computeScenarioOutputs(financialInputs, startupCosts);
+    } catch {
+      return null;
+    }
+  }, [comparisonActive, financialInputs, startupCosts]);
+
+  const handleActivateComparison = useCallback(() => {
+    setComparisonActive(true);
+  }, []);
+
+  const handleDeactivateComparison = useCallback(() => {
+    setComparisonActive(false);
+  }, []);
 
   const handleCellEdit = useCallback(
     (category: string, fieldName: string, rawInput: string, inputFormat: FormatType) => {
@@ -222,15 +247,33 @@ export function FinancialStatements({ planId, defaultTab = "summary", plan, queu
           </Button>
         </div>
 
-        <CalloutBar
-          annualSummaries={output.annualSummaries}
-          roiMetrics={output.roiMetrics}
+        <ScenarioBar
+          comparisonActive={comparisonActive}
+          onActivateComparison={handleActivateComparison}
+          onDeactivateComparison={handleDeactivateComparison}
         />
+
+        {!comparisonActive && (
+          <CalloutBar
+            annualSummaries={output.annualSummaries}
+            roiMetrics={output.roiMetrics}
+          />
+        )}
 
         <div className="flex-1 overflow-auto" ref={scrollContainerRef} data-testid="statements-scroll-container">
           <div className="p-4">
+            {comparisonActive && scenarioOutputs && (
+              <div className="mb-4">
+                <ScenarioSummaryCard scenarioOutputs={scenarioOutputs} />
+              </div>
+            )}
+
             <TabsContent value="summary" className="mt-0">
-              <SummaryTab output={output} onNavigateToTab={handleNavigateToTab} />
+              <SummaryTab
+                output={output}
+                onNavigateToTab={handleNavigateToTab}
+                scenarioOutputs={scenarioOutputs}
+              />
             </TabsContent>
 
             <TabsContent value="pnl" className="mt-0">
@@ -239,27 +282,28 @@ export function FinancialStatements({ planId, defaultTab = "summary", plan, queu
                 financialInputs={financialInputs}
                 onCellEdit={queueSave ? handleCellEdit : undefined}
                 isSaving={isSaving}
+                scenarioOutputs={scenarioOutputs}
               />
             </TabsContent>
 
             <TabsContent value="balance-sheet" className="mt-0">
-              <BalanceSheetTab output={output} />
+              <BalanceSheetTab output={output} scenarioOutputs={scenarioOutputs} />
             </TabsContent>
 
             <TabsContent value="cash-flow" className="mt-0">
-              <CashFlowTab output={output} />
+              <CashFlowTab output={output} scenarioOutputs={scenarioOutputs} />
             </TabsContent>
 
             <TabsContent value="roic" className="mt-0">
-              <RoicTab output={output} />
+              <RoicTab output={output} scenarioOutputs={scenarioOutputs} />
             </TabsContent>
 
             <TabsContent value="valuation" className="mt-0">
-              <ValuationTab output={output} />
+              <ValuationTab output={output} scenarioOutputs={scenarioOutputs} />
             </TabsContent>
 
             <TabsContent value="audit" className="mt-0">
-              <AuditTab output={output} onNavigateToTab={handleNavigateToTab} />
+              <AuditTab output={output} onNavigateToTab={handleNavigateToTab} comparisonActive={comparisonActive} />
             </TabsContent>
           </div>
         </div>

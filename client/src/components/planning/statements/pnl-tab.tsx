@@ -3,8 +3,10 @@ import { Pencil, ChevronDown, ChevronRight } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { formatCents } from "@/lib/format-currency";
 import { useColumnManager, ColumnToolbar, GroupedTableHead } from "./column-manager";
+import { ComparisonTableHead } from "./comparison-table-head";
 import { InlineEditableCell } from "./inline-editable-cell";
 import { INPUT_FIELD_MAP, isEditableRow } from "./input-field-map";
+import { SCENARIO_COLORS, type ScenarioId, type ScenarioOutputs } from "@/lib/scenario-engine";
 import type { EngineOutput, MonthlyProjection, AnnualSummary, PLAnalysisOutput, PlanFinancialInputs, FinancialFieldValue } from "@shared/financial-engine";
 import type { ColumnDef } from "./column-manager";
 import { getAnnualValue, getQuarterlyValue, getMonthlyValue } from "./column-manager";
@@ -16,6 +18,7 @@ interface PnlTabProps {
   financialInputs?: PlanFinancialInputs | null;
   onCellEdit?: (category: string, fieldName: string, rawInput: string, inputFormat: FormatType) => void;
   isSaving?: boolean;
+  scenarioOutputs?: ScenarioOutputs | null;
 }
 
 interface CellTooltip {
@@ -299,12 +302,23 @@ function getEditableRowKeys(): string[] {
 
 const EDITABLE_ROW_ORDER = getEditableRowKeys();
 
-export function PnlTab({ output, financialInputs, onCellEdit, isSaving }: PnlTabProps) {
+export function PnlTab({ output, financialInputs, onCellEdit, isSaving, scenarioOutputs }: PnlTabProps) {
   const { annualSummaries, monthlyProjections, plAnalysis } = output;
   const enriched = useMemo(
     () => computeEnrichedAnnuals(monthlyProjections, annualSummaries),
     [monthlyProjections, annualSummaries]
   );
+
+  const comparisonActive = !!scenarioOutputs;
+
+  const scenarioEnriched = useMemo(() => {
+    if (!scenarioOutputs) return null;
+    return {
+      base: computeEnrichedAnnuals(scenarioOutputs.base.monthlyProjections, scenarioOutputs.base.annualSummaries),
+      conservative: computeEnrichedAnnuals(scenarioOutputs.conservative.monthlyProjections, scenarioOutputs.conservative.annualSummaries),
+      optimistic: computeEnrichedAnnuals(scenarioOutputs.optimistic.monthlyProjections, scenarioOutputs.optimistic.annualSummaries),
+    };
+  }, [scenarioOutputs]);
 
   const {
     drillDown,
@@ -395,6 +409,54 @@ export function PnlTab({ output, financialInputs, onCellEdit, isSaving }: PnlTab
   }, [financialInputs]);
 
   const canEdit = !!financialInputs && !!onCellEdit;
+
+  const SCENARIOS: ScenarioId[] = ["base", "conservative", "optimistic"];
+
+  if (comparisonActive && scenarioOutputs && scenarioEnriched) {
+    const totalScenarioCols = 5 * 3;
+    return (
+      <div className="space-y-0 pb-8" data-testid="pnl-tab">
+        <PnlCalloutBar enriched={enriched} />
+        <ColumnToolbar
+          onExpandAll={expandAll}
+          onCollapseAll={collapseAll}
+          hasAnyDrillDown={hasAnyDrillDown}
+          showLinkedIndicator={canEdit}
+          comparisonActive
+        />
+        <div className="overflow-x-auto" data-testid="pnl-table">
+          <table className="w-full text-sm" role="grid" aria-label="Profit and Loss Statement — Scenario Comparison">
+            <ComparisonTableHead drillState={{}} testIdPrefix="pnl" />
+            <tbody>
+              {PNL_SECTIONS.map((section) => {
+                const isExpanded = expandedSections[section.key] ?? true;
+                return (
+                  <ComparisonPnlSection
+                    key={section.key}
+                    section={section}
+                    scenarioEnriched={scenarioEnriched}
+                    scenarioOutputs={scenarioOutputs}
+                    isExpanded={isExpanded}
+                    onToggle={() => toggleSection(section.key)}
+                    totalCols={totalScenarioCols}
+                    editingCell={editingCell}
+                    flashingRows={flashingRows}
+                    onStartEdit={canEdit ? handleStartEdit : undefined}
+                    onCancelEdit={handleCancelEdit}
+                    onCommitEdit={handleCommitEdit}
+                    onTabNav={handleTabNav}
+                    getRawValue={getRawValue}
+                    financialInputs={financialInputs}
+                    onCellEdit={onCellEdit}
+                  />
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-0 pb-8" data-testid="pnl-tab">
@@ -704,5 +766,208 @@ function PnlRow({
         </tr>
       )}
     </>
+  );
+}
+
+function getScenarioAnnualValue(
+  field: string,
+  year: number,
+  enriched: EnrichedAnnual[],
+  plAnalysis: PLAnalysisOutput[],
+): number {
+  if (field === "monthlyRevenue") {
+    const ea = enriched[year - 1];
+    return ea ? ea.monthlyRevenue : 0;
+  }
+  if (field === "discretionaryMarketing") {
+    const ea = enriched[year - 1];
+    return ea ? ea.discretionaryMarketing : 0;
+  }
+  return getAnnualValue(field, year, enriched, plAnalysis);
+}
+
+interface ComparisonPnlSectionProps {
+  section: PnlSectionDef;
+  scenarioEnriched: Record<ScenarioId, EnrichedAnnual[]>;
+  scenarioOutputs: ScenarioOutputs;
+  isExpanded: boolean;
+  onToggle: () => void;
+  totalCols: number;
+  editingCell: string | null;
+  flashingRows: Set<string>;
+  onStartEdit?: (rowKey: string, colKey: string) => void;
+  onCancelEdit: () => void;
+  onCommitEdit: (rowKey: string, rawInput: string) => void;
+  onTabNav: (rowKey: string, direction: "next" | "prev") => void;
+  getRawValue: (rowKey: string) => number;
+  financialInputs?: PlanFinancialInputs | null;
+  onCellEdit?: (category: string, fieldName: string, rawInput: string, inputFormat: FormatType) => void;
+}
+
+function ComparisonPnlSection({
+  section,
+  scenarioEnriched,
+  scenarioOutputs,
+  isExpanded,
+  onToggle,
+  totalCols,
+  editingCell,
+  flashingRows,
+  onStartEdit,
+  onCancelEdit,
+  onCommitEdit,
+  onTabNav,
+  getRawValue,
+  financialInputs,
+  onCellEdit,
+}: ComparisonPnlSectionProps) {
+  const SCENARIOS: ScenarioId[] = ["base", "conservative", "optimistic"];
+
+  return (
+    <>
+      <tr
+        className="border-b bg-muted/30 cursor-pointer select-none"
+        onClick={onToggle}
+        data-testid={`pnl-section-${section.key}`}
+        role="row"
+      >
+        <td
+          className="py-2 px-3 font-medium text-sm sticky left-0 z-10 bg-muted/30 shadow-[2px_0_4px_-2px_rgba(0,0,0,0.06)]"
+          data-testid={`pnl-section-label-${section.key}`}
+        >
+          <span className="flex items-center gap-1.5">
+            {isExpanded ? <ChevronDown className="h-3.5 w-3.5" /> : <ChevronRight className="h-3.5 w-3.5" />}
+            {section.title}
+          </span>
+        </td>
+        <td colSpan={totalCols}>&nbsp;</td>
+      </tr>
+      {isExpanded &&
+        section.rows.map((row) => (
+          <ComparisonPnlRow
+            key={row.key}
+            row={row}
+            scenarioEnriched={scenarioEnriched}
+            scenarioOutputs={scenarioOutputs}
+            editingCell={editingCell}
+            flashingRows={flashingRows}
+            onStartEdit={onStartEdit}
+            onCancelEdit={onCancelEdit}
+            onCommitEdit={onCommitEdit}
+            onTabNav={onTabNav}
+            getRawValue={getRawValue}
+            financialInputs={financialInputs}
+            onCellEdit={onCellEdit}
+          />
+        ))}
+    </>
+  );
+}
+
+interface ComparisonPnlRowProps {
+  row: PnlRowDef;
+  scenarioEnriched: Record<ScenarioId, EnrichedAnnual[]>;
+  scenarioOutputs: ScenarioOutputs;
+  editingCell: string | null;
+  flashingRows: Set<string>;
+  onStartEdit?: (rowKey: string, colKey: string) => void;
+  onCancelEdit: () => void;
+  onCommitEdit: (rowKey: string, rawInput: string) => void;
+  onTabNav: (rowKey: string, direction: "next" | "prev") => void;
+  getRawValue: (rowKey: string) => number;
+  financialInputs?: PlanFinancialInputs | null;
+  onCellEdit?: (category: string, fieldName: string, rawInput: string, inputFormat: FormatType) => void;
+}
+
+function ComparisonPnlRow({
+  row,
+  scenarioEnriched,
+  scenarioOutputs,
+  editingCell,
+  flashingRows,
+  onStartEdit,
+  onCancelEdit,
+  onCommitEdit,
+  onTabNav,
+  getRawValue,
+  financialInputs,
+  onCellEdit,
+}: ComparisonPnlRowProps) {
+  const SCENARIOS: ScenarioId[] = ["base", "conservative", "optimistic"];
+  const editable = isEditableRow(row.key) && !!onStartEdit;
+  const mapping = editable ? INPUT_FIELD_MAP[row.key] : undefined;
+
+  const labelCellClass =
+    "py-1.5 px-3 text-sm whitespace-nowrap sticky left-0 z-10 bg-background shadow-[2px_0_4px_-2px_rgba(0,0,0,0.06)]";
+
+  return (
+    <tr
+      className={`border-b${row.isTotal ? " font-semibold bg-muted/20" : ""}${row.isSubtotal ? " font-medium" : ""}`}
+      data-testid={`pnl-row-${row.key}`}
+      role="row"
+    >
+      <td
+        className={`${labelCellClass}${row.isTotal ? " font-semibold bg-muted/20" : " bg-background"}${row.indent ? " pl-8" : ""}`}
+        data-testid={`pnl-label-${row.key}`}
+      >
+        <span className="flex items-center gap-1.5">
+          {row.label}
+          {editable && !editingCell && (
+            <Pencil className="h-3 w-3 text-muted-foreground/40" />
+          )}
+        </span>
+      </td>
+      {Array.from({ length: 5 }, (_, yi) => {
+        const year = yi + 1;
+        return SCENARIOS.map((scenario, sIdx) => {
+          const colKey = `y${year}-${scenario}`;
+          const enriched = scenarioEnriched[scenario];
+          const plAnalysis = scenarioOutputs[scenario].plAnalysis;
+          const value = getScenarioAnnualValue(row.field, year, enriched, plAnalysis);
+          const isNegative = value < 0;
+          const cellContent = formatValue(value, row.format, row.isExpense);
+          const isBase = scenario === "base";
+
+          if (isBase && editable && editingCell === `${row.key}:${colKey}`) {
+            const rawValue = getRawValue(row.key);
+            return (
+              <td
+                key={colKey}
+                className={`py-1.5 px-1 text-right ${SCENARIO_COLORS[scenario].bg}${yi > 0 && sIdx === 0 ? " border-l-2 border-border/40" : ""}`}
+                role="gridcell"
+                data-testid={`pnl-value-${row.key}-${colKey}`}
+              >
+                <InlineEditableCell
+                  value={formatFieldValue(rawValue, mapping!.inputFormat)}
+                  inputFormat={mapping!.inputFormat}
+                  onCommit={(val) => onCommitEdit(row.key, val)}
+                  onCancel={onCancelEdit}
+                  onTabNext={() => onTabNav(row.key, "next")}
+                  onTabPrev={() => onTabNav(row.key, "prev")}
+                  testId={`pnl-value-${row.key}-${colKey}`}
+                  ariaLabel={`${row.label}, Y${year} Base`}
+                  className={isNegative ? "text-amber-700 dark:text-amber-400" : ""}
+                  isFlashing={false}
+                />
+              </td>
+            );
+          }
+
+          const canClickEdit = isBase && editable && !editingCell;
+
+          return (
+            <td
+              key={colKey}
+              className={`py-1.5 px-3 text-right font-mono tabular-nums text-sm whitespace-nowrap ${SCENARIO_COLORS[scenario].bg}${isNegative ? " text-amber-700 dark:text-amber-400" : ""}${yi > 0 && sIdx === 0 ? " border-l-2 border-border/40" : ""}${canClickEdit ? " cursor-pointer" : ""}`}
+              data-testid={`pnl-value-${row.key}-${colKey}`}
+              role="gridcell"
+              onClick={canClickEdit ? () => onStartEdit!(row.key, colKey) : undefined}
+            >
+              {cellContent}
+            </td>
+          );
+        });
+      })}
+    </tr>
   );
 }

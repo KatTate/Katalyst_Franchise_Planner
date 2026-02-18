@@ -9,6 +9,7 @@ import type { EngineOutput, IdentityCheckResult } from "@shared/financial-engine
 interface AuditTabProps {
   output: EngineOutput;
   onNavigateToTab?: (tab: string, scrollTo?: string) => void;
+  comparisonActive?: boolean;
 }
 
 interface CheckCategory {
@@ -74,7 +75,7 @@ function categorizeChecks(checks: IdentityCheckResult[]): CheckCategory[] {
   return categories;
 }
 
-export function AuditTab({ output, onNavigateToTab }: AuditTabProps) {
+export function AuditTab({ output, onNavigateToTab, comparisonActive }: AuditTabProps) {
   const { identityChecks } = output;
 
   const categories = useMemo(() => categorizeChecks(identityChecks), [identityChecks]);

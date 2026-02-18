@@ -4,8 +4,11 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 import { formatCents } from "@/lib/format-currency";
 import type { EngineOutput, ValuationOutput, ROICExtendedOutput, MonthlyProjection } from "@shared/financial-engine";
 
+import { SCENARIO_COLORS, type ScenarioId, type ScenarioOutputs } from "@/lib/scenario-engine";
+
 interface ValuationTabProps {
   output: EngineOutput;
+  scenarioOutputs?: ScenarioOutputs | null;
 }
 
 interface CellTooltip {
@@ -136,13 +139,23 @@ function formatValValue(value: number, format: "currency" | "pct" | "multiple"):
   return formatCents(value);
 }
 
-export function ValuationTab({ output }: ValuationTabProps) {
+export function ValuationTab({ output, scenarioOutputs }: ValuationTabProps) {
   const { valuation, roicExtended, monthlyProjections } = output;
+  const comparisonActive = !!scenarioOutputs;
 
   const enriched = useMemo(
     () => computeEnrichedValYears(valuation, roicExtended, monthlyProjections),
     [valuation, roicExtended, monthlyProjections],
   );
+
+  const scenarioEnriched = useMemo(() => {
+    if (!scenarioOutputs) return null;
+    return {
+      base: computeEnrichedValYears(scenarioOutputs.base.valuation, scenarioOutputs.base.roicExtended, scenarioOutputs.base.monthlyProjections),
+      conservative: computeEnrichedValYears(scenarioOutputs.conservative.valuation, scenarioOutputs.conservative.roicExtended, scenarioOutputs.conservative.monthlyProjections),
+      optimistic: computeEnrichedValYears(scenarioOutputs.optimistic.valuation, scenarioOutputs.optimistic.roicExtended, scenarioOutputs.optimistic.monthlyProjections),
+    };
+  }, [scenarioOutputs]);
 
   const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>(() => {
     const initial: Record<string, boolean> = {};
@@ -155,6 +168,63 @@ export function ValuationTab({ output }: ValuationTabProps) {
   const toggleSection = useCallback((key: string) => {
     setExpandedSections((prev) => ({ ...prev, [key]: !prev[key] }));
   }, []);
+
+  const SCENARIOS: ScenarioId[] = ["base", "conservative", "optimistic"];
+
+  if (comparisonActive && scenarioOutputs && scenarioEnriched) {
+    return (
+      <div className="space-y-0 pb-8" data-testid="valuation-tab">
+        <ValCalloutBar enriched={enriched} />
+        <div className="overflow-x-auto" data-testid="valuation-table">
+          <table className="w-full text-sm" role="grid" aria-label="Business Valuation — Scenario Comparison">
+            <thead>
+              <tr className="border-b">
+                <th className="py-2 px-3 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground sticky left-0 bg-background z-20 min-w-[240px]">
+                  Metric
+                </th>
+                {Array.from({ length: 5 }, (_, yi) => (
+                  <th
+                    key={`yg-${yi + 1}`}
+                    className={`py-2 px-3 text-center text-xs font-semibold uppercase tracking-wide text-muted-foreground whitespace-nowrap${yi > 0 ? " border-l-2 border-border/40" : ""}`}
+                    colSpan={3}
+                  >
+                    Year {yi + 1}
+                  </th>
+                ))}
+              </tr>
+              <tr className="border-b">
+                <th className="sticky left-0 bg-background z-20" />
+                {Array.from({ length: 5 }, (_, yi) =>
+                  SCENARIOS.map((s, sIdx) => (
+                    <th
+                      key={`y${yi + 1}-${s}`}
+                      className={`py-1.5 px-2 text-right text-[11px] font-medium text-muted-foreground whitespace-nowrap ${SCENARIO_COLORS[s].bg}${sIdx === 0 && yi > 0 ? " border-l-2 border-border/40" : ""}`}
+                    >
+                      <span className="flex items-center justify-end gap-1">
+                        <span className={`inline-block h-1.5 w-1.5 rounded-full ${SCENARIO_COLORS[s].dot}`} />
+                        {s === "base" ? "Base" : s === "conservative" ? "Cons" : "Opt"}
+                      </span>
+                    </th>
+                  ))
+                )}
+              </tr>
+            </thead>
+            <tbody>
+              {VAL_SECTIONS.map((section) => (
+                <ComparisonValSection
+                  key={section.key}
+                  section={section}
+                  scenarioEnriched={scenarioEnriched}
+                  isExpanded={expandedSections[section.key] ?? true}
+                  onToggle={() => toggleSection(section.key)}
+                />
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-0 pb-8" data-testid="valuation-tab">
@@ -286,6 +356,89 @@ function ValSection({ section, enriched, isExpanded, onToggle }: ValSectionProps
             enriched={enriched}
           />
         ))}
+    </>
+  );
+}
+
+function ComparisonValSection({
+  section,
+  scenarioEnriched,
+  isExpanded,
+  onToggle,
+}: {
+  section: ValSectionDef;
+  scenarioEnriched: Record<ScenarioId, EnrichedValYear[]>;
+  isExpanded: boolean;
+  onToggle: () => void;
+}) {
+  const SCENARIOS: ScenarioId[] = ["base", "conservative", "optimistic"];
+  const totalCols = 5 * 3;
+
+  return (
+    <>
+      <tr
+        className="bg-muted/40 cursor-pointer hover-elevate"
+        data-testid={`val-section-${section.key}`}
+        onClick={onToggle}
+        role="row"
+        aria-expanded={isExpanded}
+      >
+        <td
+          className="py-2 px-3 font-semibold text-xs uppercase tracking-wide text-muted-foreground sticky left-0 bg-muted/40 z-20"
+          colSpan={totalCols + 1}
+        >
+          <span className="flex items-center gap-1">
+            {isExpanded ? <ChevronDown className="h-3.5 w-3.5 shrink-0" /> : <ChevronRight className="h-3.5 w-3.5 shrink-0" />}
+            {section.title}
+          </span>
+        </td>
+      </tr>
+      {isExpanded &&
+        section.rows.map((row) => {
+          const rowClass = row.isTotal
+            ? "font-semibold border-t-[3px] border-double border-b"
+            : row.isSubtotal
+              ? "font-medium border-t"
+              : "";
+          const paddingLeft = row.indent ? `${12 + row.indent * 16}px` : undefined;
+
+          return (
+            <tr
+              key={row.key}
+              className={`${rowClass} hover-elevate group`}
+              data-testid={`val-row-${row.key}`}
+              role="row"
+            >
+              <td
+                className="py-1.5 px-3 text-sm sticky left-0 bg-background z-10 min-w-[240px] shadow-[2px_0_4px_-2px_rgba(0,0,0,0.06)]"
+                style={{ paddingLeft }}
+                role="rowheader"
+              >
+                {row.label}
+              </td>
+              {Array.from({ length: 5 }, (_, yi) => {
+                const year = yi + 1;
+                return SCENARIOS.map((scenario, sIdx) => {
+                  const enriched = scenarioEnriched[scenario];
+                  const value = row.getValue(yi, enriched);
+                  const isNegative = value < 0;
+                  const cellContent = formatValValue(value, row.format);
+
+                  return (
+                    <td
+                      key={`y${year}-${scenario}`}
+                      className={`py-1.5 px-3 text-right font-mono tabular-nums text-sm whitespace-nowrap ${SCENARIO_COLORS[scenario].bg}${isNegative ? " text-amber-700 dark:text-amber-400" : ""}${sIdx === 0 && yi > 0 ? " border-l-2 border-border/40" : ""}`}
+                      data-testid={`val-value-${row.key}-y${year}-${scenario}`}
+                      role="gridcell"
+                    >
+                      {cellContent}
+                    </td>
+                  );
+                });
+              })}
+            </tr>
+          );
+        })}
     </>
   );
 }
