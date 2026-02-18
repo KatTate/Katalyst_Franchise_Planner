@@ -1,0 +1,115 @@
+Here is my analysis of both documents and the case for consolidation.
+
+---
+
+## Analysis: UX Design Spec Documents
+
+### Document Inventory
+
+| File | Date | Status | Scope |
+|---|---|---|---|
+| `ux-design-specification.md` | 2026-02-08 | Original, partially superseded | Foundational UX: personas, emotional design, design system, mode switcher, three interaction modes |
+| `ux-financial-statements-spec.md` | 2026-02-16 | v3 active, current architecture | Navigation model, financial statements experience, component architecture, accessibility |
+| `tech-spec-5.2-progressive-disclosure-gaps.md` | 2026-02-17 | Done | Implementation gaps in Story 5.2 drill-down |
+
+---
+
+### Critical Conflicts Between the Two Main Specs
+
+These are not minor divergences — they are incompatible architectural decisions:
+
+**1. Navigation Architecture**
+
+| Original (Feb 8) | Financial Statements Spec v3 (Feb 16) |
+|---|---|
+| Segmented control: **Planning Assistant \| Forms \| Quick Entry** is the top-level workspace switcher | **No mode switcher exists.** Sidebar items `My Plan` and `Reports` are two navigation destinations, not modes |
+| Three "modes" are user-facing feature labels | "My Plan" and "Reports" are routes, not modes. No `planningMode` state |
+
+A developer reading the original spec would build a mode switcher. The financial spec explicitly states: *"If you find yourself writing `if (mode === 'quick-entry')`, you are violating this spec."*
+
+**2. Quick Entry / Expert Mode**
+
+| Original | v3 |
+|---|---|
+| Expert Mode = purpose-built TanStack Table grid, ~60+ rows, keyboard-first tab-through | **Quick Entry as a concept is retired.** `quick-entry-mode.tsx` is retired. Inline editing in Reports replaces it entirely |
+| "A purpose-built financial grid — NOT an adapted table" | The P&L tab in Reports IS the power-user editing surface |
+
+**3. AI Planning Assistant**
+
+| Original | v3 |
+|---|---|
+| Story Mode = split-screen interaction, left panel = AI conversation, right panel = live dashboard; it's one of the three top-level modes | AI planning assistant = a **feature** within My Plan, available as a slide-in panel or floating button. Also accessible as `Talk to [Manager Name]` sidebar item. NOT a separate workspace mode |
+| Described in extensive interaction flow detail | Not redesigned in v3 — its repositioning is implied but not explicitly reworked |
+
+**4. Document Preview Placement**
+
+| Original | v3 |
+|---|---|
+| Live document preview visible "during planning" throughout the workspace | Preview is specifically on the **Dashboard widget** + accessible from My Plan's Impact Strip. Reports gets only a "Generate PDF" button — preview inside financial statements is explicitly rejected as redundant |
+
+---
+
+### What Is Still Valid in the Original Spec
+
+These sections are not superseded and remain the authoritative source:
+
+- **Personas** (Sam, Maria, Chris) — v3 references them; their definitions in the original remain accurate
+- **Experience Principles** (5 principles) — not touched by v3
+- **Emotional design** — emotional arcs, micro-emotions, failure state design (bad ROI, AI extraction errors, advisor disagreement) — fully valid, not addressed in v3
+- **Design system** — Tailwind + shadcn/ui, `<FinancialValue>` primitive, white-label theming, CSS token architecture
+- **UX pattern analysis** — Notion, Linear, Mercury, Intercom, Shopify analogues, anti-patterns table
+- **Visual Design Foundation** — color system, typography, financial formatting conventions
+- **Platform strategy** — desktop-first, 1024px min viewport; v3 expands this but doesn't contradict it
+- **Auto-save, brand defaults, per-field reset patterns**
+- **AI extraction confidence threshold** (high/tentative/uncertain) — still valid wherever the AI assistant exists
+
+---
+
+### Why Consolidation Is the Right Call
+
+**Confusion risk is real.** A developer or new team member reading the original spec gets a fundamentally different product picture than what's being built. The original describes a three-mode segmented control workspace. The current architecture is a two-destination sidebar app. These are not stylistic differences.
+
+**Two authoritative sources for overlapping topics is fragile.** When a question arises like "where does document preview live?" there are two docs that give different answers.
+
+**The financial statements spec explicitly obsoletes pieces of the original** (retires `quick-entry-mode.tsx`, retires the mode switcher, rewrites story assignments) — but it doesn't update the original spec. That means the original sits unreachable in its original state, potentially re-introducing retired concepts.
+
+**The original has irreplaceable content** that must survive. The financial statements spec has no emotional design section, no pattern analysis, no design system specification. A consolidated doc would be the only complete picture.
+
+---
+
+### Proposed Structure for Consolidated Spec
+
+```
+Part 1:  Project Vision + White-Label Strategy        (from original)
+Part 2:  Personas                                     (from original, journeys updated from v3)
+Part 3:  Experience Principles                        (from original)
+Part 4:  Emotional Design + Failure States            (from original)
+Part 5:  Platform Strategy                            (from original + v3 responsive section)
+Part 6:  Design System + Visual Design Foundation     (from original)
+Part 7:  Navigation Architecture (Two-Door Model)     (from v3 — SUPERSEDES mode switcher)
+Part 8:  My Plan Experience (forms + Impact Strip)    (from v3, informed by original Normal Mode)
+Part 9:  AI Planning Assistant (as feature, not mode) (from original Story Mode, repositioned)
+Part 10: Reports Experience (financial statements)    (from v3 Parts 1-9)
+Part 11: Scenario Comparison                          (from v3)
+Part 12: Guardian Bar + Dynamic Interpretation        (from v3)
+Part 13: Document Preview + PDF Generation            (from v3)
+Part 14: Empty + Incomplete States                    (from v3)
+Part 15: User Journey Tracing                         (from v3 Part 13)
+Part 16: Component Architecture                       (from v3 Part 10)
+Part 17: Accessibility                                (from v3 Part 15)
+Part 18: UX Pattern Analysis + Anti-Patterns          (from original)
+Part 19: Out of Scope + Deferred Items                (from v3 Part 14)
+```
+
+---
+
+### Recommendation
+
+**Yes — consolidate.** The two documents cannot coexist as equals. The financial statements spec is the current architecture. The original spec has essential content that needs to be preserved but integrated. A single consolidated document would:
+
+1. Eliminate the mode-switcher/two-door conflict as a source of developer confusion
+2. Preserve the emotional design, principles, and design system content from the original
+3. Clarify the AI planning assistant's repositioned role
+4. Serve as the single source of truth for Epic 5 and beyond
+
+**Do you want me to produce the consolidated document?** I can write it to `_bmad-output/planning-artifacts/ux-design-specification-consolidated.md` (or replace the original) and push it to the `claude/review-design-specs-dDahW` branch. The work would integrate both documents, flag the architectural supersessions clearly, and preserve all content that remains valid.
