@@ -1,35 +1,18 @@
 # Story 5.6: Quick Entry Input-Output Integration
 
-Status: draft
+Status: ready-for-dev
 
 ## Story
 
 As a franchisee viewing Reports,
 I want to edit input values directly within the P&L, Balance Sheet, Cash Flow, and Valuation tabs,
-So that I work inside the financial document I already understand — the financial statements ARE my editing surface, not a separate input grid (FR7h, F2).
-
-## Epics.md vs. UX Spec v3 Reconciliation
-
-**Critical divergence:** The original epics.md Story 5.6 was written before the UX spec v3 retrospective revision (2026-02-16). UX spec v3 is the authoritative design document and supersedes the epics.md acceptance criteria where they conflict.
-
-**Changes from original epics.md:**
-
-| Epics.md (Original) | UX Spec v3 (Authoritative) | Impact |
-|---------------------|---------------------------|--------|
-| Mode-gated editing: Quick Entry = editable, Forms/PA = read-only | Editing is ALWAYS available in Reports — no mode gating | Remove mode checks entirely |
-| "All Inputs" tab preserving flat grid | No "All Inputs" tab needed — P&L + BS + CF cover all inputs | No "All Inputs" tab to build |
-| One-time orientation overlay | No orientation overlay — nothing to explain | No overlay to build |
-| `quick-entry-mode.tsx` preserved as "All Inputs" engine | `quick-entry-mode.tsx` is RETIRED | Component retirement |
-| P&L default tab only in Quick Entry mode | Summary remains default for all users | No tab-default logic change |
-| Mode switcher controls editing | No mode switcher exists in v3 architecture | Mode switcher already exists but is orthogonal to this story |
-
-**Design principle (UX spec v3 Part 3):** "Reports always renders financial statements with input cells editable and computed cells read-only. There is no switch to flip."
+so that I work inside the financial document I already understand — the financial statements ARE my editing surface, not a separate input grid (FR7h, F2).
 
 ## Acceptance Criteria
 
 **Inline Editing in P&L Tab:**
 
-1. Given the P&L tab renders in Reports, when I click an input cell (Monthly Revenue, COGS %, Direct Labor, Management Salaries, Facilities, Marketing, Other OpEx), then the cell enters inline edit mode: a focused text input replaces the display value, with a primary-colored border highlight. The cell content is the raw editable number (e.g., "30000" for $30,000 currency, "32.0" for 32% percentage).
+1. Given the P&L tab renders in Reports, when I click an input cell (Monthly Revenue, COGS %, Direct Labor %, Management Salaries, Facilities, Marketing, Other OpEx), then the cell enters inline edit mode: a focused text input replaces the display value, with a primary-colored border highlight. The cell content is the raw editable number (e.g., "30000" for $30,000 currency, "32.0" for 32% percentage).
 
 2. Given I am editing an input cell in the P&L tab, when I type a new value and blur or press Enter, then the value is parsed according to its format (currency → cents conversion via `parseDollarsToCents`, percentage → decimal via `/ 100`), the `PlanFinancialInputs` are updated via the `useFieldEditing` hook pattern, engine recalculation is triggered, and all dependent computed cells update immediately (optimistic UI).
 
@@ -39,15 +22,15 @@ So that I work inside the financial document I already understand — the financ
 
 **Inline Editing in Balance Sheet Tab:**
 
-5. Given the Balance Sheet tab renders, when I click an input cell (AR Days, AP Days, Inventory Days, Tax Payment Delay), then the same inline editing behavior from AC1-AC4 applies. The input maps to the corresponding `PlanFinancialInputs` field.
+5. Given the Balance Sheet tab renders, then it contains NO direct input cells in the current `PlanFinancialInputs` model. The working capital assumptions (AR Days, AP Days, Inventory Days) exist in the raw `FinancialInputs` engine interface but are not exposed through `PlanFinancialInputs` with `FinancialFieldValue` metadata. The Balance Sheet tab is fully read-only for this story.
 
 **Inline Editing in Cash Flow Tab:**
 
-6. Given the Cash Flow tab renders, when I identify input cells, then the Cash Flow tab has NO direct input cells in the current engine model — all Cash Flow values are computed from P&L and Balance Sheet inputs. Input cell visual markers (`isInput: true`) are NOT present on Cash Flow rows. The tab is fully read-only.
+6. Given the Cash Flow tab renders, then it contains NO direct input cells — all Cash Flow values are computed from P&L and Balance Sheet inputs. The tab is fully read-only.
 
 **Inline Editing in Valuation Tab:**
 
-7. Given the Valuation tab renders, when I click the EBITDA Multiple input cell, then inline editing activates. EBITDA Multiple is the single editable input on this tab (already visually marked with `isInput: true` in Story 5.5). The edit updates the valuation computation immediately.
+7. Given the Valuation tab renders, when I click the EBITDA Multiple input cell, then inline editing activates. EBITDA Multiple is the single editable input on this tab (already visually marked with `isInput: true` in Story 5.5). The edit updates the valuation computation immediately. EBITDA Multiple requires special handling — it is a top-level field on the raw `FinancialInputs` interface (not inside `PlanFinancialInputs`), defaulting to 3. The save path must write to the correct location.
 
 **Input Cell Visual Treatment (Already Implemented — Verify):**
 
@@ -75,89 +58,143 @@ So that I work inside the financial document I already understand — the financ
 
 ## Dev Notes
 
-### Input Field Mapping — Statement Row to PlanFinancialInputs
+### Architecture Patterns to Follow
 
-The critical engineering challenge is mapping statement row definitions (e.g., PnlRowDef with `field: "monthlyRevenue"`) to the correct `PlanFinancialInputs` category and field name for the `useFieldEditing` hook.
+- **State management (architecture.md Decision 8):** TanStack React Query for all server state. Optimistic cache updates for auto-save. Query keys use hierarchical arrays: `['plans', planId]`, `['plans', planId, 'outputs']`. Mutations always invalidate parent query keys after success.
+  - Source: `_bmad-output/planning-artifacts/architecture.md` → Decision 8: State Management
 
-**P&L Input Mapping:**
+- **Auto-save pattern (architecture.md Decision 6):** Client debounces financial input changes at 2-second idle after last keystroke. `PATCH /api/plans/:id` with only changed fields (partial update). Visual indicator: "Saved" / "Saving..." / "Unsaved changes" in plan header.
+  - Source: `_bmad-output/planning-artifacts/architecture.md` → Decision 6: Auto-Save Strategy
 
-| Row Key | Row Field | PlanFinancialInputs Category | PlanFinancialInputs Field | Format |
-|---------|-----------|------------------------------|--------------------------|--------|
-| monthly-revenue | monthlyRevenue | revenue | monthlyAuv | currency |
-| cogs-pct | cogsPct | operatingCosts | cogsPct | percentage |
-| direct-labor | directLabor | operatingCosts | laborPct | percentage |
-| mgmt-salaries | managementSalaries | operatingCosts | rentMonthly | currency |
-| facilities | facilities | operatingCosts | utilitiesMonthly | currency |
-| marketing | marketing | operatingCosts | marketingPct | percentage |
-| other-opex | otherOpex | operatingCosts | otherMonthly | currency |
+- **Financial input state flow (architecture.md Decision 9):** All experience tiers write to the same `PlanFinancialInputs` unified state via `updateFinancialInput()`. The `useFieldEditing` hook (`client/src/hooks/use-field-editing.ts`) provides `handleEditStart`, `handleEditCommit`, `handleEditCancel`, and `handleFieldUpdate` for editing lifecycle.
+  - Source: `_bmad-output/planning-artifacts/architecture.md` → Decision 9: Component Architecture
 
-**IMPORTANT:** The mapping above is APPROXIMATE. The actual field names in `PlanFinancialInputs` (defined in `shared/financial-engine.ts`) may differ from the display field names in the statement rows. The implementer MUST:
-1. Read `shared/financial-engine.ts` to find the exact `PlanFinancialInputs` structure
-2. Read `client/src/lib/field-metadata.ts` for the `FIELD_METADATA` mapping (category → fieldName → format)
-3. Cross-reference with `shared/plan-initialization.ts` for `updateFieldValue` and `resetFieldToDefault`
-4. Create an explicit `INPUT_FIELD_MAP` that maps each statement row's `key` to its `{ category, fieldName, format }` in `PlanFinancialInputs`
+- **Number format rules (architecture.md):** Currency stored as cents (integers). Percentages stored as decimals (0.065 = 6.5%). Formatting happens exclusively in UI layer. Use `parseFieldInput` and `formatFieldValue` from `client/src/lib/field-metadata.ts`.
+  - Source: `_bmad-output/planning-artifacts/architecture.md` → Number Format Rules
 
-**Balance Sheet Input Mapping:** AR Days, AP Days, Inventory Days, Tax Payment Delay — these are working capital parameters. Check `PlanFinancialInputs` for their exact category/field path.
+- **Naming conventions:** Components: PascalCase. Files: kebab-case. Constants: SCREAMING_SNAKE_CASE. data-testid: `{action}-{target}` for interactive, `{type}-{content}` for display, `value-{metric}-{period}` for financial values.
+  - Source: `_bmad-output/planning-artifacts/architecture.md` → Naming Patterns, data-testid Convention
 
-**Valuation Input Mapping:** EBITDA Multiple — check if this exists in `PlanFinancialInputs` or needs to be added.
+- **Error message pattern:** 3-part actionable format: (1) What failed, (2) Whether data was lost, (3) What to do.
+  - Source: `_bmad-output/planning-artifacts/architecture.md` → Process Patterns → Error Handling
 
-### Architecture Pattern
+### UI/UX Deliverables
 
-The inline editing integration follows the existing patterns:
+- **Primary interaction surface:** P&L tab and Valuation tab within the Reports view (`FinancialStatements` component). No new pages or routes.
+- **InlineEditableCell component:** Click-to-edit overlay within table cells. Shows focused text input with primary border on activation. Replaces display value with raw editable number.
+- **Linked columns flash animation:** When editing an input cell in one year column, all other year columns for that row briefly flash (200ms highlight) to indicate propagation.
+- **Linked columns indicator:** Small link icon with text in the column toolbar area.
+- **UI states:**
+  - Default: Input cell shows formatted value with subtle visual distinction (tinted background, dashed border, hover pencil icon — already implemented)
+  - Editing: Text input replaces display value, primary-colored border, auto-focused
+  - Saving: Planning header shows "Saving..." via existing save indicator
+  - Error: Toast notification if save fails (3-part actionable message)
+- **Navigation:** User reaches this feature by navigating to any plan → Reports view → P&L or Valuation tab. No new navigation paths.
 
-1. **Data flow:** `usePlan` hook provides `plan.financialInputs` → statement tabs read computed outputs from `usePlanOutputs` → editing writes back to `plan.financialInputs` via `queueSave` → engine recalculates → `usePlanOutputs` cache invalidates → computed cells update.
+### Anti-Patterns & Hard Constraints
 
-2. **Component wiring:** The `FinancialStatements` container currently receives only `planId` and `defaultTab`. To enable editing, it needs access to `plan.financialInputs` and a `queueSave` callback. These must be threaded from `PlanningWorkspace` → `FinancialStatements` → individual tab components → `PnlRow`/`BsRow`/etc.
+- **DO NOT modify `components/ui/*`** — Shadcn-managed primitives are never modified.
+- **DO NOT use `useState` for server data** — All financial inputs come from React Query cache.
+- **DO NOT create a separate edit mode toggle** — Editing is ALWAYS available. No mode gating per UX spec v3.
+- **DO NOT build an "All Inputs" tab** — Removed in UX spec v3 retrospective.
+- **DO NOT build an orientation overlay** — Removed in UX spec v3 retrospective.
+- **DO NOT add working capital input editing to the Balance Sheet tab** — AR Days, AP Days, Inventory Days are not in `PlanFinancialInputs`. They exist only in the raw `FinancialInputs` engine interface without `FinancialFieldValue` metadata wrappers. Adding them as editable inputs requires schema changes that are out of scope for this story.
+- **DO NOT add custom hover/active styles on Buttons or Badges** — Built-in elevation handles this per architecture.
+- **DO NOT import from `server/` or `client/` in `shared/` files** — Financial engine purity enforcement.
+- **Reuse existing code — DO NOT duplicate:**
+  - `useFieldEditing` hook (`client/src/hooks/use-field-editing.ts`) — the editing lifecycle
+  - `parseFieldInput` / `formatFieldValue` from `client/src/lib/field-metadata.ts` — parsing/formatting
+  - `updateFieldValue` / `resetFieldToDefault` from `shared/plan-initialization.ts` — state updates
+  - `usePlanAutoSave` hook — auto-save orchestration
+  - `usePlanOutputs` hook — engine output fetching
 
-3. **EditableCell reuse:** The existing `EditableCell` component from Epic 4 handles click-to-edit, Tab navigation, auto-formatting, and auto-save. However, it was designed for the flat grid context (`quick-entry-mode.tsx`) and expects `FinancialFieldValue` objects. The statement tabs work with computed display values, not raw `FinancialFieldValue` objects. An adapter pattern or a new lightweight `InlineEditableCell` component may be needed.
+### Gotchas & Integration Warnings
 
-4. **Possible approach — `InlineEditableCell`:** A focused component (~80 lines) that:
-   - Accepts: `displayValue: string`, `rawValue: number`, `format: FormatType`, `inputMapping: { category, fieldName }`, `onCommit: (category, fieldName, parsedValue) => void`
-   - Renders: display value by default, switches to `<input>` on click
-   - Handles: Tab/Shift+Tab to next/prev input cell, Enter to confirm, Escape to cancel
-   - Emits: parsed value on commit
-   - Does NOT need the full `FinancialFieldValue` object or range checking (those are Epic 4 Quick Entry concerns)
+- **CRITICAL — P&L field mapping:** The P&L row definitions use display field names (e.g., `field: "monthlyRevenue"`, `field: "facilities"`) that do NOT match the `PlanFinancialInputs` field names (e.g., `revenue.monthlyAuv`, `operatingCosts.utilitiesMonthly`). An explicit `INPUT_FIELD_MAP` constant must bridge this gap. The complete mapping is:
 
-### Files to Create/Modify
+  | P&L Row Key | P&L Row `field` | PlanFinancialInputs Path | Format |
+  |-------------|-----------------|-------------------------|--------|
+  | monthly-revenue | monthlyRevenue | revenue.monthlyAuv | currency |
+  | cogs-pct | cogsPct | operatingCosts.cogsPct | percentage |
+  | dl-pct | directLaborPct | operatingCosts.laborPct | percentage |
+  | mgmt-salaries | managementSalaries | operatingCosts.rentMonthly | currency |
+  | facilities | facilities | operatingCosts.utilitiesMonthly | currency |
+  | marketing | marketing | operatingCosts.marketingPct | percentage |
+  | other-opex | otherOpex | operatingCosts.otherMonthly | currency |
 
-| File | Action | Description |
-|------|--------|-------------|
-| `client/src/components/planning/statements/inline-editable-cell.tsx` | CREATE | Lightweight inline editing cell for statement tables (~80 lines) |
-| `client/src/components/planning/statements/pnl-tab.tsx` | MODIFY | Add `onCellEdit` callback, replace display-only input cells with `InlineEditableCell`, add input mapping |
-| `client/src/components/planning/statements/balance-sheet-tab.tsx` | MODIFY | Same as P&L — add editing for AR Days, AP Days, etc. |
-| `client/src/components/planning/statements/valuation-tab.tsx` | MODIFY | Add editing for EBITDA Multiple |
-| `client/src/components/planning/financial-statements.tsx` | MODIFY | Accept `financialInputs` and `onCellEdit` props, pass to tab components |
-| `client/src/pages/planning-workspace.tsx` | MODIFY | Pass `plan.financialInputs` and `queueSave` to `FinancialStatements` when in Reports view |
+  **WARNING:** The `mgmt-salaries → rentMonthly` and `facilities → utilitiesMonthly` mappings above are from the APPROXIMATE table in the original draft. They look WRONG. The implementer MUST verify each mapping by:
+  1. Reading `shared/financial-engine.ts` lines 37-65 (`PlanFinancialInputs` interface)
+  2. Reading `shared/financial-engine.ts` lines 70-135 (raw `FinancialInputs` consumed by engine)
+  3. Reading the `unwrapInputs()` function in `shared/financial-engine.ts` to see how `PlanFinancialInputs` fields map to `FinancialInputs` fields
+  4. Reading `client/src/lib/field-metadata.ts` lines 10-38 (`FIELD_METADATA`) for category/fieldName/format
+  5. Cross-referencing `PNL_SECTIONS` in `pnl-tab.tsx` to confirm which display field name corresponds to which engine computation
 
-### Pre-Epic-7 Linked Columns Constraint
+- **CRITICAL — EBITDA Multiple is NOT in PlanFinancialInputs:** The `ebitdaMultiple` field lives on `FinancialInputs` as a top-level optional field (line 130 of `shared/financial-engine.ts`), defaulting to 3. It is NOT wrapped in `FinancialFieldValue` metadata. The editing mechanism for this field must bypass the standard `useFieldEditing` flow and directly update the plan's `financialInputs` JSONB (or a separate field). The implementer must check how `ebitdaMultiple` is currently stored and read by `unwrapInputs()`.
 
-All input fields in `PlanFinancialInputs` are single values (not per-year arrays). Editing any year column updates the single value, which the engine then applies to all 60 months. This means:
-- Editing "Monthly Revenue" in Y3 column changes the value for Y1-Y5
-- The UI must flash all year columns to show propagation
-- A linked columns indicator in the header reinforces this behavior
+- **Pre-Epic-7 linked columns:** All fields in `PlanFinancialInputs` are single values (not per-year arrays). The engine applies each value uniformly across all 60 months (with growth rates as the exception). Editing Year 3's "Monthly Revenue" changes Year 1-5 simultaneously. The UI must visually indicate this with a flash on non-edited year cells.
 
-### Testing Strategy
+- **Component prop threading:** `FinancialStatements` currently receives only `planId` and `defaultTab`. To enable editing, it needs access to `plan.financialInputs` and a save callback. These must be threaded from `PlanningWorkspace` (which has `usePlanAutoSave`) → `FinancialStatements` → tab components → row components. This is a multi-level prop-threading change.
 
-- P&L: Edit Monthly Revenue → verify all year columns update, verify Annual Revenue recomputes
-- P&L: Edit COGS % → verify COGS $, Gross Profit, all downstream computed cells update
-- Balance Sheet: Edit AR Days → verify Accounts Receivable updates
-- Valuation: Edit EBITDA Multiple → verify Enterprise Value updates
-- Tab navigation: Tab through P&L input cells, verify computed cells are skipped
-- Auto-save: Edit a cell, verify save indicator shows pending → saving → saved
-- Linked columns: Edit Y2, verify Y1/Y3/Y4/Y5 flash and update
+- **`PnlTab` currently receives only `output: EngineOutput`** — it needs additional props for editing: `financialInputs`, `onCellEdit` callback, and `isSaving` flag.
 
-### Risks & Mitigations
+- **P&L row `direct-labor` vs `dl-pct`:** Both rows are marked `isInput: true`. However, `direct-labor` shows the dollar amount and `dl-pct` shows the percentage. In `PlanFinancialInputs`, there is only `operatingCosts.laborPct` (a percentage). The dollar amount is computed from `laborPct * revenue`. Only `dl-pct` should be editable. The `direct-labor` row should either have `isInput` removed or should be treated as display-only in the inline editing logic.
 
-| Risk | Mitigation |
-|------|-----------|
-| Field mapping errors (wrong PlanFinancialInputs field) | Explicit INPUT_FIELD_MAP with unit tests |
-| Performance — editing triggers full engine recalc | Engine is fast (~10ms); debounce saves, not recalcs |
-| EditableCell from Epic 4 doesn't fit statement table layout | Create new InlineEditableCell (~80 lines) optimized for table cells |
-| Cash Flow tab confusion — users expect editable cells | Clear: Cash Flow has NO inputs, all values derived from P&L + BS |
-| Linked columns surprise — editing Y2 changes Y1 | Visual indicator + flash animation on propagation |
+- **Valuation tab row structure differs:** The valuation tab uses `getValue: (idx, enriched) => ...` functions instead of simple `field` strings. The EBITDA Multiple row accesses `e[_i].val.ebitdaMultiple`. The `InlineEditableCell` component must handle this different data shape.
 
-### Story Sequence Position
+- **Existing `aria-readonly` attributes:** The statement tabs already set `aria-readonly="false"` on `isInput` cells and `aria-readonly="true"` on computed cells (implemented in 5.3-5.5). AC13 is partially already met.
 
-- **Depends on:** Stories 5.1-5.5 (engine extension, all statement tabs implemented with visual input markers)
-- **Enables:** Story 5.7 (Scenario Comparison), Story 5.8 (Guardian Bar), Story 5.9 (Impact Strip)
-- **Does NOT depend on:** Epic 7 (per-year independence)
+### File Change Summary
+
+| File | Action | Notes |
+|------|--------|-------|
+| `client/src/components/planning/statements/inline-editable-cell.tsx` | CREATE | Lightweight click-to-edit cell component (~80 lines). Accepts display value, raw value, format, input mapping, onCommit callback. Handles Tab/Shift+Tab/Enter/Escape. |
+| `client/src/components/planning/statements/input-field-map.ts` | CREATE | Explicit `INPUT_FIELD_MAP` constant mapping P&L row keys → `{ category, fieldName, format }` in `PlanFinancialInputs`. Also maps valuation EBITDA Multiple. |
+| `client/src/components/planning/statements/pnl-tab.tsx` | MODIFY | Add `financialInputs`, `onCellEdit`, `isSaving` props. Replace display-only input cells with `InlineEditableCell`. Wire input mapping. Add flash animation for linked columns. |
+| `client/src/components/planning/statements/valuation-tab.tsx` | MODIFY | Add `financialInputs`, `onCellEdit`, `isSaving` props. Wire EBITDA Multiple editing with special save path. |
+| `client/src/components/planning/statements/column-manager.tsx` | MODIFY | Add linked columns indicator to `ColumnToolbar` (link icon + explanatory text). |
+| `client/src/components/planning/financial-statements.tsx` | MODIFY | Accept `financialInputs`, `onCellEdit`, `isSaving` props. Pass to PnlTab and ValuationTab. |
+| `client/src/pages/planning-workspace.tsx` | MODIFY | Pass `plan.financialInputs`, `queueSave`, and `isSaving` to `FinancialStatements`. |
+
+### Dependencies & Environment Variables
+
+- **No new packages needed.** All required utilities exist: `useFieldEditing`, `parseFieldInput`, `formatFieldValue`, `updateFieldValue`, React Query.
+- **No new environment variables needed.**
+- **Existing packages used:** `lucide-react` (Link2 icon for linked columns indicator), `framer-motion` (optional, for flash animation — already installed).
+
+### Testing Expectations
+
+- **Playwright e2e tests (run_test):**
+  - Navigate to Reports → P&L tab → click Monthly Revenue cell → verify edit mode activates
+  - Type new value → press Enter → verify cell updates and other year columns update
+  - Verify Tab key moves to next input cell, skipping computed cells
+  - Press Escape → verify edit cancels and original value restores
+  - Navigate to Valuation tab → click EBITDA Multiple → edit → verify valuation recalculates
+  - Verify Balance Sheet and Cash Flow tabs have no editable cells
+  - Verify editing works regardless of experience tier (no mode gating)
+
+- **Critical ACs requiring test coverage:** AC1 (click-to-edit activation), AC2 (value parsing and save), AC3 (keyboard navigation), AC4 (linked columns propagation), AC7 (EBITDA Multiple), AC11 (no mode gating)
+
+### References
+
+- [Source: `_bmad-output/planning-artifacts/architecture.md` → Decision 6: Auto-Save Strategy] — 2-second debounce, PATCH partial updates
+- [Source: `_bmad-output/planning-artifacts/architecture.md` → Decision 8: State Management] — React Query + optimistic updates
+- [Source: `_bmad-output/planning-artifacts/architecture.md` → Decision 9: Component Architecture] — shared detail panel + tier-specific input panels
+- [Source: `_bmad-output/planning-artifacts/architecture.md` → Number Format Rules] — currency as cents, percentages as decimals
+- [Source: `_bmad-output/planning-artifacts/architecture.md` → Implementation Patterns] — data-testid conventions, error message format
+- [Source: `_bmad-output/planning-artifacts/ux-financial-statements-spec.md` → Part 3] — "Reports always renders financial statements with input cells editable and computed cells read-only. There is no switch to flip."
+- [Source: `shared/financial-engine.ts` → lines 37-65] — `PlanFinancialInputs` interface definition
+- [Source: `shared/financial-engine.ts` → line 130] — `ebitdaMultiple` as top-level optional field on `FinancialInputs`
+- [Source: `client/src/hooks/use-field-editing.ts`] — existing editing hook with `handleEditStart`, `handleEditCommit`, `handleFieldUpdate`
+- [Source: `client/src/lib/field-metadata.ts`] — `FIELD_METADATA`, `parseFieldInput`, `formatFieldValue`
+- [Source: `client/src/components/planning/statements/pnl-tab.tsx` → lines 80-204] — `PNL_SECTIONS` with `isInput: true` markers
+- [Source: `client/src/components/planning/statements/valuation-tab.tsx` → line 98] — EBITDA Multiple row with `isInput: true`
+
+## Dev Agent Record
+
+### Agent Model Used
+
+### Completion Notes
+
+### File List
+
+### Testing Summary

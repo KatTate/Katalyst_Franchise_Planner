@@ -153,7 +153,7 @@ development_status:
   5-3-pl-statement-tab: done
   5-4-balance-sheet-cash-flow-tabs: done
   5-5-roic-valuation-audit-tabs: in-progress
-  5-6-quick-entry-input-output-integration: backlog
+  5-6-quick-entry-input-output-integration: ready-for-dev
   5-7-scenario-comparison: backlog
   5-8-guardian-bar-dynamic-interpretation: backlog
   5-9-impact-strip-document-preview-widget: backlog
