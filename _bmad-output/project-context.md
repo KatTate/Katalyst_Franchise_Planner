@@ -2,7 +2,7 @@
 project_name: 'Katalyst Growth Planner'
 user_name: 'User'
 date: '2026-02-19'
-sections_completed: ['technology_stack', 'language_rules', 'framework_rules', 'testing_rules', 'code_quality']
+sections_completed: ['technology_stack', 'language_rules', 'framework_rules', 'testing_rules', 'code_quality', 'dev_workflow']
 existing_patterns_found: 12
 ---
 
@@ -131,3 +131,38 @@ _This file contains critical rules and patterns that AI agents must follow when 
 - Interactive elements: `{action}-{target}` (e.g., `button-dev-login`, `mode-switcher-forms`)
 - Display elements: `{type}-{description}` (e.g., `planning-workspace`, `text-username`)
 - Dynamic lists: append unique ID (`card-product-${id}`)
+
+### Development Workflow Rules
+
+**Server Architecture:**
+- Single port (5000) serves both API and frontend. No separate frontend server.
+- Dev: Vite middleware on Express (`server/vite.ts`). Prod: `serveStatic` serves built assets.
+- `server/index.ts` — app bootstrap only. **NEVER register routes here.**
+- `server/vite.ts`, `vite.config.ts`, `drizzle.config.ts` — **NEVER modify.**
+
+**Route Registration Pattern:**
+1. Create router file in `server/routes/` (kebab-case, matching resource name).
+2. Import in `server/routes.ts`.
+3. Mount with `app.use("/api/<resource>", router)`.
+- All routes are under `/api/`. Never register routes directly in `server/index.ts`.
+
+**Schema Change Workflow (strict order):**
+1. Define tables in `shared/schema.ts` with insert schemas + types.
+2. Update `IStorage` interface in `server/storage.ts`.
+3. Implement in `DatabaseStorage` class in `server/storage.ts`.
+4. Run `npm run db:push` to sync schema.
+- Never put raw SQL in routes. Always go through the storage interface.
+
+**Auth & Identity:**
+- `getEffectiveUser(req)` — **always use this**, never read `req.user` directly. Priority: demo user → impersonated user → authenticated user. Cached per-request.
+- Dev mode: when `GOOGLE_CLIENT_ID` is unset, `POST /api/auth/dev-login` is available.
+- Sessions: PostgreSQL-backed (`connect-pg-simple`, auto-creates table). Sessions store both auth AND operational state (`impersonating_user_id`, `demo_mode_user_id`, `demo_mode_brand_id`).
+
+**Environment Variables:**
+- Server: `process.env.*` (DATABASE_URL, SESSION_SECRET, GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET).
+- Client: `import.meta.env.VITE_*` — must have `VITE_` prefix or Vite won't expose it.
+- `SESSION_SECRET` defaults to `'dev-secret-change-me'` in development.
+
+**Build Pipeline:**
+- `script/build.ts`: esbuild bundles server to `dist/index.cjs`. Uses allowlist pattern — listed deps are bundled for cold-start performance, others stay external.
+- When adding a new server dependency that should be bundled, add to allowlist in `script/build.ts`.
