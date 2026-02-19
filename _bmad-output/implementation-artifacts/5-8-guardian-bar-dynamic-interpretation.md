@@ -1,6 +1,6 @@
 # Story 5.8: Guardian Bar & Dynamic Interpretation
 
-Status: in-progress
+Status: review
 
 ## Story
 
@@ -245,9 +245,32 @@ so that every decision I make is informed by its financial impact (FR7d).
 ## Dev Agent Record
 
 ### Agent Model Used
+Claude 4.6 Opus (Replit Agent)
 
 ### Completion Notes
+All 13 acceptance criteria implemented and verified. Key implementation decisions:
+- Guardian Bar renders persistently above tabs with three indicators (break-even, ROI, cash position) using green/amber/gurple color+icon system (not traffic light red)
+- Break-even navigation corrected from ROIC tab to Summary tab section-break-even-analysis
+- Guardian pulse animation with 300ms debounce prevents flickering during rapid Quick Entry edits
+- CalloutBar enhanced with per-tab dynamic interpretation for all 7 tabs (Summary, P&L, BS, CF, ROIC, Valuation, Audit)
+- Row-level interpretation rows added to P&L (COGS, gross profit, pre-tax income, labor efficiency), Balance Sheet (current ratio, total assets, total equity), and Cash Flow (net operating CF, net cash flow, ending cash)
+- Brand benchmark comparisons use financialInputs item7Range and brandDefault — no universal/hardcoded benchmarks
+- Interpretation rows hidden during comparison mode and non-annual drill-down views
+- All data-testid attributes match AC11-AC13 specifications exactly
+- AllDefaults guard removed so Guardian always renders when guardianState is available
 
 ### File List
+- `client/src/lib/guardian-engine.ts` — Fixed break-even navigateTo target
+- `client/src/components/planning/statements/guardian-bar.tsx` — Added pulse animation with debounce, threshold change detection
+- `client/src/components/planning/statements/callout-bar.tsx` — Per-tab dynamic interpretation for all 7 tabs with brand benchmarks
+- `client/src/components/planning/financial-statements.tsx` — Removed allDefaults guard, threaded brandName/financialInputs props
+- `client/src/components/planning/statements/pnl-tab.tsx` — COGS, gross profit, pre-tax income, labor interpretation rows with brand benchmarks
+- `client/src/components/planning/statements/balance-sheet-tab.tsx` — Current ratio, total assets, total equity interpretation rows
+- `client/src/components/planning/statements/cash-flow-tab.tsx` — Net operating CF, net cash flow, ending cash interpretation rows
+- `client/src/index.css` — Added @keyframes guardian-pulse animation
 
 ### Testing Summary
+- LSP diagnostics: Clean on all 7 modified source files (0 errors, 0 warnings)
+- Build verification: Application compiles and runs without errors
+- AC verification: All 13 acceptance criteria systematically verified against implementation
+- Git status: Only expected files modified within story scope
