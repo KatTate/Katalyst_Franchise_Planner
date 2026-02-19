@@ -3,7 +3,7 @@ project_name: 'Katalyst Growth Planner'
 user_name: 'User'
 date: '2026-02-19'
 sections_completed: ['technology_stack', 'language_rules', 'framework_rules', 'testing_rules', 'code_quality', 'dev_workflow', 'critical_rules']
-existing_patterns_found: 12
+existing_patterns_found: 18
 ---
 
 # Project Context for AI Agents
@@ -37,7 +37,7 @@ _This file contains critical rules and patterns that AI agents must follow when 
 **Version Constraints:**
 - TanStack Query v5 — object-form only for `useQuery`, `useMutation`, etc.
 - Express 5 — different API surface from Express 4 (route params, error handling)
-- Drizzle array columns: must use `text().array()` method, not `array(text())` wrapper
+- Drizzle array columns (if added in future): must use `text().array()` method, not `array(text())` wrapper. Note: the project currently stores multi-value data as JSONB, not array columns.
 
 ## Critical Implementation Rules
 
@@ -48,11 +48,11 @@ _This file contains critical rules and patterns that AI agents must follow when 
 - **Path aliases:** `@/*` → `client/src/*`, `@shared/*` → `shared/*`, `@assets` → `attached_assets/`
 - **`shared/` boundary rule:** Code in `shared/` runs in both Node.js and browser — no server-only APIs (fs, crypto), no DOM APIs
 - **Currency: cents as integers** (15000 = $150.00). **Percentages: decimals** (0.065 = 6.5%). Never mix.
-- **Two financial input interfaces:** `PlanFinancialInputs` (wrapped with `FinancialFieldValue` metadata, for persistence/UI) vs. `FinancialInputs` (raw numbers with 5-year tuples, for engine computation). Never pass wrapped inputs directly to engine — unwrapping transformation is required.
+- **Two financial input interfaces:** `PlanFinancialInputs` (wrapped with `FinancialFieldValue` metadata, for persistence/UI) vs. `FinancialInputs` (raw numbers with 5-year tuples, for engine computation). Never pass wrapped inputs directly to `calculateProjections()` — call `unwrapForEngine()` first. See Critical Don't-Miss Rules for details.
 - **JSONB type safety:** `.$type<T>()` on Drizzle JSONB columns is a compile-time assertion only. Runtime validation must happen at API boundaries using matching Zod schemas (e.g., `planFinancialInputsSchema`).
-- **`getEffectiveUser(req)`** — always use this in routes, never `req.user` directly, because impersonation swaps identity.
-- **QueryKey convention:** Use array segments `['/api/plans', planId]` for hierarchical keys. The default fetcher joins them with `/`. Never use template literals in queryKey — it breaks cache invalidation.
-- **Mutations:** Use `apiRequest(method, url, data)` from `@/lib/queryClient`. Always invalidate relevant queryKey arrays after success.
+- **`getEffectiveUser(req)`** — always use this in routes for data scoping, never `req.user` directly. See Auth & Identity in Development Workflow Rules for the full pattern.
+- **QueryKey convention:** Use array segments `['/api/plans', planId]` for hierarchical keys. The default fetcher constructs URLs via `queryKey.join('/')` — so `['/api/plans', planId]` becomes `/api/plans/{planId}`. First segment must start with `/api/` with NO trailing slash. Never use template literals in queryKey — it breaks cache invalidation.
+- **Mutations:** Use `apiRequest(method, url, data)` from `@/lib/queryClient`. Always invalidate relevant queryKey arrays after success. Errors throw as `new Error(\`${status}: ${text}\`)` — the status code is in the message string.
 - **Storage interface returns `undefined`** for not-found — routes must handle with explicit checks and 404 responses.
 - **Frontend env vars:** `import.meta.env.VITE_*` only, never `process.env` on client.
 
@@ -60,8 +60,8 @@ _This file contains critical rules and patterns that AI agents must follow when 
 
 **Backend Architecture:**
 - **Three-tier separation:** Routes (validation + auth + delegation) → Services (business logic orchestration) → Storage (data access). Business logic belongs in `server/services/`, never in route handlers.
-- **API response envelope:** Plan-related endpoints wrap responses in `{ data: T }`. Client hooks extract via `.data?.data`.
-- **Auth middleware stack:** `requireAuth` checks authentication. `requireRole()` checks **real** user role (not effective user). `getEffectiveUser(req)` resolves acting identity (demo > impersonated > real). These are distinct concerns — don't conflate.
+- **API response envelope (inconsistent — know the pattern):** Single-resource endpoints wrap in `{ data: T }` (`GET /api/plans/:id`, `PATCH /api/plans/:id`, `GET /api/plans/:id/outputs`). Collection endpoints return raw arrays (`GET /api/plans`, `GET /api/plans/:id/startup-costs`). Client hooks must destructure accordingly — don't assume all endpoints wrap.
+- **Auth middleware stack:** `requireAuth` checks authentication. `requireRole()` checks **real** user role (not effective user) — use this for authorization gates. `getEffectiveUser(req)` resolves acting identity (demo > impersonated > real) — use this for data scoping. **Never use `getEffectiveUser()` for authorization checks** — a demo user could access admin endpoints.
 - **Impersonation chain:** demo user > impersonated user > req.user. 60-minute timeout on impersonation. Cached per-request on `req._effectiveUser`.
 - **Optimistic concurrency:** Plan updates send `_expectedUpdatedAt` for conflict detection. Server returns 409 on stale writes.
 
@@ -70,8 +70,11 @@ _This file contains critical rules and patterns that AI agents must follow when 
 - **Auto-save pipeline:** Plan modifications go through `usePlanAutoSave.queueSave()` — never call `updatePlan` directly. It handles debounce (2s), optimistic updates, conflict detection (409), and retry (3x with backoff).
 - **Field editing:** `useFieldEditing` hook handles all value conversion (cents ↔ display dollars, decimal ↔ display percent). Uses `updateFieldValue()` from `@shared/plan-initialization` to stamp `source` and `lastModifiedAt`. Don't build parallel edit logic.
 - **`staleTime: Infinity`** on queries — data never auto-refetches. All freshness is managed via explicit `invalidateQueries` after mutations.
+- **Default queryFn throws on 401.** Override with `getQueryFn({ on401: "returnNull" })` for queries that should return null when unauthenticated (e.g., auth-check queries).
 - **Shadcn Sidebar** — always use `@/components/ui/sidebar` primitives. Never reimplement custom sidebars.
 - **Wouter routing** — `Link` or `useLocation` for navigation. `ProtectedRoute` for auth-required pages, `AdminRoute` for admin-only pages.
+- **WorkspaceView state machine:** The planning workspace uses an internal state machine via `WorkspaceViewContext` — NOT URL-based routing — for its 4 views: `my-plan`, `reports`, `scenarios`, `settings`. Financial statement views (P&L, Balance Sheet, Cash Flow, ROIC, Valuation, Audit) are tabs WITHIN the `reports` view. Add new workspace views by extending `WorkspaceView` type and adding navigation functions — don't add new wouter routes.
+- **Scenario engine:** `client/src/lib/scenario-engine.ts` clones plan inputs, applies what-if modifications, and runs `unwrapForEngine` + `calculateProjections` for comparison outputs. Use this for scenario features — don't build parallel engine invocation logic.
 
 ### Testing Rules
 
@@ -153,10 +156,15 @@ _This file contains critical rules and patterns that AI agents must follow when 
 4. Run `npm run db:push` to sync schema.
 - Never put raw SQL in routes. Always go through the storage interface.
 
-**Auth & Identity:**
-- `getEffectiveUser(req)` — **always use this**, never read `req.user` directly. Priority: demo user → impersonated user → authenticated user. Cached per-request.
+**Auth & Identity (canonical reference — other sections cross-reference here):**
+- `getEffectiveUser(req)` — **always use for data scoping**, never read `req.user` directly. Priority: demo user → impersonated user → authenticated user. Cached per-request.
+- `requireRole()` — **always use for authorization gates**. Checks real user role, not effective user. Never use `getEffectiveUser()` for authorization.
 - Dev mode: when `GOOGLE_CLIENT_ID` is unset, `POST /api/auth/dev-login` is available.
 - Sessions: PostgreSQL-backed (`connect-pg-simple`, auto-creates table). Sessions store both auth AND operational state (`impersonating_user_id`, `demo_mode_user_id`, `demo_mode_brand_id`).
+
+**Type Augmentation Files:**
+- `Express.User` interface: `server/auth.ts` (global declare). Update when adding user properties.
+- Session fields: `server/types/session.d.ts`. Update when adding session properties like `impersonating_user_id`.
 
 **Environment Variables:**
 - Server: `process.env.*` (DATABASE_URL, SESSION_SECRET, GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET).
@@ -171,7 +179,8 @@ _This file contains critical rules and patterns that AI agents must follow when 
 
 **The Unwrap Boundary (Most Common Bug Source):**
 - `PlanFinancialInputs` ≠ `FinancialInputs`. NEVER pass wrapped inputs to the engine.
-- ALWAYS call `unwrapForEngine(planInputs, startupCosts)` → `EngineInput`.
+- The engine entry point is `calculateProjections(engineInput: EngineInput): EngineOutput` in `shared/financial-engine.ts`.
+- ALWAYS call `unwrapForEngine(planInputs, startupCosts)` → `EngineInput` before calling `calculateProjections()`.
 - Non-trivial transformations happen during unwrap:
   - `monthlyAuv * 12` → `annualGrossSales`
   - Single values → 5-year tuples via `fill5()`
@@ -193,10 +202,17 @@ _This file contains critical rules and patterns that AI agents must follow when 
 - Admin source format: `` `admin:john@katgroupinc.com` `` — not just `'admin'`.
 - Reset restores `brandDefault` value and sets `isCustom: false`.
 
+**Startup Cost Data Model:**
+- `StartupCostLineItem` is the second engine input (alongside financial inputs) — a variable-length array of line items.
+- Fields: `id` (UUID), `name`, `amount` (cents), `capexClassification` (`"capex"` | `"non_capex"` | `"working_capital"`), `isCustom`, `source`, `brandDefaultAmount` (cents), `item7RangeLow`/`item7RangeHigh` (cents, nullable), `sortOrder`.
+- Helpers in `@shared/plan-initialization.ts`: `reorderStartupCosts()` (re-normalizes sortOrder), `getStartupCostTotals()` (sums by classification), `migrateStartupCosts()` (upgrades old 3-field format).
+- `capexClassification` drives balance sheet treatment: capex items are depreciable fixed assets, non-capex are expensed, working capital is cash reserve.
+
 **Auto-Save Conflict Detection:**
 - Client sends `_expectedUpdatedAt` with PATCH → server returns 409 on mismatch.
 - Any server-side plan modification MUST update `updatedAt` or concurrency breaks silently.
 - Client handles 409 by entering `conflictState: 'conflict'` — don't suppress this.
+- Error detection uses string parsing: `errMsg.startsWith("409")` — this is the established convention for `apiRequest` errors which throw as `new Error(\`${status}: ${text}\`)`.
 
 **Guardian Thresholds (Business-Critical):**
 - Break-even: ≤18mo = healthy, ≤30mo = attention, >30mo = concerning.
@@ -205,6 +221,5 @@ _This file contains critical rules and patterns that AI agents must follow when 
 - Never change thresholds without product approval.
 
 **Identity Resolution (Every Route):**
-- `getEffectiveUser(req)` — ALWAYS. Never `req.user` directly.
-- Priority: demo user → impersonated user → authenticated user.
-- Impersonation has 60-minute timeout with audit logging.
+- See Auth & Identity in Development Workflow Rules (canonical reference).
+- Key rule: `getEffectiveUser(req)` for data scoping, `requireRole()` for authorization. Never swap these.
