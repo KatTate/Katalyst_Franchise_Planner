@@ -2,7 +2,7 @@
 project_name: 'Katalyst Growth Planner'
 user_name: 'User'
 date: '2026-02-19'
-sections_completed: ['technology_stack', 'language_rules']
+sections_completed: ['technology_stack', 'language_rules', 'framework_rules']
 existing_patterns_found: 12
 ---
 
@@ -55,3 +55,20 @@ _This file contains critical rules and patterns that AI agents must follow when 
 - **Mutations:** Use `apiRequest(method, url, data)` from `@/lib/queryClient`. Always invalidate relevant queryKey arrays after success.
 - **Storage interface returns `undefined`** for not-found — routes must handle with explicit checks and 404 responses.
 - **Frontend env vars:** `import.meta.env.VITE_*` only, never `process.env` on client.
+
+### Framework-Specific Rules
+
+**Backend Architecture:**
+- **Three-tier separation:** Routes (validation + auth + delegation) → Services (business logic orchestration) → Storage (data access). Business logic belongs in `server/services/`, never in route handlers.
+- **API response envelope:** Plan-related endpoints wrap responses in `{ data: T }`. Client hooks extract via `.data?.data`.
+- **Auth middleware stack:** `requireAuth` checks authentication. `requireRole()` checks **real** user role (not effective user). `getEffectiveUser(req)` resolves acting identity (demo > impersonated > real). These are distinct concerns — don't conflate.
+- **Impersonation chain:** demo user > impersonated user > req.user. 60-minute timeout on impersonation. Cached per-request on `req._effectiveUser`.
+- **Optimistic concurrency:** Plan updates send `_expectedUpdatedAt` for conflict detection. Server returns 409 on stale writes.
+
+**Frontend Architecture:**
+- **Query key factories:** Use existing factory functions (`planKey(id)`, `planOutputsKey(id)`) — don't construct keys inline. When adding new queries, create a factory function following the same pattern.
+- **Auto-save pipeline:** Plan modifications go through `usePlanAutoSave.queueSave()` — never call `updatePlan` directly. It handles debounce (2s), optimistic updates, conflict detection (409), and retry (3x with backoff).
+- **Field editing:** `useFieldEditing` hook handles all value conversion (cents ↔ display dollars, decimal ↔ display percent). Uses `updateFieldValue()` from `@shared/plan-initialization` to stamp `source` and `lastModifiedAt`. Don't build parallel edit logic.
+- **`staleTime: Infinity`** on queries — data never auto-refetches. All freshness is managed via explicit `invalidateQueries` after mutations.
+- **Shadcn Sidebar** — always use `@/components/ui/sidebar` primitives. Never reimplement custom sidebars.
+- **Wouter routing** — `Link` or `useLocation` for navigation. `ProtectedRoute` for auth-required pages, `AdminRoute` for admin-only pages.
