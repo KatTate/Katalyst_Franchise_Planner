@@ -941,18 +941,27 @@ So that the Financial Statement views have complete data to render (FR8, FR9, FR
 - The engine currently computes most P&L line items. This extension adds the remaining output sections (Valuation, extended ROIC, extended Audit) and disaggregates Balance Sheet and Cash Flow into their full component lines.
 - See Sprint Change Proposal CP-2 for the complete field specification.
 
-### Story 5.2: Financial Statements Container & Summary Tab
+### Story 5.2: App Navigation, Reports Container & Summary Tab
 
 As a franchisee (any persona),
-I want a unified Financial Statements view with tabbed navigation and an annual Summary as the landing tab,
+I want a "Reports" sidebar destination with tabbed financial statements and an annual Summary as the landing tab,
 So that I can quickly assess my business plan across all 5 years and drill into detail when I need it (FR7d).
 
 **Acceptance Criteria:**
 
-**Given** I am in the planning workspace with a plan that has financial projections
-**When** I click "Financial Statements" in the sidebar navigation
-**Then** the Financial Statements container renders with a horizontal tab bar: Summary | P&L | Balance Sheet | Cash Flow | ROIC | Valuation | Audit
-**And** the Summary tab is active by default (except in Quick Entry mode where P&L is default — Story 5.6)
+**Given** I am logged in with an active plan
+**When** the sidebar renders
+**Then** the sidebar navigation includes these items under the active plan: **My Plan**, **Reports**, **Scenarios**, **Settings**
+**And** a "HELP" section includes **Planning Assistant**
+**And** a "MY LOCATIONS" section includes **All Plans** (portfolio view)
+**And** any existing mode switcher UI (Planning Assistant | Forms | Quick Entry segmented control) from Epic 4 is removed — there are no user-facing modes
+**And** clicking **Reports** navigates to the Financial Statements container
+**And** clicking **My Plan** navigates to the structured form-based input workspace (Story 5.6)
+
+**Given** I click "Reports" in the sidebar navigation
+**When** the Reports container renders
+**Then** a horizontal tab bar shows: Summary | P&L | Balance Sheet | Cash Flow | ROIC | Valuation | Audit
+**And** the Summary tab is active by default
 **And** tab switching is instant with no loading state — all data comes from the cached engine computation
 **And** each tab remembers its scroll position and drill-down state within the session
 **And** on viewports below 1024px, tabs convert to a dropdown selector
@@ -971,7 +980,7 @@ So that I can quickly assess my business plan across all 5 years and drill into 
 
 **Given** I am on the existing Dashboard Panel
 **When** I click a summary metric card (e.g., "Pre-Tax Income: $142,000")
-**Then** the system navigates to the relevant Financial Statements tab scrolled to the relevant row (e.g., P&L tab scrolled to pre-tax income)
+**Then** the system navigates to the relevant Reports tab scrolled to the relevant row (e.g., P&L tab scrolled to pre-tax income)
 
 **Given** the progressive disclosure infrastructure
 **When** I click on a year column header in any statement tab
@@ -989,7 +998,8 @@ So that I can quickly assess my business plan across all 5 years and drill into 
 
 **Given** any statement tab renders
 **When** the tab has a completeness indicator
-**Then** each tab in the tab bar shows a completeness badge: a filled circle if all inputs for that statement have been user-edited, a half-filled circle if some inputs are brand defaults, an empty circle if all inputs are brand defaults
+**Then** each tab in the tab bar shows a textual "BD" completeness badge: no indicator if all inputs have been user-edited, a count badge if some inputs are brand defaults (e.g., "P&L (3 BD)"), or "P&L (All BD)" if all inputs are still at brand defaults
+**And** input cells that still hold brand default values show a small "BD" badge in the cell corner; the badge disappears when the user edits the value and returns if the user resets to default
 
 **And** row labels (leftmost column) are sticky horizontally — always visible during horizontal scroll
 **And** section headers are sticky vertically — always visible during vertical scroll
@@ -997,22 +1007,24 @@ So that I can quickly assess my business plan across all 5 years and drill into 
 **And** currency values format as $X,XXX throughout; percentages as X.X%
 
 **Dev Notes:**
-- The `<FinancialStatements>` container component (~100 lines) manages tab routing and shared state.
+- This story establishes the two-door sidebar navigation (My Plan / Reports) per consolidated UX spec Part 7. Any mode switcher UI from Epic 4 is explicitly removed.
+- The `<FinancialStatements>` container component manages tab routing and shared state within the Reports destination.
 - Progressive disclosure infrastructure (annual → quarterly → monthly) is built here and reused by all statement tabs.
 - The `<ColumnManager>` component generates column definitions based on drill-down state.
 - Linked-column indicators (pre-Epic-7) are implemented here and apply to all tabs.
 - The Summary tab uses `<StatementSection>` components with `<StatementTable>` for each section.
-- See UX spec Part 2 (Progressive Disclosure), Part 10 (Component Architecture), Part 12 (Empty & Incomplete States).
+- Tab completeness uses textual "BD" (Brand Default) count badges, NOT circle metaphors. Per-cell "BD" badges are part of the trust-through-transparency layer.
+- See consolidated UX spec Part 7 (Navigation Architecture), Part 2 (Progressive Disclosure), Part 10 (Component Architecture), Part 14 (Empty & Incomplete States).
 
-### Story 5.3: P&L Statement Tab
+### Story 5.3: P&L Statement Tab (with Inline Editing)
 
 As a franchisee,
-I want to see my complete Profit & Loss statement matching the reference spreadsheet,
-So that I can understand how my assumptions flow through to profitability (FR7a).
+I want to see my complete Profit & Loss statement matching the reference spreadsheet, with input cells I can edit directly,
+So that I can understand how my assumptions flow through to profitability and adjust them in context (FR7a).
 
 **Acceptance Criteria:**
 
-**Given** I navigate to the P&L tab within Financial Statements
+**Given** I navigate to the P&L tab within Reports
 **When** the tab renders
 **Then** a sticky Key Metrics Callout Bar shows: Annual Revenue (Y1), Pre-Tax Income (Y1), Pre-Tax Margin %
 **And** the P&L renders as a tabular financial document with progressive disclosure (annual default, drill to quarterly/monthly)
@@ -1029,7 +1041,17 @@ So that I can understand how my assumptions flow through to profitability (FR7a)
 **And** input-driven rows (Revenue, COGS %, Direct Labor %, Management Salaries, Facilities, Marketing, Other OpEx) are visually distinguished from computed rows using: a subtle tinted background (primary/5), a thin dashed left border (primary/20), and a small pencil icon on hover
 **And** computed rows use standard background, medium weight text, no border decoration
 **And** section headers use slightly elevated background with bold text
-**And** the visual distinction does NOT rely solely on color — dashed border and pencil icon provide non-color indicators (Accessibility, Critique Issue #7)
+**And** the visual distinction does NOT rely solely on color — dashed border and pencil icon provide non-color indicators (Accessibility)
+
+**Given** I click or Tab into an input cell in the P&L tab
+**When** the cell receives focus
+**Then** the cell enters edit mode immediately — inline editing is always available, not gated by any mode or toggle
+**And** the cell uses the `<EditableCell>` component from Epic 4 with type-appropriate input (currency for dollar amounts, percentage for ratios)
+**And** on blur or Enter, the value is saved via `PATCH /api/plans/:id/financial-inputs`, the engine recomputes, and all computed cells in the tab update within 2 seconds (NFR1)
+**And** on Escape, the edit is cancelled and the previous value is restored
+**And** Tab/Shift+Tab navigation moves between input cells (skipping computed cells)
+**And** input cells at brand default values show a small "BD" badge in the cell corner; the badge disappears when the user edits the value
+**And** each input cell shows a source attribution badge: "Brand Default", "AI", or no badge (user-entered) — visible without hover
 
 **Given** the P&L tab has interpretation rows enabled (Story 5.8)
 **When** interpretation rows render
@@ -1047,9 +1069,10 @@ So that I can understand how my assumptions flow through to profitability (FR7a)
 **Dev Notes:**
 - Row structure maps directly to the reference spreadsheet "P&L Statement" sheet.
 - The `<StatementTable>` orchestrator composes `<SectionGroup>`, `<DataRow>`, `<ComputedCell>`, and `<InterpretationRow>` components.
-- Input cell highlighting is visual-only in this story — actual inline editing is enabled in Story 5.6 (Quick Entry Integration).
+- Inline editing is built directly into this story — input cells are ALWAYS editable in Reports per consolidated UX spec Part 10. There is no separate "Quick Entry Integration" story.
+- Per-cell "BD" badges and source attribution badges are part of the trust-through-transparency layer (Experience Principle #5).
 - Interpretation content and Guardian integration are wired in Story 5.8.
-- See UX spec Part 8.2 (P&L Statement) and Part 5 (Dynamic Interpretation).
+- See consolidated UX spec Part 10 (Reports Experience), Part 14 (Empty & Incomplete States), Part 5 (Dynamic Interpretation).
 
 ### Story 5.4: Balance Sheet & Cash Flow Tabs
 
@@ -1094,10 +1117,21 @@ So that I can understand my asset/liability position and where cash comes from a
 **And** both tabs use the same `<StatementTable>` component family as the P&L tab
 **And** both tabs have input-driven rows visually distinguished from computed rows (same pattern as P&L)
 
+**Given** I click or Tab into an input cell in the Balance Sheet or Cash Flow tabs
+**When** the cell receives focus
+**Then** the cell enters edit mode immediately — inline editing is always available, same behavior as P&L (Story 5.3)
+**And** the cell uses the `<EditableCell>` component with type-appropriate input
+**And** on blur or Enter, the value is saved, the engine recomputes, and all computed cells update within 2 seconds (NFR1)
+**And** on Escape, the edit is cancelled and the previous value is restored
+**And** Tab/Shift+Tab navigation moves between input cells (skipping computed cells)
+**And** input cells at brand default values show a small "BD" badge in the cell corner
+**And** each input cell shows a source attribution badge: "Brand Default", "AI", or no badge (user-entered)
+
 **Dev Notes:**
 - Balance Sheet and Cash Flow are built together because they are tightly coupled through LOC mechanics (Line of Credit draws/repayments flow between them) and tax payable timing.
-- Negative cash highlighting uses a warm advisory color, NOT destructive red — consistent with the Guardian's "Concerning" level (UX spec Part 6).
-- See UX spec Part 8.3 (Balance Sheet), Part 8.4 (Cash Flow Statement).
+- Inline editing is built directly into this story — same always-editable pattern as Story 5.3. Per consolidated UX spec Part 10.
+- Negative cash highlighting uses a warm advisory color, NOT destructive red — consistent with the Guardian's "Concerning" level.
+- See consolidated UX spec Part 10 (Reports Experience), Part 14 (Empty & Incomplete States).
 
 ### Story 5.5: ROIC, Valuation & Audit Tabs
 
