@@ -31,7 +31,7 @@ so that every decision I make is informed by its financial impact (FR7d).
    - Cash Flow: "Lowest cash point: $X in Month Y. [You'll need at least $X in reserves]"
    - ROIC: "5-year return on invested capital: X%. Break-even on investment: Month Y."
    - Valuation: "Estimated business value at Year 5: $X based on Xa EBITDA multiple."
-   - Audit: "X of 13 checks passing. [List failures with plain-language explanation]"
+   - Audit: "X of Y checks passing. [List failures with plain-language explanation]" (where Y = `output.identityChecks.length`, currently 16 — do NOT hardcode)
 
 **Dynamic Interpretation — Type 2 (Row-Level Interpretation):**
 
@@ -45,7 +45,7 @@ so that every decision I make is informed by its financial impact (FR7d).
 
 **Guardian Bar visibility:**
 
-10. Given the Guardian Bar has rendered, when the user is on any tab (including during scenario comparison), then the Guardian Bar remains persistently visible — it is always shown when the plan has custom inputs.
+10. Given the Guardian Bar has rendered, when the user is on any tab (including during scenario comparison), then the Guardian Bar remains persistently visible — it is always shown regardless of whether inputs are customized or at defaults. Do NOT add any `comparisonActive` conditional to the Guardian Bar rendering (unlike CalloutBar which IS hidden during comparison).
 
 **data-testid coverage:**
 
@@ -73,7 +73,7 @@ so that every decision I make is informed by its financial impact (FR7d).
 - **CalloutBar existing pattern:** `client/src/components/planning/statements/callout-bar.tsx` currently renders a single Summary-style callout with `formatCents`, `formatROI`, `formatBreakEven`. For per-tab callouts, the approach is to make CalloutBar accept the active tab ID and EngineOutput, then render tab-specific content. The existing `CalloutBar` already has the visual skeleton — it needs content variation by tab.
   - Source: `client/src/components/planning/statements/callout-bar.tsx`
 
-- **Color system:** Guardian uses three semantic colors (NOT traffic light): `guardian-healthy` (green/success), `guardian-attention` (amber/warning), `guardian-concerning` (Gurple/advisory — hex `#A9A2AA`). These custom Tailwind colors must be defined in `tailwind.config.ts` and `index.css` as CSS variables if not already present. The "concerning" level uses Gurple (Katalyst's advisory purple), NOT destructive red.
+- **Color system (ALREADY DEFINED — do NOT re-add):** Guardian uses three semantic colors (NOT traffic light): `guardian-healthy` (green/success), `guardian-attention` (amber/warning), `guardian-concerning` (Gurple/advisory). These are ALREADY defined as CSS custom properties in `index.css` (lines 40-45 for light, 130-135 for dark) and mapped in `tailwind.config.ts` (lines 56-61) as `guardian.healthy`, `guardian.attention`, `guardian.concerning` with foreground variants. The only CSS addition needed is the `@keyframes guardian-pulse` animation in `index.css`.
   - Source: UX spec Part 6, Part 12, Part 17
 
 - **State management (architecture.md Decision 8):** Guardian state is derived from `EngineOutput` via `useMemo` — no server persistence. Interpretation content is computed from `EngineOutput` + `PlanFinancialInputs` metadata. Both update reactively when the plan is recalculated.
@@ -99,13 +99,19 @@ so that every decision I make is informed by its financial impact (FR7d).
   - P&L: Pre-Tax Income row (margin as % of revenue, compared to brand range)
   - P&L: COGS row (COGS % compared to brand default)
   - P&L: Labor row (labor % compared to brand default)
-  - Balance Sheet: Total Equity row (equity position context)
-  - Cash Flow: Ending Cash row in months where cash is negative
+  - Balance Sheet: Total Equity row (equity position context — "Your equity is $X, meaning you own X% of business value vs debt")
+  - Cash Flow: Ending Cash row where annual ending cash is negative. Additionally, if year-end cash is positive but any month within that year had negative cash (check `monthlyProjections`), show: "Cash positive at year-end, but negative in months [M1, M2] — plan reserves accordingly."
+  - Interpretation rows appear ONLY at annual view level. When drilled into quarterly or monthly views, interpretation rows are hidden (the data is too granular for "so what" context to be meaningful). Guard with `{viewLevel === 'annual' && !comparisonActive && <InterpretationRow ... />}`.
 
-- **Hover tooltips (Type 3):** On key computed cells (pre-tax income, EBITDA, gross profit, etc.), a tooltip on hover shows: (a) plain-language meaning, (b) the formula used to compute it, (c) a "View in Glossary" link placeholder (disabled until Story 5.10). Use Shadcn `<Tooltip>` component. These tooltips are additive — they don't replace existing cell content.
+- **Hover tooltips (Type 3):** Specific computed cells that receive tooltips (exhaustive list):
+  - P&L: Pre-Tax Income, EBITDA, Gross Profit, Total Operating Expenses
+  - Balance Sheet: Total Assets, Total Equity, Total Liabilities
+  - Cash Flow: Net Cash from Operations, Ending Cash Balance
+  - ROIC: Cumulative ROI, Payback Period
+  Each tooltip shows: (a) plain-language meaning, (b) the formula used. Create a static `TOOLTIP_DEFINITIONS` map in a new file `client/src/lib/tooltip-definitions.ts` that maps row keys to `{ meaning: string; formula: string }`. Example: `"preTaxIncome": { meaning: "Your profit before taxes are applied", formula: "Revenue - Total Operating Expenses - Interest" }`. The "View in Glossary" link is a placeholder `<span>` (disabled until Story 5.10). Use Shadcn `<Tooltip>` component wrapping the cell `<td>`. These tooltips are additive — they don't replace existing cell content. Tab component files (pnl-tab, balance-sheet-tab, cash-flow-tab, roic-tab) need modifications to wrap these specific cells.
 
 - **UI states:**
-  - Guardian Bar hidden: When `guardianState.allDefaults` is true AND the user hasn't customized any inputs — per UX spec Part 14. However, current implementation already shows it but with the defaults note. **Clarification per UX spec**: The Guardian Bar IS shown even at all-defaults, but with the advisory note. The indicators still display values (brand default projections are valid numbers).
+  - Guardian Bar at all-defaults: The Guardian Bar IS shown even when all inputs are at brand defaults. It displays indicator values (brand default projections are valid numbers) AND the advisory note from AC5. Do NOT conditionally hide the Guardian Bar based on `allDefaults` — always render it when `guardianState` is available.
   - Animation: When a threshold level changes (e.g., from `healthy` to `attention`), the indicator briefly pulses using CSS `@keyframes` — a scale(1.05) + box-shadow highlight that fades over 600ms. Track previous level in a `useRef` to detect changes.
   - Interpretation rows during scenario comparison: Interpretation rows are HIDDEN during scenario comparison (comparison summary card replaces this function). When comparison deactivates, interpretation rows return.
 
@@ -136,6 +142,10 @@ so that every decision I make is informed by its financial impact (FR7d).
 
 ### Gotchas & Integration Warnings
 
+- **CRITICAL — Break-even Guardian navigation target is WRONG in existing code.** The existing `guardian-engine.ts` line 112 sets break-even `navigateTo: { tab: "roic" }` — routing to ROIC tab. AC3 requires Break-even → Summary tab break-even section. **Fix:** Change `guardian-engine.ts` line 112 from `navigateTo: { tab: "roic" }` to `navigateTo: { tab: "summary", scrollTo: "section-break-even-analysis" }`. The `handleNavigateToTab` in `financial-statements.tsx` already supports `scrollTo` via `pendingScrollTo` ref (lines 148-155, 161-163).
+
+- **CRITICAL — Brand name not available in FinancialStatements container.** The per-tab callout content references "[Brand]" (e.g., "within typical range for [Brand]") and `GuardianBar` already accepts a `brandName` prop. But `financial-statements.tsx` never receives or threads a brand name. **Fix:** The parent page that renders `FinancialStatements` must pass `brandName` as a prop. Look at how the plan's `brandId` resolves to a brand name — likely via the brands query already used on the page, e.g., `brands.find(b => b.id === plan.brandId)?.displayName || brands.find(b => b.id === plan.brandId)?.name`. Thread this through as `brandName` prop to both `GuardianBar` and `CalloutBar`.
+
 - **CRITICAL — Guardian Bar visibility logic:** The current implementation (`financial-statements.tsx` line 214) conditionally renders `<GuardianBar>` with `{guardianState && !guardianState.allDefaults && ...}`. This HIDES the Guardian when all inputs are at defaults. Per UX spec Part 14, the Guardian IS shown at all-defaults but with the advisory note. **Fix:** Change the condition to `{guardianState && ...}` (remove `!guardianState.allDefaults`). The `GuardianBar` component already renders the all-defaults note internally.
 
 - **CRITICAL — CalloutBar currently only renders for Summary context.** It must be enhanced to accept `activeTab: StatementTabId` and `output: EngineOutput` props, then render tab-specific content. The existing `annualSummaries` and `roiMetrics` props may be replaced with a single `output` prop for richer access to all statement data.
@@ -146,13 +156,14 @@ so that every decision I make is informed by its financial impact (FR7d).
   - Cash Flow lowest point: Iterate `output.monthlyProjections` to find the month with the lowest `endingCash`. Report the amount and month number. `MonthlyProjection.endingCash` is confirmed.
   - ROIC: `output.roiMetrics.fiveYearROIPct` and `output.roiMetrics.breakEvenMonth` — both confirmed on `ROIMetrics`.
   - Valuation: Use `output.valuation[4].estimatedValue` (Year 5 estimated business value) and `output.valuation[4].ebitdaMultiple`. The `ValuationOutput` interface has these fields. Do NOT look for `ebitdaMultiple` on `AnnualSummary` — it lives on `ValuationOutput`.
-  - Audit: Count passing/failing checks from `output.identityChecks` (NOT `auditChecks`). Field is `identityChecks: IdentityCheckResult[]` where each has `{ name, passed, expected, actual, tolerance }`. Count: `output.identityChecks.filter(c => c.passed).length` of `output.identityChecks.length`.
+  - Audit: Count passing/failing checks from `output.identityChecks` (NOT `auditChecks`). Field is `identityChecks: IdentityCheckResult[]` where each has `{ name, passed, expected, actual, tolerance }`. Count: `output.identityChecks.filter(c => c.passed).length` of `output.identityChecks.length` (currently 16 checks — use dynamic count, NEVER hardcode).
+  - Audit plain-language failure explanations: `IdentityCheckResult.name` contains technical names (e.g., "Balance Sheet Identity Check"). Create a static `IDENTITY_CHECK_LABELS` map in `client/src/lib/tooltip-definitions.ts` that maps each check `name` to a human-readable explanation. Example: `"Balance Sheet Identity Check": "Assets equal liabilities plus equity"`, `"Cash Flow Reconciliation": "Cash flow statement ties back to balance sheet cash"`. For any unmapped check name, fall back to displaying the raw `name` with "did not pass" suffix.
 
 - **CRITICAL — Brand benchmark access for interpretation rows:** For P&L interpretation rows comparing COGS%, Labor%, etc. to brand ranges, access `financialInputs.operatingCosts.cogsPct.brandDefault` and `.item7Range` for the brand's typical range. Format as: "30% — within PostNet typical range (28-32%)". If `brandDefault` is null, show only "30%" without benchmark text.
 
 - **Interpretation rows and scenario comparison:** When `scenarioOutputs` is active (comparison mode), interpretation rows should be hidden. The comparison summary card already provides scenario-specific context. Render interpretation rows only when `!comparisonActive`.
 
-- **Guardian animation on threshold change:** Track previous indicator levels in a `useRef<Record<string, GuardianLevel>>`. On each render, compare current levels to previous. If any level changed, apply a CSS class (`guardian-pulse`) for 600ms, then remove it. The CSS animation: `@keyframes guardian-pulse { 0% { transform: scale(1); } 50% { transform: scale(1.05); box-shadow: 0 0 8px var(--guardian-color); } 100% { transform: scale(1); } }`.
+- **Guardian animation on threshold change (with debounce for Quick Entry):** Track previous indicator levels in a `useRef<Record<string, GuardianLevel>>`. On each render, compare current levels to previous. If any level changed, do NOT animate immediately — instead, set a 300ms debounce timer. Only apply the CSS class (`guardian-pulse`) if the new level has been stable for 300ms (i.e., no further threshold changes during that window). This prevents flickering during rapid Quick Entry edits where intermediate values temporarily cross thresholds (e.g., typing "25" produces "2" then "25", crossing the 18-month boundary twice). After the 300ms stable period, apply the animation for 600ms, then remove it. The CSS animation: `@keyframes guardian-pulse { 0% { transform: scale(1); } 50% { transform: scale(1.05); box-shadow: 0 0 8px var(--guardian-color); } 100% { transform: scale(1); } }`. Clean up the timeout in a `useEffect` return.
 
 - **CalloutBar hidden during comparison:** The existing `{!comparisonActive && <CalloutBar ... />}` logic in `financial-statements.tsx` (line 273) already handles this correctly. No change needed for this condition.
 
@@ -176,7 +187,7 @@ so that every decision I make is informed by its financial impact (FR7d).
 
 | File | Action | Notes |
 |------|--------|-------|
-| `client/src/lib/guardian-engine.ts` | VALIDATE | Already exists. Verify thresholds match AC2. Add `previousLevels` tracking support (export a helper or keep in component). ~135 lines, no structural changes expected. |
+| `client/src/lib/guardian-engine.ts` | MODIFY | Already exists. Fix break-even `navigateTo` from `{ tab: "roic" }` to `{ tab: "summary", scrollTo: "section-break-even-analysis" }` (line 112). Verify thresholds match AC2. Add `previousLevels` tracking support (export a helper or keep in component). ~135 lines, ~2 line changes. |
 | `client/src/components/planning/statements/guardian-bar.tsx` | MODIFY | Add CSS animation for threshold changes (guardian-pulse class). Add `previousLevels` ref for change detection. Enhance tooltip content. ~103 lines → ~130 lines. |
 | `client/src/components/planning/statements/callout-bar.tsx` | MODIFY | Accept `activeTab` and full `output` props. Render tab-specific callout content with per-tab interpretation text. Accept `financialInputs` for brand benchmark access. ~88 lines → ~180 lines. |
 | `client/src/components/planning/statements/interpretation-row.tsx` | CREATE | InterpretationRow component: renders subtle "so what" text below key computed rows. Accepts metric value, brand benchmark data, and generates contextual text. `role="note"` with `aria-describedby`. ~60 lines. |
@@ -184,8 +195,9 @@ so that every decision I make is informed by its financial impact (FR7d).
 | `client/src/components/planning/statements/pnl-tab.tsx` | MODIFY | Add InterpretationRow components below Pre-Tax Income, COGS, and Labor rows. Accept `financialInputs` and `comparisonActive` props. Wrap interpretations in `{!comparisonActive && ...}`. |
 | `client/src/components/planning/statements/balance-sheet-tab.tsx` | MODIFY | Add InterpretationRow below Total Equity row. Accept additional props for interpretation. |
 | `client/src/components/planning/statements/cash-flow-tab.tsx` | MODIFY | Add InterpretationRow below Ending Cash rows where cash is negative. Accept additional props. |
-| `client/src/index.css` | MODIFY | Add `guardian-healthy`, `guardian-attention`, `guardian-concerning` CSS custom properties if not already defined. Add `@keyframes guardian-pulse` animation. |
-| `tailwind.config.ts` | MODIFY | Add guardian color tokens mapping to CSS custom properties if not already present. |
+| `client/src/lib/tooltip-definitions.ts` | CREATE | Static maps: `TOOLTIP_DEFINITIONS` (row key → meaning + formula for Type 3 tooltips) and `IDENTITY_CHECK_LABELS` (check name → plain-language explanation for Audit callout). ~80 lines. |
+| `client/src/index.css` | MODIFY | Guardian color CSS custom properties ALREADY EXIST (lines 40-45, 130-135) — do NOT re-add. Only add `@keyframes guardian-pulse` animation. |
+| `tailwind.config.ts` | VALIDATE | Guardian color tokens ALREADY EXIST (lines 56-61) — do NOT re-add. No changes expected. |
 
 ### Dependencies & Environment Variables
 
@@ -199,7 +211,7 @@ so that every decision I make is informed by its financial impact (FR7d).
   - Navigate to Reports → verify Guardian Bar is visible with three indicators
   - Verify each indicator shows a value (Break-even month, ROI %, Cash status)
   - Verify indicator colors correspond to threshold levels
-  - Click Break-even indicator → verify navigation to Summary/ROIC tab
+  - Click Break-even indicator → verify navigation to Summary tab (NOT ROIC)
   - Click Cash indicator → verify navigation to Cash Flow tab
   - Click 5yr ROI indicator → verify navigation to ROIC tab
   - Verify CalloutBar shows Summary-specific text on Summary tab
