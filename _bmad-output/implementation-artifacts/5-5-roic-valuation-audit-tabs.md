@@ -1,6 +1,6 @@
 # Story 5.5: ROIC, Valuation & Audit Tabs
 
-Status: review
+Status: in-progress
 
 ## Story
 
@@ -450,3 +450,54 @@ Clean — 0 errors, 0 warnings across all 4 modified/created files (verified 202
 
 ### Visual Verification
 Playwright E2E testing performed (2026-02-18) — ROIC, Valuation, and Audit tabs verified rendering within Financial Statements container.
+
+### Code Review Notes (2026-02-19)
+
+**Reviewer:** BMAD Adversarial Code Review (Claude 4.6 Opus)
+**LSP Status:** Clean — 0 errors, 0 warnings across all 4 files.
+**Git vs Story Discrepancies:** 6 files changed in git range but not in story File List (inline-editable-cell.tsx, input-field-map.ts, pnl-tab.tsx, tooltip.tsx, index.css, planning-workspace.tsx). Most likely from adjacent stories (5.6+) sharing the commit range.
+
+#### HIGH — Must Fix
+
+**H1. AC14 Violation: Audit tab category names/count don't match AC-listed 13 categories.**
+AC14 lists 13 specific category names (e.g., "Balance Sheet Imbalance I", "Cash Flow Check I", "Debt Check"). Implementation uses 15 categories with names derived from actual engine prefixes (e.g., "Balance Sheet Identity (Monthly)", "Cash Flow Continuity", "Loan Amortization"). The dev agent documented this decision in Completion Notes — the engine produces different check name prefixes than what the AC anticipated. Either update the AC to match actual engine behavior or reconcile the category naming/count.
+- **File:** `audit-tab.tsx` lines 24-46
+
+**H2. AC16 Partial: Passing categories don't show "muted text" styling.**
+AC16 says passing check categories should display with "muted text." Implementation uses `text-sm font-medium` for both passing and failing category labels. Passing categories should use `text-muted-foreground` or similar muted styling on the label text.
+- **File:** `audit-tab.tsx` line 188
+
+**H3. AC17 Partial: Failing check detail doesn't show per-row pass/fail icon.**
+AC17 specifies each check's expandable detail should show "Year, Expected value, Actual value, Tolerance, and per-year pass/fail icon." The detail grid (lines 254-258) shows Expected, Actual, Tolerance columns but does not include a per-row pass/fail icon within the detail grid. The icon only appears at the check-name level (lines 246-250), not repeated per detail row.
+- **File:** `audit-tab.tsx` lines 240-258
+
+#### MEDIUM — Should Fix
+
+**M1. Dev Notes Violation: `components/ui/tooltip.tsx` was modified.**
+Dev Notes state "DO NOT modify `components/ui/` files." Git diff shows a Portal wrapper was added. While this was likely a necessary bugfix for tooltip z-index, it's a documented constraint violation not mentioned in File List.
+- **File:** `client/src/components/ui/tooltip.tsx`
+
+**M2. Undocumented file changes in git range.**
+6 files changed in git but not listed in story File List: `inline-editable-cell.tsx`, `input-field-map.ts`, `pnl-tab.tsx`, `tooltip.tsx`, `index.css`, `planning-workspace.tsx`. These may be from adjacent stories sharing the commit range, but the documentation gap should be noted.
+
+**M3. Comparison mode sections missing keyboard accessibility.**
+`ComparisonRoicSection` (roic-tab.tsx ~line 296) and `ComparisonValSection` (valuation-tab.tsx ~line 389) are missing `tabIndex={0}` and `onKeyDown` handlers on section header rows. The non-comparison `RoicSection` and `ValSection` correctly have both. Keyboard users cannot expand/collapse sections in comparison mode.
+- **Files:** `roic-tab.tsx` line 296, `valuation-tab.tsx` line 389
+
+**M4. Unused import: `useMemo` in `roic-tab.tsx`.**
+Line 1 imports `useMemo` but it's never called in the file.
+- **File:** `roic-tab.tsx` line 1
+
+#### LOW — Nice to Fix
+
+**L1. Section titles slightly differ from AC wording.**
+AC3: "Returns" / "Core Capital" → Code: "Return Analysis" / "Core Capital Analysis". AC8: "After-Tax" → Code: "After-Tax Proceeds". Cosmetic but doesn't precisely match AC text.
+- **Files:** `roic-tab.tsx` lines 54, 66; `valuation-tab.tsx` line 119
+
+**L2. Valuation callout bar shows extra EBITDA Multiple metric.**
+AC7 specifies two metrics (Enterprise Value + Net After-Tax Proceeds). Implementation adds a third: EBITDA Multiple. Not harmful but wasn't specified.
+- **File:** `valuation-tab.tsx` lines 298-301
+
+**L3. Glossary links navigate to potentially non-existent routes.**
+AC19 notes glossary links are "placeholders until Story 5.10." Using `<Link>` from wouter means they navigate immediately to `/glossary/...` routes. Consider disabling or using `<span>` until Story 5.10 wires the glossary.
+- **Files:** `roic-tab.tsx` lines 405-409, `valuation-tab.tsx` lines 513-519

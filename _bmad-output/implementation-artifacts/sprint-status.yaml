@@ -93,6 +93,15 @@ story_location: _bmad-output/implementation-artifacts
 #   - Container: BalanceSheetTab and CashFlowTab replace PlaceholderTab components
 #   - 20/20 acceptance criteria verified against code, LSP clean
 #   - Story status: done
+# 2026-02-19: Story 5.5 adversarial code review completed
+#   - 3 HIGH, 4 MEDIUM, 3 LOW findings — documented as review notes (not fixed)
+#   - H1: Audit category names/count don't match AC14's 13 listed categories (engine produces 15)
+#   - H2: Passing audit categories missing muted text styling (AC16)
+#   - H3: Failing check detail missing per-row pass/fail icon (AC17)
+#   - M1: tooltip.tsx modified (Dev Notes violation); M2: 6 undocumented file changes
+#   - M3: Comparison mode missing keyboard accessibility; M4: unused useMemo import
+#   - User chose option 2 (add review notes to story) — findings documented for dev agent
+#   - Story status: in-progress (HIGH issues unresolved)
 # 2026-02-18: Story 5.6 implementation completed (commit 4385698f, 6e33a51a)
 #   - P&L inline editing: 5 editable rows (monthly-revenue, cogs-pct, dl-pct, marketing, other-opex)
 #   - InlineEditableCell component: click-to-edit, Tab/Shift+Tab/Enter/Escape, flash animation
@@ -161,7 +170,7 @@ development_status:
   5-2-financial-statements-container-summary-tab: done
   5-3-pl-statement-tab: done
   5-4-balance-sheet-cash-flow-tabs: done
-  5-5-roic-valuation-audit-tabs: review
+  5-5-roic-valuation-audit-tabs: in-progress
   5-6-quick-entry-input-output-integration: review
   5-7-scenario-comparison: review
   5-8-guardian-bar-dynamic-interpretation: review
