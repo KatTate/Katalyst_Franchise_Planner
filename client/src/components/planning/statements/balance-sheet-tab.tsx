@@ -752,7 +752,7 @@ function BsRow({ row, columns, enriched, monthly, roicExtended, showInterpretati
       {interpText && (
         <tr
           className="text-xs text-muted-foreground"
-          data-testid={`bs-interp-${row.key}`}
+          data-testid={`interpretation-row-${row.key}`}
           id={interpId}
           role="row"
         >

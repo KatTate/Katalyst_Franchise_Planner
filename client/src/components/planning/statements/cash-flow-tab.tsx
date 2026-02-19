@@ -604,7 +604,7 @@ function CfRow({ row, columns, annuals, monthly, showInterpretation = true }: Cf
       {interpText && (
         <tr
           className="text-xs text-muted-foreground"
-          data-testid={`cf-interp-${row.key}`}
+          data-testid={`interpretation-row-${row.key}`}
           id={interpId}
           role="row"
         >

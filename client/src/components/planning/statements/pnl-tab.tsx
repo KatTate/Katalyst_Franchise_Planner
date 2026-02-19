@@ -840,7 +840,7 @@ function PnlRow({
       {interpText && (
         <tr
           className="text-xs text-muted-foreground"
-          data-testid={`pnl-interp-${row.key}`}
+          data-testid={`interpretation-row-${row.key}`}
           id={interpId}
           role="row"
         >
