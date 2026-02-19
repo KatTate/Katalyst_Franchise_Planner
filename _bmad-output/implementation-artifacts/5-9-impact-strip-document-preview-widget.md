@@ -1,6 +1,6 @@
 # Story 5.9: Impact Strip & Document Preview Widget
 
-Status: in-progress
+Status: review
 
 ## Story
 
@@ -243,16 +243,47 @@ so that I understand the financial consequence of every input change, feel pride
 
 ### Agent Model Used
 
-(To be filled by dev agent)
+Claude 4.6 Opus (Replit Agent)
 
 ### Completion Notes
 
-(To be filled by dev agent)
+Implemented all 19 acceptance criteria for Story 5.9 (Impact Strip & Document Preview Widget):
+
+**Key components created:**
+- **ImpactStrip** — Sticky bottom bar in Forms view with context-sensitive metrics (section-based mapping per AC1), delta indicators with 3-second highlight animation (AC2), deep links to financial statements (AC3), miniature Guardian dots with pulse animation (AC4-5), and document preview icon (AC6). Loading/error states handled (AC6a).
+- **DocumentPreviewModal** — Large dialog with styled HTML business plan preview including cover page with franchisee name and brand (AC7), financial summary sections (P&L, Cash Flow, Break-even from EngineOutput) (AC7), DRAFT watermark when completeness <90% (AC8), all-defaults detection note (AC9), and Generate PDF button with toast placeholder (AC7).
+- **DocumentPreviewWidget** — Dashboard card with miniature document preview showing franchisee name prominently (AC10-11), View Full Preview and Generate PDF buttons (AC11), DRAFT watermark and completeness-aware labels (AC12), all-defaults note (AC13).
+- **Reports Generate PDF button** — Added to financial-statements.tsx header with completeness-aware label (AC14), toast feedback (AC14).
+- **Shared completeness utility** — Extracted `computeSectionProgress`, `computeCompleteness`, `getGenerateButtonLabel`, `hasAnyUserEdits`, `isAllDefaults` into `client/src/lib/plan-completeness.ts` (AC15).
+- **data-testid coverage** — All required test IDs implemented per AC16-19.
+
+**Key decisions:**
+- Delta tracking uses useRef with per-metric 3-second timeouts; cumulative deltas from last settled state
+- Active section tracked via most-recently-expanded accordion in forms-mode.tsx state
+- Document preview is styled HTML (not PDF render) per spec — actual PDF generation deferred to Story 6.1
+- Guardian dots reuse `computeGuardianState` and color tokens from guardian-engine.ts (no re-implementation)
+- Dark mode: All components use dark: variants with zinc color palette
+- Mobile responsive: Grids use grid-cols-2 sm:grid-cols-3 for small screens
 
 ### File List
 
-(To be filled by dev agent)
+| File | Action |
+|------|--------|
+| `client/src/lib/plan-completeness.ts` | CREATE |
+| `client/src/components/planning/impact-strip.tsx` | CREATE |
+| `client/src/components/planning/document-preview-modal.tsx` | CREATE |
+| `client/src/components/planning/document-preview-widget.tsx` | CREATE |
+| `client/src/components/planning/forms-mode.tsx` | MODIFY |
+| `client/src/components/planning/dashboard-panel.tsx` | MODIFY |
+| `client/src/components/planning/financial-statements.tsx` | MODIFY |
+| `client/src/pages/planning-workspace.tsx` | MODIFY |
+| `client/src/components/planning/input-panel.tsx` | MODIFY |
+| `replit.md` | MODIFY |
 
 ### Testing Summary
 
-(To be filled by dev agent)
+- **Test approach:** Playwright e2e testing via run_test tool
+- **AC coverage:** AC1 (ImpactStrip visibility + metrics), AC3 (deep link navigation to Reports), AC6 (document preview icon → modal), AC7 (cover page + Generate PDF button), AC10 (Dashboard widget), AC14 (Reports Generate PDF button), AC16-19 (data-testid verification)
+- **All tests passing:** Yes
+- **LSP Status:** Clean — no errors or warnings in any modified/created files
+- **Visual Verification:** Verified via Playwright screenshots — ImpactStrip, DocumentPreviewModal, DocumentPreviewWidget, and Reports Generate PDF button all render correctly. Dark mode support confirmed.
