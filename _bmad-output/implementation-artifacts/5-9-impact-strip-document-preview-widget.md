@@ -1,6 +1,6 @@
 # Story 5.9: Impact Strip & Document Preview Widget
 
-Status: ready-for-dev
+Status: in-progress
 
 ## Story
 

@@ -8,14 +8,16 @@ export type ExperienceTier = "planning_assistant" | "forms" | "quick_entry";
 interface InputPanelProps {
   activeMode: ExperienceTier;
   planId: string;
+  planName?: string;
+  brandName?: string;
   queueSave?: (data: any) => void;
 }
 
-export function InputPanel({ activeMode, planId, queueSave }: InputPanelProps) {
+export function InputPanel({ activeMode, planId, planName, brandName, queueSave }: InputPanelProps) {
   if (activeMode === "forms") {
     return (
       <div data-testid="input-panel" className="h-full overflow-hidden">
-        <FormsMode planId={planId} queueSave={queueSave} />
+        <FormsMode planId={planId} planName={planName} brandName={brandName} queueSave={queueSave} />
       </div>
     );
   }

@@ -10,6 +10,7 @@ import { GuardianBar } from "./statements/guardian-bar";
 import { ScenarioBar } from "./statements/scenario-bar";
 import { ScenarioSummaryCard } from "./statements/scenario-summary-card";
 import { computeGuardianState } from "@/lib/guardian-engine";
+import { computeCompleteness, getGenerateButtonLabel } from "@/lib/plan-completeness";
 import { SummaryTab } from "./statements/summary-tab";
 import { PnlTab } from "./statements/pnl-tab";
 import { BalanceSheetTab } from "./statements/balance-sheet-tab";
@@ -34,6 +35,7 @@ interface FinancialStatementsProps {
   queueSave?: (data: Partial<Plan>) => void;
   isSaving?: boolean;
   brandName?: string;
+  startupCostCount?: number;
 }
 
 const TAB_DEFS: { id: StatementTabId; label: string }[] = [
@@ -63,7 +65,7 @@ function useMediaQuery(query: string): boolean {
   return matches;
 }
 
-export function FinancialStatements({ planId, defaultTab = "summary", plan, queueSave, isSaving = false, brandName }: FinancialStatementsProps) {
+export function FinancialStatements({ planId, defaultTab = "summary", plan, queueSave, isSaving = false, brandName, startupCostCount = 0 }: FinancialStatementsProps) {
   const { output, isLoading, isFetching, error, invalidateOutputs } = usePlanOutputs(planId);
   const [activeTab, setActiveTab] = useState<StatementTabId>(defaultTab);
   const isWide = useMediaQuery("(min-width: 1024px)");
@@ -74,6 +76,12 @@ export function FinancialStatements({ planId, defaultTab = "summary", plan, queu
 
   const financialInputs = plan?.financialInputs ?? null;
   const startupCosts = plan?.startupCosts ?? null;
+
+  const pdfButtonLabel = useMemo(() => {
+    if (!financialInputs) return "Generate Draft";
+    const completeness = computeCompleteness(financialInputs as PlanFinancialInputs, startupCostCount);
+    return getGenerateButtonLabel(completeness);
+  }, [financialInputs, startupCostCount]);
 
   const guardianState = useMemo(() => {
     if (!output) return null;
@@ -259,10 +267,11 @@ export function FinancialStatements({ planId, defaultTab = "summary", plan, queu
             variant="outline"
             size="sm"
             className="shrink-0 my-2"
-            data-testid="button-generate-pdf"
+            data-testid="button-generate-pdf-reports"
+            onClick={() => toast({ description: "PDF generation coming soon — this feature is being built", duration: 3000 })}
           >
             <FileText className="h-3.5 w-3.5 mr-1.5" />
-            Generate Draft
+            {pdfButtonLabel}
           </Button>
         </div>
 

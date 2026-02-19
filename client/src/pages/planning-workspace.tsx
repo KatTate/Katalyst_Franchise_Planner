@@ -13,11 +13,14 @@ import { apiRequest, queryClient } from "@/lib/queryClient";
 import { PlanningHeader } from "@/components/planning/planning-header";
 import { InputPanel } from "@/components/planning/input-panel";
 import { FinancialStatements } from "@/components/planning/financial-statements";
+
 import { QuickStartOverlay } from "@/components/shared/quick-start-overlay";
 import { SummaryMetrics } from "@/components/shared/summary-metrics";
 import { useWorkspaceView } from "@/contexts/WorkspaceViewContext";
 import type { ExperienceTier } from "@/components/planning/input-panel";
 import type { Brand, Plan } from "@shared/schema";
+import type { PlanFinancialInputs } from "@shared/financial-engine";
+import type { StartupCostLineItem } from "@shared/schema";
 
 export default function PlanningWorkspace() {
   const params = useParams<{ planId: string }>();
@@ -129,6 +132,10 @@ export default function PlanningWorkspace() {
   }
 
   const showExternalMetrics = activeMode !== "quick_entry";
+  const resolvedBrandName = brand?.displayName || brand?.name;
+  const financialInputs = plan?.financialInputs as PlanFinancialInputs | null | undefined;
+  const startupCostsData = (plan?.startupCosts ?? null) as StartupCostLineItem[] | null;
+  const startupCostCount = Array.isArray(startupCostsData) ? startupCostsData.length : 0;
 
   const renderWorkspaceContent = () => {
     switch (workspaceView) {
@@ -140,7 +147,8 @@ export default function PlanningWorkspace() {
             plan={plan}
             queueSave={queueSave}
             isSaving={isSaving}
-            brandName={brand?.displayName || brand?.name}
+            brandName={resolvedBrandName}
+            startupCostCount={startupCostCount}
           />
         );
       case "scenarios":
@@ -185,7 +193,7 @@ export default function PlanningWorkspace() {
               </div>
             )}
             <div className="flex-1 min-h-0">
-              <InputPanel activeMode={activeMode} planId={planId} queueSave={queueSave} />
+              <InputPanel activeMode={activeMode} planId={planId} planName={plan.name || "My Plan"} brandName={resolvedBrandName} queueSave={queueSave} />
             </div>
           </div>
         );

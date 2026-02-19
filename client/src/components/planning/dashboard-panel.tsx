@@ -5,11 +5,19 @@ import { RefreshCw, ArrowRight } from "lucide-react";
 import { usePlanOutputs } from "@/hooks/use-plan-outputs";
 import { MetricCard, formatROI, formatBreakEven } from "@/components/shared/summary-metrics";
 import { BreakEvenChart, RevenueExpensesChart } from "@/components/planning/dashboard-charts";
+import { DocumentPreviewWidget } from "@/components/planning/document-preview-widget";
 import { formatCents } from "@/lib/format-currency";
 import type { StatementTabId } from "@/components/planning/financial-statements";
+import type { PlanFinancialInputs } from "@shared/financial-engine";
+import type { StartupCostLineItem } from "@shared/schema";
 
 interface DashboardPanelProps {
   planId: string;
+  planName?: string;
+  brandName?: string;
+  financialInputs?: PlanFinancialInputs | null;
+  startupCosts?: StartupCostLineItem[] | null;
+  startupCostCount?: number;
   onNavigateToStatements?: (tab?: StatementTabId) => void;
 }
 
@@ -81,7 +89,7 @@ function ClickableMetricCard({
   );
 }
 
-export function DashboardPanel({ planId, onNavigateToStatements }: DashboardPanelProps) {
+export function DashboardPanel({ planId, planName, brandName, financialInputs, startupCosts, startupCostCount = 0, onNavigateToStatements }: DashboardPanelProps) {
   const { output, isLoading, isFetching, error, invalidateOutputs } = usePlanOutputs(planId);
 
   if (isLoading) {
@@ -185,6 +193,15 @@ export function DashboardPanel({ planId, onNavigateToStatements }: DashboardPane
             View Financial Statements
           </Button>
         )}
+
+        <DocumentPreviewWidget
+          planId={planId}
+          planName={planName || "My Plan"}
+          brandName={brandName}
+          financialInputs={financialInputs ?? null}
+          startupCosts={startupCosts ?? null}
+          startupCostCount={startupCostCount}
+        />
 
         <BreakEvenChart monthlyProjections={monthlyProjections} />
         <RevenueExpensesChart annualSummaries={annualSummaries} />

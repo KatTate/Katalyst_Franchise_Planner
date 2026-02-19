@@ -25,50 +25,28 @@ import {
 import { formatCents } from "@/lib/format-currency";
 import { useStartupCosts } from "@/hooks/use-startup-costs";
 import { StartupCostBuilder } from "@/components/shared/startup-cost-builder";
+import { computeSectionProgress, hasAnyUserEdits } from "@/lib/plan-completeness";
+import { ImpactStrip } from "@/components/planning/impact-strip";
+import { DocumentPreviewModal } from "@/components/planning/document-preview-modal";
+import { useWorkspaceView } from "@/contexts/WorkspaceViewContext";
 import type { FieldMeta } from "@/lib/field-metadata";
+import type { SectionProgress } from "@/lib/plan-completeness";
+import type { StatementTabId } from "@/components/planning/financial-statements";
+import type { StartupCostLineItem } from "@shared/schema";
 
 type StartupCostCountCallback = (count: number) => void;
 
 interface FormsModeProps {
   planId: string;
+  planName?: string;
+  brandName?: string;
   queueSave?: (data: any) => void;
 }
 
-interface SectionProgress {
-  category: string;
-  label: string;
-  edited: number;
-  total: number;
-}
-
-function computeSectionProgress(financialInputs: PlanFinancialInputs): SectionProgress[] {
-  return CATEGORY_ORDER.map((category) => {
-    const fields = FIELD_METADATA[category];
-    const categoryData = financialInputs[category as keyof PlanFinancialInputs];
-    const fieldNames = Object.keys(fields);
-    const total = fieldNames.length;
-    const edited = fieldNames.filter((name) => {
-      const field = categoryData[name as keyof typeof categoryData] as FinancialFieldValue | undefined;
-      return field && field.source !== "brand_default";
-    }).length;
-    return { category, label: CATEGORY_LABELS[category], edited, total };
-  });
-}
-
-function hasAnyUserEdits(financialInputs: PlanFinancialInputs): boolean {
-  return CATEGORY_ORDER.some((category) => {
-    const fields = FIELD_METADATA[category];
-    const categoryData = financialInputs[category as keyof PlanFinancialInputs];
-    return Object.keys(fields).some((name) => {
-      const field = categoryData[name as keyof typeof categoryData] as FinancialFieldValue | undefined;
-      return field && field.source !== "brand_default";
-    });
-  });
-}
-
-export function FormsMode({ planId, queueSave }: FormsModeProps) {
+export function FormsMode({ planId, planName, brandName, queueSave }: FormsModeProps) {
   const { plan, isLoading, error, updatePlan, isSaving, saveError } = usePlan(planId);
   const financialInputs = plan?.financialInputs as PlanFinancialInputs | null | undefined;
+  const { navigateToStatements } = useWorkspaceView();
 
   const sectionStorageKey = `plan-active-section-${planId}`;
   const getStoredSection = (): string | null => {
@@ -76,9 +54,12 @@ export function FormsMode({ planId, queueSave }: FormsModeProps) {
   };
   const storedSection = useRef(getStoredSection());
   const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const [activeSection, setActiveSection] = useState<string | null>(getStoredSection());
+  const [docPreviewOpen, setDocPreviewOpen] = useState(false);
 
   const handleSectionInteract = useCallback((category: string) => {
     try { localStorage.setItem(sectionStorageKey, category); } catch {}
+    setActiveSection(category);
   }, [sectionStorageKey]);
 
   useEffect(() => {
@@ -159,6 +140,8 @@ export function FormsMode({ planId, queueSave }: FormsModeProps) {
     );
   }
 
+  const startupCostsData = (plan?.startupCosts ?? null) as StartupCostLineItem[] | null;
+
   return (
     <div data-testid="forms-mode-container" className="h-full flex flex-col overflow-hidden">
       <div className="sticky top-0 z-10 bg-background border-b px-4 py-3">
@@ -203,6 +186,26 @@ export function FormsMode({ planId, queueSave }: FormsModeProps) {
           </div>
         )}
       </div>
+
+      <ImpactStrip
+        planId={planId}
+        activeSection={activeSection}
+        financialInputs={financialInputs ?? null}
+        startupCosts={startupCostsData}
+        onNavigateToStatements={navigateToStatements}
+        onOpenDocumentPreview={() => setDocPreviewOpen(true)}
+      />
+
+      <DocumentPreviewModal
+        open={docPreviewOpen}
+        onOpenChange={setDocPreviewOpen}
+        planId={planId}
+        planName={planName || plan?.name || "My Plan"}
+        brandName={brandName}
+        financialInputs={financialInputs ?? null}
+        startupCosts={startupCostsData}
+        startupCostCount={startupCostCount}
+      />
     </div>
   );
 }
