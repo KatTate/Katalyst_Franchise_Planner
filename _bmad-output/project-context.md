@@ -2,7 +2,7 @@
 project_name: 'Katalyst Growth Planner'
 user_name: 'User'
 date: '2026-02-19'
-sections_completed: ['technology_stack', 'language_rules', 'framework_rules']
+sections_completed: ['technology_stack', 'language_rules', 'framework_rules', 'testing_rules']
 existing_patterns_found: 12
 ---
 
@@ -72,3 +72,28 @@ _This file contains critical rules and patterns that AI agents must follow when 
 - **`staleTime: Infinity`** on queries — data never auto-refetches. All freshness is managed via explicit `invalidateQueries` after mutations.
 - **Shadcn Sidebar** — always use `@/components/ui/sidebar` primitives. Never reimplement custom sidebars.
 - **Wouter routing** — `Link` or `useLocation` for navigation. `ProtectedRoute` for auth-required pages, `AdminRoute` for admin-only pages.
+
+### Testing Rules
+
+**Test Infrastructure:**
+- **Vitest** for unit/integration tests. **Playwright** for E2E browser tests. No React component tests (deliberate — UI is tested via Playwright).
+- Vitest scope: `shared/**/*.test.ts`, `server/**/*.test.ts`, `client/src/lib/**/*.test.ts`. Don't add test files outside these paths.
+- `globals: false` — always `import { describe, it, expect, vi, beforeEach } from "vitest"` explicitly.
+- Playwright config: `e2e/` directory, `.spec.ts` suffix, baseURL `http://localhost:5000`.
+
+**Route Test Pattern (mock-based):**
+- `vi.mock('../storage')` and `vi.mock('../services/...')` at file top, **before** imports of mocked modules.
+- Build isolated Express app via `createApp(user)` pattern — injects fake user via middleware, mounts router under test.
+- Use `supertest` for HTTP assertions: `request(app).get('/api/plans').expect(200)`.
+- Use `createMockUser()` from `test-helpers.ts` for user factories. Use local helper factories like `makeFieldValue()` for domain objects.
+
+**Financial Engine Tests:**
+- Pure deterministic tests — engine runs once at describe scope, assertions check individual outputs.
+- Reference data from known-good spreadsheet (PostNet). Any engine changes must validate against reference values.
+- All currency in cents, all percentages as decimals in test fixtures.
+
+**E2E Test Pattern (Playwright):**
+- Authenticate via `request.post("/api/auth/dev-login")` in `beforeEach`.
+- Create test data (brands, plans) via API calls with unique names using `Date.now()` for isolation.
+- Navigate with `page.goto()`, assert with `data-testid` selectors.
+- **Every interactive or meaningful display element must have a `data-testid`** — this is a project-wide requirement, not just a test concern.
