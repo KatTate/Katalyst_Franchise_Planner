@@ -29,6 +29,7 @@ import {
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
 import { StartupCostBuilder } from "@/components/shared/startup-cost-builder";
+import { FieldHelpIcon } from "@/components/shared/field-help-icon";
 import { ChevronDown, RotateCcw, AlertCircle } from "lucide-react";
 import {
   FIELD_METADATA,
@@ -164,7 +165,12 @@ export function QuickEntryMode({ planId, queueSave }: QuickEntryModeProps) {
         size: 180,
         cell: ({ row }: CellContext<GridRow, unknown>) => {
           if (row.original.isGroupHeader) return null;
-          return <span className="text-sm">{row.original.label}</span>;
+          return (
+            <span className="text-sm flex items-center gap-1">
+              {row.original.label}
+              {row.original.fieldName && <FieldHelpIcon fieldId={row.original.fieldName} />}
+            </span>
+          );
         },
       },
       {

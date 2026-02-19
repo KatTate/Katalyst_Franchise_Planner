@@ -2,6 +2,7 @@ import { useMemo, useState, useCallback } from "react";
 import { ChevronDown, ChevronRight } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { formatCents } from "@/lib/format-currency";
+import { Link } from "wouter";
 import type { EngineOutput, ROICExtendedOutput } from "@shared/financial-engine";
 
 import { SCENARIO_COLORS, type ScenarioId, type ScenarioOutputs } from "@/lib/scenario-engine";
@@ -14,6 +15,7 @@ interface RoicTabProps {
 interface CellTooltip {
   explanation: string;
   formula: string;
+  glossarySlug?: string;
 }
 
 interface RoicRowDef {
@@ -56,7 +58,7 @@ const ROIC_SECTIONS: RoicSectionDef[] = [
       { key: "tax-rate", label: "Tax Rate", field: "taxRate", format: "pct", indent: 1, tooltip: { explanation: "Applicable corporate/franchise tax rate", formula: "From financial inputs" } },
       { key: "taxes-due", label: "Taxes Due", field: "taxesDue", format: "currency", indent: 1, tooltip: { explanation: "Estimated tax liability for the year", formula: "Max(0, Pre-Tax incl. Sweat Equity) x Tax Rate" } },
       { key: "after-tax-net-income", label: "After-Tax Net Income", field: "afterTaxNetIncome", format: "currency", isSubtotal: true, tooltip: { explanation: "Net income after estimated taxes", formula: "Pre-Tax incl. Sweat Equity - Taxes Due" } },
-      { key: "roic-pct", label: "ROIC %", field: "roicPct", format: "pct", isTotal: true, tooltip: { explanation: "Return on total invested capital — measures how efficiently the business uses all capital", formula: "After-Tax Net Income / Total Invested Capital" } },
+      { key: "roic-pct", label: "ROIC %", field: "roicPct", format: "pct", isTotal: true, tooltip: { explanation: "Return on total invested capital — measures how efficiently the business uses all capital", formula: "After-Tax Net Income / Total Invested Capital", glossarySlug: "roic" } },
     ],
   },
   {
@@ -400,6 +402,13 @@ function RoicRow({ row, roicExtended }: { row: RoicRowDef; roicExtended: ROICExt
                 <TooltipContent side="top" className="max-w-[260px]">
                   <p className="text-xs font-medium">{row.tooltip.explanation}</p>
                   <p className="text-xs text-muted-foreground mt-0.5">{row.tooltip.formula}</p>
+                  <Link
+                    href={row.tooltip.glossarySlug ? `/glossary/${row.tooltip.glossarySlug}` : "/glossary"}
+                    className="text-xs text-primary mt-1 inline-block cursor-pointer"
+                    data-testid={`glossary-link-${row.key}`}
+                  >
+                    View in glossary
+                  </Link>
                 </TooltipContent>
               </Tooltip>
             </td>

@@ -2,6 +2,7 @@ import { useMemo, useState, useCallback } from "react";
 import { ChevronDown, ChevronRight, Pencil } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { formatCents } from "@/lib/format-currency";
+import { Link } from "wouter";
 import type { EngineOutput, ValuationOutput, ROICExtendedOutput, MonthlyProjection } from "@shared/financial-engine";
 
 import { SCENARIO_COLORS, type ScenarioId, type ScenarioOutputs } from "@/lib/scenario-engine";
@@ -14,6 +15,7 @@ interface ValuationTabProps {
 interface CellTooltip {
   explanation: string;
   formula: string;
+  glossarySlug?: string;
 }
 
 interface ValRowDef {
@@ -97,8 +99,8 @@ const VAL_SECTIONS: ValSectionDef[] = [
     key: "ebitda-basis",
     title: "EBITDA Basis",
     rows: [
-      { key: "ebitda", label: "EBITDA", getValue: (_i, e) => e[_i].val.netOperatingIncome, format: "currency", indent: 1, tooltip: { explanation: "Earnings before interest, taxes, depreciation, and amortization", formula: "Revenue - COGS - OpEx (before depreciation & interest)" } },
-      { key: "ebitda-multiple", label: "EBITDA Multiple", getValue: (_i, e) => e[_i].val.ebitdaMultiple, format: "multiple", isInput: true, indent: 1, tooltip: { explanation: "Multiplier applied to EBITDA to estimate business value", formula: "Industry-standard multiple (editable in Story 5.6)" } },
+      { key: "ebitda", label: "EBITDA", getValue: (_i, e) => e[_i].val.netOperatingIncome, format: "currency", indent: 1, tooltip: { explanation: "Earnings before interest, taxes, depreciation, and amortization", formula: "Revenue - COGS - OpEx (before depreciation & interest)", glossarySlug: "ebitda" } },
+      { key: "ebitda-multiple", label: "EBITDA Multiple", getValue: (_i, e) => e[_i].val.ebitdaMultiple, format: "multiple", isInput: true, indent: 1, tooltip: { explanation: "Multiplier applied to EBITDA to estimate business value", formula: "Industry-standard multiple (editable in Story 5.6)", glossarySlug: "ebitda-multiple" } },
       { key: "estimated-value", label: "Estimated Enterprise Value", getValue: (_i, e) => e[_i].val.estimatedValue, format: "currency", isTotal: true, tooltip: { explanation: "Estimated sale price of the business based on EBITDA", formula: "EBITDA x EBITDA Multiple" } },
     ],
   },
@@ -508,6 +510,13 @@ function ValRow({ row, enriched }: { row: ValRowDef; enriched: EnrichedValYear[]
                 <TooltipContent side="top" className="max-w-[260px]">
                   <p className="text-xs font-medium">{row.tooltip.explanation}</p>
                   <p className="text-xs text-muted-foreground mt-0.5">{row.tooltip.formula}</p>
+                  <Link
+                    href={row.tooltip.glossarySlug ? `/glossary/${row.tooltip.glossarySlug}` : "/glossary"}
+                    className="text-xs text-primary mt-1 inline-block cursor-pointer"
+                    data-testid={`glossary-link-${row.key}`}
+                  >
+                    View in glossary
+                  </Link>
                 </TooltipContent>
               </Tooltip>
             </td>

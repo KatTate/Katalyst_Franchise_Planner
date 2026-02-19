@@ -15,6 +15,7 @@ import {
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
 import { ChevronDown, RotateCcw, AlertCircle, Sparkles } from "lucide-react";
+import { FieldHelpIcon } from "@/components/shared/field-help-icon";
 import {
   FIELD_METADATA,
   CATEGORY_LABELS,
@@ -412,8 +413,12 @@ function FormField({
   return (
     <div data-testid={`field-row-${fieldName}`} className="rounded-md px-3 py-2.5 hover-elevate">
       <div className="flex items-center gap-3">
-        <label className="text-sm text-foreground min-w-0 flex-1 truncate">
-          {meta.label}
+        <label className="text-sm text-foreground min-w-0 flex-1 flex items-center gap-1">
+          <span className="truncate">{meta.label}</span>
+          <FieldHelpIcon
+            fieldId={fieldName}
+            brandBenchmark={defaultDisplay ? { label: "Brand default", value: defaultDisplay } : null}
+          />
         </label>
 
         <div className="w-36 shrink-0">

@@ -1,6 +1,6 @@
 # Story 5.10: Glossary & Contextual Help
 
-Status: ready-for-dev
+Status: review
 
 ## Story
 
@@ -209,9 +209,40 @@ so that I can understand what each metric means and make informed decisions (FR7
 ## Dev Agent Record
 
 ### Agent Model Used
+Claude 4.6 Opus (Replit Agent)
 
 ### Completion Notes
+Implemented Story 5.10 (Glossary & Contextual Help) covering all acceptance criteria:
+- Created shared help content data model with 15 glossary terms and ~35 field help entries as static TypeScript data files (no database table)
+- Built API routes for glossary terms and field help (GET /api/help/glossary, GET /api/help/glossary/:slug, GET /api/help/field/:fieldId)
+- Created GlossaryPage with search, card grid, detail view with definition/calculation/brand benchmarks/related terms/"See it in your plan" links
+- Added Glossary sidebar navigation item with BookOpen icon
+- Created reusable FieldHelpIcon component with tooltip, brand benchmark display, expanded guidance panel, and glossary term link
+- Integrated FieldHelpIcon into Forms mode field labels with brand default benchmarks
+- Made "View in glossary" links functional across P&L, Balance Sheet, and Cash Flow statement tabs (replaced disabled links)
+- All data-testid attributes follow AC requirements
+- Brand benchmarks sourced from brand configuration at display time (NOT hardcoded in glossary data)
+- Expanded guidance has TODO placeholders for Loom video content extraction
 
 ### File List
+- `shared/help-content/glossary-terms.ts` — CREATED — 15 glossary term definitions
+- `shared/help-content/field-help.ts` — CREATED — ~35 field help entries with tooltips and expanded guidance placeholders
+- `shared/help-content/index.ts` — CREATED — Barrel exports and utility functions (getGlossaryTerm, getFieldHelp, searchGlossary)
+- `server/routes/help.ts` — CREATED — Help content API routes
+- `server/routes.ts` — MODIFIED — Registered help router at /api/help
+- `client/src/pages/glossary.tsx` — CREATED — GlossaryPage component
+- `client/src/App.tsx` — MODIFIED — Added /glossary route
+- `client/src/components/app-sidebar.tsx` — MODIFIED — Added Glossary nav item with BookOpen icon
+- `client/src/components/shared/field-help-icon.tsx` — CREATED — Reusable FieldHelpIcon component
+- `client/src/components/planning/forms-mode.tsx` — MODIFIED — Integrated FieldHelpIcon into FormField labels
+- `client/src/components/planning/statements/pnl-tab.tsx` — MODIFIED — Made "View in glossary" link functional
+- `client/src/components/planning/statements/cash-flow-tab.tsx` — MODIFIED — Made "View in glossary" link functional
+- `client/src/components/planning/statements/balance-sheet-tab.tsx` — MODIFIED — Made "View in glossary" link functional
 
 ### Testing Summary
+- **Testing approach:** API endpoint verification via curl, Playwright e2e testing
+- **API tests:** All 3 endpoints verified (glossary list, glossary detail by slug, field help by ID, search filtering)
+- **E2e tests:** Glossary page navigation, search filtering, term detail view, related terms navigation, empty search state all verified via Playwright
+- **Forms mode FieldHelpIcon:** Verified via HMR that help icons render next to field labels
+- **LSP status:** Clean — no errors or warnings in any created or modified files
+- **ACs covered by tests:** AC 1, 2, 3, 4, 10, 15, 16, 17, 18

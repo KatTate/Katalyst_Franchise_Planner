@@ -16,6 +16,7 @@ import AdminBrandsPage from "@/pages/admin-brands";
 import AdminBrandDetailPage from "@/pages/admin-brand-detail";
 import NotFound from "@/pages/not-found";
 import PlanningWorkspace from "@/pages/planning-workspace";
+import GlossaryPage from "@/pages/glossary";
 import { useBrandTheme } from "@/hooks/use-brand-theme";
 import { ImpersonationProvider, useImpersonation } from "@/contexts/ImpersonationContext";
 import { ImpersonationBanner } from "@/components/ImpersonationBanner";
@@ -117,6 +118,12 @@ function AppRouter() {
       </Route>
       <Route path="/plans/:planId">
         <ProtectedRoute component={PlanningWorkspace} />
+      </Route>
+      <Route path="/glossary">
+        <ProtectedRoute component={GlossaryPage} />
+      </Route>
+      <Route path="/glossary/:slug">
+        <ProtectedRoute component={GlossaryPage} />
       </Route>
       <Route component={NotFound} />
     </Switch>

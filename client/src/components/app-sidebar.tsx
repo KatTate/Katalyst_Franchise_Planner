@@ -5,7 +5,7 @@ import { useBrandTheme } from "@/hooks/use-brand-theme";
 import { useImpersonation } from "@/contexts/ImpersonationContext";
 import { useDemoMode } from "@/contexts/DemoModeContext";
 import { useWorkspaceView } from "@/contexts/WorkspaceViewContext";
-import { Home, Mail, Building2, LogOut, CalendarCheck, ClipboardList, BarChart3, FlaskConical, Settings, HelpCircle } from "lucide-react";
+import { Home, Mail, Building2, LogOut, CalendarCheck, ClipboardList, BarChart3, FlaskConical, Settings, HelpCircle, BookOpen } from "lucide-react";
 import {
   Sidebar,
   SidebarContent,
@@ -69,6 +69,7 @@ export function AppSidebar() {
     { title: "Home", url: "/", icon: Home, visible: true, testId: "nav-home" },
     { title: "Brands", url: "/admin/brands", icon: Building2, visible: isRealKatalystAdmin && !hideAdminNav, testId: "nav-brands" },
     { title: "Invitations", url: "/admin/invitations", icon: Mail, visible: isRealAdmin && !hideAdminNav, testId: "nav-invitations" },
+    { title: "Glossary", url: "/glossary", icon: BookOpen, visible: true, testId: "nav-glossary" },
   ].filter((item) => item.visible);
 
   const isInPlanWorkspace = /^\/plans\/[^/]+$/.test(location);

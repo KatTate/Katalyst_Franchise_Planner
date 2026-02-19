@@ -1,5 +1,6 @@
 import { useMemo, useState, useCallback, useEffect } from "react";
 import { Pencil, ChevronDown, ChevronRight, Check, AlertTriangle, ArrowDown } from "lucide-react";
+import { Link } from "wouter";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { formatCents } from "@/lib/format-currency";
 import { useColumnManager, ColumnToolbar, GroupedTableHead } from "./column-manager";
@@ -18,6 +19,7 @@ interface CashFlowTabProps {
 interface CellTooltip {
   explanation: string;
   formula: string;
+  glossarySlug?: string;
 }
 
 interface CfRowDef {
@@ -568,15 +570,13 @@ function CfRow({ row, columns, annuals, monthly, showInterpretation = true }: Cf
                   <TooltipContent side="top" className="max-w-[260px]">
                     <p className="text-xs font-medium">{row.tooltip.explanation}</p>
                     <p className="text-xs text-muted-foreground mt-0.5">{row.tooltip.formula}</p>
-                    <a
-                      href="#glossary"
-                      className="text-xs text-primary/50 mt-1 inline-block"
+                    <Link
+                      href={row.tooltip.glossarySlug ? `/glossary/${row.tooltip.glossarySlug}` : "/glossary"}
+                      className="text-xs text-primary mt-1 inline-block cursor-pointer"
                       data-testid={`glossary-link-${row.key}`}
-                      aria-disabled="true"
-                      onClick={(e) => e.preventDefault()}
                     >
                       View in glossary
-                    </a>
+                    </Link>
                   </TooltipContent>
                 </Tooltip>
               </td>

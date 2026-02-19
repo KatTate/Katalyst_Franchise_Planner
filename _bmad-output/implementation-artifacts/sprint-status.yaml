@@ -166,7 +166,7 @@ development_status:
   5-7-scenario-comparison: review
   5-8-guardian-bar-dynamic-interpretation: review
   5-9-impact-strip-document-preview-widget: review
-  5-10-glossary-contextual-help: ready-for-dev
+  5-10-glossary-contextual-help: review
   epic-5-retrospective: optional
 
   # Epic 6: Document Generation & Vault [ELEVATED from old Epic 7]
