@@ -2,7 +2,7 @@
 project_name: 'Katalyst Growth Planner'
 user_name: 'User'
 date: '2026-02-19'
-sections_completed: ['technology_stack', 'language_rules', 'framework_rules', 'testing_rules', 'code_quality', 'dev_workflow']
+sections_completed: ['technology_stack', 'language_rules', 'framework_rules', 'testing_rules', 'code_quality', 'dev_workflow', 'critical_rules']
 existing_patterns_found: 12
 ---
 
@@ -166,3 +166,45 @@ _This file contains critical rules and patterns that AI agents must follow when 
 **Build Pipeline:**
 - `script/build.ts`: esbuild bundles server to `dist/index.cjs`. Uses allowlist pattern — listed deps are bundled for cold-start performance, others stay external.
 - When adding a new server dependency that should be bundled, add to allowlist in `script/build.ts`.
+
+### Critical Don't-Miss Rules
+
+**The Unwrap Boundary (Most Common Bug Source):**
+- `PlanFinancialInputs` ≠ `FinancialInputs`. NEVER pass wrapped inputs to the engine.
+- ALWAYS call `unwrapForEngine(planInputs, startupCosts)` → `EngineInput`.
+- Non-trivial transformations happen during unwrap:
+  - `monthlyAuv * 12` → `annualGrossSales`
+  - Single values → 5-year tuples via `fill5()`
+  - Monthly fixed costs (rent+utilities+insurance) → annual with 3% yearly escalation
+  - `otherMonthly` (cents) → `otherOpexPct` (% of revenue) — known limitation
+  - `loanAmount / totalInvestment` → `equityPct` — `downPaymentPct` is UI-only
+  - `depreciationYears` → `depreciationRate` (1/years)
+- Never replicate these transformations manually — use `unwrapForEngine()`.
+
+**Financial Engine Purity (Non-Negotiable):**
+- Pure function: same inputs → same outputs. No `Date.now()`, no randomness, no I/O, no side effects.
+- Currency: cents as integers (`15000 = $150.00`). Percentages: decimals (`0.065 = 6.5%`).
+- Five-year tuples: `[number, number, number, number, number]` — always provide all 5 elements.
+- Only dollars exist in `BrandParameters` (brand config from DB). Everything else = cents.
+
+**Field Value Immutability:**
+- `updateFieldValue()` and `resetFieldToDefault()` return NEW objects — never mutate.
+- Source tracking: `'brand_default'` | `'user_entry'` | `'ai_populated'` | `` `admin:${email}` ``.
+- Admin source format: `` `admin:john@katgroupinc.com` `` — not just `'admin'`.
+- Reset restores `brandDefault` value and sets `isCustom: false`.
+
+**Auto-Save Conflict Detection:**
+- Client sends `_expectedUpdatedAt` with PATCH → server returns 409 on mismatch.
+- Any server-side plan modification MUST update `updatedAt` or concurrency breaks silently.
+- Client handles 409 by entering `conflictState: 'conflict'` — don't suppress this.
+
+**Guardian Thresholds (Business-Critical):**
+- Break-even: ≤18mo = healthy, ≤30mo = attention, >30mo = concerning.
+- ROI: ≥100% = healthy, ≥50% = attention, <50% = concerning.
+- Negative cash months: 0 = healthy, ≤3 = attention, >3 = concerning.
+- Never change thresholds without product approval.
+
+**Identity Resolution (Every Route):**
+- `getEffectiveUser(req)` — ALWAYS. Never `req.user` directly.
+- Priority: demo user → impersonated user → authenticated user.
+- Impersonation has 60-minute timeout with audit logging.
