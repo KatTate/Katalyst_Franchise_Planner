@@ -206,12 +206,12 @@ This document provides the complete epic and story breakdown for the Katalyst Gr
 | FR7e | Epic 5 | View Returns on Invested Capital (ROIC) analysis |
 | FR7f | Epic 5 | View Valuation analysis |
 | FR7g | Epic 5 | View Audit/integrity check results |
-| FR7h | Epic 5 | Quick Entry editable input cells within financial statement views |
+| FR7h | Epic 5 | Always-editable inline input cells within Reports financial statement views |
 | FR7i | Epic 7 | Per-year (Y1-Y5) input values for all assumptions |
 | FR7j | Epic 7 | Input Assumptions include all reference spreadsheet fields |
 | FR7k | Epic 5 | Glossary page with financial term definitions |
 | FR7l | Epic 5 | Contextual help for every input field |
-| FR7m | Epic 5 | Forms mode composite field decomposition |
+| FR7m | Epic 5 | My Plan composite field decomposition (guided form sub-fields) |
 | FR7n | Epic 6 | Generate and download professional PDF business plan package |
 | FR8 | Epic 3 | Validate accounting identities on every calculation |
 | FR9 | Epic 3 | Deterministic outputs for identical inputs |
@@ -293,11 +293,11 @@ Franchisees can build financial plans using two manual input paradigms — Forms
 **NFRs addressed:** NFR2 (< 1s transitions), NFR5 (non-blocking auto-save), NFR13 (2-min auto-save), NFR14 (concurrent edit handling), NFR25 (desktop 1024px+), NFR28 (200ms feedback)
 
 ### Epic 5: Financial Statement Views & Output Layer
-Render every spreadsheet output sheet as interactive financial statement views within a unified tabbed container. Progressive disclosure (annual → quarterly → monthly). Quick Entry edits inline within statements. Guardian Bar provides persistent plan health. Dynamic interpretation explains "so what." Impact Strip keeps Forms mode users informed. Document Preview builds pride progressively.
+Two interaction surfaces (My Plan and Reports) over a shared financial input state. Reports renders every spreadsheet output sheet as interactive tabular views with always-editable input cells. My Plan provides structured forms with an Impact Strip showing real-time financial impact and deep links to Reports. Guardian Bar provides persistent plan health. Dynamic interpretation explains "so what." Document Preview builds pride progressively.
 **FRs covered:** FR7a, FR7b, FR7c, FR7d, FR7e, FR7f, FR7g, FR7h, FR7k, FR7l, FR7m
 **NFRs addressed:** NFR1 (< 2s recalculation), NFR27 (consistent financial formatting)
-**Stories (10):** 5.1 Engine Extension, 5.2 Container & Summary Tab, 5.3 P&L Tab, 5.4 Balance Sheet & Cash Flow Tabs, 5.5 ROIC/Valuation/Audit Tabs, 5.6 Quick Entry Integration, 5.7 Scenario Comparison, 5.8 Guardian Bar & Interpretation, 5.9 Impact Strip & Document Preview, 5.10 Glossary & Help
-**UX design authority:** `ux-financial-statements-spec.md` (v2, 2026-02-16)
+**Stories (10):** 5.1 Engine Extension, 5.2 App Navigation + Reports Container & Summary Tab, 5.3 P&L Tab (with Inline Editing), 5.4 Balance Sheet & Cash Flow Tabs (with Inline Editing), 5.5 ROIC/Valuation/Audit Tabs, 5.6 My Plan + Impact Strip + Bidirectional Data Flow, 5.7 Scenario Comparison, 5.8 Guardian Bar & Interpretation, 5.9 Document Preview & PDF Generation Trigger, 5.10 Glossary & Help
+**UX design authority:** `ux-design-specification-consolidated.md` (2026-02-18)
 
 ### Epic 6: Document Generation & Vault
 Generate lender-grade PDF business plan packages and maintain document history with download capability. The document is the product's primary deliverable — the lender package. Elevated from old Epic 7.
@@ -1168,58 +1168,81 @@ So that I can understand my return, what the franchise could be worth, and trust
 **And** each check shows: check name, pass/fail status (checkmark icon for pass, alert icon for fail), expected value, actual value, and tolerance
 **And** a visual summary shows: "X of 13 checks passing"
 **And** failed checks include a specific explanation of what's wrong and a navigation link "[View in Balance Sheet →]" that navigates to the relevant statement tab and row
-**And** the Audit view is read-only in all modes — it has no editable cells
+**And** the Audit view is read-only — it has no editable cells (it is a diagnostic view, not a financial statement)
+
+**Given** I click or Tab into the EBITDA Multiple cell in the Valuation tab
+**When** the cell receives focus
+**Then** the cell enters edit mode immediately — inline editing is always available, same behavior as P&L (Story 5.3)
+**And** on blur or Enter, the value is saved, the engine recomputes, and all Valuation computed cells update
+**And** the EBITDA Multiple cell shows a "BD" badge if still at brand default; the badge disappears on edit
 
 **Dev Notes:**
 - ROIC, Valuation, and Audit are built together because they are simpler annual-only views (no monthly drill-down).
 - Audit is a diagnostic view, not a financial statement — it uses a different layout than the other tabs.
-- The Valuation tab's editable EBITDA Multiple cell reuses the same `<EditableCell>` component from Epic 4.
-- See UX spec Part 8.5 (ROIC), Part 8.6 (Valuation), Part 8.7 (Audit).
+- The Valuation tab's editable EBITDA Multiple cell reuses the same `<EditableCell>` component from Epic 4. Inline editing is always available per consolidated UX spec Part 10.
+- See consolidated UX spec Part 10 (Reports Experience).
 
-### Story 5.6: Quick Entry Input-Output Integration
+### Story 5.6: My Plan + Impact Strip + Bidirectional Data Flow
 
-As an experienced franchisee (Jordan persona),
-I want to edit input values directly within the P&L, Balance Sheet, and Cash Flow views in Quick Entry mode,
-So that I work inside the financial document I already understand — not a separate input panel (FR7h).
+As a franchisee,
+I want a structured form-based input workspace (My Plan) with a persistent Impact Strip showing real-time financial impact and deep links to Reports,
+So that I can fill in my business plan through guided forms while seeing the financial impact of every change (FR7h, FR7d).
 
 **Acceptance Criteria:**
 
-**Given** I am in Quick Entry mode
-**When** the Financial Statements container renders
-**Then** the P&L tab is the default landing tab (not Summary) because P&L contains the majority of editable inputs
-**And** input cells in all statement tabs are editable inline — clicking an input cell enters edit mode with border highlight and editable text
-**And** the `<EditableCell>` component from Epic 4 is reused with minimal changes for inline editing
-**And** Tab moves to the next input cell in the same column (skipping computed cells)
-**And** Shift+Tab moves to the previous input cell
-**And** Enter confirms the edit and moves down to the next input cell in the same row group
-**And** Escape cancels the edit and restores the previous value
-**And** all auto-formatting rules from Epic 4 apply (currency, percentage, integer formatting on blur)
-**And** editing a cell immediately triggers engine recalculation and updates all dependent computed cells (optimistic UI)
-**And** changes auto-save with the same 2-second debounce as existing input modes
+**Given** I click "My Plan" in the sidebar navigation
+**When** the My Plan workspace renders
+**Then** a plan completeness dashboard appears at the top: a visual summary showing each section's progress (e.g., "Revenue: 8/10 fields | Operating Costs: 3/12 fields")
+**And** collapsible form sections are organized by financial category: Revenue, COGS, Labor, Facilities, Marketing, Management Salaries, Startup Costs, Financing
+**And** each section shows form fields pre-filled with brand default values
+**And** every input field carries per-field metadata: brand default value, Item 7 range (if applicable), source attribution ("Brand Default" / "AI" / "Your Entry"), reset-to-default affordance, and contextual help (expand/collapse)
+**And** on field focus, a subtle metadata panel shows the brand default value and Item 7 range; on blur, the metadata disappears
 
-**Given** I am in Quick Entry mode
-**When** I look for the "All Inputs" view
-**Then** an "All Inputs" option is available in the tab bar (special tab or toggle)
-**And** "All Inputs" renders ALL editable inputs from all statements in a single flat table grouped by financial statement section
-**And** this is functionally equivalent to the existing Epic 4 Quick Entry flat grid, relocated into the Financial Statements container
-**And** the old `quick-entry-mode.tsx` flat grid component is preserved internally as the rendering engine for "All Inputs"
+**Given** the Impact Strip renders (persistent sticky bar at the bottom of My Plan)
+**When** I am editing a form section
+**Then** the Impact Strip shows 3-4 key metrics most relevant to the section I'm currently editing:
+- Revenue section → Pre-Tax Income, Break-even, Gross Margin, 5yr ROI
+- Operating Expenses section → EBITDA, Pre-Tax Income, Labor Efficiency
+- Financing section → Cash Position, Debt Service, Break-even
+- Startup Costs section → Total Investment, ROI, Break-even
 
-**Given** this is the user's first visit to Quick Entry mode after the Epic 5 update
-**When** the Financial Statements container opens
-**Then** a one-time orientation overlay appears: "Your inputs now live inside the financial statements. Edit directly in the P&L, Balance Sheet, and Cash Flow tabs — or use 'All Inputs' for the classic flat view."
-**And** a "Got it" dismissal button is shown
-**And** the overlay never appears again after dismissal (stored in user preferences or localStorage)
+**Given** I change an input value in My Plan
+**When** the engine recalculates
+**Then** affected metrics in the Impact Strip show a delta indicator ("+$3,200") in a subtle highlight for 3 seconds, then the highlight fades but the new value remains
+**And** the same value is immediately reflected in Reports — if the user navigates to Reports, the updated value appears in the corresponding input cell (bidirectional data flow)
 
-**Given** I am in Forms mode or Planning Assistant mode
-**When** I view Financial Statements
-**Then** all cells are read-only — input cells show their visual distinction (tinted background, dashed border) but clicking them does NOT enter edit mode
-**And** hovering over an input cell in read-only mode shows a tooltip: "Switch to Quick Entry to edit values directly in statements"
+**Given** the Impact Strip includes deep links to Reports
+**When** I view the Impact Strip
+**Then** a "View Full P&L →" link (or relevant statement name based on active section) navigates to the corresponding Reports tab
+**And** the "Return to Editing" browser back button (or a link in Reports) brings the user back to My Plan
+
+**Given** the Impact Strip includes a miniature Guardian
+**When** it renders
+**Then** three colored dots with icons (matching Guardian Bar pattern from Story 5.8) show break-even, ROI, and cash health status
+**And** if an edit pushes a Guardian metric from green to amber, the dot animates briefly
+**And** clicking a miniature Guardian dot navigates to Reports with the relevant tab and row focused
+
+**Given** the Impact Strip includes a document preview icon
+**When** I click the document icon
+**Then** a Document Preview modal opens showing all pages of the business plan document rendered at readable size (Story 5.9)
+
+**Given** I edit a value in Reports (inline editing in a statement tab) and then navigate to My Plan
+**When** My Plan renders
+**Then** the form field corresponding to the edited value reflects the updated value
+**And** bidirectional data flow is seamless — both surfaces read from and write to the same plan state
+
+**Given** the AI Planning Assistant is available within My Plan
+**When** I click the floating action button or header icon
+**Then** the AI Planning Assistant panel slides in from the right edge (see Epic 9 for full AI behavior)
+**And** navigating away from My Plan (e.g., clicking Reports in sidebar) closes the AI panel; conversation state is preserved
 
 **Dev Notes:**
-- This story transforms Quick Entry from a flat grid into an interactive financial statement experience.
-- The mode-specific behavior table: Planning Assistant = read-only; Forms = read-only with Impact Strip (Story 5.9); Quick Entry = editable inline with P&L as default landing.
-- The "All Inputs" fallback preserves backward compatibility for users who prefer the flat grid.
-- See UX spec Part 3 (Input-Output Integration), Part 3 (Transition from Existing Quick Entry Grid).
+- This story establishes the My Plan workspace as the structured form-based "door" into the plan, complementing Reports (the tabbed financial statements "door"). Per consolidated UX spec Part 8.
+- The Impact Strip is a `<ImpactStrip>` component (~100 lines) rendered as a persistent sticky bar at the bottom of My Plan. Context-sensitive metrics require mapping each form section to relevant financial metrics.
+- Bidirectional data flow: My Plan and Reports both read from and write to the same shared plan state (e.g., `PATCH /api/plans/:id/financial-inputs`). Edits in either surface are immediately reflected in the other.
+- The old `quick-entry-mode.tsx` flat grid component is retired. There is no "All Inputs" fallback tab, no orientation overlay, and no mode-gated editing. The flat grid's function is fully replaced by Reports' inline-editable statement tabs.
+- The AI Planning Assistant is a feature within My Plan, not a separate mode. Entry points and panel behavior are detailed in Epic 9 and consolidated UX spec Part 9.
+- See consolidated UX spec Part 7 (Navigation Architecture), Part 8 (My Plan Experience), Part 9 (AI Planning Assistant).
 
 ### Story 5.7: Scenario Comparison
 
@@ -1229,7 +1252,7 @@ So that I can build conviction that my plan works even in a challenging environm
 
 **Acceptance Criteria:**
 
-**Given** I am viewing any Financial Statement tab
+**Given** I am viewing any Reports tab
 **When** I look at the Scenario Bar (persistent bar between tab navigation and statement content)
 **Then** I see: "Viewing: ● Base Case" with a "[Compare Scenarios]" dropdown/button
 
@@ -1275,7 +1298,7 @@ So that every decision I make is informed by its financial impact (FR7d).
 
 **Acceptance Criteria:**
 
-**Given** I am viewing any Financial Statement tab
+**Given** I am viewing any Reports tab
 **When** the Guardian Bar renders (persistent slim bar above the tabs, below the workspace header)
 **Then** three indicators are shown: Break-even (month and calendar date), 5yr ROI (percentage), Cash Position (status)
 **And** each indicator uses BOTH a color AND a distinct icon shape:
@@ -1301,7 +1324,7 @@ So that every decision I make is informed by its financial impact (FR7d).
 - Clicking "Cash: lowest point -$8,200 in Month 6" → Cash Flow tab, drills into Year 1 monthly view, highlights Month 6
 - Clicking "5yr ROI: 127%" → ROIC tab
 
-**Given** I am in Quick Entry mode and edit an input cell
+**Given** I edit an input cell inline in Reports
 **When** the engine recalculates
 **Then** the Guardian Bar updates in real time reflecting the new computation
 **And** if a Guardian indicator changes threshold level (e.g., green → amber), the indicator animates briefly to draw attention
@@ -1314,7 +1337,7 @@ So that every decision I make is informed by its financial impact (FR7d).
 - Type 3 (Hover tooltips on computed cells): Plain-language explanation, calculation formula, and Glossary link
 **And** benchmarks come ONLY from brand defaults configured by the franchisor — never from universal databases
 **And** if no brand benchmark exists, interpretation shows only the percentage/ratio without benchmark context
-**And** in Quick Entry mode, interpretations update in real time as input cells are edited
+**And** when editing input cells inline in Reports, interpretations update in real time
 
 **Dev Notes:**
 - The Guardian Bar is a separate `<GuardianBar>` component (~80 lines), always visible at the top of the Financial Statements container.
@@ -1323,64 +1346,44 @@ So that every decision I make is informed by its financial impact (FR7d).
 - Guardian thresholds are hardcoded defaults for MVP. Epic 8 (Advisory Guardrails) adds brand-configurable thresholds.
 - See UX spec Part 5 (Dynamic Interpretation), Part 6 (ROI Threshold Guardian).
 
-### Story 5.9: Impact Strip & Document Preview Widget
+### Story 5.9: Document Preview & PDF Generation Trigger
 
-As a franchisee using Forms mode,
-I want to see the real-time impact of my edits on key metrics without leaving the form,
-So that I understand the financial consequence of every input change (FR7d).
+As a franchisee,
+I want to preview my business plan document and generate a PDF from key locations in the app,
+So that I can see my progress toward a professional lender package and feel pride in what I'm building (FR7d).
 
 **Acceptance Criteria:**
-
-**Given** I am in Forms mode editing financial inputs
-**When** the Impact Strip renders (persistent sticky bar at the bottom of the Forms input panel)
-**Then** it shows 3-4 key metrics most relevant to the section I'm currently editing:
-- Revenue section → Pre-Tax Income, Break-even, Gross Margin, 5yr ROI
-- Operating Expenses section → EBITDA, Pre-Tax Income, Labor Efficiency
-- Financing section → Cash Position, Debt Service, Break-even
-- Startup Costs section → Total Investment, ROI, Break-even
-
-**Given** I change an input value in Forms mode
-**When** the engine recalculates
-**Then** affected metrics in the Impact Strip show a delta indicator ("+$3,200") in a subtle highlight for 3 seconds, then the highlight fades but the new value remains
-**And** a deep link "View Full P&L →" (or relevant statement) navigates to the Financial Statements tab for the full picture
-**And** the "Return to Editing" browser back button (or a link in the statements view) brings the user back to Forms
-
-**Given** the Impact Strip includes a miniature Guardian
-**When** it renders
-**Then** three colored dots with icons (matching Guardian Bar pattern) show break-even, ROI, and cash health status
-**And** if an edit pushes a Guardian metric from green to amber, the dot animates briefly
-**And** clicking a miniature Guardian dot navigates to the Financial Statements view with the relevant tab and row focused
-
-**Given** the Impact Strip includes a document preview icon
-**When** I click the document icon
-**Then** a Document Preview modal opens showing all pages of the business plan document rendered at readable size
-**And** the preview reflects the current state of my financial inputs
 
 **Given** I am on the Dashboard Panel
 **When** the dashboard renders
 **Then** a Document Preview widget card appears showing the first page of the lender document in miniature
-**And** the preview card shows the franchisee's name on the document (the pride moment)
+**And** the preview card shows the franchisee's name on the document (the pride moment — "progressive pride")
 **And** the preview updates in real time as inputs change
 **And** "View Full Preview" opens the full Document Preview modal
 **And** "Generate PDF" triggers PDF generation (Story 6.1)
 **And** if the plan is at < 50% input completeness, the preview shows a "Draft" watermark
 
-**Given** I am on the Financial Statements view
-**When** the header renders
-**Then** a "Generate PDF" button appears in the header area (no preview — the user is already looking at the content)
+**Given** I click the document preview icon in the Impact Strip (within My Plan, Story 5.6)
+**When** the Document Preview modal opens
+**Then** it shows all pages of the business plan document rendered at readable size
+**And** the preview reflects the current state of my financial inputs
+**And** a "Generate PDF" button is available within the preview modal
+
+**Given** I am in Reports
+**When** the Reports header renders
+**Then** a "Generate PDF" button appears in the header area (no preview in Reports — the user is already looking at the content)
 **And** the button label evolves with completeness: < 50% → "Generate Draft"; 50-90% → "Generate Package"; > 90% → "Generate Lender Package"
 
 **Given** the plan has all inputs at brand defaults (no user edits)
-**When** the Document Preview widget or Guardian Bar renders
-**Then** a note appears: "Your plan is using all brand default values. Edit inputs to personalize your projections."
+**When** the Document Preview widget renders
+**Then** a note appears: "Your plan is using all brand default values. Customize your inputs in My Plan for projections based on your specific situation."
 
 **Dev Notes:**
-- The Impact Strip is a `<ImpactStrip>` component (~100 lines) rendered inside the Forms mode input panel.
-- Context-sensitive metrics require mapping each form section to relevant financial metrics.
 - The Document Preview modal is a `<DocumentPreviewModal>` component (~120 lines) that renders the plan as formatted pages.
-- Document Preview lives on the Dashboard (widget) and Forms (via Impact Strip icon), NOT within Financial Statements (Critique Issue #4).
-- The "Generate PDF" button in the Financial Statements header connects to Story 6.1.
-- See UX spec Part 1 (Impact Strip pattern), Part 7 (Document Preview), Part 12 (Empty & Incomplete States).
+- Document Preview is accessible from: (1) Dashboard preview widget, (2) My Plan via Impact Strip document icon (Story 5.6), (3) Reports gets a "Generate PDF" button only — no preview within Reports.
+- The Impact Strip component and its behavior are defined in Story 5.6 (My Plan + Impact Strip). This story covers only the Document Preview modal and the PDF generation trigger points.
+- The "Generate PDF" button in the Reports header connects to Story 6.1.
+- See consolidated UX spec Part 13 (Document Preview), Part 14 (Empty & Incomplete States).
 
 ### Story 5.10: Glossary & Contextual Help
 
@@ -1401,7 +1404,7 @@ So that I can understand what each metric means and make informed decisions (FR7
 **When** the tooltip renders
 **Then** it shows: what the number means in plain language, how it's calculated (e.g., "Revenue ($360,000) minus COGS ($108,000)"), and a "Learn more" link to the full Glossary entry for that term
 
-**Given** I view any input field (in Forms mode, Quick Entry mode, or Startup Costs)
+**Given** I view any input field (in My Plan forms, Reports inline cells, or Startup Costs)
 **When** I hover over the info icon next to the field
 **Then** a tooltip shows the field's explanation text (1-2 sentences from spreadsheet cell comments for consolidated fields; newly authored text for decomposed sub-fields)
 **And** a "Learn more" link opens an expanded help panel with deeper explanation (1-2 paragraphs, extracted from Loom video teaching content)
@@ -1412,7 +1415,7 @@ So that I can understand what each metric means and make informed decisions (FR7
 **Then** each field's help content includes: fieldKey (e.g., "input.facilities", "input.facilities.rent"), tooltipText (brief 1-2 sentences), expandedHelp (deeper 1-2 paragraphs from video content extraction), glossaryTermSlug (links to glossary entry, nullable), parentFieldKey (for decomposed sub-fields, nullable)
 **And** help content is stored as platform-level text data — not hardcoded in component files
 **And** ~33 tooltip texts are sourced from spreadsheet cell comments (consolidated fields)
-**And** ~20 new tooltip texts are authored for decomposed sub-fields (Forms mode guided fields)
+**And** ~20 new tooltip texts are authored for decomposed sub-fields (My Plan guided form fields)
 **And** expanded help content is extracted from the 25 Loom walkthrough videos into text-based guidance
 
 **Dev Notes:**
