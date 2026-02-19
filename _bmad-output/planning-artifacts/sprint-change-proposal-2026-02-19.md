@@ -394,6 +394,46 @@ After remediation is complete:
 
 ---
 
+---
+
+## Appendix: Adversarial Review Findings
+
+*Reviewed: 2026-02-19 via BMAD Adversarial Review workflow*
+*Content type: Sprint Change Proposal (planning artifact)*
+*Cross-referenced against: UX Design Specification (consolidated), codebase, sprint-status.yaml*
+
+### Findings (14 total, prioritized)
+
+1. **CRITICAL — Missing Divergence: `--info` / "Gurple" token absent from codebase.** The UX spec (Part 6, Part 12) defines a `--info` token mapped to "Mystical (Gurple)" `#A9A2AA` for advisory/educational content, and explicitly states red must NEVER be used for advisory guardrails. The codebase's `index.css` has no `--info` token at all. The Guardian Bar's "concerning" level uses `280 12% 65%` (a generic purple), not the specified Gurple hex. The proposal never identifies this missing design token — it only catches the primary color being blue.
+
+2. **CRITICAL — Dark mode exists but UX spec explicitly defers it to post-MVP.** The codebase has a full `.dark` CSS class with 60+ dark-mode token overrides. The UX spec (Part 1, line 96–102) states: "Dark mode implementation is deferred to post-MVP." The proposal not only fails to flag this contradiction, it actively instructs the developer to "update dark mode variant" in CP-4 and lists "Dark mode and light mode both render correctly with new palette" as success criterion #12. The proposal is asking devs to polish a feature the spec says shouldn't exist yet.
+
+3. **HIGH — Missing Divergence: `<FinancialValue>` component doesn't exist.** The UX spec (Part 6, Component Strategy table) specifies a custom `<FinancialValue>` component as a design-system primitive that "handles all number formatting" and states "All financial displays use this component." No such component exists anywhere in the codebase. Financial formatting is scattered across `format-currency.ts`, `field-metadata.ts`, and inline formatting in statement components. This is a significant architectural divergence the proposal completely ignores.
+
+4. **HIGH — Negative number formatting misclassified as LOW.** The UX spec (Part 6) explicitly requires "Negative numbers: accounting-style parentheses, NOT minus signs. e.g., ($4,200) not -$4,200." The `formatCents()` function in `format-currency.ts` uses `toLocaleString` which produces "-$4,200" format. The proposal mentions this in L2 as a LOW polish item, but it's actually a core design-system violation — every financial display in the app renders negatives wrong. Classifying a pervasive formatting error that affects trust and professionalism as "LOW" is negligently optimistic.
+
+5. **HIGH — Sidebar background color is wrong but not specifically identified.** The UX spec's token translation table (Part 6) specifies `--sidebar-background: White (#FFFFFF)`. The codebase has `--sidebar: 210 5% 94%` (a blue-gray), and uses `--sidebar` instead of `--sidebar-background`. The proposal's CP-4 mentions shifting from "cool blue-gray to warm neutrals" but never specifically identifies the sidebar background as being the wrong color or the wrong token name.
+
+6. **HIGH — Execution sequence has a dependency violation.** The proposal orders CP-6 (Fix Story 5.5 HIGHs) at step 5, after CP-1/CP-2 (retire mode switcher/Quick Entry at step 2) and CP-3 (navigation at step 3). But CP-7 (re-verify stories 5.6–5.10) is at step 6. Story 5.5 is *also* affected by the structural changes from CP-1/CP-2 — audit tab rendering could break when the workspace structure changes — yet CP-6 is sequenced *before* CP-7's general re-verification. The proposal should either re-verify *all* stories (including 5.5) after structural changes, or acknowledge that CP-6 fixes might need to be re-applied after CP-1/CP-2. As written, the dev could fix 5.5 and then have CP-1/CP-2 break it again.
+
+7. **HIGH — CP-3 sidebar specification is incomplete and ambiguous.** CP-3 says to create "MY LOCATIONS section header with 'All Plans' item (replaces 'Home')" and to add "Planning Assistant" to the HELP section. But the actual sidebar code (`app-sidebar.tsx`) has a first SidebarGroup with the brand label, not "MY LOCATIONS." The proposal doesn't specify: What happens to the "Glossary" nav item beyond "relocated to contextual access or Help section"? The "or" makes this non-actionable. Also, CP-3 says to add "Book Consultation" to the HELP section, but the current sidebar *already has* booking in a HELP section — the proposal doesn't acknowledge existing work or explain what specifically changes.
+
+8. **MEDIUM — CP-4 color mapping math is wrong.** The proposal states `--primary: 90 75% 45%` as the HSL mapping for `#78BF26` (Katalyst Green). Converting `#78BF26` to HSL yields approximately `90° 67% 45%` (saturation ~67%, not 75%). The existing `--katalyst-brand: 145 63% 42%` is also wrong for `#78BF26` (should be ~90° hue, not 145°). The proposal claims `--katalyst-brand already correct at 145 63% 42%` — but 145° is in the teal-green range, not the yellow-green of `#78BF26`. Either the hex or the HSL is wrong, and the proposal blindly trusts one while changing the other.
+
+9. **MEDIUM — Risk assessment is unrealistically optimistic about Quick Entry removal.** The proposal rates "Quick Entry removal leaves input gaps" as Low likelihood / Low impact, claiming "Reports inline editing (5.6) already covers the same functionality." But Story 5.6 is in "review" status with an unresolved deferred AC (AC7: EBITDA Multiple), and the sprint-status.yaml notes it hasn't been code-reviewed post-UX-spec. Claiming a story that hasn't been verified fully replaces another component is wishful thinking, not risk assessment. The risk should be Medium/Medium at minimum.
+
+10. **MEDIUM — Success criteria are incomplete.** The 12 success criteria omit several verifiable outcomes that the change proposals explicitly call for: (a) No criterion for sidebar structure matching the Two-Door Model beyond vague criterion #4 — no mention of "All Plans" item, Planning Assistant placeholder, or Glossary relocation. (b) No criterion for the `font-heading` Tailwind utility class that CP-5 says "may need." (c) No criterion verifying the warm neutral palette shift (backgrounds, cards, borders) — only criterion #2 checks `--primary`. (d) No criterion for test removal (Quick Entry tests) or test addition (post-remediation workspace verification) mentioned in Technical Impact.
+
+11. **MEDIUM — Story 5.2 was supposed to eliminate the mode switcher per the UX spec's Story Rewrite table, yet it's marked "done."** The UX spec's own Story Rewrite section (Part 19) assigns mode-switcher elimination to Story 5.2, which is marked "done" in sprint-status.yaml. Either Story 5.2 didn't actually do what the spec required (meaning its "done" status is fraudulent), or the proposal is re-discovering a known gap that should have been caught during Story 5.2's code review. The proposal doesn't investigate this discrepancy.
+
+12. **MEDIUM — CP-10 (Plan Completeness Dashboard) is redundant with existing implementation.** The `forms-mode.tsx` file already contains a `PlanCompleteness` component (lines 214-264) that renders a `plan-completeness-dashboard` with section-by-section progress bars. The proposal's M4 divergence claims "`SummaryMetrics` shows financial metrics, not section completion" — but it's looking at the wrong component. The completeness dashboard exists; it's just inside FormsMode, not at the workspace level. The proposal should be about *repositioning* it (like CP-8 for Impact Strip), not *creating* it.
+
+13. **LOW — LSP cleanliness is irrelevant padding.** The proposal claims "0 LSP errors, 0 warnings" and "25 benign content TODOs" as evidence of codebase health, but these metrics are meaningless for the type of divergences identified. LSP errors detect syntax/type issues, not design-system compliance or navigation architecture correctness. Citing LSP cleanliness in a document about UX spec divergences is padding the argument.
+
+14. **LOW — CP-9 (Add Document Preview to Dashboard) lacks specificity about data source.** It says to show "first page / summary of lender document for the user's most recent or active plan" but doesn't specify: What if the user has no plans? What API endpoint provides the preview data? The existing `DocumentPreviewWidget` component already exists but is coupled to a specific plan context. Moving it to the Dashboard (which lists multiple plans) creates a data-binding ambiguity the proposal doesn't address.
+
+---
+
 *Generated by BMAD Course Correction Workflow, Step 5*
 *Authority documents: PRD, Architecture, UX Design Specification (consolidated), Epics*
 *Platform intelligence: 0 LSP errors, 25 benign TODOs, 50 recent commits, healthy codebase*
