@@ -2,7 +2,7 @@
 project_name: 'Katalyst Growth Planner'
 user_name: 'User'
 date: '2026-02-19'
-sections_completed: ['technology_stack', 'language_rules', 'framework_rules', 'testing_rules']
+sections_completed: ['technology_stack', 'language_rules', 'framework_rules', 'testing_rules', 'code_quality']
 existing_patterns_found: 12
 ---
 
@@ -97,3 +97,37 @@ _This file contains critical rules and patterns that AI agents must follow when 
 - Create test data (brands, plans) via API calls with unique names using `Date.now()` for isolation.
 - Navigate with `page.goto()`, assert with `data-testid` selectors.
 - **Every interactive or meaningful display element must have a `data-testid`** — this is a project-wide requirement, not just a test concern.
+
+### Code Quality & Style Rules
+
+**Currency Conversion Boundary (Critical):**
+- `BrandParameters` = dollars (raw numbers). Everything else (plan inputs, engine, display) = cents (integers).
+- Conversion in `plan-initialization.ts`: `dollarsToCents()` uses `Math.round(dollars * 100)`. Always use `Math.round()` to avoid floating-point drift.
+- Display formatting via `formatCents()` from `@/lib/format-currency.ts`. Parsing via `parseDollarsToCents()`. Never rewrite these.
+
+**Utility Reuse:**
+- Currency: `@/lib/format-currency.ts` (`formatCents`, `parseDollarsToCents`)
+- Field display/parse: `@/lib/field-metadata.ts` (`formatFieldValue`, `parseFieldInput`, `FIELD_METADATA`)
+- Guardian indicators: `@/lib/guardian-engine.ts`
+- Plan initialization/unwrapping: `@shared/plan-initialization.ts` (`buildPlanFinancialInputs`, `unwrapForEngine`, `updateFieldValue`, `resetFieldToDefault`)
+- Structured logging: `server/services/structured-logger.ts` (`logStructured` — JSON to stderr)
+
+**File Organization:**
+- kebab-case for most files. PascalCase only for React context files (`DemoModeContext.tsx`).
+- Consistent naming across layers: route (`plans.ts`) → hook (`use-plan.ts`) → key factory (`planKey()`) → service (`financial-service.ts`).
+- DB columns: snake_case in SQL, camelCase in TypeScript (Drizzle auto-maps).
+
+**Context Provider Pattern:**
+- `createContext<T>` with typed interface and defaults → `Provider` with `useState` + `useCallback` → `useXxx()` consumer hook. Follow `WorkspaceViewContext.tsx` as template.
+
+**Documentation:**
+- Self-documenting naming preferred. Minimal comments.
+- Module-level docstrings: purpose, conventions, currency/percentage rules.
+- JSDoc on exported interfaces and key functions only. No comments on obvious code.
+- Section separators: `// ─── Section Name ──────────` in larger files.
+- Test names reference requirements: `"Determinism (FR9, NFR15)"`.
+
+**`data-testid` Convention:**
+- Interactive elements: `{action}-{target}` (e.g., `button-dev-login`, `mode-switcher-forms`)
+- Display elements: `{type}-{description}` (e.g., `planning-workspace`, `text-username`)
+- Dynamic lists: append unique ID (`card-product-${id}`)
