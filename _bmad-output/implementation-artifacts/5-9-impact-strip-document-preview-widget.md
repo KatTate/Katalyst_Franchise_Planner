@@ -10,18 +10,23 @@ so that I understand the financial consequence of every input change, feel pride
 
 ## Acceptance Criteria
 
-### Impact Strip — Forms Mode Sticky Bottom Bar
+### Impact Strip — My Plan (Forms) Sticky Bottom Bar
 
-1. Given I am in Forms mode editing financial inputs, when the Impact Strip renders as a persistent sticky bar at the bottom of the Forms input panel, then it shows 3-4 key financial metrics most relevant to the section I'm currently editing:
+1. Given I am in My Plan (Forms) editing financial inputs, when the Impact Strip renders as a persistent sticky bar at the bottom of the Forms input panel, then it shows 3-4 key financial metrics most relevant to the section I'm currently editing. The "active section" is determined by tracking the most recently expanded accordion section via `forms-mode.tsx` state; when a user expands a section, that becomes the active section even if other sections remain open. If all sections are collapsed, the default metric set is shown. The section-to-metric mapping is:
    - Revenue section active → Pre-Tax Income, Break-even Month, Gross Margin %, 5yr ROI
    - Operating Expenses section active → EBITDA, Pre-Tax Income, Labor Efficiency %
    - Financing section active → Cash Position (lowest month), Debt Service Coverage, Break-even Month
    - Startup Costs section active → Total Investment, 5yr ROI, Break-even Month
    - No section active (or all collapsed) → Pre-Tax Income, Break-even Month, Gross Margin %, 5yr ROI (default set)
 
-2. Given I change an input value in Forms mode, when the engine recalculates (via `usePlanOutputs`), then affected metrics in the Impact Strip show a delta indicator (e.g., "+$3,200" or "-2 months") in a subtle highlight for 3 seconds, then the highlight fades but the updated value remains displayed.
+2. Given I change an input value in My Plan, when the engine recalculates (via `usePlanOutputs`), then only the metrics whose computed values actually changed show a delta indicator (e.g., "+$3,200" or "-2 months") in a subtle highlight for 3 seconds, then the highlight fades but the updated value remains displayed. If I make another edit within the 3-second window, the timer resets per-metric and the delta shows the cumulative change from the last "settled" snapshot (the values at the moment the previous 3-second window started). Deltas are never stacked — only one delta indicator per metric at a time.
 
-3. Given the Impact Strip renders, then it includes a deep link reading "View Full P&L →" (or "View Full Balance Sheet →", "View Full Cash Flow →" depending on the active section context) that, when clicked, navigates to the Financial Statements view on the relevant tab using `navigateToStatements(tabId)` from `WorkspaceViewContext`.
+3. Given the Impact Strip renders, then it includes a deep link that navigates to the relevant Financial Statements tab using `navigateToStatements(tabId)` from `WorkspaceViewContext`. The link label and target tab depend on the active section:
+   - Revenue section → "View Full P&L →" → navigates to `pnl` tab
+   - Operating Expenses section → "View Full P&L →" → navigates to `pnl` tab
+   - Financing section → "View Full Cash Flow →" → navigates to `cash-flow` tab
+   - Startup Costs section → "View Full Summary →" → navigates to `summary` tab
+   - No section active → "View Full Summary →" → navigates to `summary` tab
 
 4. Given the Impact Strip includes a miniature Guardian display, when it renders, then three small colored dots with icons are shown matching the Guardian Bar pattern: Break-even (CheckCircle / AlertTriangle / InfoCircle), 5yr ROI (same icon set), Cash Position (same icon set). The dots use the same `guardian-healthy`, `guardian-attention`, `guardian-concerning` color tokens already defined in `index.css` and `tailwind.config.ts`. Clicking a miniature Guardian dot navigates to Financial Statements with the relevant tab focused (Break-even → Summary, Cash → Cash Flow, ROI → ROIC).
 
@@ -29,9 +34,13 @@ so that I understand the financial consequence of every input change, feel pride
 
 6. Given the Impact Strip includes a document preview icon (FileText or similar), when I click the icon, then a Document Preview modal opens showing a formatted representation of the business plan document at readable size, reflecting the current state of my financial inputs.
 
+**Impact Strip — Loading & Empty States:**
+
+6a. Given I am in My Plan and `usePlanOutputs` is still loading (initial fetch or refetch after edit), when the Impact Strip renders, then metric values show subtle skeleton/shimmer placeholders. The strip structure (deep link, Guardian dots, document icon) remains visible but metric values are replaced with loading indicators. Once data arrives, metrics render with values. If `usePlanOutputs` returns an error, metrics display "—" with muted text and a tooltip: "Unable to calculate projections."
+
 ### Document Preview Modal
 
-7. Given the Document Preview modal opens (from Impact Strip icon or Dashboard "View Full Preview"), then it renders as a full-screen or large modal showing the business plan document with: a cover page displaying the franchisee's name (from `plan.name`) and the brand identity (logo reference, brand name via `brand?.displayName || brand?.name`), summary financial metrics, and key financial statement sections (P&L summary, Cash Flow summary, Break-even analysis). The modal includes a close button and a "Generate PDF" button.
+7. Given the Document Preview modal opens (from Impact Strip icon or Dashboard "View Full Preview"), then it renders as a large Dialog modal showing a structured HTML representation of what the business plan document will look like. This is NOT a PDF render or pixel-perfect preview — it is a styled HTML layout that communicates "this will be a professional document" and shows the user's data in document format. The preview contains: a cover page displaying the franchisee's name (from `plan.name`) and the brand identity (brand name via `brand?.displayName || brand?.name`), key summary financial metrics (Pre-Tax Income, Break-even Month, 5yr ROI from `EngineOutput`), and abbreviated financial statement sections (Year 1 P&L summary, Cash Flow summary, Break-even analysis). All data is sourced client-side from existing `EngineOutput` and plan data — no new server endpoint is involved. The modal includes a close button and a "Generate PDF" button (toast placeholder for Story 6.1).
 
 8. Given the plan has less than 90% input completeness, when the Document Preview modal renders, then a diagonal "DRAFT" watermark is visible across the preview content.
 
@@ -49,7 +58,7 @@ so that I understand the financial consequence of every input change, feel pride
 
 ### Reports Header — Generate PDF Button
 
-14. Given I am viewing the Financial Statements (Reports) view, when the header renders, then a "Generate PDF" button appears in the header area. No document preview is shown in Reports — the user is already looking at the financial content. The button label evolves with completeness: < 50% → "Generate Draft"; 50-90% → "Generate Package"; > 90% → "Generate Lender Package". Clicking the button shows a toast: "PDF generation coming soon" (wired to Story 6.1).
+14. Given I am viewing the Financial Statements (Reports) view, when the header renders, then a "Generate PDF" button appears in the header area (using `variant="outline"` or `variant="default"`). No document preview is shown in Reports — the user is already looking at the financial content. The button label evolves with completeness: < 50% → "Generate Draft"; 50-90% → "Generate Package"; > 90% → "Generate Lender Package". The button is always enabled (not disabled). Clicking the button shows a toast: "PDF generation coming soon — this feature is being built" (wired to Story 6.1).
 
 ### Completeness Calculation
 
@@ -91,15 +100,19 @@ so that I understand the financial consequence of every input change, feel pride
 - **Naming conventions:** Components: PascalCase. Files: kebab-case. Constants: SCREAMING_SNAKE_CASE. data-testid: `{action}-{target}` for interactive, `{type}-{content}` for display.
   - Source: `_bmad-output/planning-artifacts/architecture.md` → Naming Patterns
 
-- **Completeness as shared utility:** Extract the completeness percentage calculation from `forms-mode.tsx` (`computeSectionProgress` + aggregation at lines 211-212) into a shared utility (e.g., `client/src/lib/plan-completeness.ts`) so Impact Strip, Document Preview, Dashboard widget, and Reports header can all import it. The original `forms-mode.tsx` should import from the shared utility to avoid duplication.
+- **Completeness as shared utility:** Extract the completeness percentage calculation from `forms-mode.tsx` (`computeSectionProgress` + aggregation at lines 211-212) into `client/src/lib/plan-completeness.ts`. This file must export three functions:
+  - `computeSectionProgress(inputs: PlanFinancialInputs, category: string): { edited: number; total: number }` — per-section progress
+  - `computeCompleteness(inputs: PlanFinancialInputs, startupCostCount?: number): number` — overall percentage (0-100)
+  - `getGenerateButtonLabel(completeness: number): string` — returns "Generate Draft" (<50%), "Generate Package" (50-90%), or "Generate Lender Package" (>90%)
+  The original `forms-mode.tsx` must then import from the shared utility to avoid duplication. Dependencies: `FIELD_METADATA`, `CATEGORY_ORDER` from `client/src/lib/field-metadata.ts`; `PlanFinancialInputs`, `FinancialFieldValue` from `shared/financial-engine.ts`.
   - Source: `client/src/components/planning/forms-mode.tsx` → `computeSectionProgress()`, lines 44-67, 211-212
 
 - **Delta tracking pattern:** To show "+$3,200" delta indicators, the Impact Strip needs to compare the current metric value against a "previous" snapshot. Use a `useRef` to store the last-seen metric values. When `usePlanOutputs` returns new output, diff against the ref, render deltas for changed metrics, set a 3-second timeout to clear the delta highlight, then update the ref to the new values.
 
 ### UI/UX Deliverables
 
-**Impact Strip (sticky bottom bar in Forms mode):**
-- Persistent sticky bar at the bottom of the Forms mode scroll container
+**Impact Strip (sticky bottom bar in My Plan / Forms):**
+- Persistent sticky bar at the bottom of the My Plan (Forms) scroll container
 - 3-4 metric cards showing formatted values with delta indicators on change
 - Context-sensitive metrics that change based on which form section is expanded/active
 - Miniature Guardian: three small colored dots with threshold icons (reusing Guardian color tokens)
@@ -126,6 +139,7 @@ so that I understand the financial consequence of every input change, feel pride
 - "Generate PDF" button with completeness-aware label
 - All-defaults note when applicable
 - Updates reactively as plan inputs change
+- Empty/new plan state: When `usePlanOutputs` returns no output yet (brand-new plan), widget still shows the cover page with franchisee name but financial summary areas show "Start editing your plan to see projections here" placeholder text
 
 **Reports Header Generate PDF Button:**
 - Single button in the Financial Statements header (next to existing controls)
@@ -143,8 +157,8 @@ so that I understand the financial consequence of every input change, feel pride
 - **DO NOT create a separate document preview inside Financial Statements/Reports.** Document Preview is redundant in Reports — the user is already looking at financial data. Reports gets only a "Generate PDF" button. Preview lives on Dashboard (widget) and via Impact Strip (icon → modal).
   - Source: UX spec Part 13, Part 18 Anti-Patterns table row "Document preview inside financial statements"
 
-- **DO NOT use red/destructive color for Guardian indicators.** The Guardian system uses Gurple (advisory purple) for "concerning," NOT red. Red is reserved for actual errors only. The three levels are: green (healthy), amber (attention), Gurple (concerning).
-  - Source: UX spec Part 6, Part 12
+- **DO NOT use red/destructive color for Guardian indicators.** The Guardian system uses Gurple (advisory purple) for "concerning," NOT red. Red is reserved for actual errors only. The three levels are: green (healthy), amber (attention), Gurple (concerning). Verify that the existing `guardian-concerning` CSS token in `index.css` maps to Gurple (#A9A2AA based), NOT to red/destructive. The guardian-engine.ts `GuardianLevel` enum uses `healthy`, `attention`, `concerning` — these map to the `guardian.healthy`, `guardian.attention`, `guardian.concerning` Tailwind tokens.
+  - Source: UX spec Part 6, Part 12; `client/src/lib/guardian-engine.ts` → `GuardianLevel`
 
 - **DO NOT re-implement Guardian threshold logic.** Import from `guardian-engine.ts`. Do NOT duplicate the threshold constants or computation in the Impact Strip component.
 
