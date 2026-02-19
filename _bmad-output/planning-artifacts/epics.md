@@ -906,12 +906,12 @@ So that I can get help whenever I need it without leaving the planning experienc
 
 ## Epic 5: Financial Statement Views & Output Layer
 
-The plan builder renders every output sheet from the reference spreadsheet as interactive tabular views within a unified Financial Statements container. Each view matches the reference spreadsheet's line items and column structure. Financial statement views use progressive disclosure (annual → quarterly → monthly drill-down). In Forms mode, statements are read-only with an Impact Strip showing real-time metrics. In Quick Entry mode, input cells within these statements are directly editable inline — the financial statement IS the input interface. A persistent Guardian Bar provides at-a-glance plan health. Dynamic interpretation rows explain "so what" for every key metric.
+Epic 5 implements two interaction surfaces — **My Plan** and **Reports** — as sidebar navigation destinations over the same financial input state (the "two-door" model). There are no user-facing "modes." Reports renders every output sheet from the reference spreadsheet as interactive tabular views within a unified tabbed container. Input cells in Reports are **always editable inline** — there is no edit toggle, no mode switch, no gating. My Plan provides structured form-based input with an Impact Strip showing real-time financial impact metrics and deep links into Reports. Both surfaces read from and write to the same plan state; edits in either surface are immediately reflected in the other. A persistent Guardian Bar in Reports provides at-a-glance plan health. Dynamic interpretation rows explain "so what" for every key metric. Financial statement views use progressive disclosure (annual → quarterly → monthly drill-down).
 
-**UX Design Authority:** `ux-financial-statements-spec.md` (v2, 2026-02-16)
+**UX Design Authority:** `ux-design-specification-consolidated.md` (2026-02-18) — Single Source of Truth. Supersedes `ux-design-specification.md` and `ux-financial-statements-spec.md`.
 **FRs covered:** FR7a, FR7b, FR7c, FR7d, FR7e, FR7f, FR7g, FR7h, FR7k, FR7l, FR7m
 **Dependencies:** Epic 3 (financial engine), Epic 4 (planning workspace, EditableCell component)
-**Story sequence rationale:** Stories follow the UX spec's recommended rewrite structure (Part 16), which addresses all six foundation points and all nine critique issues. The sequence builds from engine → container → individual statements → interaction → interpretation → help, ensuring each story has its dependencies met.
+**Story sequence rationale:** Stories follow the consolidated UX spec's recommended rewrite structure (Part 20), building from engine → navigation + container → individual statements with inline editing → My Plan + Impact Strip → scenario comparison → interpretation → document preview → help. Each story has its dependencies met.
 
 ### Story 5.1: Financial Engine Extension
 
