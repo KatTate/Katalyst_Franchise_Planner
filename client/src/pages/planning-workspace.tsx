@@ -140,6 +140,7 @@ export default function PlanningWorkspace() {
             plan={plan}
             queueSave={queueSave}
             isSaving={isSaving}
+            brandName={brand?.displayName || brand?.name}
           />
         );
       case "scenarios":

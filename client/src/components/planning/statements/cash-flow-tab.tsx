@@ -56,7 +56,21 @@ const CF_SECTIONS: CfSectionDef[] = [
       { key: "inventory-change", label: "Changes in Inventory", field: "cfInventoryChange", format: "currency", indent: 1, tooltip: { explanation: "Cash impact of changes in goods held for sale", formula: "Prior Inventory - Current Inventory" } },
       { key: "ap-change", label: "Changes in Accounts Payable", field: "cfAccountsPayableChange", format: "currency", indent: 1, tooltip: { explanation: "Cash impact of changes in amounts owed to suppliers", formula: "Current AP - Prior AP (increase = cash inflow)" } },
       { key: "tax-payable-change", label: "Changes in Tax Payable", field: "cfTaxPayableChange", format: "currency", indent: 1, tooltip: { explanation: "Cash impact of changes in taxes owed", formula: "Current Tax Payable - Prior Tax Payable" } },
-      { key: "net-operating-cf", label: "Net Operating Cash Flow", field: "cfNetOperatingCashFlow", format: "currency", isSubtotal: true, tooltip: { explanation: "Cash generated from core business operations", formula: "Net Income + Depreciation + Working Capital Changes" } },
+      {
+        key: "net-operating-cf",
+        label: "Net Operating Cash Flow",
+        field: "cfNetOperatingCashFlow",
+        format: "currency",
+        isSubtotal: true,
+        tooltip: { explanation: "Cash generated from core business operations", formula: "Net Income + Depreciation + Working Capital Changes" },
+        interpretationId: "interp-net-operating-cf",
+        interpretation: (annuals) => {
+          const y1 = annuals[0];
+          if (!y1) return null;
+          if (y1.operatingCashFlow < 0) return `Operations consume ${formatCents(Math.abs(y1.operatingCashFlow))} in Year 1 — typical during ramp-up; watch for positive trend by Year 2-3.`;
+          return `Operations generate ${formatCents(y1.operatingCashFlow)} in Year 1 — a positive sign for sustainability.`;
+        },
+      },
     ],
   },
   {
@@ -99,7 +113,28 @@ const CF_SECTIONS: CfSectionDef[] = [
         },
       },
       { key: "beginning-cash", label: "Beginning Cash", field: "beginningCash", format: "currency", tooltip: { explanation: "Cash balance at the start of the period", formula: "Prior period ending cash" } },
-      { key: "ending-cash", label: "Ending Cash", field: "endingCash", format: "currency", isSubtotal: true, tooltip: { explanation: "Cash balance at the end of the period", formula: "Beginning Cash + Net Cash Flow" } },
+      {
+        key: "ending-cash",
+        label: "Ending Cash",
+        field: "endingCash",
+        format: "currency",
+        isSubtotal: true,
+        tooltip: { explanation: "Cash balance at the end of the period", formula: "Beginning Cash + Net Cash Flow" },
+        interpretationId: "interp-ending-cash",
+        interpretation: (annuals, monthly) => {
+          const negMonths = monthly.filter((m) => m.endingCash < 0);
+          if (negMonths.length > 0) {
+            const first = negMonths[0];
+            const monthNum = (first.year - 1) * 12 + first.month;
+            return `Cash goes negative in Month ${monthNum} — you may need additional reserves or a line of credit to cover ${negMonths.length} month${negMonths.length > 1 ? "s" : ""} of shortfall.`;
+          }
+          const y5 = annuals[4];
+          if (y5) {
+            return `Cash stays positive throughout. ${formatCents(y5.endingCash)} ending balance by Year 5.`;
+          }
+          return null;
+        },
+      },
     ],
   },
 ];
@@ -320,6 +355,7 @@ export function CashFlowTab({ output, scenarioOutputs }: CashFlowTabProps) {
                 monthly={monthlyProjections}
                 isExpanded={expandedSections[section.key] ?? true}
                 onToggle={() => toggleSection(section.key)}
+                showInterpretation={!hasAnyDrillDown}
               />
             ))}
             <CfIdentityCheckRow
@@ -399,9 +435,10 @@ interface CfSectionProps {
   monthly: MonthlyProjection[];
   isExpanded: boolean;
   onToggle: () => void;
+  showInterpretation?: boolean;
 }
 
-function CfSection({ section, columns, annuals, monthly, isExpanded, onToggle }: CfSectionProps) {
+function CfSection({ section, columns, annuals, monthly, isExpanded, onToggle, showInterpretation = true }: CfSectionProps) {
   return (
     <>
       <tr
@@ -440,6 +477,7 @@ function CfSection({ section, columns, annuals, monthly, isExpanded, onToggle }:
             columns={columns}
             annuals={annuals}
             monthly={monthly}
+            showInterpretation={showInterpretation}
           />
         ))}
     </>
@@ -451,9 +489,10 @@ interface CfRowProps {
   columns: ColumnDef[];
   annuals: AnnualSummary[];
   monthly: MonthlyProjection[];
+  showInterpretation?: boolean;
 }
 
-function CfRow({ row, columns, annuals, monthly }: CfRowProps) {
+function CfRow({ row, columns, annuals, monthly, showInterpretation = true }: CfRowProps) {
   const rowClass = row.isTotal
     ? "font-semibold border-t-[3px] border-double border-b"
     : row.isSubtotal
@@ -466,7 +505,7 @@ function CfRow({ row, columns, annuals, monthly }: CfRowProps) {
     ? "bg-primary/5 border-l-2 border-dashed border-primary/20"
     : "";
 
-  const interpText = row.interpretation ? row.interpretation(annuals, monthly) : null;
+  const interpText = showInterpretation && row.interpretation ? row.interpretation(annuals, monthly) : null;
   const interpId = row.interpretationId;
 
   const isEndingCashRow = row.field === "endingCash";

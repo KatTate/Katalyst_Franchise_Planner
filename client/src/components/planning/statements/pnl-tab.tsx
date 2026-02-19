@@ -19,6 +19,7 @@ interface PnlTabProps {
   onCellEdit?: (category: string, fieldName: string, rawInput: string, inputFormat: FormatType) => void;
   isSaving?: boolean;
   scenarioOutputs?: ScenarioOutputs | null;
+  brandName?: string;
 }
 
 interface CellTooltip {
@@ -37,7 +38,7 @@ interface PnlRowDef {
   isExpense?: boolean;
   indent?: number;
   interpretationId?: string;
-  interpretation?: (enriched: EnrichedAnnual[]) => string | null;
+  interpretation?: (enriched: EnrichedAnnual[], financialInputs?: PlanFinancialInputs | null, brandName?: string) => string | null;
   tooltip?: CellTooltip;
 }
 
@@ -104,7 +105,30 @@ const PNL_SECTIONS: PnlSectionDef[] = [
       { key: "materials-cogs", label: "Materials / COGS", field: "materialsCogs", format: "currency", indent: 1, isExpense: true, tooltip: { explanation: "Direct materials cost based on your COGS percentage", formula: "Revenue x COGS %" } },
       { key: "royalties", label: "Royalties", field: "royalties", format: "currency", indent: 1, isExpense: true, tooltip: { explanation: "Franchise royalty fees paid to the brand", formula: "Revenue x Royalty rate" } },
       { key: "ad-fund", label: "Ad Fund", field: "adFund", format: "currency", indent: 1, isExpense: true, tooltip: { explanation: "Required advertising fund contribution", formula: "Revenue x Ad fund rate" } },
-      { key: "total-cogs", label: "Total Cost of Sales", field: "totalCogs", format: "currency", isSubtotal: true, isExpense: true, tooltip: { explanation: "All costs directly tied to generating revenue", formula: "Materials + Royalties + Ad Fund" } },
+      {
+        key: "total-cogs",
+        label: "Total Cost of Sales",
+        field: "totalCogs",
+        format: "currency",
+        isSubtotal: true,
+        isExpense: true,
+        tooltip: { explanation: "All costs directly tied to generating revenue", formula: "Materials + Royalties + Ad Fund" },
+        interpretationId: "interp-total-cogs",
+        interpretation: (enriched, financialInputs, brandName) => {
+          const y1 = enriched[0];
+          if (!y1 || y1.revenue === 0) return null;
+          const cogsPct = (y1.cogsPct * 100).toFixed(1);
+          const brandDefault = financialInputs?.operatingCosts?.cogsPct?.brandDefault;
+          if (brandDefault != null) {
+            const brandPct = (brandDefault * 100).toFixed(1);
+            const diff = y1.cogsPct * 100 - brandDefault * 100;
+            if (Math.abs(diff) < 1) return `COGS at ${cogsPct}% of revenue — in line with ${brandName || "brand"} default of ${brandPct}%`;
+            if (diff > 0) return `COGS at ${cogsPct}% of revenue — ${diff.toFixed(1)}pp above ${brandName || "brand"} default of ${brandPct}%`;
+            return `COGS at ${cogsPct}% of revenue — ${Math.abs(diff).toFixed(1)}pp below ${brandName || "brand"} default of ${brandPct}%`;
+          }
+          return `COGS at ${cogsPct}% of revenue`;
+        },
+      },
     ],
   },
   {
@@ -119,11 +143,17 @@ const PNL_SECTIONS: PnlSectionDef[] = [
         isSubtotal: true,
         tooltip: { explanation: "Revenue remaining after cost of sales", formula: "Revenue - Total Cost of Sales" },
         interpretationId: "interp-gross-profit",
-        interpretation: (enriched) => {
+        interpretation: (enriched, financialInputs, brandName) => {
           const y1 = enriched[0];
           if (!y1 || y1.revenue === 0) return null;
           const pct = (y1.grossProfitPct * 100).toFixed(1);
           const pctNum = y1.grossProfitPct * 100;
+          const cogsBrandDefault = financialInputs?.operatingCosts?.cogsPct?.brandDefault;
+          if (cogsBrandDefault != null) {
+            const expectedMargin = ((1 - cogsBrandDefault) * 100).toFixed(1);
+            if (pctNum >= Number(expectedMargin) - 2) return `${pct}% gross margin in Year 1 — in line with ${brandName || "brand"} expectations`;
+            return `${pct}% gross margin in Year 1 — below typical ${expectedMargin}% for ${brandName || "brand"}`;
+          }
           if (pctNum >= 60) return `${pct}% gross margin in Year 1 — strong margin to cover operating expenses`;
           if (pctNum >= 40) return `${pct}% gross margin in Year 1 — moderate margin, keep cost of sales controlled`;
           return `${pct}% gross margin in Year 1 — tight margin, review cost of sales assumptions`;
@@ -204,10 +234,15 @@ const PNL_SECTIONS: PnlSectionDef[] = [
         format: "pct",
         tooltip: { explanation: "What portion of gross profit goes to all wages", formula: "Total wages / Gross Profit" },
         interpretationId: "interp-labor-eff",
-        interpretation: (enriched) => {
+        interpretation: (enriched, financialInputs, brandName) => {
           const y1 = enriched[0];
           if (!y1 || y1.revenue === 0) return null;
           const labPct = y1.laborEfficiency * 100;
+          const laborBrand = financialInputs?.operatingCosts?.laborPct?.brandDefault;
+          if (laborBrand != null) {
+            const brandPct = (laborBrand * 100).toFixed(0);
+            return `${labPct.toFixed(0)}% of gross profit goes to wages (${brandName || "brand"} labor default: ${brandPct}% of revenue)`;
+          }
           if (labPct > 70) return `${labPct.toFixed(0)}% of gross profit goes to wages — labor-heavy, consider staffing mix`;
           if (labPct > 50) return `${labPct.toFixed(0)}% of gross profit goes to wages — typical for service businesses`;
           return `${labPct.toFixed(0)}% of gross profit goes to wages — efficient labor cost structure`;
@@ -310,7 +345,7 @@ function getEditableRowKeys(): string[] {
 
 const EDITABLE_ROW_ORDER = getEditableRowKeys();
 
-export function PnlTab({ output, financialInputs, onCellEdit, isSaving, scenarioOutputs }: PnlTabProps) {
+export function PnlTab({ output, financialInputs, onCellEdit, isSaving, scenarioOutputs, brandName }: PnlTabProps) {
   const { annualSummaries, monthlyProjections, plAnalysis } = output;
   const enriched = useMemo(
     () => computeEnrichedAnnuals(monthlyProjections, annualSummaries),
@@ -518,6 +553,9 @@ export function PnlTab({ output, financialInputs, onCellEdit, isSaving, scenario
                 onCommitEdit={handleCommitEdit}
                 onTabNav={handleTabNav}
                 getRawValue={getRawValue}
+                showInterpretation={!hasAnyDrillDown}
+                financialInputs={financialInputs}
+                brandName={brandName}
               />
             ))}
           </tbody>
@@ -592,11 +630,15 @@ interface PnlSectionProps {
   onCommitEdit: (rowKey: string, rawInput: string) => void;
   onTabNav: (rowKey: string, direction: "next" | "prev") => void;
   getRawValue: (rowKey: string) => number;
+  showInterpretation?: boolean;
+  financialInputs?: PlanFinancialInputs | null;
+  brandName?: string;
 }
 
 function PnlSection({
   section, columns, enriched, monthly, plAnalysis, isExpanded, onToggle,
   editingCell, flashingRows, onStartEdit, onCancelEdit, onCommitEdit, onTabNav, getRawValue,
+  showInterpretation = true, financialInputs, brandName,
 }: PnlSectionProps) {
   return (
     <>
@@ -644,6 +686,9 @@ function PnlSection({
             onCommitEdit={onCommitEdit}
             onTabNav={onTabNav}
             getRawValue={getRawValue}
+            showInterpretation={showInterpretation}
+            financialInputs={financialInputs}
+            brandName={brandName}
           />
         ))}
     </>
@@ -663,11 +708,15 @@ interface PnlRowProps {
   onCommitEdit: (rowKey: string, rawInput: string) => void;
   onTabNav: (rowKey: string, direction: "next" | "prev") => void;
   getRawValue: (rowKey: string) => number;
+  showInterpretation?: boolean;
+  financialInputs?: PlanFinancialInputs | null;
+  brandName?: string;
 }
 
 function PnlRow({
   row, columns, enriched, monthly, plAnalysis,
   editingCell, flashingRows, onStartEdit, onCancelEdit, onCommitEdit, onTabNav, getRawValue,
+  showInterpretation = true, financialInputs, brandName,
 }: PnlRowProps) {
   const rowClass = row.isTotal
     ? "font-semibold border-t-[3px] border-double border-b"
@@ -684,7 +733,7 @@ function PnlRow({
   const canEditThisRow = row.isInput && isEditableRow(row.key) && !!onStartEdit;
   const mapping = canEditThisRow ? INPUT_FIELD_MAP[row.key] : null;
 
-  const interpText = row.interpretation ? row.interpretation(enriched) : null;
+  const interpText = showInterpretation && row.interpretation ? row.interpretation(enriched, financialInputs, brandName) : null;
   const interpId = row.interpretationId;
 
   return (

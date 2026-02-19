@@ -121,7 +121,22 @@ const BS_SECTIONS: BsSectionDef[] = [
       { key: "cash", label: "Cash", field: "endingCash", format: "currency", indent: 1, tooltip: { explanation: "Cash available at the end of the period", formula: "Beginning Cash + Net Cash Flow" } },
       { key: "accounts-receivable", label: "Accounts Receivable", field: "accountsReceivable", format: "currency", indent: 1, tooltip: { explanation: "Revenue earned but not yet collected", formula: "Revenue x (AR Days / 30)" } },
       { key: "inventory", label: "Inventory", field: "inventory", format: "currency", indent: 1, tooltip: { explanation: "Value of goods held for sale", formula: "COGS x (Inventory Days / 365)" } },
-      { key: "total-current-assets", label: "Total Current Assets", field: "totalCurrentAssets", format: "currency", isSubtotal: true, tooltip: { explanation: "Sum of all short-term assets", formula: "Cash + Accounts Receivable + Inventory" } },
+      {
+        key: "total-current-assets",
+        label: "Total Current Assets",
+        field: "totalCurrentAssets",
+        format: "currency",
+        isSubtotal: true,
+        tooltip: { explanation: "Sum of all short-term assets", formula: "Cash + Accounts Receivable + Inventory" },
+        interpretationId: "interp-total-current-assets",
+        interpretation: (enriched) => {
+          const y1 = enriched[0];
+          if (!y1 || y1.totalCurrentLiabilities === 0) return null;
+          const currentRatio = y1.totalCurrentAssets / y1.totalCurrentLiabilities;
+          const label = currentRatio >= 1.5 ? "healthy" : currentRatio >= 1.0 ? "adequate" : "tight";
+          return `Current ratio: ${currentRatio.toFixed(1)}:1 (${label}). Lenders typically look for 1.5:1 or above.`;
+        },
+      },
     ],
   },
   {
@@ -500,6 +515,7 @@ export function BalanceSheetTab({ output, scenarioOutputs }: BalanceSheetTabProp
                 roicExtended={roicExtended}
                 isExpanded={expandedSections[section.key] ?? true}
                 onToggle={() => toggleSection(section.key)}
+                showInterpretation={!hasAnyDrillDown}
               />
             ))}
             <IdentityCheckRow
@@ -586,9 +602,10 @@ interface BsSectionProps {
   roicExtended: ROICExtendedOutput[];
   isExpanded: boolean;
   onToggle: () => void;
+  showInterpretation?: boolean;
 }
 
-function BsSection({ section, columns, enriched, monthly, roicExtended, isExpanded, onToggle }: BsSectionProps) {
+function BsSection({ section, columns, enriched, monthly, roicExtended, isExpanded, onToggle, showInterpretation = true }: BsSectionProps) {
   return (
     <>
       <tr
@@ -628,6 +645,7 @@ function BsSection({ section, columns, enriched, monthly, roicExtended, isExpand
             enriched={enriched}
             monthly={monthly}
             roicExtended={roicExtended}
+            showInterpretation={showInterpretation}
           />
         ))}
     </>
@@ -640,9 +658,10 @@ interface BsRowProps {
   enriched: EnrichedBsAnnual[];
   monthly: MonthlyProjection[];
   roicExtended: ROICExtendedOutput[];
+  showInterpretation?: boolean;
 }
 
-function BsRow({ row, columns, enriched, monthly, roicExtended }: BsRowProps) {
+function BsRow({ row, columns, enriched, monthly, roicExtended, showInterpretation = true }: BsRowProps) {
   const rowClass = row.isTotal
     ? "font-semibold border-t-[3px] border-double border-b"
     : row.isSubtotal
@@ -655,7 +674,7 @@ function BsRow({ row, columns, enriched, monthly, roicExtended }: BsRowProps) {
     ? "bg-primary/5 border-l-2 border-dashed border-primary/20"
     : "";
 
-  const interpText = row.interpretation ? row.interpretation(enriched) : null;
+  const interpText = showInterpretation && row.interpretation ? row.interpretation(enriched) : null;
   const interpId = row.interpretationId;
 
   return (

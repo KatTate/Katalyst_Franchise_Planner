@@ -109,7 +109,7 @@ export function computeGuardianState(
       value: formatBreakEvenValue(roiMetrics.breakEvenMonth),
       subtitle: breakEvenCalendarDate(roiMetrics.breakEvenMonth, planStartDate),
       level: getBreakEvenLevel(roiMetrics.breakEvenMonth),
-      navigateTo: { tab: "roic" },
+      navigateTo: { tab: "summary", scrollTo: "section-break-even-analysis" },
     },
     {
       id: "roi",

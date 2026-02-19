@@ -33,6 +33,7 @@ interface FinancialStatementsProps {
   plan?: Plan | null;
   queueSave?: (data: Partial<Plan>) => void;
   isSaving?: boolean;
+  brandName?: string;
 }
 
 const TAB_DEFS: { id: StatementTabId; label: string }[] = [
@@ -62,7 +63,7 @@ function useMediaQuery(query: string): boolean {
   return matches;
 }
 
-export function FinancialStatements({ planId, defaultTab = "summary", plan, queueSave, isSaving = false }: FinancialStatementsProps) {
+export function FinancialStatements({ planId, defaultTab = "summary", plan, queueSave, isSaving = false, brandName }: FinancialStatementsProps) {
   const { output, isLoading, isFetching, error, invalidateOutputs } = usePlanOutputs(planId);
   const [activeTab, setActiveTab] = useState<StatementTabId>(defaultTab);
   const isWide = useMediaQuery("(min-width: 1024px)");
@@ -211,10 +212,11 @@ export function FinancialStatements({ planId, defaultTab = "summary", plan, queu
 
   return (
     <div data-testid="financial-statements" className="h-full flex flex-col">
-      {guardianState && !guardianState.allDefaults && (
+      {guardianState && (
         <GuardianBar
           state={guardianState}
           onNavigate={handleNavigateToTab}
+          brandName={brandName}
         />
       )}
       <Tabs
@@ -274,6 +276,10 @@ export function FinancialStatements({ planId, defaultTab = "summary", plan, queu
           <CalloutBar
             annualSummaries={output.annualSummaries}
             roiMetrics={output.roiMetrics}
+            activeTab={activeTab}
+            output={output}
+            financialInputs={financialInputs}
+            brandName={brandName}
           />
         )}
 
@@ -300,6 +306,7 @@ export function FinancialStatements({ planId, defaultTab = "summary", plan, queu
                 onCellEdit={queueSave ? handleCellEdit : undefined}
                 isSaving={isSaving}
                 scenarioOutputs={scenarioOutputs}
+                brandName={brandName}
               />
             </TabsContent>
 

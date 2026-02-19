@@ -1,6 +1,6 @@
 # Story 5.8: Guardian Bar & Dynamic Interpretation
 
-Status: ready-for-dev
+Status: in-progress
 
 ## Story
 
