@@ -345,7 +345,7 @@ development_status:
   # Stories (3): Sensitivity Controls, Multi-Chart Dashboard, Scenario Persistence (optional)
   epic-10: backlog
   10-1-sensitivity-controls-sandbox-engine: backlog
-  10-2-multi-chart-sensitivity-dashboard: backlog
+  10-2-multi-chart-sensitivity-dashboard: ready-for-dev
   10-3-scenario-persistence-sharing: backlog  # optional enhancement
   epic-10-retrospective: optional
 
