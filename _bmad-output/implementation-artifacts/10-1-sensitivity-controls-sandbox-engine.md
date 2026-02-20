@@ -34,10 +34,9 @@ So that I can build conviction that my plan works even in conservative cases —
 **And** each metric card shows all three scenario values side-by-side with delta indicators vs. Base Case (e.g., "Break-Even: 14 mo → 18 mo (+4 mo)")
 
 **Given** I adjust any slider value
-**When** the slider input settles (debounced)
+**When** the slider moves
 **Then** the dollar impact label for that slider updates immediately
-**And** the engine recomputes all three scenarios within 2 seconds
-**And** all metric cards update to reflect the recomputed scenarios
+**And** no PATCH or engine-recompute is triggered — Conservative and Optimistic are always the hardcoded slider extremes, so metric cards remain unchanged
 
 **Given** I adjust sliders to any position
 **When** I observe the plan data
@@ -162,7 +161,7 @@ So that I can build conviction that my plan works even in conservative cases —
 
 ### Testing Expectations
 
-- **Unit tests for sensitivity-engine.ts:** Test `computeSensitivityOutputs()` with a mock `PlanFinancialInputs`. Assert that the base output equals `calculateProjections(unwrapForEngine(planInputs, []))`. Assert that conservative output has lower revenue than base. Assert that optimistic output has higher revenue than base. Assert that slider value 0 for all sliders produces conservative = optimistic extremes based on the hardcoded max ranges.
+- **Unit tests for sensitivity-engine.ts:** Test `computeSensitivityOutputs()` with a mock `PlanFinancialInputs`. Assert that the base output equals `calculateProjections(unwrapForEngine(planInputs, []))`. Assert that conservative output has lower Y1 revenue than base output (`conservative.annualSummaries[0].revenue < base.annualSummaries[0].revenue`). Assert that optimistic output has higher Y1 revenue than base output (`optimistic.annualSummaries[0].revenue > base.annualSummaries[0].revenue`). Assert that conservative and optimistic outputs are not equal to each other (they are opposite extremes by definition).
 - **Component tests for WhatIfPlayground:** Render with a mock plan (via query mock or test plan fixture). Assert that `data-testid="nav-scenarios"` click shows the playground. Assert that 5 slider controls render. Assert that metric cards show "Base Case", "Conservative", "Optimistic" columns.
 - **Critical ACs to cover in tests:** Sandbox invariant (no PATCH calls emitted), break-even null handling, slider range boundaries.
 - **Test framework:** Vitest + React Testing Library (consistent with existing test setup).
