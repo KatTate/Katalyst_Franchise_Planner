@@ -25,7 +25,8 @@ so that I can understand the full impact of changing assumptions across every di
 
 ### Chart 2 — Cash Flow
 
-5. Given `ScenarioOutputs` are available, when Chart 2 renders, then it shows a 5-year line chart with three scenario curves representing **Net Operating Cash Flow** (`annualSummaries[].operatingCashFlow`) and **Ending Cash Balance** (`annualSummaries[].endingCash`). The X-axis shows Year 1 through Year 5.
+5. Given `ScenarioOutputs` are available, when Chart 2 renders, then it shows a 5-year line chart with three scenario curves for each of the following three series from `annualSummaries`: **Net Operating Cash Flow** (`operatingCashFlow`), **Net Cash Flow** (`netCashFlow`), and **Ending Cash Balance** (`endingCash`). The X-axis shows Year 1 through Year 5.
+   - Source: `_bmad-output/planning-artifacts/epics.md` line 2138
 
 6. Given Chart 2 renders, when any scenario's `endingCash` value for any year is negative (< 0), then an amber advisory zone (`hsl(var(--chart-5))` at 15% opacity as a background band, or a `ReferenceLine y={0}` with amber fill below) highlights the cash-negative region. This advisory coloring follows the UX spec's amber advisory language — it is not a red error state.
 
@@ -117,7 +118,7 @@ so that I can understand the full impact of changing assumptions across every di
 
 - **EngineOutput data fields for each chart:**
   - Chart 1 (Profitability): `output.annualSummaries[y].revenue`, `.totalCogs`, `.grossProfit`, `.ebitda`, `.preTaxIncome` — 5 values per series (years 1–5); all are in cents
-  - Chart 2 (Cash Flow): `output.annualSummaries[y].operatingCashFlow`, `.endingCash` — 5 values
+  - Chart 2 (Cash Flow): `output.annualSummaries[y].operatingCashFlow`, `.netCashFlow`, `.endingCash` — 5 values per series (years 1–5); all are in cents
   - Chart 3 (Break-Even): `output.roiMetrics.breakEvenMonth` — single number per scenario
   - Chart 4 (ROI): `output.roicExtended[y].roicPct` — 5 values (year 1-5)
   - Chart 5 (Balance Sheet): `output.annualSummaries[y].totalAssets`, `.totalLiabilities` — 5 values
@@ -204,9 +205,8 @@ so that I can understand the full impact of changing assumptions across every di
 - **`ChartContainer` requires both a `config: ChartConfig` prop and a `className`.** Always pass `className="h-[220px] w-full"` or similar. Without a height class, the chart will collapse to 0px. Confirmed from `dashboard-charts.tsx` pattern (line 49).
   - Source: `client/src/components/planning/dashboard-charts.tsx` line 49
 
-- **Conservative case for metric delta cards is ALWAYS computed with the fixed scenario factors** (`CONSERVATIVE_REVENUE_FACTOR = -0.15`, `CONSERVATIVE_COGS_PP = 0.02`, `CONSERVATIVE_OPEX_FACTOR = 0.10` from `scenario-engine.ts`). These are NOT user-adjustable in Story 10.1 — the sliders in 10.1 adjust a **sandbox** (preview) scenario, not the Conservative/Optimistic definitions. Clarify with Story 10.1 author if the `ScenarioOutputs` interface uses slider-modified inputs for all three scenarios, or only for the sandbox.
-
-  **Note:** This is a potential design ambiguity that the dev agent should verify: Does Story 10.1's slider state modify the Base/Conservative/Optimistic factors (the slider percentages replace the static factors), or does it create a 4th scenario? Per the epics spec, sliders modify the Base Case inputs and Conservative/Optimistic are computed from the modified base. The `scenario-engine.ts` static factors may need to be replaced by user-controlled slider values. The dev agent implementing 10.1 should document how `ScenarioOutputs` is computed from slider state so 10.2 can consume it correctly.
+- **Conservative and Optimistic are computed from slider extremes, not fixed constants.** Per epics.md Story 10.1 (lines 2116, 2124): Conservative = base case inputs with each slider at its negative extreme; Optimistic = base case inputs with each slider at its positive extreme. The `CONSERVATIVE_*` / `OPTIMISTIC_*` constants in `scenario-engine.ts` are the current pre-Story-10.1 defaults — Story 10.1 will wire the actual slider range values into scenario computation. Story 10.2's delta cards (AC 13) always show base vs. conservative from the current `ScenarioOutputs` prop — the computation source is Story 10.1's responsibility.
+  - Source: `_bmad-output/planning-artifacts/epics.md` Story 10.1 line 2116 ("Conservative (negative slider extremes)"), line 2124 ("Conservative/Optimistic are computed by applying slider percentage multipliers to base case inputs")
 
 - **`LineChart` vs `ComposedChart`:** For Chart 5 (Balance Sheet) showing both Assets and Liabilities as lines, use `LineChart` with two `<Line>` data keys, or `ComposedChart` with `<Line>` for both. Both work with `ChartContainer`. `LineChart` is simpler for this use case.
 
