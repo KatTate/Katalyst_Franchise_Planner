@@ -4,6 +4,8 @@ user_name: 'User'
 date: '2026-02-19'
 sections_completed: ['technology_stack', 'language_rules', 'framework_rules', 'testing_rules', 'code_quality', 'dev_workflow', 'critical_rules']
 existing_patterns_found: 18
+last_updated: '2026-02-20'
+update_source: 'Epic 5 Retrospective (AI-1, AI-4, AI-6)'
 ---
 
 # Project Context for AI Agents
@@ -174,6 +176,17 @@ _This file contains critical rules and patterns that AI agents must follow when 
 **Build Pipeline:**
 - `script/build.ts`: esbuild bundles server to `dist/index.cjs`. Uses allowlist pattern — listed deps are bundled for cold-start performance, others stay external.
 - When adding a new server dependency that should be bundled, add to allowlist in `script/build.ts`.
+
+**Agent Session Control (Mandatory — from Epic 5 Retrospective):**
+- **Context handoff:** At the start of any implementation session, the agent MUST read `sprint-status.yaml` and the active story file to understand what's done, in-progress, and planned. Never assume prior session state — agents start with blank context.
+- **No self-approval:** An agent session MUST NOT approve its own work product — SCPs, code reviews, story completion, or document changes require Product Owner confirmation in a separate session.
+- **No unauthorized rewrites:** An agent MUST NOT rewrite or substantially modify a completed story's code without explicit Product Owner approval. Fixing bugs within a story's scope is allowed; restructuring across stories is not.
+- **Cross-story bug fixes:** If a bug in a completed story blocks current work, fix the minimum needed to unblock, document the fix in the current story's dev record, and flag to Product Owner for awareness. Don't refactor — patch.
+- **File ownership awareness:** Before modifying any file that was part of a completed story, check the story's dev record to understand what was done and why. This prevents accidental regressions in shared files like `financial-engine.ts`.
+- **SCP discipline:** Sprint Change Proposals require Product Owner review and explicit signature before any implementation begins. An agent cannot accumulate amendments to its own SCP — each amendment requires a fresh approval cycle.
+- **Story completion gate:** No story moves to "done" status without ALL of: (1) implementation complete, (2) acceptance criteria verified, (3) test suite passes for any modified shared or server code, (4) adversarial code review completed in a fresh agent context.
+- **Code review timing:** Code reviews happen AFTER implementation AND AFTER any remediation/SCP changes to that story's code. A review completed before remediation edits does not count — it must be redone.
+- **Flag, don't fix:** When an agent session encounters work from a prior session that appears incorrect, it MUST flag the concern to the Product Owner rather than silently rewriting. Document what looks wrong and why — don't fix it unilaterally.
 
 ### Critical Don't-Miss Rules
 
