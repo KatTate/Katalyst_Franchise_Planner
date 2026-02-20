@@ -3,7 +3,7 @@ import { Check, AlertTriangle, ChevronDown, ChevronRight, ExternalLink, Info } f
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { formatCents } from "@/lib/format-currency";
+import { formatFinancialValue } from "@/components/shared/financial-value";
 import type { EngineOutput, IdentityCheckResult } from "@shared/financial-engine";
 
 interface AuditTabProps {
@@ -21,6 +21,11 @@ interface CheckCategory {
   navigateScrollTo?: string;
 }
 
+// Maps engine identity-check name prefixes to UI categories. The engine emits checks
+// whose `name` field starts with one of these prefixes (e.g. "Monthly BS identity: M3").
+// `categorizeChecks()` groups them under the matching config entry so the Audit tab
+// can render collapsible category sections. Checks that don't match any prefix fall
+// into an auto-generated "Other Checks" bucket (see uncategorized handling below).
 const CATEGORY_CONFIG: {
   prefix: string;
   key: string;
@@ -252,14 +257,14 @@ function AuditCheckRow({ check, onNavigateToTab, navigateTab }: { check: Identit
         <span className="flex-1 min-w-0 truncate font-medium">{check.name}</span>
       </div>
       <div className="ml-5 mt-1 grid grid-cols-3 gap-x-4 gap-y-0.5 text-muted-foreground">
-        <span>Expected: <span className="font-mono">{formatCents(check.expected)}</span></span>
-        <span>Actual: <span className="font-mono">{formatCents(check.actual)}</span></span>
-        <span>Tolerance: <span className="font-mono">{formatCents(check.tolerance)}</span></span>
+        <span>Expected: <span className="font-mono">{formatFinancialValue(check.expected, "currency")}</span></span>
+        <span>Actual: <span className="font-mono">{formatFinancialValue(check.actual, "currency")}</span></span>
+        <span>Tolerance: <span className="font-mono">{formatFinancialValue(check.tolerance, "currency")}</span></span>
       </div>
       {!check.passed && (
         <div className="ml-5 mt-1 flex items-center gap-2">
           <span className="text-destructive">
-            Difference of {formatCents(diff)} exceeds tolerance
+            Difference of {formatFinancialValue(diff, "currency")} exceeds tolerance
           </span>
           {navigateTab && onNavigateToTab && (
             <button

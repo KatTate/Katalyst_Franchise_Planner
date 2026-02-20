@@ -1,4 +1,4 @@
-import { formatCents } from "@/lib/format-currency";
+import { formatFinancialValue } from "@/components/shared/financial-value";
 import { formatROI, formatBreakEven } from "@/components/shared/summary-metrics";
 import type { AnnualSummary, ROIMetrics, EngineOutput, PlanFinancialInputs } from "@shared/financial-engine";
 import type { StatementTabId } from "../financial-statements";
@@ -47,7 +47,7 @@ function getTabContent(
       }
       return {
         metrics: [
-          { label: "Annual Revenue (Y1)", value: y1 ? formatCents(y1.revenue) : "$0", testId: "callout-pnl-revenue" },
+          { label: "Annual Revenue (Y1)", value: y1 ? formatFinancialValue(y1.revenue, "currency") : "$0", testId: "callout-pnl-revenue" },
           { label: "Pre-Tax Margin (Y1)", value: `${marginPct}%`, testId: "callout-pnl-margin" },
         ],
         interpretation: `Year 1 pre-tax margin: ${marginPct}%.${brandNote}`,
@@ -72,7 +72,7 @@ function getTabContent(
       }
       return {
         metrics: [
-          { label: "Total Assets (Y1)", value: annuals[0] ? formatCents(annuals[0].totalAssets) : "$0", testId: "callout-bs-assets" },
+          { label: "Total Assets (Y1)", value: annuals[0] ? formatFinancialValue(annuals[0].totalAssets, "currency") : "$0", testId: "callout-bs-assets" },
           { label: "Debt-to-Equity (Y3)", value: deRatio, testId: "callout-bs-de-ratio" },
         ],
         interpretation: `Debt-to-equity ratio: ${deRatio} by Year 3.${deNote}`,
@@ -90,14 +90,14 @@ function getTabContent(
       });
       const lowestCash = lowestVal === Infinity ? 0 : lowestVal;
       const reserveNote = lowestCash < 0
-        ? ` You'll need at least ${formatCents(Math.abs(lowestCash))} in reserves to cover this shortfall.`
+        ? ` You'll need at least ${formatFinancialValue(Math.abs(lowestCash), "currency")} in reserves to cover this shortfall.`
         : " Cash remains positive throughout the projection.";
       return {
         metrics: [
-          { label: "Net Cash Flow (Y1)", value: annuals[0] ? formatCents(annuals[0].netCashFlow) : "$0", testId: "callout-cf-net" },
-          { label: "Lowest Cash Point", value: `${formatCents(lowestCash)} (Mo ${lowestMonth})`, testId: "callout-cf-lowest" },
+          { label: "Net Cash Flow (Y1)", value: annuals[0] ? formatFinancialValue(annuals[0].netCashFlow, "currency") : "$0", testId: "callout-cf-net" },
+          { label: "Lowest Cash Point", value: `${formatFinancialValue(lowestCash, "currency")} (Mo ${lowestMonth})`, testId: "callout-cf-lowest" },
         ],
-        interpretation: `Lowest cash point: ${formatCents(lowestCash)} in Month ${lowestMonth}.${reserveNote}`,
+        interpretation: `Lowest cash point: ${formatFinancialValue(lowestCash, "currency")} in Month ${lowestMonth}.${reserveNote}`,
       };
     }
     case "roic": {
@@ -116,7 +116,7 @@ function getTabContent(
     }
     case "valuation": {
       const val5 = output?.valuation?.[4];
-      const estValue = val5 ? formatCents(val5.estimatedValue) : "$0";
+      const estValue = val5 ? formatFinancialValue(val5.estimatedValue, "currency") : "$0";
       const multiple = val5 ? `${val5.ebitdaMultiple.toFixed(1)}x` : "N/A";
       return {
         metrics: [
@@ -149,11 +149,11 @@ function getTabContent(
         : "Break-even has not been reached within the 5-year projection period.";
       return {
         metrics: [
-          { label: "Total 5yr Pre-Tax Income", value: formatCents(total5yr), testId: "value-5yr-pretax" },
+          { label: "Total 5yr Pre-Tax Income", value: formatFinancialValue(total5yr, "currency"), testId: "value-5yr-pretax" },
           { label: "Break-even", value: formatBreakEven(roiMetrics.breakEvenMonth), subtitle: roiMetrics.breakEvenMonth !== null ? calendarDate : undefined, testId: "value-breakeven-callout" },
           { label: "5yr ROI", value: formatROI(roiMetrics.fiveYearROIPct), testId: "value-5yr-roi" },
         ],
-        interpretation: `Your 5-year total pre-tax income: ${formatCents(total5yr)}. ${beText}`,
+        interpretation: `Your 5-year total pre-tax income: ${formatFinancialValue(total5yr, "currency")}. ${beText}`,
       };
     }
   }

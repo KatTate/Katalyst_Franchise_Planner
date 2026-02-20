@@ -35,7 +35,7 @@ This document provides the complete epic and story breakdown for the Katalyst Gr
 
 **2. Guided Planning Experience**
 - FR11: Franchisee can complete a planning experience that collects all inputs needed for a complete financial projection
-- FR12: Franchisee can experience the planning tool in three experience tiers (Planning Assistant / Forms / Quick Entry), each representing a fundamentally different interaction paradigm over the same financial engine
+- FR12: Franchisee can experience the planning tool through two surfaces: My Plan (guided forms) and Reports (financial statements with inline editing), with AI Planning Assistant available as a slide-in panel within My Plan (Epic 9)
 - FR13: Franchisee can switch between experience tiers at any time from their profile settings
 - FR14: System recommends an initial experience tier based on onboarding questions (franchise experience, financial literacy, planning experience)
 - FR15: Franchisee can navigate freely between completed sections without losing progress
@@ -93,7 +93,7 @@ This document provides the complete epic and story breakdown for the Katalyst Gr
 - FR51: AI Planning Advisor extracts structured financial inputs from the franchisee's conversational responses and populates the corresponding fields
 - FR52: Franchisee can view, verify, and manually correct any value that the AI Planning Advisor populated — AI-populated values are clearly distinguishable
 - FR53: AI Planning Advisor has access to the brand's parameter set, Item 7 ranges, and the current state of the franchisee's plan
-- FR54: System gracefully degrades when AI services are unavailable — franchisee can switch to Forms or Quick Entry to continue
+- FR54: System gracefully degrades when AI services are unavailable — franchisee can continue with Forms (My Plan) or Reports inline editing
 
 **11. Advisory Board Meeting**
 - FR55: Franchisee can initiate an Advisory Board Meeting from any experience tier to stress-test their current plan assumptions
@@ -217,7 +217,7 @@ This document provides the complete epic and story breakdown for the Katalyst Gr
 | FR9 | Epic 3 | Deterministic outputs for identical inputs |
 | FR10 | Epic 3 | Single parameterized model accepts brand-specific seeds |
 | FR11 | Epic 4 | Complete planning experience collecting all inputs |
-| FR12 | Epic 4 | Three experience tiers (Planning Assistant / Forms / Quick Entry) |
+| FR12 | Epic 4 | Two surfaces (My Plan forms + Reports inline editing) with AI Planning Assistant (Epic 9) |
 | FR13 | Epic 4 | Switch between experience tiers at any time |
 | FR14 | Epic 1 | System recommends initial tier based on onboarding |
 | FR15 | Epic 4 | Navigate freely between completed sections |
@@ -259,7 +259,7 @@ This document provides the complete epic and story breakdown for the Katalyst Gr
 | FR51 | Epic 9 | AI extracts structured inputs from conversation |
 | FR52 | Epic 9 | View, verify, correct AI-populated values |
 | FR53 | Epic 9 | AI accesses brand parameters and plan state |
-| FR54 | Epic 9 | Graceful degradation when AI unavailable |
+| FR54 | Epic 9 | Graceful degradation when AI unavailable — continue with Forms or Reports |
 | FR55 | Epic 12 | Initiate Advisory Board Meeting (Phase 2) |
 | FR56 | Epic 12 | Multiple domain-specific advisor personas (Phase 2) |
 | FR57 | Epic 12 | Accept/reject Advisory Board suggestions (Phase 2) |
@@ -320,9 +320,9 @@ Franchisees can have a natural-language conversation with an AI advisor in a spl
 **FRs covered:** FR50, FR51, FR52, FR53, FR54
 **NFRs addressed:** NFR22 (< 5s AI response), NFR23 (AI value validation), NFR24 (graceful degradation)
 
-### Epic 10: Scenario Comparison
-Franchisees can model Good/Better/Best scenarios, compare them side by side to build conviction. Scenario management deferred from old Epic 7.
-**FRs covered:** *(scenario FRs to be defined)*
+### Epic 10: What-If Playground (formerly "Scenario Comparison")
+Standalone sidebar destination providing interactive graphical sensitivity analysis. Franchisees adjust assumption sliders (revenue, COGS, labor, marketing, facilities) and see all charts update simultaneously across Base, Conservative, and Optimistic scenarios. Replaces the retired Story 5.7 column-splitting approach. Per SCP-2026-02-20 Decision D5/D6 and Section 3.
+**FRs covered:** FR7d *(additional scenario FRs to be defined)*
 **Status:** Deferred — depends on financial statement views (Epic 5) being complete
 
 ### Epic 11: Data Sharing, Privacy & Pipeline Dashboards
@@ -1244,11 +1244,13 @@ So that I can fill in my business plan through guided forms while seeing the fin
 - The AI Planning Assistant is a feature within My Plan, not a separate mode. Entry points and panel behavior are detailed in Epic 9 and consolidated UX spec Part 9.
 - See consolidated UX spec Part 7 (Navigation Architecture), Part 8 (My Plan Experience), Part 9 (AI Planning Assistant).
 
-### Story 5.7: Scenario Comparison
+### Story 5.7: Scenario Comparison — **RETIRED** (migrated to Epic 10)
 
-As a franchisee,
+> **Status:** RETIRED per SCP-2026-02-20 Decision D6. The column-splitting scenario comparison approach described below has been replaced by the standalone What-If Playground (Epic 10). Epic 5 closes with 9 stories: 5.1–5.6, 5.8–5.10.
+
+~~As a franchisee,
 I want to compare my base case against conservative and optimistic scenarios,
-So that I can build conviction that my plan works even in a challenging environment (FR7d).
+So that I can build conviction that my plan works even in a challenging environment (FR7d).~~
 
 **Acceptance Criteria:**
 
@@ -1519,13 +1521,13 @@ So that I can model realistic growth trajectories instead of flat projections ac
 **And** missing single-value fields are added to the UI: arDays, apDays, inventoryDays, taxPaymentDelayMonths, ebitdaMultiple
 **And** existing plans are migrated by broadcasting current single values into 5-element arrays (semantically identical — no data loss)
 
-**Given** I am editing inputs in Quick Entry mode (Financial Statement tabs)
+**Given** I am editing inputs via Reports inline editing (Financial Statement tabs)
 **When** I edit a value in a specific year column
 **Then** only that year's value changes — other years retain their independent values
 **And** the linked-column indicators from Story 5.2 are removed (link icons disappear, cells no longer flash on broadcast)
 **And** a "Copy Year 1 to all years" action is available for users who want to broadcast a single value
 
-**Given** I am editing inputs in Forms mode
+**Given** I am editing inputs in Forms mode (My Plan)
 **When** the form renders per-year fields
 **Then** each per-year field shows 5 input columns labeled Year 1 through Year 5
 **And** by default, Year 2-5 inherit Year 1's value with a visual indicator (link icon, lighter text) showing they are inherited
@@ -1534,8 +1536,8 @@ So that I can model realistic growth trajectories instead of flat projections ac
 
 **Given** the Facilities field alignment
 **When** the input structure is corrected
-**Then** the engine's single `facilitiesAnnual[5]` field is exposed directly in Quick Entry as "Facilities ($)" per year (matching the spreadsheet)
-**And** in Forms mode, the guided decomposition (rent, utilities, telecom, vehicle fleet, insurance) rolls up into `facilitiesAnnual[year]` with per-year support
+**Then** the engine's single `facilitiesAnnual[5]` field is exposed directly in Reports inline editing as "Facilities ($)" per year (matching the spreadsheet)
+**And** in Forms mode (My Plan), the guided decomposition (rent, utilities, telecom, vehicle fleet, insurance) rolls up into `facilitiesAnnual[year]` with per-year support
 **And** Other OpEx changes from flat dollar amount to % of revenue (matching the spreadsheet), with migration converting existing dollar values to equivalent percentages based on projected revenue
 
 **Dev Notes:**
@@ -1710,9 +1712,9 @@ So that my work is never blocked by a technical issue (FR54).
 
 ---
 
-## Epic 10: Scenario Comparison
+## Epic 10: What-If Playground (formerly "Scenario Comparison")
 
-Franchisees can model Good/Better/Best scenarios, compare them side by side to build conviction. Scenario management deferred from old Epic 7.
+Standalone sidebar destination providing interactive graphical sensitivity analysis. Franchisees adjust assumption sliders and see all charts (Profitability, Cash Flow, Break-Even, ROI, Balance Sheet, Debt & Working Capital) update simultaneously across Base, Conservative, and Optimistic scenarios. This is a planning sandbox — slider adjustments do NOT change the user's actual plan. Replaces the retired Story 5.7 column-splitting approach. Per SCP-2026-02-20 Decision D5/D6 and Section 3.
 
 ### Story 10.1: Scenario Management & Comparison
 

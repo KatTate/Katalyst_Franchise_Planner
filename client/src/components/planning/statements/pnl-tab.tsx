@@ -2,7 +2,7 @@ import { useMemo, useState, useCallback, useRef, useEffect } from "react";
 import { Pencil, ChevronDown, ChevronRight } from "lucide-react";
 import { Link } from "wouter";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { formatCents } from "@/lib/format-currency";
+import { formatFinancialValue } from "@/components/shared/financial-value";
 import { useColumnManager, ColumnToolbar, GroupedTableHead } from "./column-manager";
 import { ComparisonTableHead, buildComparisonColumns, type ComparisonColumnDef } from "./comparison-table-head";
 import { InlineEditableCell } from "./inline-editable-cell";
@@ -267,18 +267,7 @@ const PL_ANALYSIS_FIELDS = new Set([
 
 function formatValue(value: number, format: "currency" | "pct" | "ratio", absDisplay?: boolean): string {
   const raw = absDisplay ? Math.abs(value) : value;
-  const isNegative = raw < 0;
-  const absVal = Math.abs(raw);
-  if (format === "pct") {
-    const s = `${(absVal * 100).toFixed(1)}%`;
-    return isNegative ? `(${s})` : s;
-  }
-  if (format === "ratio") {
-    const s = `${absVal.toFixed(2)}x`;
-    return isNegative ? `(${s})` : s;
-  }
-  const s = formatCents(absVal);
-  return isNegative ? `(${s})` : s;
+  return formatFinancialValue(raw, format);
 }
 
 function getCellValue(
@@ -589,13 +578,13 @@ function PnlCalloutBar({ enriched }: { enriched: EnrichedAnnual[] }) {
       <div className="flex flex-wrap items-center gap-4">
         <CalloutMetric
           label="Annual Revenue (Y1)"
-          value={formatCents(y1.revenue)}
+          value={formatFinancialValue(y1.revenue, "currency")}
           testId="pnl-callout-revenue-y1"
         />
         <div className="w-px h-8 bg-border" />
         <CalloutMetric
           label="Pre-Tax Income (Y1)"
-          value={formatCents(y1.preTaxIncome)}
+          value={formatFinancialValue(y1.preTaxIncome, "currency")}
           testId="pnl-callout-pretax-y1"
         />
         <div className="w-px h-8 bg-border" />

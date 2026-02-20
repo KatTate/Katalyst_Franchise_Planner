@@ -1,6 +1,6 @@
 import { useCallback } from "react";
 import { TrendingUp, TrendingDown } from "lucide-react";
-import { formatCents } from "@/lib/format-currency";
+import { formatFinancialValue } from "@/components/shared/financial-value";
 import { formatROI, formatBreakEven } from "@/components/shared/summary-metrics";
 import { StatementSection } from "./statement-section";
 import { StatementTable, type SectionDef } from "./statement-table";
@@ -281,7 +281,7 @@ export function SummaryTab({ output, onNavigateToTab, scenarioOutputs }: Summary
                 Total Investment
               </p>
               <p className="text-lg font-semibold font-mono" data-testid="value-total-investment-summary">
-                {formatCents(roiMetrics.totalStartupInvestment)}
+                {formatFinancialValue(roiMetrics.totalStartupInvestment, "currency")}
               </p>
             </div>
             <div>
@@ -289,7 +289,7 @@ export function SummaryTab({ output, onNavigateToTab, scenarioOutputs }: Summary
                 5-Year Cumulative Cash Flow
               </p>
               <p className="text-lg font-semibold font-mono" data-testid="value-5yr-cum-cf">
-                {formatCents(roiMetrics.fiveYearCumulativeCashFlow)}
+                {formatFinancialValue(roiMetrics.fiveYearCumulativeCashFlow, "currency")}
               </p>
             </div>
           </div>
@@ -386,8 +386,8 @@ function ScenarioKeyMetrics({ scenarioOutputs }: { scenarioOutputs: ScenarioOutp
                     data-testid={`metric-${m.label.replace(/\s+/g, "-").toLowerCase()}-${s.id}`}
                   >
                     {m.format === "pct"
-                      ? (isNeg ? `(${(Math.abs(value) * 100).toFixed(1)}%)` : `${(value * 100).toFixed(1)}%`)
-                      : (isNeg ? `(${formatCents(Math.abs(value))})` : formatCents(value))}
+                      ? formatFinancialValue(value, "pct")
+                      : formatFinancialValue(value, "currency")}
                   </td>
                 );
               })}

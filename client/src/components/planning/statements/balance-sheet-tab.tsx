@@ -2,7 +2,7 @@ import { useMemo, useState, useCallback, useEffect } from "react";
 import { Pencil, ChevronDown, ChevronRight, Check, AlertTriangle, ArrowDown } from "lucide-react";
 import { Link } from "wouter";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { formatCents } from "@/lib/format-currency";
+import { formatFinancialValue } from "@/components/shared/financial-value";
 import { useColumnManager, ColumnToolbar, GroupedTableHead } from "./column-manager";
 import type { EngineOutput, MonthlyProjection, AnnualSummary, ROICExtendedOutput } from "@shared/financial-engine";
 import type { ColumnDef } from "./column-manager";
@@ -168,9 +168,9 @@ const BS_SECTIONS: BsSectionDef[] = [
           if (!y1) return null;
           if (y5) {
             const growth = y5.totalAssets > y1.totalAssets ? "growing" : "declining";
-            return `${formatCents(y1.totalAssets)} in Year 1, ${growth} to ${formatCents(y5.totalAssets)} by Year 5`;
+            return `${formatFinancialValue(y1.totalAssets, "currency")} in Year 1, ${growth} to ${formatFinancialValue(y5.totalAssets, "currency")} by Year 5`;
           }
-          return `${formatCents(y1.totalAssets)} in total assets at end of Year 1`;
+          return `${formatFinancialValue(y1.totalAssets, "currency")} in total assets at end of Year 1`;
         },
       },
     ],
@@ -217,8 +217,8 @@ const BS_SECTIONS: BsSectionDef[] = [
         interpretation: (enriched) => {
           const y1 = enriched[0];
           if (!y1) return null;
-          if (y1.totalEquity < 0) return `Negative equity of ${formatCents(y1.totalEquity)} in Year 1 — accumulated losses exceed invested capital`;
-          return `${formatCents(y1.totalEquity)} owner equity in Year 1 — your stake in the business`;
+          if (y1.totalEquity < 0) return `Negative equity of ${formatFinancialValue(y1.totalEquity, "currency")} in Year 1 — accumulated losses exceed invested capital`;
+          return `${formatFinancialValue(y1.totalEquity, "currency")} owner equity in Year 1 — your stake in the business`;
         },
       },
     ],
@@ -264,13 +264,7 @@ const ROIC_EXTENDED_FIELDS = new Set([
 ]);
 
 function formatBsValue(value: number, format: "currency" | "pct" | "number" | "months"): string {
-  const isNeg = value < 0;
-  const abs = Math.abs(value);
-  if (format === "pct") { const s = `${(abs * 100).toFixed(1)}%`; return isNeg ? `(${s})` : s; }
-  if (format === "number") { const s = abs.toFixed(1); return isNeg ? `(${s})` : s; }
-  if (format === "months") { const s = abs.toFixed(1); return isNeg ? `(${s})` : s; }
-  const s = formatCents(abs);
-  return isNeg ? `(${s})` : s;
+  return formatFinancialValue(value, format);
 }
 
 function getBsCellValue(
@@ -548,13 +542,13 @@ function BsCalloutBar({ enriched, identityPassed }: { enriched: EnrichedBsAnnual
       <div className="flex flex-wrap items-center gap-4">
         <CalloutMetric
           label="Total Assets (Y1)"
-          value={formatCents(y1.totalAssets)}
+          value={formatFinancialValue(y1.totalAssets, "currency")}
           testId="bs-callout-total-assets-y1"
         />
         <div className="w-px h-8 bg-border" />
         <CalloutMetric
           label="Total Equity (Y1)"
-          value={formatCents(y1.totalEquity)}
+          value={formatFinancialValue(y1.totalEquity, "currency")}
           testId="bs-callout-total-equity-y1"
         />
         <div className="w-px h-8 bg-border" />
@@ -914,10 +908,10 @@ function IdentityCheckRow({ columns, enriched, monthly }: { columns: ColumnDef[]
                 <TooltipContent side="top" className="max-w-[260px]">
                   <p className="text-xs font-medium">Balance sheet does not balance</p>
                   <p className="text-xs text-muted-foreground mt-0.5">
-                    Assets: {formatCents(totalAssets)} vs L+E: {formatCents(totalLE)}
+                    Assets: {formatFinancialValue(totalAssets, "currency")} vs L+E: {formatFinancialValue(totalLE, "currency")}
                   </p>
                   <p className="text-xs text-muted-foreground mt-0.5">
-                    Difference: {formatCents(diff)}
+                    Difference: {formatFinancialValue(diff, "currency")}
                   </p>
                 </TooltipContent>
               </Tooltip>

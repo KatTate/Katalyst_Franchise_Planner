@@ -2,7 +2,7 @@ import { useMemo, useState, useCallback, useEffect } from "react";
 import { Pencil, ChevronDown, ChevronRight, Check, AlertTriangle, ArrowDown } from "lucide-react";
 import { Link } from "wouter";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { formatCents } from "@/lib/format-currency";
+import { formatFinancialValue } from "@/components/shared/financial-value";
 import { useColumnManager, ColumnToolbar, GroupedTableHead } from "./column-manager";
 import type { EngineOutput, MonthlyProjection, AnnualSummary } from "@shared/financial-engine";
 import type { ColumnDef } from "./column-manager";
@@ -69,8 +69,8 @@ const CF_SECTIONS: CfSectionDef[] = [
         interpretation: (annuals) => {
           const y1 = annuals[0];
           if (!y1) return null;
-          if (y1.operatingCashFlow < 0) return `Operations consume ${formatCents(Math.abs(y1.operatingCashFlow))} in Year 1 — typical during ramp-up; watch for positive trend by Year 2-3.`;
-          return `Operations generate ${formatCents(y1.operatingCashFlow)} in Year 1 — a positive sign for sustainability.`;
+          if (y1.operatingCashFlow < 0) return `Operations consume ${formatFinancialValue(Math.abs(y1.operatingCashFlow), "currency")} in Year 1 — typical during ramp-up; watch for positive trend by Year 2-3.`;
+          return `Operations generate ${formatFinancialValue(y1.operatingCashFlow, "currency")} in Year 1 — a positive sign for sustainability.`;
         },
       },
     ],
@@ -110,8 +110,8 @@ const CF_SECTIONS: CfSectionDef[] = [
         interpretation: (annuals) => {
           const y1 = annuals[0];
           if (!y1) return null;
-          if (y1.netCashFlow < 0) return `${formatCents(y1.netCashFlow)} net cash flow in Year 1 — cash is being consumed, typical during startup ramp-up`;
-          return `${formatCents(y1.netCashFlow)} net cash flow in Year 1 — positive cash generation`;
+          if (y1.netCashFlow < 0) return `${formatFinancialValue(y1.netCashFlow, "currency")} net cash flow in Year 1 — cash is being consumed, typical during startup ramp-up`;
+          return `${formatFinancialValue(y1.netCashFlow, "currency")} net cash flow in Year 1 — positive cash generation`;
         },
       },
       { key: "beginning-cash", label: "Beginning Cash", field: "beginningCash", format: "currency", tooltip: { explanation: "Cash balance at the start of the period", formula: "Prior period ending cash" } },
@@ -132,7 +132,7 @@ const CF_SECTIONS: CfSectionDef[] = [
           }
           const y5 = annuals[4];
           if (y5) {
-            return `Cash stays positive throughout. ${formatCents(y5.endingCash)} ending balance by Year 5.`;
+            return `Cash stays positive throughout. ${formatFinancialValue(y5.endingCash, "currency")} ending balance by Year 5.`;
           }
           return null;
         },
@@ -391,20 +391,20 @@ function CfCalloutBar({
       <div className="flex flex-wrap items-center gap-4">
         <CalloutMetric
           label="Net Cash Flow (Y1)"
-          value={formatCents(y1.netCashFlow)}
+          value={formatFinancialValue(y1.netCashFlow, "currency")}
           testId="cf-callout-net-cf-y1"
         />
         <div className="w-px h-8 bg-border" />
         <CalloutMetric
           label="Ending Cash (Y5)"
-          value={y5 ? formatCents(y5.endingCash) : "N/A"}
+          value={y5 ? formatFinancialValue(y5.endingCash, "currency") : "N/A"}
           testId="cf-callout-ending-cash-y5"
         />
         <div className="w-px h-8 bg-border" />
         <div className="flex flex-col">
           <span className="text-xs text-muted-foreground font-medium uppercase tracking-wide">Lowest Cash Point</span>
           <span className="text-lg font-semibold font-mono tabular-nums" data-testid="cf-callout-lowest-cash">
-            M{lowestCash.month}: {formatCents(lowestCash.value)}
+            M{lowestCash.month}: {formatFinancialValue(lowestCash.value, "currency")}
           </span>
         </div>
       </div>
@@ -412,7 +412,7 @@ function CfCalloutBar({
         className="text-xs text-muted-foreground mt-1.5"
         data-testid="cf-callout-interpretation"
       >
-        Lowest cash point: {formatCents(lowestCash.value)} in Month {lowestCash.month}.{" "}
+        Lowest cash point: {formatFinancialValue(lowestCash.value, "currency")} in Month {lowestCash.month}.{" "}
         {lowestCash.value < 0
           ? "You may need additional reserves to cover this shortfall."
           : "Cash stays positive throughout the projection period."}
@@ -538,7 +538,7 @@ function CfRow({ row, columns, annuals, monthly, showInterpretation = true }: Cf
         {columns.map((col) => {
           const value = getCfCellValue(row.field, col, annuals, monthly);
           const isNegative = value < 0;
-          const cellContent = formatCents(value);
+          const cellContent = formatFinancialValue(value, "currency");
 
           const isNegativeEndingCash = isEndingCashRow && value < 0;
 
@@ -695,7 +695,7 @@ function ComparisonCfSection({
                 const monthly = scenarioOutputs[scenario].monthlyProjections;
                 const value = getComparisonCfCellValue(row.field, col, annuals, monthly);
                 const isNegative = value < 0;
-                const cellContent = formatCents(value);
+                const cellContent = formatFinancialValue(value, "currency");
                 const isYearBoundary = colIdx > 0 && col.year !== comparisonCols[colIdx - 1].year;
 
                 return (
@@ -769,10 +769,10 @@ function CfIdentityCheckRow({
                 <TooltipContent side="top" className="max-w-[260px]">
                   <p className="text-xs font-medium">Cash flow does not balance</p>
                   <p className="text-xs text-muted-foreground mt-0.5">
-                    Ending Cash: {formatCents(endingCash)} vs Beginning + Net: {formatCents(expected)}
+                    Ending Cash: {formatFinancialValue(endingCash, "currency")} vs Beginning + Net: {formatFinancialValue(expected, "currency")}
                   </p>
                   <p className="text-xs text-muted-foreground mt-0.5">
-                    Difference: {formatCents(diff)}
+                    Difference: {formatFinancialValue(diff, "currency")}
                   </p>
                 </TooltipContent>
               </Tooltip>

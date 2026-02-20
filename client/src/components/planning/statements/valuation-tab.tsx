@@ -1,7 +1,7 @@
 import { useMemo, useState, useCallback } from "react";
 import { ChevronDown, ChevronRight, Pencil } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { formatCents } from "@/lib/format-currency";
+import { formatFinancialValue } from "@/components/shared/financial-value";
 import { Link } from "wouter";
 import type { EngineOutput, ValuationOutput, ROICExtendedOutput, MonthlyProjection } from "@shared/financial-engine";
 
@@ -136,12 +136,8 @@ const VAL_SECTIONS: ValSectionDef[] = [
 ];
 
 function formatValValue(value: number, format: "currency" | "pct" | "multiple"): string {
-  const isNeg = value < 0;
-  const abs = Math.abs(value);
-  if (format === "pct") { const s = `${(abs * 100).toFixed(1)}%`; return isNeg ? `(${s})` : s; }
-  if (format === "multiple") { const s = `${abs.toFixed(1)}x`; return isNeg ? `(${s})` : s; }
-  const s = formatCents(abs);
-  return isNeg ? `(${s})` : s;
+  const mappedFormat = format === "multiple" ? "multiplier" as const : format;
+  return formatFinancialValue(value, mappedFormat);
 }
 
 export function ValuationTab({ output, scenarioOutputs }: ValuationTabProps) {
@@ -288,13 +284,13 @@ function ValCalloutBar({ enriched }: { enriched: EnrichedValYear[] }) {
       <div className="flex flex-wrap items-center gap-4">
         <CalloutMetric
           label={`Estimated Enterprise Value (Y${y5.year})`}
-          value={formatCents(y5.val.estimatedValue)}
+          value={formatFinancialValue(y5.val.estimatedValue, "currency")}
           testId="val-callout-value-y5"
         />
         <div className="w-px h-8 bg-border" />
         <CalloutMetric
           label={`Net After-Tax Proceeds (Y${y5.year})`}
-          value={formatCents(y5.val.netAfterTaxProceeds)}
+          value={formatFinancialValue(y5.val.netAfterTaxProceeds, "currency")}
           testId="val-callout-net-proceeds-y5"
         />
         <div className="w-px h-8 bg-border" />
@@ -308,7 +304,7 @@ function ValCalloutBar({ enriched }: { enriched: EnrichedValYear[] }) {
         className="text-xs text-muted-foreground mt-1.5"
         data-testid="val-callout-interpretation"
       >
-        Estimated business value at Year {y5.year}: {formatCents(y5.val.estimatedValue)} based on {y5.val.ebitdaMultiple.toFixed(1)}x EBITDA multiple.
+        Estimated business value at Year {y5.year}: {formatFinancialValue(y5.val.estimatedValue, "currency")} based on {y5.val.ebitdaMultiple.toFixed(1)}x EBITDA multiple.
       </p>
     </div>
   );

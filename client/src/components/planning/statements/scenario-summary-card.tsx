@@ -1,5 +1,5 @@
 import { Card, CardContent } from "@/components/ui/card";
-import { formatCents } from "@/lib/format-currency";
+import { formatFinancialValue } from "@/components/shared/financial-value";
 import { SCENARIO_COLORS } from "@/lib/scenario-engine";
 import type { ScenarioOutputs } from "@/lib/scenario-engine";
 
@@ -14,9 +14,9 @@ function formatBreakEvenText(month: number | null): string {
 
 function formatPreTaxText(preTaxIncome: number): string {
   if (preTaxIncome < 0) {
-    return `generates a (${formatCents(Math.abs(preTaxIncome))}) loss in Year 1`;
+    return `generates a ${formatFinancialValue(preTaxIncome, "currency")} loss in Year 1`;
   }
-  return `generates ${formatCents(preTaxIncome)} in Year 1 pre-tax income`;
+  return `generates ${formatFinancialValue(preTaxIncome, "currency")} in Year 1 pre-tax income`;
 }
 
 export function ScenarioSummaryCard({ scenarioOutputs }: ScenarioSummaryCardProps) {
@@ -44,13 +44,13 @@ export function ScenarioSummaryCard({ scenarioOutputs }: ScenarioSummaryCardProp
             <span className={`inline-block h-2 w-2 rounded-full ${SCENARIO_COLORS.base.dot}`} />
             <span className="font-medium">base case</span>
           </span>
-          {" "}projects {formatCents(baseY1PreTax < 0 ? baseY1PreTax : baseY1PreTax)}{baseY1PreTax < 0 ? " (loss)" : ""},
+          {" "}projects {formatFinancialValue(baseY1PreTax, "currency")}{baseY1PreTax < 0 ? " (loss)" : ""},
           and the{" "}
           <span className="inline-flex items-center gap-1">
             <span className={`inline-block h-2 w-2 rounded-full ${SCENARIO_COLORS.optimistic.dot}`} />
             <span className="font-medium">optimistic case</span>
           </span>
-          {" "}projects {formatCents(optY1PreTax < 0 ? optY1PreTax : optY1PreTax)}{optY1PreTax < 0 ? " (loss)" : ""}.
+          {" "}projects {formatFinancialValue(optY1PreTax, "currency")}{optY1PreTax < 0 ? " (loss)" : ""}.
         </p>
       </CardContent>
     </Card>

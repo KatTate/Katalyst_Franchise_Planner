@@ -1,7 +1,7 @@
 import { useMemo, useState, useCallback } from "react";
 import { ChevronDown, ChevronRight } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { formatCents } from "@/lib/format-currency";
+import { formatFinancialValue } from "@/components/shared/financial-value";
 import { Link } from "wouter";
 import type { EngineOutput, ROICExtendedOutput } from "@shared/financial-engine";
 
@@ -74,13 +74,7 @@ const ROIC_SECTIONS: RoicSectionDef[] = [
 ];
 
 function formatRoicValue(value: number, format: "currency" | "pct" | "number" | "months"): string {
-  const isNeg = value < 0;
-  const abs = Math.abs(value);
-  if (format === "pct") { const s = `${(abs * 100).toFixed(1)}%`; return isNeg ? `(${s})` : s; }
-  if (format === "number") { const s = abs.toFixed(1); return isNeg ? `(${s})` : s; }
-  if (format === "months") { const s = abs.toFixed(1); return isNeg ? `(${s})` : s; }
-  const s = formatCents(abs);
-  return isNeg ? `(${s})` : s;
+  return formatFinancialValue(value, format);
 }
 
 export function RoicTab({ output, scenarioOutputs }: RoicTabProps) {

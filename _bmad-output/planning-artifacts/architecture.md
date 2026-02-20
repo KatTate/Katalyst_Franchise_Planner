@@ -737,9 +737,9 @@ All errors return consistent structure. Validation errors (from Zod) return fiel
 
 **Key Principle:** Both surfaces share the same financial input state. Edits on My Plan (forms) or Reports (inline cells) are immediately reflected on the other surface. There is no mode switcher — navigation between surfaces is via sidebar destinations.
 
-**Retired Components (2026-02-18 UX consolidation):**
-- `mode-switcher.tsx` — exists in codebase but no longer rendered in the UI. Will be removed in cleanup pass.
-- `quick-entry-mode.tsx` — functionality absorbed by Reports inline editing. Will be removed in cleanup pass.
+**Retired Components (2026-02-18 UX consolidation — deleted 2026-02-19 per SCP D1/CP-1/CP-2):**
+- `mode-switcher.tsx` — deleted. Three-mode model retired; My Plan always renders FormsMode directly.
+- `quick-entry-mode.tsx` — deleted. Functionality absorbed by Reports inline editing (Story 5.6).
 
 #### Decision 10: Routing Strategy
 
@@ -1574,8 +1574,8 @@ katalyst-growth-planner/
 │       │   │   │   ├── callout-bar.tsx    # Contextual info/warning callouts
 │       │   │   │   └── comparison-table-head.tsx # Multi-scenario column headers
 │       │   │   │
-│       │   │   ├── [RETIRED] mode-switcher.tsx    # No longer rendered — pending removal
-│       │   │   └── [RETIRED] quick-entry-mode.tsx # Absorbed by Reports inline editing — pending removal
+│       │   │   ├── [DELETED] mode-switcher.tsx    # Deleted 2026-02-19 per SCP D1/CP-1
+│       │   │   └── [DELETED] quick-entry-mode.tsx # Deleted 2026-02-19 per SCP CP-2
 │       │   │
 │       │   ├── [C] brand/                # Brand administration components (Epic 2 — was admin/)
 │       │   │   ├── BrandIdentityTab.tsx   # Brand identity (name, logo, accent color)
