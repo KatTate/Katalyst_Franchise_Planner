@@ -134,7 +134,8 @@ export const users = pgTable("users", {
   preferredTier: text("preferred_tier").$type<"planning_assistant" | "forms" | "quick_entry">(),
   accountManagerId: varchar("account_manager_id").references(() => users.id),
   bookingUrl: text("booking_url"),
-  isDemo: boolean("is_demo").default(false).notNull(),
+  isDemoUser: boolean("is_demo_user").default(false),
+  updatedAt: timestamp("updated_at").defaultNow(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 }, (table) => [
   index("idx_users_email").on(table.email),

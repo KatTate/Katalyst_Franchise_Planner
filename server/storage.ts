@@ -297,14 +297,14 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getUsersByBrand(brandId: string): Promise<User[]> {
-    return db.select().from(users).where(and(eq(users.brandId, brandId), eq(users.isDemo, false)));
+    return db.select().from(users).where(and(eq(users.brandId, brandId), eq(users.isDemoUser, false)));
   }
 
   async getFranchiseesByBrand(brandId: string): Promise<User[]> {
     return db
       .select()
       .from(users)
-      .where(and(eq(users.brandId, brandId), eq(users.role, "franchisee"), eq(users.isDemo, false)));
+      .where(and(eq(users.brandId, brandId), eq(users.role, "franchisee"), eq(users.isDemoUser, false)));
   }
 
   async createPlan(plan: InsertPlan): Promise<Plan> {
@@ -470,7 +470,7 @@ export class DatabaseStorage implements IStorage {
     const [user] = await db
       .select()
       .from(users)
-      .where(and(eq(users.brandId, brandId), eq(users.isDemo, true), eq(users.role, "franchisee")))
+      .where(and(eq(users.brandId, brandId), eq(users.isDemoUser, true), eq(users.role, "franchisee")))
       .limit(1);
     return user;
   }
@@ -484,7 +484,7 @@ export class DatabaseStorage implements IStorage {
         role: "franchisee" as const,
         brandId,
         displayName: `${brandName} Demo Franchisee`,
-        isDemo: true,
+        isDemoUser: true,
         onboardingCompleted: true,
       })
       .returning();
