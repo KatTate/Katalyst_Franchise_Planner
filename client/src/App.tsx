@@ -1,71 +1,176 @@
-import { Switch, Route } from "wouter";
+import { useRef, useEffect, useMemo } from "react";
+import { Switch, Route, Redirect, useLocation } from "wouter";
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { SidebarProvider, SidebarInset, SidebarTrigger } from "@/components/ui/sidebar";
-import { ImpersonationProvider } from "@/contexts/ImpersonationContext";
-import { DemoModeProvider } from "@/contexts/DemoModeContext";
-import { WorkspaceViewProvider } from "@/contexts/WorkspaceViewContext";
+import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/app-sidebar";
-import { ImpersonationBanner } from "@/components/ImpersonationBanner";
-import { DemoModeBanner } from "@/components/DemoModeBanner";
 import { useAuth } from "@/hooks/use-auth";
-import NotFound from "@/pages/not-found";
 import LoginPage from "@/pages/login";
 import DashboardPage from "@/pages/dashboard";
+import InvitationsPage from "@/pages/invitations";
+import AcceptInvitationPage from "@/pages/accept-invitation";
+import OnboardingPage from "@/pages/onboarding";
 import AdminBrandsPage from "@/pages/admin-brands";
 import AdminBrandDetailPage from "@/pages/admin-brand-detail";
-import InvitationsPage from "@/pages/invitations";
-import OnboardingPage from "@/pages/onboarding";
-import AcceptInvitationPage from "@/pages/accept-invitation";
-import PlanningWorkspacePage from "@/pages/planning-workspace";
+import NotFound from "@/pages/not-found";
+import PlanningWorkspace from "@/pages/planning-workspace";
 import GlossaryPage from "@/pages/glossary";
+import { useBrandTheme } from "@/hooks/use-brand-theme";
+import { ImpersonationProvider, useImpersonation } from "@/contexts/ImpersonationContext";
+import { ImpersonationBanner } from "@/components/ImpersonationBanner";
+import { DemoModeProvider, useDemoMode } from "@/contexts/DemoModeContext";
+import { DemoModeBanner } from "@/components/DemoModeBanner";
+import { WorkspaceViewProvider } from "@/contexts/WorkspaceViewContext";
 
-function AuthenticatedLayout({ children }: { children: React.ReactNode }) {
-  return (
-    <SidebarProvider>
-      <ImpersonationProvider>
-        <DemoModeProvider>
-          <WorkspaceViewProvider>
-            <AppSidebar />
-            <SidebarInset>
-              <header className="flex h-12 items-center border-b px-4">
-                <SidebarTrigger />
-              </header>
-              <ImpersonationBanner />
-              <DemoModeBanner />
-              <main className="flex-1 p-6">
-                {children}
-              </main>
-            </SidebarInset>
-          </WorkspaceViewProvider>
-        </DemoModeProvider>
-      </ImpersonationProvider>
-    </SidebarProvider>
-  );
-}
+function ProtectedRoute({ component: Component }: { component: () => JSX.Element | null }) {
+  const { isAuthenticated, isLoading } = useAuth();
+  const wasAuthenticated = useRef(false);
+  const [, setLocation] = useLocation();
 
-function ProtectedRoute({ component: Component }: { component: React.ComponentType }) {
-  const { user, isLoading } = useAuth();
+  useEffect(() => {
+    if (isAuthenticated) {
+      wasAuthenticated.current = true;
+    }
+  }, [isAuthenticated]);
+
+  useEffect(() => {
+    if (!isLoading && !isAuthenticated && wasAuthenticated.current) {
+      wasAuthenticated.current = false;
+      setLocation("/login?expired=true");
+    }
+  }, [isLoading, isAuthenticated, setLocation]);
 
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
-        <div className="text-muted-foreground" data-testid="text-loading">Loading...</div>
+        <div className="text-muted-foreground">Loading...</div>
       </div>
     );
   }
 
-  if (!user) {
-    window.location.href = "/login";
-    return null;
+  if (!isAuthenticated) {
+    return <Redirect to="/login" />;
   }
 
+  return <Component />;
+}
+
+function AdminRoute({ component: Component }: { component: () => JSX.Element | null }) {
+  const { user, isAuthenticated, isLoading } = useAuth();
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="text-muted-foreground">Loading...</div>
+      </div>
+    );
+  }
+
+  if (!isAuthenticated) {
+    return <Redirect to="/login" />;
+  }
+
+  if (user?.role === "franchisee") {
+    return <Redirect to="/" />;
+  }
+
+  return <Component />;
+}
+
+function FranchiseeOnboardingGuard({ component: Component }: { component: () => JSX.Element | null }) {
+  const { user, isAuthenticated, isLoading } = useAuth();
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="text-muted-foreground">Loading...</div>
+      </div>
+    );
+  }
+
+  if (!isAuthenticated) {
+    return <Redirect to="/login" />;
+  }
+
+  if (user?.role === "franchisee" && !user.onboardingCompleted) {
+    return <Redirect to="/onboarding" />;
+  }
+
+  return <Component />;
+}
+
+function AppRouter() {
   return (
-    <AuthenticatedLayout>
-      <Component />
-    </AuthenticatedLayout>
+    <Switch>
+      <Route path="/">
+        <FranchiseeOnboardingGuard component={DashboardPage} />
+      </Route>
+      <Route path="/admin/invitations">
+        <AdminRoute component={InvitationsPage} />
+      </Route>
+      <Route path="/admin/brands">
+        <AdminRoute component={AdminBrandsPage} />
+      </Route>
+      <Route path="/admin/brands/:brandId">
+        <AdminRoute component={AdminBrandDetailPage} />
+      </Route>
+      <Route path="/plans/:planId">
+        <ProtectedRoute component={PlanningWorkspace} />
+      </Route>
+      <Route path="/glossary">
+        <ProtectedRoute component={GlossaryPage} />
+      </Route>
+      <Route path="/glossary/:slug">
+        <ProtectedRoute component={GlossaryPage} />
+      </Route>
+      <Route component={NotFound} />
+    </Switch>
+  );
+}
+
+function AuthenticatedLayoutInner() {
+  useBrandTheme();
+  const [location] = useLocation();
+  const { active: isImpersonating, readOnly } = useImpersonation();
+  const { active: isDemoMode } = useDemoMode();
+
+  // Planning workspace manages its own header and layout
+  const isWorkspace = useMemo(() => /^\/plans\/[^/]+$/.test(location), [location]);
+
+  return (
+    <SidebarProvider>
+      <div className="flex h-screen w-full">
+        <AppSidebar />
+        <div className="flex flex-col flex-1 min-w-0">
+          {isDemoMode ? (
+            <DemoModeBanner />
+          ) : isImpersonating ? (
+            <ImpersonationBanner />
+          ) : !isWorkspace ? (
+            <header className="flex items-center gap-2 p-2 border-b h-12">
+              <SidebarTrigger data-testid="button-sidebar-toggle" />
+            </header>
+          ) : null}
+          <main className={`flex-1 min-h-0${isWorkspace ? "" : " overflow-auto p-4 sm:p-6"}${isImpersonating && readOnly ? " pointer-events-none opacity-60" : ""}`}>
+            <AppRouter />
+          </main>
+        </div>
+      </div>
+    </SidebarProvider>
+  );
+}
+
+function AuthenticatedLayout() {
+  return (
+    <ImpersonationProvider>
+      <DemoModeProvider>
+        <WorkspaceViewProvider>
+          <AuthenticatedLayoutInner />
+        </WorkspaceViewProvider>
+      </DemoModeProvider>
+    </ImpersonationProvider>
   );
 }
 
@@ -74,28 +179,12 @@ function Router() {
     <Switch>
       <Route path="/login" component={LoginPage} />
       <Route path="/invite/:token" component={AcceptInvitationPage} />
-      <Route path="/">
-        {() => <ProtectedRoute component={DashboardPage} />}
-      </Route>
-      <Route path="/admin/brands">
-        {() => <ProtectedRoute component={AdminBrandsPage} />}
-      </Route>
-      <Route path="/admin/brands/:brandId">
-        {() => <ProtectedRoute component={AdminBrandDetailPage} />}
-      </Route>
-      <Route path="/invitations">
-        {() => <ProtectedRoute component={InvitationsPage} />}
-      </Route>
       <Route path="/onboarding">
-        {() => <ProtectedRoute component={OnboardingPage} />}
+        <ProtectedRoute component={OnboardingPage} />
       </Route>
-      <Route path="/plans/:planId">
-        {() => <ProtectedRoute component={PlanningWorkspacePage} />}
+      <Route>
+        <ProtectedRoute component={AuthenticatedLayout} />
       </Route>
-      <Route path="/glossary">
-        {() => <ProtectedRoute component={GlossaryPage} />}
-      </Route>
-      <Route component={NotFound} />
     </Switch>
   );
 }

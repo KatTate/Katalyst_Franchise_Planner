@@ -1,482 +1,161 @@
-import { eq, and, desc, sql, isNull, gt } from "drizzle-orm";
+import { eq, and, isNull, gt, sql } from "drizzle-orm";
 import { db } from "./db";
 import {
-  users, brands, invitations, plans,
-  brandAccountManagers, brandValidationRuns, auditLogs,
-  type User, type InsertUser, type Brand, type Invitation, type Plan,
-  type BrandParameters, type StartupCostTemplate,
+  type User,
+  type InsertUser,
+  type Invitation,
+  type InsertInvitation,
+  type Brand,
+  type InsertBrand,
+  type Plan,
+  type InsertPlan,
+  type UpdatePlan,
+  type BrandParameters,
+  type StartupCostTemplate,
+  type BrandAccountManager,
+  type InsertBrandAccountManager,
+  type ImpersonationAuditLog,
+  type InsertImpersonationAuditLog,
+  type BrandValidationRun,
+  type InsertBrandValidationRun,
+  users,
+  invitations,
+  brands,
+  plans,
+  brandAccountManagers,
+  impersonationAuditLogs,
+  brandValidationRuns,
 } from "@shared/schema";
-import { buildPlanFinancialInputs, buildPlanStartupCosts, migrateStartupCosts } from "@shared/plan-initialization";
 import type { StartupCostLineItem } from "@shared/financial-engine";
-
-type InsertPlan = {
-  userId: string;
-  brandId: string;
-  name?: string;
-  financialInputs?: any;
-  startupCosts?: any;
-  quickStartCompleted?: boolean;
-};
+import { buildPlanFinancialInputs, buildPlanStartupCosts, migrateStartupCosts } from "@shared/plan-initialization";
 
 export interface IStorage {
   getUser(id: string): Promise<User | undefined>;
   getUserByEmail(email: string): Promise<User | undefined>;
-  createUser(data: InsertUser): Promise<User>;
-  upsertUserFromGoogle(data: { email: string; displayName: string; profileImageUrl: string | null }): Promise<User>;
-  upsertDevUser(data: { role: string; brandSlug: string; brandId: string; brandDisplayName: string }): Promise<User>;
-  updateUserPreferredTier(userId: string, tier: string): Promise<User>;
-  updateUserOnboarding(userId: string, data: { onboardingCompleted: boolean; preferredTier?: string }): Promise<void>;
-  assignAccountManager(userId: string, accountManagerId: string, bookingUrl: string): Promise<User>;
+  createUser(user: InsertUser): Promise<User>;
+  upsertUserFromGoogle(profile: {
+    email: string;
+    displayName: string;
+    profileImageUrl: string | null;
+  }): Promise<User>;
+
+  getInvitations(): Promise<Invitation[]>;
+  getInvitationsByBrand(brandId: string): Promise<Invitation[]>;
+  getInvitationByToken(token: string): Promise<Invitation | undefined>;
+  getPendingInvitation(email: string, role: string, brandId: string | null): Promise<Invitation | undefined>;
+  createInvitation(invitation: InsertInvitation): Promise<Invitation>;
+  markInvitationAccepted(id: string): Promise<void>;
+
+  updateUserOnboarding(userId: string, data: {
+    onboardingCompleted: boolean;
+    preferredTier?: "planning_assistant" | "forms" | "quick_entry" | null;
+  }): Promise<User>;
+
+  updateUserPreferredTier(userId: string, preferredTier: "planning_assistant" | "forms" | "quick_entry"): Promise<User>;
 
   getBrands(): Promise<Brand[]>;
   getBrand(id: string): Promise<Brand | undefined>;
   getBrandBySlug(slug: string): Promise<Brand | undefined>;
   getBrandByName(name: string): Promise<Brand | undefined>;
-  createBrand(data: { name: string; slug: string; displayName: string }): Promise<Brand>;
-  updateBrand(id: string, data: Record<string, any>): Promise<Brand>;
-  updateBrandParameters(brandId: string, parameters: any): Promise<Brand>;
-  updateStartupCostTemplate(brandId: string, template: any): Promise<Brand>;
-  updateBrandIdentity(brandId: string, data: Record<string, any>): Promise<Brand>;
+  createBrand(brand: InsertBrand): Promise<Brand>;
+  updateBrand(id: string, data: Partial<InsertBrand>): Promise<Brand>;
+  updateBrandParameters(id: string, parameters: BrandParameters): Promise<Brand>;
+  updateStartupCostTemplate(id: string, template: StartupCostTemplate): Promise<Brand>;
+  updateBrandIdentity(id: string, data: {
+    displayName?: string | null;
+    logoUrl?: string | null;
+    primaryColor?: string | null;
+    defaultBookingUrl?: string | null;
+    franchisorAcknowledgmentEnabled?: boolean;
+  }): Promise<Brand>;
+
+  assignAccountManager(franchiseeId: string, accountManagerId: string, bookingUrl: string): Promise<User>;
+  getUsersByBrand(brandId: string): Promise<User[]>;
   getFranchiseesByBrand(brandId: string): Promise<User[]>;
-  getBrandAccountManagers(brandId: string): Promise<any[]>;
-  getBrandAccountManager(brandId: string, userId: string): Promise<any | undefined>;
-  upsertBrandAccountManager(brandId: string, userId: string, bookingUrl: string | null): Promise<any>;
-  removeBrandAccountManager(brandId: string, userId: string): Promise<void>;
-  setDefaultAccountManager(brandId: string, managerId: string | null): Promise<Brand>;
-
-  createBrandValidationRun(data: {
-    brandId: string;
-    runAt: Date;
-    status: string;
-    testInputs: any;
-    expectedOutputs: any;
-    actualOutputs: any;
-    comparisonResults: any;
-    toleranceConfig: any;
-    runBy: string;
-    notes: string | null;
-  }): Promise<any>;
-  getBrandValidationRuns(brandId: string): Promise<any[]>;
-  getBrandValidationRun(id: string): Promise<any | undefined>;
-
+  createPlan(plan: InsertPlan): Promise<Plan>;
   getPlan(id: string): Promise<Plan | undefined>;
   getPlansByUser(userId: string): Promise<Plan[]>;
   getPlansByBrand(brandId: string): Promise<Plan[]>;
-  createPlan(data: InsertPlan): Promise<Plan>;
-  updatePlan(id: string, data: any): Promise<Plan>;
-  getStartupCosts(planId: string): Promise<StartupCostLineItem[]>;
-  updateStartupCosts(planId: string, costs: any): Promise<any>;
-  resetStartupCostsToDefaults(planId: string, brandId: string): Promise<any>;
+  updatePlan(id: string, data: UpdatePlan): Promise<Plan>;
+  deletePlan(id: string): Promise<void>;
+  getKatalystAdmins(): Promise<Array<{ id: string; email: string; displayName: string | null; profileImageUrl: string | null }>>;
+  getBrandAccountManagers(brandId: string): Promise<BrandAccountManager[]>;
+  getBrandAccountManager(brandId: string, accountManagerId: string): Promise<BrandAccountManager | undefined>;
+  upsertBrandAccountManager(brandId: string, accountManagerId: string, bookingUrl: string | null): Promise<BrandAccountManager>;
+  removeBrandAccountManager(brandId: string, accountManagerId: string): Promise<void>;
+  setDefaultAccountManager(brandId: string, accountManagerId: string | null): Promise<Brand>;
 
-  getKatalystAdmins(): Promise<User[]>;
-  createAuditLog(data: {
-    adminUserId: string;
-    impersonatedUserId: string;
-    editSessionStartedAt: Date;
-    editSessionEndedAt: Date | null;
-    actionsSummary: string[];
-  }): Promise<any>;
-  endAuditLog(id: string): Promise<void>;
+  getStartupCosts(planId: string): Promise<StartupCostLineItem[]>;
+  updateStartupCosts(planId: string, costs: StartupCostLineItem[]): Promise<StartupCostLineItem[]>;
+  resetStartupCostsToDefaults(planId: string, brandId: string): Promise<StartupCostLineItem[]>;
+
+  createAuditLog(data: InsertImpersonationAuditLog): Promise<ImpersonationAuditLog>;
+  endAuditLog(id: string, endedAt?: Date): Promise<ImpersonationAuditLog | undefined>;
+  getAuditLogs(): Promise<ImpersonationAuditLog[]>;
+  getAuditLog(id: string): Promise<ImpersonationAuditLog | undefined>;
   appendAuditLogAction(id: string, action: string): Promise<void>;
-  getAuditLogs(): Promise<any[]>;
 
   getDemoUserForBrand(brandId: string): Promise<User | undefined>;
   createDemoUser(brandId: string, brandName: string, brandSlug: string): Promise<User>;
-  createDemoPlan(userId: string, brandId: string, brand: Brand): Promise<Plan>;
-  resetDemoPlan(planId: string, brandId: string): Promise<Plan>;
+  createDemoPlan(userId: string, brandId: string, brand: import("@shared/schema").Brand): Promise<Plan>;
+  resetDemoPlan(planId: string, brandId: string): Promise<Plan | undefined>;
 
-  createInvitation(data: {
-    email: string;
-    role: string;
-    brandId: string | null;
-    token: string;
-    expiresAt: Date;
-    createdBy: string;
-  }): Promise<Invitation>;
-  getInvitations(): Promise<Invitation[]>;
-  getInvitationsByBrand(brandId: string): Promise<Invitation[]>;
-  getInvitationByToken(token: string): Promise<Invitation | undefined>;
-  getPendingInvitation(email: string, role: string, brandId: string | null): Promise<Invitation | undefined>;
-  markInvitationAccepted(id: string): Promise<void>;
+  upsertDevUser(params: {
+    role: "franchisee" | "franchisor";
+    brandSlug: string;
+    brandId: string;
+    brandDisplayName: string;
+  }): Promise<User>;
+
+  createBrandValidationRun(run: InsertBrandValidationRun): Promise<BrandValidationRun>;
+  getBrandValidationRuns(brandId: string): Promise<BrandValidationRun[]>;
+  getBrandValidationRun(runId: string): Promise<BrandValidationRun | undefined>;
 }
 
 export class DatabaseStorage implements IStorage {
-
   async getUser(id: string): Promise<User | undefined> {
-    const [user] = await db.select().from(users).where(eq(users.id, id));
+    const [user] = await db.select().from(users).where(eq(users.id, id)).limit(1);
     return user;
   }
 
   async getUserByEmail(email: string): Promise<User | undefined> {
-    const [user] = await db.select().from(users).where(eq(users.email, email));
+    const [user] = await db.select().from(users).where(eq(users.email, email)).limit(1);
     return user;
   }
 
-  async createUser(data: InsertUser): Promise<User> {
-    const [user] = await db.insert(users).values(data).returning();
+  async createUser(insertUser: InsertUser): Promise<User> {
+    const [user] = await db.insert(users).values(insertUser as any).returning();
     return user;
   }
 
-  async upsertUserFromGoogle(data: { email: string; displayName: string; profileImageUrl: string | null }): Promise<User> {
-    const existing = await this.getUserByEmail(data.email);
-    if (existing) {
-      const [updated] = await db.update(users).set({
-        displayName: data.displayName,
-        profileImageUrl: data.profileImageUrl,
-        updatedAt: new Date(),
-      }).where(eq(users.id, existing.id)).returning();
-      return updated;
-    }
-    const [user] = await db.insert(users).values({
-      email: data.email,
-      displayName: data.displayName,
-      profileImageUrl: data.profileImageUrl,
-      role: "katalyst_admin",
-    }).returning();
-    return user;
-  }
-
-  async upsertDevUser(data: { role: string; brandSlug: string; brandId: string; brandDisplayName: string }): Promise<User> {
-    const email = `dev-${data.role}@${data.brandSlug}.localhost`;
-    const displayName = `Dev ${data.brandDisplayName} ${data.role}`;
-    const existing = await this.getUserByEmail(email);
-    if (existing) {
-      return existing;
-    }
-    const [user] = await db.insert(users).values({
-      email,
-      displayName,
-      role: data.role,
-      brandId: data.brandId,
-    }).returning();
-    return user;
-  }
-
-  async updateUserPreferredTier(userId: string, tier: string): Promise<User> {
-    const [updated] = await db.update(users).set({
-      preferredTier: tier,
-      updatedAt: new Date(),
-    }).where(eq(users.id, userId)).returning();
-    return updated;
-  }
-
-  async updateUserOnboarding(userId: string, data: { onboardingCompleted: boolean; preferredTier?: string }): Promise<void> {
-    const setData: Record<string, any> = {
-      onboardingCompleted: data.onboardingCompleted,
-      updatedAt: new Date(),
-    };
-    if (data.preferredTier !== undefined) {
-      setData.preferredTier = data.preferredTier;
-    }
-    await db.update(users).set(setData).where(eq(users.id, userId));
-  }
-
-  async assignAccountManager(userId: string, accountManagerId: string, bookingUrl: string): Promise<User> {
-    const [updated] = await db.update(users).set({
-      accountManagerId,
-      bookingUrl,
-      updatedAt: new Date(),
-    }).where(eq(users.id, userId)).returning();
-    return updated;
-  }
-
-  async getBrands(): Promise<Brand[]> {
-    return db.select().from(brands);
-  }
-
-  async getBrand(id: string): Promise<Brand | undefined> {
-    const [brand] = await db.select().from(brands).where(eq(brands.id, id));
-    return brand;
-  }
-
-  async getBrandBySlug(slug: string): Promise<Brand | undefined> {
-    const [brand] = await db.select().from(brands).where(eq(brands.slug, slug));
-    return brand;
-  }
-
-  async getBrandByName(name: string): Promise<Brand | undefined> {
-    const [brand] = await db.select().from(brands).where(eq(brands.name, name));
-    return brand;
-  }
-
-  async createBrand(data: { name: string; slug: string; displayName: string }): Promise<Brand> {
-    const [brand] = await db.insert(brands).values(data).returning();
-    return brand;
-  }
-
-  async updateBrand(id: string, data: Record<string, any>): Promise<Brand> {
-    const [updated] = await db.update(brands).set({
-      ...data,
-      updatedAt: new Date(),
-    }).where(eq(brands.id, id)).returning();
-    return updated;
-  }
-
-  async updateBrandParameters(brandId: string, parameters: any): Promise<Brand> {
-    const [updated] = await db.update(brands).set({
-      brandParameters: parameters,
-      updatedAt: new Date(),
-    }).where(eq(brands.id, brandId)).returning();
-    return updated;
-  }
-
-  async updateStartupCostTemplate(brandId: string, template: any): Promise<Brand> {
-    const [updated] = await db.update(brands).set({
-      startupCostTemplate: template,
-      updatedAt: new Date(),
-    }).where(eq(brands.id, brandId)).returning();
-    return updated;
-  }
-
-  async updateBrandIdentity(brandId: string, data: Record<string, any>): Promise<Brand> {
-    const [updated] = await db.update(brands).set({
-      ...data,
-      updatedAt: new Date(),
-    }).where(eq(brands.id, brandId)).returning();
-    return updated;
-  }
-
-  async getFranchiseesByBrand(brandId: string): Promise<User[]> {
-    return db.select().from(users).where(
-      and(eq(users.role, "franchisee"), eq(users.brandId, brandId))
-    );
-  }
-
-  async getBrandAccountManagers(brandId: string): Promise<any[]> {
-    const rows = await db
-      .select({
-        id: brandAccountManagers.id,
-        brandId: brandAccountManagers.brandId,
-        accountManagerId: brandAccountManagers.accountManagerId,
-        bookingUrl: brandAccountManagers.bookingUrl,
-        createdAt: brandAccountManagers.createdAt,
-        displayName: users.displayName,
-        email: users.email,
-      })
-      .from(brandAccountManagers)
-      .innerJoin(users, eq(brandAccountManagers.accountManagerId, users.id))
-      .where(eq(brandAccountManagers.brandId, brandId));
-    return rows;
-  }
-
-  async getBrandAccountManager(brandId: string, userId: string): Promise<any | undefined> {
-    const [row] = await db.select().from(brandAccountManagers).where(
-      and(eq(brandAccountManagers.brandId, brandId), eq(brandAccountManagers.accountManagerId, userId))
-    );
-    return row;
-  }
-
-  async upsertBrandAccountManager(brandId: string, userId: string, bookingUrl: string | null): Promise<any> {
-    const existing = await this.getBrandAccountManager(brandId, userId);
-    if (existing) {
-      const [updated] = await db.update(brandAccountManagers).set({
-        bookingUrl,
-      }).where(eq(brandAccountManagers.id, existing.id)).returning();
-      return updated;
-    }
-    const [created] = await db.insert(brandAccountManagers).values({
-      brandId,
-      accountManagerId: userId,
-      bookingUrl,
-    }).returning();
-    return created;
-  }
-
-  async removeBrandAccountManager(brandId: string, userId: string): Promise<void> {
-    await db.delete(brandAccountManagers).where(
-      and(eq(brandAccountManagers.brandId, brandId), eq(brandAccountManagers.accountManagerId, userId))
-    );
-  }
-
-  async setDefaultAccountManager(brandId: string, managerId: string | null): Promise<Brand> {
-    const [updated] = await db.update(brands).set({
-      defaultAccountManagerId: managerId,
-      updatedAt: new Date(),
-    }).where(eq(brands.id, brandId)).returning();
-    return updated;
-  }
-
-  async createBrandValidationRun(data: {
-    brandId: string;
-    runAt: Date;
-    status: string;
-    testInputs: any;
-    expectedOutputs: any;
-    actualOutputs: any;
-    comparisonResults: any;
-    toleranceConfig: any;
-    runBy: string;
-    notes: string | null;
-  }): Promise<any> {
-    const [run] = await db.insert(brandValidationRuns).values(data).returning();
-    return run;
-  }
-
-  async getBrandValidationRuns(brandId: string): Promise<any[]> {
-    return db.select().from(brandValidationRuns)
-      .where(eq(brandValidationRuns.brandId, brandId))
-      .orderBy(desc(brandValidationRuns.createdAt));
-  }
-
-  async getBrandValidationRun(id: string): Promise<any | undefined> {
-    const [run] = await db.select().from(brandValidationRuns).where(eq(brandValidationRuns.id, id));
-    return run;
-  }
-
-  async getPlan(id: string): Promise<Plan | undefined> {
-    const [plan] = await db.select().from(plans).where(eq(plans.id, id));
-    return plan;
-  }
-
-  async getPlansByUser(userId: string): Promise<Plan[]> {
-    return db.select().from(plans).where(eq(plans.userId, userId));
-  }
-
-  async getPlansByBrand(brandId: string): Promise<Plan[]> {
-    return db.select().from(plans).where(eq(plans.brandId, brandId));
-  }
-
-  async createPlan(data: InsertPlan): Promise<Plan> {
-    const [plan] = await db.insert(plans).values(data).returning();
-    return plan;
-  }
-
-  async updatePlan(id: string, data: any): Promise<Plan> {
-    const [updated] = await db.update(plans).set({
-      ...data,
-      updatedAt: new Date(),
-    }).where(eq(plans.id, id)).returning();
-    return updated;
-  }
-
-  async getStartupCosts(planId: string): Promise<StartupCostLineItem[]> {
-    const plan = await this.getPlan(planId);
-    if (!plan || !plan.startupCosts) return [];
-    const costs = plan.startupCosts as any[];
-    if (costs.length === 0) return [];
-    const first = costs[0];
-    if (first && typeof first === "object" && "isCustom" in first) {
-      return costs as StartupCostLineItem[];
-    }
-    return migrateStartupCosts(costs as any);
-  }
-
-  async updateStartupCosts(planId: string, costs: any): Promise<any> {
-    const [updated] = await db.update(plans).set({
-      startupCosts: costs,
-      updatedAt: new Date(),
-    }).where(eq(plans.id, planId)).returning();
-    return updated.startupCosts;
-  }
-
-  async resetStartupCostsToDefaults(planId: string, brandId: string): Promise<any> {
-    const brand = await this.getBrand(brandId);
-    const template = brand?.startupCostTemplate ?? [];
-    const costs = buildPlanStartupCosts(template as StartupCostTemplate);
-    const [updated] = await db.update(plans).set({
-      startupCosts: costs,
-      updatedAt: new Date(),
-    }).where(eq(plans.id, planId)).returning();
-    return updated.startupCosts;
-  }
-
-  async getKatalystAdmins(): Promise<User[]> {
-    return db.select().from(users).where(eq(users.role, "katalyst_admin"));
-  }
-
-  async createAuditLog(data: {
-    adminUserId: string;
-    impersonatedUserId: string;
-    editSessionStartedAt: Date;
-    editSessionEndedAt: Date | null;
-    actionsSummary: string[];
-  }): Promise<any> {
-    const [log] = await db.insert(auditLogs).values(data).returning();
-    return log;
-  }
-
-  async endAuditLog(id: string): Promise<void> {
-    await db.update(auditLogs).set({
-      editSessionEndedAt: new Date(),
-    }).where(eq(auditLogs.id, id));
-  }
-
-  async appendAuditLogAction(id: string, action: string): Promise<void> {
-    await db.update(auditLogs).set({
-      actionsSummary: sql`${auditLogs.actionsSummary} || ${JSON.stringify([action])}::jsonb`,
-    }).where(eq(auditLogs.id, id));
-  }
-
-  async getAuditLogs(): Promise<any[]> {
-    return db.select().from(auditLogs).orderBy(desc(auditLogs.createdAt));
-  }
-
-  async getDemoUserForBrand(brandId: string): Promise<User | undefined> {
-    const [user] = await db.select().from(users).where(
-      and(eq(users.isDemoUser, true), eq(users.brandId, brandId))
-    );
-    return user;
-  }
-
-  async createDemoUser(brandId: string, brandName: string, brandSlug: string): Promise<User> {
-    const email = `demo@${brandSlug}.localhost`;
-    const [user] = await db.insert(users).values({
-      email,
-      displayName: `Demo ${brandName} Franchisee`,
-      role: "franchisee",
-      brandId,
-      isDemoUser: true,
-      onboardingCompleted: true,
-      preferredTier: "forms",
-    }).returning();
-    return user;
-  }
-
-  async createDemoPlan(userId: string, brandId: string, brand: Brand): Promise<Plan> {
-    const brandParams = brand.brandParameters as BrandParameters | null;
-    const template = brand.startupCostTemplate as StartupCostTemplate | null;
-
-    const financialInputs = brandParams ? buildPlanFinancialInputs(brandParams) : null;
-    const startupCosts = template ? buildPlanStartupCosts(template) : [];
-
-    const [plan] = await db.insert(plans).values({
-      userId,
-      brandId,
-      name: `${brand.displayName || brand.name} Demo Plan`,
-      financialInputs,
-      startupCosts,
-      quickStartCompleted: true,
-    }).returning();
-    return plan;
-  }
-
-  async resetDemoPlan(planId: string, brandId: string): Promise<Plan> {
-    const brand = await this.getBrand(brandId);
-    const brandParams = brand?.brandParameters as BrandParameters | null;
-    const template = brand?.startupCostTemplate as StartupCostTemplate | null;
-
-    const financialInputs = brandParams ? buildPlanFinancialInputs(brandParams) : null;
-    const startupCosts = template ? buildPlanStartupCosts(template) : [];
-
-    const [updated] = await db.update(plans).set({
-      financialInputs,
-      startupCosts,
-      quickStartCompleted: true,
-      updatedAt: new Date(),
-    }).where(eq(plans.id, planId)).returning();
-    return updated;
-  }
-
-  async createInvitation(data: {
+  async upsertUserFromGoogle(profile: {
     email: string;
-    role: string;
-    brandId: string | null;
-    token: string;
-    expiresAt: Date;
-    createdBy: string;
-  }): Promise<Invitation> {
-    const [invitation] = await db.insert(invitations).values(data).returning();
-    return invitation;
+    displayName: string;
+    profileImageUrl: string | null;
+  }): Promise<User> {
+    const existing = await this.getUserByEmail(profile.email);
+    if (existing) {
+      const [updated] = await db
+        .update(users)
+        .set({
+          displayName: profile.displayName,
+          profileImageUrl: profile.profileImageUrl,
+        })
+        .where(eq(users.id, existing.id))
+        .returning();
+      return updated;
+    }
+    const [created] = await db
+      .insert(users)
+      .values({
+        email: profile.email,
+        displayName: profile.displayName,
+        profileImageUrl: profile.profileImageUrl,
+        role: "katalyst_admin" as const,
+        onboardingCompleted: false,
+      })
+      .returning();
+    return created;
   }
 
   async getInvitations(): Promise<Invitation[]> {
@@ -488,7 +167,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getInvitationByToken(token: string): Promise<Invitation | undefined> {
-    const [invitation] = await db.select().from(invitations).where(eq(invitations.token, token));
+    const [invitation] = await db.select().from(invitations).where(eq(invitations.token, token)).limit(1);
     return invitation;
   }
 
@@ -499,19 +178,402 @@ export class DatabaseStorage implements IStorage {
       isNull(invitations.acceptedAt),
       gt(invitations.expiresAt, new Date()),
     ];
-    if (brandId !== null) {
+    if (brandId) {
       conditions.push(eq(invitations.brandId, brandId));
     } else {
       conditions.push(isNull(invitations.brandId));
     }
-    const [invitation] = await db.select().from(invitations).where(and(...conditions));
+    const [invitation] = await db
+      .select()
+      .from(invitations)
+      .where(and(...conditions))
+      .limit(1);
     return invitation;
   }
 
+  async createInvitation(invitation: InsertInvitation): Promise<Invitation> {
+    const [created] = await db.insert(invitations).values(invitation as any).returning();
+    return created;
+  }
+
   async markInvitationAccepted(id: string): Promise<void> {
-    await db.update(invitations).set({
-      acceptedAt: new Date(),
-    }).where(eq(invitations.id, id));
+    await db.update(invitations).set({ acceptedAt: new Date() }).where(eq(invitations.id, id));
+  }
+
+  async updateUserOnboarding(userId: string, data: {
+    onboardingCompleted: boolean;
+    preferredTier?: "planning_assistant" | "forms" | "quick_entry" | null;
+  }): Promise<User> {
+    const updateData: Record<string, any> = { onboardingCompleted: data.onboardingCompleted };
+    if (data.preferredTier !== undefined) {
+      updateData.preferredTier = data.preferredTier;
+    }
+    const [updated] = await db
+      .update(users)
+      .set(updateData)
+      .where(eq(users.id, userId))
+      .returning();
+    return updated;
+  }
+
+  async updateUserPreferredTier(userId: string, preferredTier: "planning_assistant" | "forms" | "quick_entry"): Promise<User> {
+    const [updated] = await db
+      .update(users)
+      .set({ preferredTier })
+      .where(eq(users.id, userId))
+      .returning();
+    return updated;
+  }
+
+  async getBrands(): Promise<Brand[]> {
+    return db.select().from(brands);
+  }
+
+  async getBrand(id: string): Promise<Brand | undefined> {
+    const [brand] = await db.select().from(brands).where(eq(brands.id, id)).limit(1);
+    return brand;
+  }
+
+  async getBrandBySlug(slug: string): Promise<Brand | undefined> {
+    const [brand] = await db.select().from(brands).where(eq(brands.slug, slug)).limit(1);
+    return brand;
+  }
+
+  async getBrandByName(name: string): Promise<Brand | undefined> {
+    const [brand] = await db.select().from(brands).where(eq(brands.name, name)).limit(1);
+    return brand;
+  }
+
+  async createBrand(brand: InsertBrand): Promise<Brand> {
+    const [created] = await db.insert(brands).values(brand).returning();
+    return created;
+  }
+
+  async updateBrand(id: string, data: Partial<InsertBrand>): Promise<Brand> {
+    const [updated] = await db.update(brands).set(data).where(eq(brands.id, id)).returning();
+    return updated;
+  }
+
+  async updateBrandParameters(id: string, parameters: BrandParameters): Promise<Brand> {
+    const [updated] = await db
+      .update(brands)
+      .set({ brandParameters: parameters })
+      .where(eq(brands.id, id))
+      .returning();
+    return updated;
+  }
+
+  async updateStartupCostTemplate(id: string, template: StartupCostTemplate): Promise<Brand> {
+    const [updated] = await db
+      .update(brands)
+      .set({ startupCostTemplate: template })
+      .where(eq(brands.id, id))
+      .returning();
+    return updated;
+  }
+
+  async updateBrandIdentity(id: string, data: {
+    displayName?: string | null;
+    logoUrl?: string | null;
+    primaryColor?: string | null;
+    defaultBookingUrl?: string | null;
+    franchisorAcknowledgmentEnabled?: boolean;
+  }): Promise<Brand> {
+    const [updated] = await db
+      .update(brands)
+      .set(data)
+      .where(eq(brands.id, id))
+      .returning();
+    return updated;
+  }
+
+  async assignAccountManager(franchiseeId: string, accountManagerId: string, bookingUrl: string): Promise<User> {
+    const [updated] = await db
+      .update(users)
+      .set({ accountManagerId, bookingUrl })
+      .where(eq(users.id, franchiseeId))
+      .returning();
+    return updated;
+  }
+
+  async getUsersByBrand(brandId: string): Promise<User[]> {
+    return db.select().from(users).where(and(eq(users.brandId, brandId), eq(users.isDemo, false)));
+  }
+
+  async getFranchiseesByBrand(brandId: string): Promise<User[]> {
+    return db
+      .select()
+      .from(users)
+      .where(and(eq(users.brandId, brandId), eq(users.role, "franchisee"), eq(users.isDemo, false)));
+  }
+
+  async createPlan(plan: InsertPlan): Promise<Plan> {
+    const [created] = await db.insert(plans).values(plan as any).returning();
+    return created;
+  }
+
+  async getPlan(id: string): Promise<Plan | undefined> {
+    const [plan] = await db.select().from(plans).where(eq(plans.id, id)).limit(1);
+    return plan;
+  }
+
+  async getPlansByUser(userId: string): Promise<Plan[]> {
+    return db.select().from(plans).where(eq(plans.userId, userId));
+  }
+
+  async getPlansByBrand(brandId: string): Promise<Plan[]> {
+    return db.select().from(plans).where(eq(plans.brandId, brandId));
+  }
+
+  async updatePlan(id: string, data: UpdatePlan): Promise<Plan> {
+    const [updated] = await db
+      .update(plans)
+      .set({ ...data, updatedAt: new Date() } as any)
+      .where(eq(plans.id, id))
+      .returning();
+    return updated;
+  }
+
+  async deletePlan(id: string): Promise<void> {
+    await db.delete(plans).where(eq(plans.id, id));
+  }
+
+  async getKatalystAdmins(): Promise<Array<{ id: string; email: string; displayName: string | null; profileImageUrl: string | null }>> {
+    const admins = await db
+      .select({
+        id: users.id,
+        email: users.email,
+        displayName: users.displayName,
+        profileImageUrl: users.profileImageUrl,
+      })
+      .from(users)
+      .where(eq(users.role, "katalyst_admin"));
+    return admins;
+  }
+
+  async getBrandAccountManagers(brandId: string): Promise<BrandAccountManager[]> {
+    return db
+      .select()
+      .from(brandAccountManagers)
+      .where(eq(brandAccountManagers.brandId, brandId));
+  }
+
+  async getBrandAccountManager(brandId: string, accountManagerId: string): Promise<BrandAccountManager | undefined> {
+    const [row] = await db
+      .select()
+      .from(brandAccountManagers)
+      .where(
+        and(
+          eq(brandAccountManagers.brandId, brandId),
+          eq(brandAccountManagers.accountManagerId, accountManagerId)
+        )
+      )
+      .limit(1);
+    return row;
+  }
+
+  async upsertBrandAccountManager(brandId: string, accountManagerId: string, bookingUrl: string | null): Promise<BrandAccountManager> {
+    const existing = await this.getBrandAccountManager(brandId, accountManagerId);
+    if (existing) {
+      const [updated] = await db
+        .update(brandAccountManagers)
+        .set({ bookingUrl })
+        .where(eq(brandAccountManagers.id, existing.id))
+        .returning();
+      return updated;
+    }
+    const [created] = await db
+      .insert(brandAccountManagers)
+      .values({ brandId, accountManagerId, bookingUrl } as any)
+      .returning();
+    return created;
+  }
+
+  async removeBrandAccountManager(brandId: string, accountManagerId: string): Promise<void> {
+    await db
+      .delete(brandAccountManagers)
+      .where(
+        and(
+          eq(brandAccountManagers.brandId, brandId),
+          eq(brandAccountManagers.accountManagerId, accountManagerId)
+        )
+      );
+  }
+
+  async setDefaultAccountManager(brandId: string, accountManagerId: string | null): Promise<Brand> {
+    const [updated] = await db
+      .update(brands)
+      .set({ defaultAccountManagerId: accountManagerId })
+      .where(eq(brands.id, brandId))
+      .returning();
+    return updated;
+  }
+
+  async getStartupCosts(planId: string): Promise<StartupCostLineItem[]> {
+    const plan = await this.getPlan(planId);
+    if (!plan) return [];
+    const raw = (plan.startupCosts ?? []) as Array<Partial<StartupCostLineItem> & { name: string; amount: number; capexClassification: StartupCostLineItem["capexClassification"] }>;
+    const costs = migrateStartupCosts(raw);
+    return costs.sort((a, b) => a.sortOrder - b.sortOrder);
+  }
+
+  async updateStartupCosts(planId: string, costs: StartupCostLineItem[]): Promise<StartupCostLineItem[]> {
+    await db
+      .update(plans)
+      .set({ startupCosts: costs, updatedAt: new Date() })
+      .where(eq(plans.id, planId));
+    return costs;
+  }
+
+  async resetStartupCostsToDefaults(planId: string, brandId: string): Promise<StartupCostLineItem[]> {
+    const brand = await this.getBrand(brandId);
+    if (!brand || !brand.startupCostTemplate) return [];
+    const defaults = buildPlanStartupCosts(brand.startupCostTemplate);
+    await this.updateStartupCosts(planId, defaults);
+    return defaults;
+  }
+
+  async createAuditLog(data: InsertImpersonationAuditLog): Promise<ImpersonationAuditLog> {
+    const [created] = await db.insert(impersonationAuditLogs).values(data as any).returning();
+    return created;
+  }
+
+  async endAuditLog(id: string, endedAt?: Date): Promise<ImpersonationAuditLog | undefined> {
+    const [updated] = await db
+      .update(impersonationAuditLogs)
+      .set({ editSessionEndedAt: endedAt ?? new Date() })
+      .where(eq(impersonationAuditLogs.id, id))
+      .returning();
+    return updated;
+  }
+
+  async getAuditLogs(): Promise<ImpersonationAuditLog[]> {
+    return db.select().from(impersonationAuditLogs);
+  }
+
+  async getAuditLog(id: string): Promise<ImpersonationAuditLog | undefined> {
+    const [log] = await db.select().from(impersonationAuditLogs).where(eq(impersonationAuditLogs.id, id)).limit(1);
+    return log;
+  }
+
+  async appendAuditLogAction(id: string, action: string): Promise<void> {
+    const log = await this.getAuditLog(id);
+    if (!log) return;
+    const current = (log.actionsSummary as string[] | null) ?? [];
+    await db
+      .update(impersonationAuditLogs)
+      .set({ actionsSummary: [...current, action] })
+      .where(eq(impersonationAuditLogs.id, id));
+  }
+
+  async getDemoUserForBrand(brandId: string): Promise<User | undefined> {
+    const [user] = await db
+      .select()
+      .from(users)
+      .where(and(eq(users.brandId, brandId), eq(users.isDemo, true), eq(users.role, "franchisee")))
+      .limit(1);
+    return user;
+  }
+
+  async createDemoUser(brandId: string, brandName: string, brandSlug: string): Promise<User> {
+    const email = `demo-franchisee@${brandSlug}.katalyst.internal`;
+    const [created] = await db
+      .insert(users)
+      .values({
+        email,
+        role: "franchisee" as const,
+        brandId,
+        displayName: `${brandName} Demo Franchisee`,
+        isDemo: true,
+        onboardingCompleted: true,
+      })
+      .returning();
+    return created;
+  }
+
+  async createDemoPlan(userId: string, brandId: string, brand: Brand): Promise<Plan> {
+    const financialInputs = brand.brandParameters
+      ? buildPlanFinancialInputs(brand.brandParameters)
+      : null;
+    const startupCosts = brand.startupCostTemplate
+      ? buildPlanStartupCosts(brand.startupCostTemplate)
+      : null;
+    const [created] = await db
+      .insert(plans)
+      .values({
+        userId,
+        brandId,
+        name: `${brand.name} Demo Plan`,
+        status: "in_progress" as const,
+        financialInputs: financialInputs as any,
+        startupCosts: startupCosts as any,
+      } as any)
+      .returning();
+    return created;
+  }
+
+  async resetDemoPlan(planId: string, brandId: string): Promise<Plan | undefined> {
+    const brand = await this.getBrand(brandId);
+    if (!brand) return undefined;
+    const financialInputs = brand.brandParameters
+      ? buildPlanFinancialInputs(brand.brandParameters)
+      : null;
+    const startupCosts = brand.startupCostTemplate
+      ? buildPlanStartupCosts(brand.startupCostTemplate)
+      : null;
+    const [updated] = await db
+      .update(plans)
+      .set({
+        financialInputs: financialInputs as any,
+        startupCosts: startupCosts as any,
+        updatedAt: new Date(),
+      })
+      .where(eq(plans.id, planId))
+      .returning();
+    return updated;
+  }
+
+  async createBrandValidationRun(run: InsertBrandValidationRun): Promise<BrandValidationRun> {
+    const [created] = await db.insert(brandValidationRuns).values(run as any).returning();
+    return created;
+  }
+
+  async getBrandValidationRuns(brandId: string): Promise<BrandValidationRun[]> {
+    return db
+      .select()
+      .from(brandValidationRuns)
+      .where(eq(brandValidationRuns.brandId, brandId))
+      .orderBy(sql`run_at DESC`);
+  }
+
+  async getBrandValidationRun(runId: string): Promise<BrandValidationRun | undefined> {
+    const [run] = await db.select().from(brandValidationRuns).where(eq(brandValidationRuns.id, runId)).limit(1);
+    return run;
+  }
+
+  async upsertDevUser(params: {
+    role: "franchisee" | "franchisor";
+    brandSlug: string;
+    brandId: string;
+    brandDisplayName: string;
+  }): Promise<User> {
+    const email = `dev-${params.role}-${params.brandSlug}@katgroupinc.com`;
+    const existing = await this.getUserByEmail(email);
+    if (existing) {
+      return existing;
+    }
+    const displayName = `Dev ${params.role === "franchisee" ? "Franchisee" : "Franchisor"} (${params.brandDisplayName})`;
+    const [created] = await db
+      .insert(users)
+      .values({
+        email,
+        role: params.role,
+        brandId: params.brandId,
+        displayName,
+        onboardingCompleted: true,
+      })
+      .returning();
+    return created;
   }
 }
 
