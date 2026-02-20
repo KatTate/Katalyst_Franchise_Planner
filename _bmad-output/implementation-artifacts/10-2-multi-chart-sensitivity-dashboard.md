@@ -32,8 +32,9 @@ So that I can understand the full impact of changing assumptions across every di
 
 **AC-4: Cash Flow chart**
 **Given** the charts are visible
-**Then** Chart 2 displays a line chart showing Net Operating Cash Flow, Net Cash Flow, and Ending Cash Balance over 5 years for each scenario
+**Then** Chart 2 displays a line chart showing Ending Cash Balance over 60 months (monthly granularity from `monthlyProjections`) for each scenario
 **And** months where any scenario's ending cash balance goes negative are highlighted with an amber advisory zone (not error-red)
+**And** monthly granularity is required so amber zones can identify specific months, not just years
 
 **AC-5: Break-Even Analysis chart**
 **Given** the charts are visible
@@ -57,7 +58,7 @@ So that I can understand the full impact of changing assumptions across every di
 **AC-9: Key metric cards show delta indicators**
 **Given** I have adjusted sliders away from their default (0%) positions
 **When** the Current scenario differs from the saved plan
-**Then** key metric cards display delta indicators showing the impact of slider changes vs. the base saved plan (e.g., "Break-Even: 14 mo → 18 mo (+4 mo)")
+**Then** all 5 key metric cards (Break-Even Month, 5-Year ROI %, Year-1 Revenue, Year-1 EBITDA, Year-1 Pre-Tax Income) display delta indicators showing the impact of slider changes vs. the base saved plan (e.g., "Break-Even: 14 mo → 18 mo (+4 mo)")
 
 **AC-10: Chart color tokens and advisory colors**
 **Given** the charts are rendered
@@ -73,12 +74,14 @@ So that I can understand the full impact of changing assumptions across every di
 
 ### Architecture Patterns to Follow
 
-- **4 engine calls per computation cycle (extends Story 10-1's 3-call model):** Story 10-1 limits to 3 `calculateProjections()` calls (base, conservative-extreme, optimistic-extreme). Story 10-2 adds a 4th "Current" call using the actual slider positions. This was explicitly deferred from Story 10-1: "No fourth 'current slider position' run in Story 10-1 (that is Story 10-2 territory for the chart updates)."
+- **4 engine calls total, but only 1 recomputes per slider change:** Story 10-1 limits to 3 `calculateProjections()` calls (base, conservative-extreme, optimistic-extreme). Story 10-2 adds a 4th "Current" call using the actual slider positions. This was explicitly deferred from Story 10-1: "No fourth 'current slider position' run in Story 10-1 (that is Story 10-2 territory for the chart updates)."
   - **Call 1 — Base:** `calculateProjections(unwrapForEngine(planInputs, startupCosts))` — the unmodified saved plan. Used as the reference for metric card delta indicators.
-  - **Call 2 — Current:** Apply the current slider percentage values to a cloned `FinancialInputs`, then `calculateProjections()`. This is the solid "Base Case" line on charts.
+  - **Call 2 — Current:** Apply the current slider percentage values to a cloned `FinancialInputs`, then `calculateProjections()`. This is the solid "Base Case" line on charts. **This is the only call that changes when sliders move.**
   - **Call 3 — Conservative:** Apply all sliders at their negative extremes (same as Story 10-1). Dashed line on charts.
   - **Call 4 — Optimistic:** Apply all sliders at their positive extremes (same as Story 10-1). Light dashed line on charts.
+  - **Performance-critical caching:** Calls 1, 3, and 4 are STATIC — they depend only on the saved plan data, not on slider positions. These MUST be computed in a separate `useMemo` keyed on `planInputs` / `startupCosts` (recomputed only when the plan loads or changes). Only Call 2 (Current) should be in a `useMemo` keyed on the debounced slider values. This reduces per-slider-change computation from 4 engine calls to 1, which is critical for meeting the <2s recalculation NFR.
   - When all sliders are at 0% (default), the Current output equals the Base output — no delta indicators shown.
+  - **Chart label note:** The chart legend label for Call 2 should display as "Base Case" (matching the epics AC terminology). Internally in code, this scenario is named `current` because it reflects the current slider configuration. When all sliders are at 0%, "current" equals the saved plan — the labels are semantically equivalent.
   - Source: `_bmad-output/implementation-artifacts/10-1-sensitivity-controls-sandbox-engine.md` lines 113, 64
 
 - **Extend `computeSensitivityOutputs` in `sensitivity-engine.ts`:** Story 10-1 creates `client/src/lib/sensitivity-engine.ts` with `computeSensitivityOutputs(planInputs, startupCosts, sliderExtremes)` returning `ScenarioOutputs { base, conservative, optimistic }`. Story 10-2 must extend this function (or create a companion function) to accept the current slider values and return an extended result including the 4th "current" output. Ensure backward compatibility with Story 10-1's WhatIfPlayground component.
@@ -250,7 +253,9 @@ So that I can understand the full impact of changing assumptions across every di
 
 - **`totalCurrentAssets` and `totalCurrentLiabilities` for working capital.** These fields exist on `MonthlyProjection` (not `AnnualSummary`). Working capital = `totalCurrentAssets - totalCurrentLiabilities`. For annual charting, use the month-12 value of each year (i.e., months 12, 24, 36, 48, 60) as end-of-year working capital.
 
-- **Profitability chart complexity — consider simplification.** The AC specifies 5 financial metrics × 3 scenarios = 15 potential lines on Chart 1. This risks visual overload. The dev agent should consider: (1) showing only the key metric (EBITDA) with 3 scenario lines as the default, with expandable detail, OR (2) using area bands for conservative-to-optimistic range with EBITDA as the primary line, OR (3) showing all 5 metrics but only the Current scenario with toggleable Conservative/Optimistic. Use judgment to balance completeness with readability.
+- **Profitability chart complexity — visual management required.** AC-3 requires all 5 financial metrics (Revenue, COGS, Gross Profit, EBITDA, Pre-Tax Income) × 3 scenarios = 15 lines. All 5 metrics MUST be present to satisfy AC-3, but visual techniques are required to prevent overload: (1) show all 5 metrics for the Current scenario as solid lines at full opacity, (2) show Conservative and Optimistic scenario lines at reduced opacity (`opacity={0.35}`) so they recede visually, (3) use the Recharts interactive legend (`ChartLegend`) so users can click to toggle individual metric series on/off. This approach satisfies AC-3's requirement for all 5 metrics while keeping the chart readable by default. Do NOT omit metrics or show only EBITDA — that would violate AC-3.
+
+- **Zero-debt plans in Chart 6.** Plans with no financing (no SBA loan, no line of credit) will have `loanClosingBalance = 0` for all months. If debt is zero across all scenarios, Chart 6 should still render showing only the Working Capital trajectory lines. Include a subtle annotation ("No debt in this plan") in the chart header or legend rather than showing an empty or flat-at-zero debt line.
 
 - **ImpactStrip renders below the workspace content.** The What-If Playground component renders within the `flex-1` content area. The ImpactStrip is a sibling at the bottom. Design the chart grid to scroll independently within its container. Carried from Story 10-1.
 
