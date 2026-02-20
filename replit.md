@@ -77,11 +77,14 @@ When the user triggers an agent or workflow, the AI MUST load the referenced fil
 
 ## Recent Changes (2026-02-20)
 - Epic 5 COMPLETE — all 9 stories done, all SCP-2026-02-20 remediation CPs confirmed
+- Epic 5 Retrospective finalized — 10 action items (AI-1 through AI-10), 3 CRITICAL blockers identified
+- **Epic 5H (Hardening Sprint) created** — 4 stories gating Epic 6: engine validation (5H.1), report UI audit (5H.2), Epic 6 AC audit (5H.3), planning artifact alignment (5H.4)
+- AI-7 through AI-10 integrated: AI-7→dev note on 6.1, AI-8→pre-Epic-6 checklist, AI-9→architecture note, AI-10→absorbed into 5H.1
 - Document remediation: architecture.md FR count 87→96, epics.md FR Coverage Map updated (27 new FR mappings FR74-FR97)
 - Epic 10 rewritten: 3 stories for What-If Playground (sensitivity sliders + 6 charts + optional scenario persistence)
 - Epic 4 renamed to "Forms Experience & Planning Infrastructure" (Quick Entry references deprecated)
-- Sprint status updated: Epic 5 done, Epic 10 restructured, all changelog entries added
-- Next epic in sequence: Epic 6 (Document Generation & Vault) or Epic 7 (Per-Year Inputs)
+- Sprint status updated: Epic 5 done, Epic 5H added, Epic 10 restructured
+- Next epic in sequence: **Epic 5H (hardening sprint — must complete before Epic 6)**
 
 **Feature Specifications:**
 - **Invitation Management:** Provides both UI and API capabilities for creating, monitoring, and copying invitation links.

@@ -275,9 +275,23 @@ development_status:
   5-cp11-border-radius-polish: done  # SCP-2026-02-20 CP-11 — confirmed already applied
   epic-5-retrospective: done  # FINALIZED 2026-02-20 — action items (AI-1 through AI-10) captured for Sprint Planning
 
+  # Epic 5H: Post-Epic-5 Hardening Sprint [NEW — from Epic 5 Retrospective]
+  # Validation & remediation work gating Epic 6. Origin: AI-1, AI-2, AI-3, AI-5.
+  # Must complete ALL 4 stories before Epic 6 implementation begins.
+  # AI-7 (content authoring) → dev note on 6.1
+  # AI-8 (dead code cleanup) → pre-Epic-6 checklist item
+  # AI-9 (large file decision) → architecture note during Epic 6 planning
+  # AI-10 (taxRate TODO) → absorbed into 5H.1 engine validation
+  epic-5h: backlog
+  5h-1-financial-engine-reference-validation: backlog  # AI-1: cell-by-cell vs reference spreadsheets (min 2 brands)
+  5h-2-report-tab-ui-audit-remediation: backlog        # AI-2: ALL 7 report tabs, not just Balance Sheet
+  5h-3-epic-6-ac-audit-user-journeys: backlog           # AI-3: Story ACs vs 8 user journeys, gap analysis
+  5h-4-planning-artifact-alignment: backlog              # AI-5: 111 FR traceability, fix stale coverage map
+  epic-5h-retrospective: optional
+
   # Epic 6: Document Generation & Vault [ELEVATED from old Epic 7]
   # PDF export + document history
-  # Dependencies: Epic 5 (statement views must exist to export)
+  # Dependencies: Epic 5 (statement views must exist to export), Epic 5H (hardening must complete first)
   epic-6: backlog
   6-1-pdf-document-generation: backlog
   6-2-document-history-downloads: backlog
