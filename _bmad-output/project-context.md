@@ -103,6 +103,13 @@ _This file contains critical rules and patterns that AI agents must follow when 
 - Navigate with `page.goto()`, assert with `data-testid` selectors.
 - **Every interactive or meaningful display element must have a `data-testid`** — this is a project-wide requirement, not just a test concern.
 
+**Code Review Discipline (Mandatory — from Epic 5 Retrospective):**
+- Every story receives a formal adversarial code review. No exceptions, no deferral.
+- Reviews must use a **fresh agent context** — the implementing agent does not review its own code.
+- Reviews must happen AFTER all changes to the story's code are complete, including any SCP remediation. A pre-remediation review is invalid and must be redone.
+- Review checklist: (1) spec compliance — does the code match the story's acceptance criteria? (2) correctness — are there logic errors, edge cases, or security issues? (3) maintainability — does the code follow project conventions? (4) test coverage — are modified shared/server files covered by passing tests?
+- Code review is a completion gate, not a quality bonus. A story without a completed review stays in "review" status, never "done."
+
 ### Code Quality & Style Rules
 
 **Currency Conversion Boundary (Critical):**
