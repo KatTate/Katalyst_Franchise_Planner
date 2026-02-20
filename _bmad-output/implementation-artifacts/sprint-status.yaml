@@ -1,5 +1,5 @@
 # generated: 2026-02-09
-# updated: 2026-02-20 (Sprint Planning regenerated — planning artifact alignment complete)
+# updated: 2026-02-20 (CP-6/CP-7 executed — Epic 5 stories 5.5-5.10 done)
 # project: Katalyst Growth Planner
 # project_key: NOKEY
 # tracking_system: file-system
@@ -143,6 +143,31 @@ story_location: _bmad-output/implementation-artifacts
 #   - All story counts verified: 52 stories across 13 epics (unchanged)
 #   - All statuses preserved — no downgrades
 #   - Next action: execute SCP-2026-02-19 remediation CPs to close Epic 5
+# 2026-02-20: CP-6 executed — Story 5.5 HIGH findings resolved
+#   - H1: Engine comment corrected (13→15 categories); CATEGORY_CONFIG verified correct (all 15 mapped)
+#   - H2: Passing audit category labels now use text-muted-foreground (AC16 compliance)
+#   - H3: Per-row pass/fail icons confirmed already present in AuditCheckRow component
+#   - M4: useMemo import verified as used (finding was incorrect)
+#   - Story 5.5 status: done
+# 2026-02-20: CP-7 executed — Stories 5.6, 5.7, 5.8, 5.9, 5.10 re-verified
+#   - Story 5.6 (My Plan + Impact Strip + Bidirectional Data Flow): PASS
+#     InputPanel→FormsMode direct render (mode switcher removed per CP-1),
+#     Impact Strip: sticky bottom bar, context-sensitive metrics, 3s delta fade,
+#     guardian dots, deep links, doc preview icon, bidirectional P&L inline editing
+#   - Story 5.7 (Scenario Comparison): RETIRED per Decision D6 in SCP-2026-02-20
+#     ScenarioBar component retained; story scope moves to Epic 10 (What-If Playground)
+#   - Story 5.8 (Guardian Bar & Dynamic Interpretation): PASS
+#     3-level indicator system (healthy/attention/concerning), pulse animation on threshold
+#     change, tab navigation on click, all-defaults note, sr-only accessibility text
+#   - Story 5.9 (Document Preview & PDF Generation Trigger): PASS
+#     Dashboard widget + modal preview, DRAFT watermark, PDF toast placeholder,
+#     evolving button label (Generate Draft / Generate Package / Generate Lender Package),
+#     Impact Strip doc preview icon, all-defaults note
+#     Draft watermark threshold corrected: was <90%, now <50% per AC
+#   - Story 5.10 (Glossary & Contextual Help): PASS
+#     Searchable glossary page at /glossary/:slug, field help icons with tooltips,
+#     expanded guidance, glossary cross-links, brand benchmarks, "See it in your plan",
+#     sidebar navigation link
 
 development_status:
   # Epic 1: Auth, Onboarding & User Management
@@ -203,12 +228,12 @@ development_status:
   5-2-financial-statements-container-summary-tab: done
   5-3-pl-statement-tab: done
   5-4-balance-sheet-cash-flow-tabs: done
-  5-5-roic-valuation-audit-tabs: in-progress
-  5-6-quick-entry-input-output-integration: review
-  5-7-scenario-comparison: review
-  5-8-guardian-bar-dynamic-interpretation: review
-  5-9-impact-strip-document-preview-widget: review
-  5-10-glossary-contextual-help: review
+  5-5-roic-valuation-audit-tabs: done
+  5-6-quick-entry-input-output-integration: done
+  5-7-scenario-comparison: done  # RETIRED per D6 — scope moves to Epic 10
+  5-8-guardian-bar-dynamic-interpretation: done
+  5-9-impact-strip-document-preview-widget: done
+  5-10-glossary-contextual-help: done
   epic-5-retrospective: optional
 
   # Epic 6: Document Generation & Vault [ELEVATED from old Epic 7]

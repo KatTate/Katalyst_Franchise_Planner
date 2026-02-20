@@ -185,7 +185,7 @@ function AuditCategory({ category, onNavigateToTab }: AuditCategoryProps) {
         </span>
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
-            <span className="text-sm font-medium">{category.label}</span>
+            <span className={`text-sm font-medium ${allPassed ? "text-muted-foreground" : ""}`}>{category.label}</span>
             <Badge variant={allPassed ? "secondary" : "destructive"} className="text-xs" data-testid={`audit-badge-${category.key}`}>
               {allPassed ? `${category.checks.length} passed` : `${failedCount} / ${category.checks.length} failed`}
             </Badge>

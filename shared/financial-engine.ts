@@ -844,7 +844,7 @@ export function calculateProjections(input: EngineInput): EngineOutput {
     });
   }
 
-  // ── Step 10: Accounting Identity Checks (13 categories) ─────────────
+  // ── Step 10: Accounting Identity Checks (15 categories) ─────────────
   const identityChecks: IdentityCheckResult[] = [];
   const tolerance = 1; // $0.01 tolerance (1 cent)
 

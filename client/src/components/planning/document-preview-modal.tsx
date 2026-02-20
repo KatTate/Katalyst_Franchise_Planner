@@ -46,7 +46,7 @@ export function DocumentPreviewModal({
     [financialInputs, startupCostCount]
   );
 
-  const showDraft = completeness < 90;
+  const showDraft = completeness < 50;
 
   const allDefaults = useMemo(
     () => isAllDefaults(financialInputs ?? null, startupCosts ?? null),

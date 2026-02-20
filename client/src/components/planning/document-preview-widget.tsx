@@ -43,7 +43,7 @@ export function DocumentPreviewWidget({
     [financialInputs, startupCosts]
   );
 
-  const showDraft = completeness < 90;
+  const showDraft = completeness < 50;
   const buttonLabel = getGenerateButtonLabel(completeness);
 
   const handleGeneratePdf = () => {
