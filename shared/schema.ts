@@ -112,12 +112,14 @@ export const brands = pgTable("brands", {
   defaultBookingUrl: text("default_booking_url"),
   defaultAccountManagerId: varchar("default_account_manager_id"),
   franchisorAcknowledgmentEnabled: boolean("franchisor_acknowledgment_enabled").default(false).notNull(),
+  updatedAt: timestamp("updated_at").defaultNow(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
 export const insertBrandSchema = createInsertSchema(brands).omit({
   id: true,
   createdAt: true,
+  updatedAt: true,
 });
 export type InsertBrand = z.infer<typeof insertBrandSchema>;
 export type Brand = typeof brands.$inferSelect;
@@ -130,7 +132,7 @@ export const users = pgTable("users", {
   role: text("role").notNull().$type<"franchisee" | "franchisor" | "katalyst_admin">(),
   brandId: varchar("brand_id").references(() => brands.id),
   displayName: text("display_name"),
-  onboardingCompleted: boolean("onboarding_completed").default(false).notNull(),
+  onboardingCompleted: boolean("onboarding_completed").default(false),
   preferredTier: text("preferred_tier").$type<"planning_assistant" | "forms" | "quick_entry">(),
   accountManagerId: varchar("account_manager_id").references(() => users.id),
   bookingUrl: text("booking_url"),
@@ -179,12 +181,7 @@ export const plans = pgTable("plans", {
   name: text("name").notNull(),
   financialInputs: jsonb("financial_inputs").$type<import("./financial-engine").PlanFinancialInputs>(),
   startupCosts: jsonb("startup_costs").$type<import("./financial-engine").StartupCostLineItem[]>(),
-  status: text("status").notNull().$type<"draft" | "in_progress" | "completed">().default("draft"),
-  pipelineStage: text("pipeline_stage").$type<"planning" | "site_evaluation" | "financing" | "construction" | "open">().default("planning"),
-  quickStartCompleted: boolean("quick_start_completed").default(false).notNull(),
-  quickStartStaffCount: integer("quick_start_staff_count"),
-  targetMarket: text("target_market"),
-  targetOpenQuarter: text("target_open_quarter"),
+  quickStartCompleted: boolean("quick_start_completed").default(false),
   lastAutoSave: timestamp("last_auto_save"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),

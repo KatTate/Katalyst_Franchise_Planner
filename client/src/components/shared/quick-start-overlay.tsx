@@ -125,7 +125,7 @@ export function QuickStartOverlay({ planId, brand, onComplete }: QuickStartOverl
     const cogsPct = fi.operatingCosts.cogsPct.currentValue;
 
     // Derive staff count from labor pct
-    const derivedStaff = plan.quickStartStaffCount ?? laborPctToStaffCount(laborPct, monthlyAuvCents);
+    const derivedStaff = laborPctToStaffCount(laborPct, monthlyAuvCents);
 
     setValues({
       revenueDollars: String(Math.round(monthlyAuvCents / 100)),
@@ -169,7 +169,6 @@ export function QuickStartOverlay({ planId, brand, onComplete }: QuickStartOverl
           await updatePlan({
             financialInputs: fi as any,
             startupCosts: costs as any,
-            quickStartStaffCount: staff,
           });
         } catch {
           // Save failed — will retry on next change
@@ -248,7 +247,6 @@ export function QuickStartOverlay({ planId, brand, onComplete }: QuickStartOverl
         financialInputs: workingInputs as any,
         startupCosts: workingCosts as any,
         quickStartCompleted: true,
-        quickStartStaffCount: staffNum,
       });
       onComplete();
     } catch {
@@ -263,7 +261,6 @@ export function QuickStartOverlay({ planId, brand, onComplete }: QuickStartOverl
         quickStartCompleted: true,
         ...(workingInputs ? { financialInputs: workingInputs as any } : {}),
         ...(workingCosts ? { startupCosts: workingCosts as any } : {}),
-        ...(staffNum != null ? { quickStartStaffCount: staffNum } : {}),
       });
       onComplete();
     } catch {

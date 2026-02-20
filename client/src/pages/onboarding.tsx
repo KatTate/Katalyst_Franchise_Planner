@@ -76,16 +76,6 @@ export default function OnboardingPage() {
 
   const shouldRedirect = user?.onboardingCompleted || (user && user.role !== "franchisee");
 
-  useEffect(() => {
-    if (shouldRedirect) {
-      setLocation("/");
-    }
-  }, [shouldRedirect, setLocation]);
-
-  if (shouldRedirect) {
-    return null;
-  }
-
   const completeMutation = useMutation({
     mutationFn: async (data: Record<string, string>) => {
       const res = await apiRequest("POST", "/api/onboarding/complete", data);
@@ -119,6 +109,16 @@ export default function OnboardingPage() {
       setLocation("/");
     },
   });
+
+  useEffect(() => {
+    if (shouldRedirect) {
+      setLocation("/");
+    }
+  }, [shouldRedirect, setLocation]);
+
+  if (shouldRedirect) {
+    return null;
+  }
 
   const handleAnswer = (questionId: string, value: string) => {
     setAnswers((prev) => ({ ...prev, [questionId]: value }));
