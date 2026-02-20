@@ -1491,6 +1491,7 @@ Reference tab screenshots are also available in the same directory (Start Here, 
 **Then** a documented input mapping table exists for EACH brand being validated, showing how every spreadsheet input cell maps to a `FinancialInputs` field
 **And** the mapping explicitly documents every conversion applied (dollars→cents, monthly→annual, single→5-year tuple, percentage display→decimal)
 **And** the mapping accounts for the `unwrapForEngine()` transformation pipeline in `shared/plan-initialization.ts` — specifically: `monthlyAuv * 12 → annualGrossSales`, `fill5()` for single→tuple, `monthly fixed costs → annual with 3% escalation`, `otherMonthly (cents) → otherOpexPct (% of revenue)`, `loanAmount / totalInvestment → equityPct`, `depreciationYears → depreciationRate (1/years)`
+**And** the input mapping is documented as structured constants within the test file (`shared/financial-engine-reference.test.ts`) — mapping constants live alongside the assertions they feed, producing one self-contained artifact
 **And** without explicit input mapping, validators make different assumptions — this mapping is the prerequisite for all subsequent validation
 
 **Phase 2: Cell-by-Cell Output Comparison (minimum 2 brands)**
@@ -1527,6 +1528,7 @@ Reference tab screenshots are also available in the same directory (Start Here, 
 **And** tests run in the standard `vitest` suite so every future engine change automatically regresses against reference values
 **And** the test file documents: input values used, expected output values, tolerance applied, and source spreadsheet cell reference
 **And** any formula fix includes BOTH the engine fix AND a new regression test assertion
+**And** engine fixes must not break any of the existing 173+ internal consistency tests; if a fix necessarily changes internal test expectations, the dev agent must document the rationale for each affected test and update it deliberately — silent test failures or skips are not acceptable
 **And** this is NOT a standalone validation document — it is executable test code
 
 **Phase 5: Carried Item Resolution**
@@ -1553,6 +1555,8 @@ Reference tab screenshots are also available in the same directory (Start Here, 
 As a franchisee,
 I want all financial report tabs to render correctly without layout issues, overlapping elements, or visual clutter,
 So that I can confidently review my financial projections and present them to lenders (FR7a-FR7g, FR84-FR86).
+
+**Prerequisite:** Story 5H.1 Phase 4 (Codify as Permanent Test Assertions) must be complete and all engine formula fixes merged before this story's Phase 1 audit begins. The UI audit must evaluate statement tabs rendering engine output that reflects all 5H.1 corrections — auditing pre-fix values wastes effort.
 
 **Context:**
 
@@ -1610,6 +1614,12 @@ The Epic 5 retrospective identified visible UI quality issues in screenshots pro
 - Interpretation rows (`InterpretationRow`) display correctly below their parent data rows
 - Guardian Bar remains visible and correctly positioned at the top of every tab
 
+*Test Infrastructure:*
+- Interactive elements (buttons, inputs, links) and meaningful display elements (financial values, status indicators) have `data-testid` attributes per project convention — these are needed for Playwright verification in Phase 4 and for future Epic 6 testing
+
+*Dark Mode (passive observation only — dark mode is Phase 2, post-MVP):*
+- Note any obvious dark mode rendering issues observed during the audit (contrast, readability, color conflicts) — document for future Phase 2 work but do NOT block remediation or treat as Critical/High issues
+
 **Phase 2: Issue Documentation & Prioritization**
 
 **Given** the audit identifies visual issues
@@ -1620,6 +1630,10 @@ The Epic 5 retrospective identified visible UI quality issues in screenshots pro
 **Phase 3: Remediation**
 
 **Given** documented issues with severity Critical or High
+**When** remediation is planned
+**Then** the proposed remediation approach (design choices, component changes, layout strategy) is presented to the Product Owner for approval BEFORE code changes begin — no agent makes UX design decisions independently (lesson from Epic 5 retrospective: rogue agent UX decisions caused SCP-2026-02-19/20)
+
+**Given** the remediation approach is PO-approved
 **When** fixes are implemented
 **Then** the Balance Sheet duplicate callout bars issue is resolved — either consolidate into a single callout bar or clearly differentiate the two with visual separation and distinct content
 **And** the sidebar z-index layering is fixed — sidebar content never overlaps report tab content
@@ -1634,15 +1648,17 @@ The Epic 5 retrospective identified visible UI quality issues in screenshots pro
 **Then** all 7 tabs pass the Phase 1 audit checklist
 **And** the Impact Strip (in My Plan view) and Guardian Bar (in Reports view) position correctly relative to tab content
 **And** no new regressions have been introduced by the fixes
+**And** Playwright-based screenshot verification is performed for all 7 tabs in both default view and comparison mode (where applicable) — screenshots provide evidence of fix verification and serve as regression baselines for future changes
 
 **Dev Notes:**
 - Statement tab components are in `client/src/components/planning/statements/` — P&L (`pl-statement-tab.tsx`), Balance Sheet (`balance-sheet-tab.tsx`), Cash Flow (`cash-flow-tab.tsx`), ROIC (`roic-tab.tsx`), Valuation (`valuation-tab.tsx`), Audit (`audit-tab.tsx`), Summary (`summary-tab.tsx`).
 - Shared components: `StatementSection` (collapsible sections), `CalloutBar` (metrics bars), `ColumnManager` (progressive disclosure), `StatementTable` (data-driven row/section definitions), `FinancialValue` (formatting).
 - The Guardian Bar component is at `client/src/components/planning/guardian-bar.tsx`.
 - The Impact Strip component is at `client/src/components/planning/impact-strip.tsx`.
-- Z-index layering involves: sidebar (shadcn sidebar component), Guardian Bar, tab headers, sticky section headers, callout bars, and the Impact Strip. Fixing one without breaking others requires careful z-index management.
+- Z-index layering involves: sidebar (shadcn sidebar component), Guardian Bar, tab headers, sticky section headers, callout bars, and the Impact Strip. Fixing one without breaking others requires careful z-index management. `client/src/index.css` is a likely modification target for z-index and layout changes.
 - See UX spec Part 1 (Layout Architecture), Part 2 (Financial Statement Views), Part 6 (ROI Threshold Guardian), and Part 14 (Empty & Incomplete States).
 - See `references/layout_and_spacing.md` and `references/sidebar_rules.md` for project layout conventions.
+- Verify `data-testid` attributes exist on interactive elements and meaningful display elements per the fullstack-js project convention — these are prerequisites for Playwright verification in Phase 4.
 
 ---
 
@@ -1698,6 +1714,8 @@ The following areas are specifically checked for gaps:
 - **Error states:** What happens if PDF generation fails? (Network error, server timeout, missing data) The journeys describe a happy path — stories must also cover unhappy paths.
 - **Scenario content:** Story 6.1 AC mentions "if scenario comparison is active when PDF is generated" — is this still valid now that scenarios have moved to Epic 10 (What-If Playground)? Should this AC be removed or deferred?
 - **Document history access:** Does Journey 1 describe accessing previously generated documents, or is that only in Story 6.2? Is there a journey gap for document history?
+- **Vague or subjective ACs:** Flag any AC in Stories 6.1 or 6.2 that is vague enough to invite agent interpretation — e.g., "professional formatting... that matches or exceeds what a financial consultant would produce" is subjective. Propose concrete, measurable criteria to replace subjective language. (Lesson from Epic 5 retrospective: agents interpret vague ACs differently across sessions.)
+- **Future journey considerations (non-blocking):** Note that Journey 4 (Chris — What-If Playground, Epic 10) and Journey 8 (Denise — View As, Epic 12) have edge cases affecting document generation (scenario state in PDF, impersonation identity in PDF) — document as awareness items for those future epics, not as gaps in Epic 6.
 
 **Phase 3: AC Amendment Proposals**
 
@@ -1762,7 +1780,7 @@ This story ensures every requirement has a clear implementation home and every s
 **Then** all references to "three experience modes" are updated to reflect the two-surface architecture (My Plan + Reports)
 **And** references to retired components (`quick-entry-mode.tsx`, `editable-cell.tsx`, `mode-switcher.tsx`) are removed or marked as retired
 **And** the architecture document's FR count matches the PRD's FR count (111)
-**And** any other stale references identified during the review are corrected
+**And** any other stale references identified during the review are corrected — scoped to structural inaccuracies (mode references, component references, FR counts, dependency errors) only. Stylistic, wording, or formatting changes are out of scope unless they create ambiguity that would mislead a future implementing agent.
 
 **Phase 5: Deliverable**
 
