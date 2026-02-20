@@ -63,14 +63,18 @@ so that I can understand the full impact of changing assumptions across every di
 ### Key Metric Delta Cards
 
 13. Given `ScenarioOutputs` are available, when the metric delta card strip renders (above or between charts), then 4 key metric cards are displayed showing the impact of current slider adjustments vs. the base case:
-    - **Break-Even**: "Mo 14 → Mo 18 (+4 mo)" — shows base case month vs. conservative case month
+    - **Break-Even**: "Mo 14 → Mo 18 (+4 mo)" — shows base case month vs. conservative case month. If either scenario's `breakEvenMonth` is `null` (break-even not reached in 60 months), display "—" for that value and "N/A" for the delta (e.g., "Mo 14 → —" or "— → —").
     - **Year 1 Revenue**: "$142K → $121K (-$21K)" — base vs conservative
-    - **5-Year ROI**: "127% → 98% (-29%)" — base vs conservative `fiveYearROIPct` from `roiMetrics`
-    - **Year 5 Cash**: "$68K → $32K (-$36K)" — base vs conservative `endingCash` at Year 5
+    - **5-Year ROI**: "127% → 98% (-29%)" — base vs conservative `fiveYearROIPct` from `roiMetrics` (multiply by 100 to display as percentage)
+    - **Year 5 Cash**: "$68K → $32K (-$36K)" — base vs conservative `endingCash` at Year 5 (`annualSummaries[4].endingCash`)
 
-    Delta values are formatted with a `+` or `-` prefix and displayed with muted/colored text (negative deltas in amber, positive in green).
+    Delta color rules — color by **desirability**, not raw sign:
+    - **Revenue, ROI, Cash** (higher = better): positive delta → green; negative delta → amber
+    - **Break-Even** (lower month = better, so a positive delta means worse): positive delta → amber; negative delta → green
+    - Null Break-Even deltas ("N/A") are rendered in muted/neutral color — not amber or green
 
-14. Given the metric delta cards render and no slider has been adjusted (all adjustments at 0%, i.e., base case = conservative = optimistic), then delta indicators show "0" or are hidden, and a contextual note reads: "Adjust sliders above to see impact on your business."
+14. Given the metric delta cards render on initial page load (before the user has interacted with any slider), then a contextual note reads: "Adjust sliders above to see impact on your business." The delta cards still display their non-zero base vs. conservative values — Conservative is always computed from the negative slider extremes (per epics Story 10.1 line 2116) and will never equal Base Case even before slider interaction. The note is an encouragement to engage, not a condition that suppresses deltas.
+    - Source: `_bmad-output/planning-artifacts/epics.md` Story 10.1 line 2116 ("Conservative (negative slider extremes)")
 
 ### data-testid Coverage
 
