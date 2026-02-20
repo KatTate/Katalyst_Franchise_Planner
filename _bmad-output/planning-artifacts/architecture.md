@@ -3,6 +3,8 @@ stepsCompleted: [1, 2, 3, 4, 5, 6, 7, 8]
 lastStep: 8
 status: 'complete'
 completedAt: '2026-02-08'
+lastReconciled: '2026-02-20'
+reconciliationType: 'Option A — targeted patch'
 inputDocuments:
   - _bmad-output/planning-artifacts/prd.md
   - _bmad-output/planning-artifacts/prd-validation-report.md
@@ -31,15 +33,15 @@ _This document builds collaboratively through step-by-step discovery. Sections a
 | Category | FR Count | Architectural Implication |
 |----------|----------|--------------------------|
 | Financial Planning & Calculation (FR1-FR10, FR7a-FR7n, FR74-FR83) | 24 | Core computation engine + financial statement output layer — deterministic, parameterized, with 13 accounting identity checks. Must support live-updating < 2s. Statement views render 60-month tabular documents. |
-| Guided Planning Experience (FR11-FR19) | 9 | AI-powered consulting conversation (Story Mode), form-based guided experience (Normal Mode), spreadsheet interface (Expert Mode). Multi-session with auto-save, crash recovery, and ever-present booking link. |
-| Advisory & Guardrails (FR20-FR23) | 4 | Business rules layer on top of the financial engine — advisory, never blocking. Integrates naturally into AI advisor conversation in Story Mode. |
+| Guided Planning Experience (FR11-FR19) | 9 | Two interaction surfaces: My Plan (structured forms with progressive disclosure) and Reports (interactive financial statements with inline editing). Multi-session with auto-save, crash recovery, and ever-present booking link. |
+| Advisory & Guardrails (FR20-FR23) | 4 | Business rules layer on top of the financial engine — advisory, never blocking. Guardian Bar in Reports surfaces plan health; field-level help in My Plan provides guardrails. |
 | Document Generation & Management (FR24-FR27) | 4 | Server-side PDF generation with immutable output storage and FTC-compliant disclaimers. |
 | User Access & Authentication (FR28-FR32) | 5 | Invitation-only auth, three-role RBAC, API-level data isolation. |
 | Data Sharing & Privacy (FR33-FR38) | 6 | Granular, reversible opt-in sharing — API-level enforcement. |
 | Brand Configuration & Administration (FR39-FR44) | 6 | Katalyst admin brand setup, startup cost templates, account manager assignment. |
 | Pipeline Visibility & Operational Intelligence (FR45-FR48) | 4 | Franchisor read-only pipeline dashboard, Katalyst cross-brand admin view. |
 | Brand Identity & Experience (FR49) | 1 | Brand-specific theming and identity display throughout the experience. |
-| AI Planning Advisor (FR50-FR54) | 5 | LLM-powered conversational interface for Story Mode. Split-screen UX (chat + live dashboard). NL-to-structured-input extraction. Per-field attribution tracking. |
+| AI Planning Advisor (FR50-FR54) | 5 | LLM-powered AI Planning Assistant available as a slide-in panel within My Plan (Epic 9). NL-to-structured-input extraction. Per-field attribution tracking. |
 | Advisory Board Meeting (FR55-FR58) | 4 | Multi-persona AI stress-testing of plan assumptions. Persona manifest system, topic-based selection, cross-talk orchestration. Phase 2. |
 
 **Non-Functional Requirements (28 NFRs across 6 categories):**
@@ -50,7 +52,7 @@ _This document builds collaboratively through step-by-step discovery. Sections a
 | Security | HTTPS, Google OAuth for Katalyst admins, bcrypt passwords for franchisee accounts, session expiry, API-level RBAC, single-use invitation tokens, no financial data in logs |
 | Reliability & Data Integrity | Auto-save every 2 min, deterministic calculations, concurrent edit handling, immutable generated documents |
 | Scalability | 10 brands, 500 franchisees, brand_id partitioning from day one |
-| AI Integration | LLM API timeouts < 30s, graceful degradation to form-based mode, AI-populated values validated against field schemas, conversation context < 32K tokens |
+| AI Integration | LLM API timeouts < 30s, graceful degradation (My Plan forms + Reports work without LLM), AI-populated values validated against field schemas, conversation context < 32K tokens |
 | Usability | Desktop-first (1024px min), plain-language errors, consistent financial formatting, 200ms visual feedback |
 
 ### Scale & Complexity
@@ -60,23 +62,27 @@ _This document builds collaboratively through step-by-step discovery. Sections a
 - **Estimated architectural components:** ~15+ (financial engine, AI conversation agent, advisory board orchestrator, advisor persona system, planning state management, startup cost builder subsystem, document generator, advisory rules engine, admin configuration system, franchisor dashboard, Katalyst dashboard, data sharing/privacy layer, brand theming, auto-save system, invitation/auth system)
 - **User scale:** Modest (500 max active franchisees across 10 brands) — internal tool with known users, not public-facing
 - **Data lifecycle:** Long-lived — plans evolve over months; locations have lifecycle states spanning their operational lifetime
-- **AI integration:** LLM-powered conversation layer for Story Mode + multi-persona advisory board feature
+- **AI integration:** LLM-powered AI Planning Assistant (slide-in panel in My Plan) + multi-persona advisory board feature
 
-### Experience Tier Architecture (2026 Vision)
+### Two-Surface Architecture (Updated 2026-02-20)
 
-**Critical architectural decision from collaborative analysis:**
+**Critical architectural decision — updated from original three-mode model per consolidated UX spec (2026-02-18):**
 
-The three experience tiers are NOT three versions of a wizard. They are three fundamentally different interaction paradigms, all feeding into the same financial engine through a unified financial input state:
+The application provides two persistent interaction surfaces accessible via sidebar navigation, both writing to the same unified financial input state:
 
-| Tier | Interaction Paradigm | Primary Persona | Description |
-|------|---------------------|-----------------|-------------|
-| **Story Mode** | AI Planning Advisor conversation | Sam (first-timer) | LLM-powered conversational interface. The AI asks questions in natural language, extracts structured financial inputs, populates the plan, and provides contextual guidance. Split-screen: conversation panel + live financial dashboard. |
-| **Normal Mode** | Form-based guided sections | Chris (experienced) | Traditional structured form experience with sections, field-by-field input, labels, and validation. Efficient for users who know their numbers. |
-| **Expert Mode** | Spreadsheet-style direct input | Maria (veteran) | Minimal UI, maximum speed. Direct access to every parameter. Also serves as the validation interface for Katalyst to verify engine outputs against known-good spreadsheets. |
+| Surface | Interaction Paradigm | Primary Persona | Description |
+|---------|---------------------|-----------------|-------------|
+| **My Plan** | Form-based guided sections + AI Planning Assistant (slide-in panel) | Sam (first-timer), Chris (scaling) | Structured form experience with collapsible sections, per-field metadata (source badges, brand defaults, Item 7 ranges), and contextual help. AI Planning Assistant available as a slide-in panel within My Plan (Epic 9). Impact Strip at bottom provides real-time summary and deep links to Reports. |
+| **Reports** | Interactive financial statements with inline editing | Maria (veteran), all personas for review | Tabbed financial statement views (P&L, Balance Sheet, Cash Flow, Summary, ROIC, Valuation, Audit). Input cells are always editable inline; computed cells are read-only. Guardian Bar above tabs shows plan health. Replaces the retired "Expert Mode" spreadsheet grid. |
 
-**Key architectural insight:** All three modes write to the **same financial input state**. The conversation and the form are two input methods to the same state model. The financial engine reads from this state and produces projections regardless of how the state was populated.
+**Key architectural insight:** Both surfaces write to the **same financial input state**. Navigating between them is like switching between a paragraph view and an outline view of the same document. The financial engine reads from this state and produces projections regardless of which surface populated it. Edits on either surface are immediately reflected on the other (FR97 — bidirectional sync).
 
 **Input state attribution:** Each field in the financial input state tracks its source — brand default, manual entry, or AI-populated — so that the Advisory Board and the user can distinguish between values they chose vs. values that were auto-filled.
+
+**What was retired (2026-02-18 UX consolidation):**
+- Mode Switcher UI (segmented control for Planning Assistant / Forms / Quick Entry) — retired. No mode switcher exists anywhere in the UI.
+- Quick Entry grid component (`quick-entry-mode.tsx`) — retired. Its functionality is fully absorbed by inline-editable financial statement tabs in Reports.
+- The concept of "three modes" replaced by "two surfaces" with behavioral tiers that adapt per persona without user-facing mode selection.
 
 ### Advisory Board Meeting Feature
 
@@ -97,11 +103,11 @@ The AI layer is designed as an enhancement, not a foundation. The product works 
 
 | Phase | What Ships | AI Dependency |
 |-------|-----------|---------------|
-| **MVP Core** | Financial engine + Expert Mode (spreadsheet) + Normal Mode (forms) + all infrastructure (auth, RBAC, data isolation, documents, auto-save) | None — product fully functional |
-| **MVP Enhanced** | AI Planning Advisor (Story Mode) | LLM required for Story Mode only; Normal/Expert modes unaffected |
+| **MVP Core** | Financial engine + My Plan (forms) + Reports (interactive statements with inline editing) + all infrastructure (auth, RBAC, data isolation, documents, auto-save) | None — product fully functional |
+| **MVP Enhanced** | AI Planning Assistant (slide-in panel within My Plan) | LLM required for Planning Assistant only; My Plan forms and Reports unaffected |
 | **MVP Complete** | Advisory Board Meeting | LLM required for advisory sessions; core planning unaffected |
 
-**Architectural principle:** If the LLM has a bad day, franchisees can still build complete financial plans using Normal or Expert mode. The AI layer degrades gracefully — it's never a single point of failure.
+**Architectural principle:** If the LLM has a bad day, franchisees can still build complete financial plans using My Plan forms and Reports inline editing. The AI layer degrades gracefully — it's never a single point of failure.
 
 ### Technical Constraints & Dependencies
 
@@ -119,11 +125,11 @@ The AI layer is designed as an enhancement, not a foundation. The product works 
 1. **brand_id scoping** — Touches every table, every API endpoint, every query. Must be enforced systematically via middleware/context patterns, not ad hoc per-developer discipline.
 2. **Role-based data isolation** — Three different visibility rules (franchisee: own data only, franchisor: pipeline + opt-in financials, Katalyst: everything). Must be enforced at query level, not filtered after retrieval.
 3. **Auto-save & state persistence** — Affects the entire planning experience across all modes. Must be non-blocking, reliable, and support crash recovery. Maximum 2-minute data loss window.
-4. **Experience tier presentation** — Story (AI conversation) vs. Normal (forms) vs. Expert (spreadsheet) changes the interaction paradigm but not the underlying data or calculations. Different input collection strategies writing to the same state.
+4. **Two-surface presentation** — My Plan (structured forms + AI Planning Assistant panel) vs. Reports (interactive financial statements with inline editing) present different interaction paradigms but share the same underlying data and calculations. Both surfaces write to and read from the same financial input state.
 5. **Financial accuracy pipeline** — From input to calculation to document generation, financial values must maintain precision and formatting consistency.
 6. **Consultant booking link** — Ever-present across all modes, configurable per account manager per franchisee. Cross-cutting UI concern.
 7. **FTC compliance language** — Affects tooltips, labels, disclaimers, AI advisor conversation tone across the application. Systematic content concern.
-8. **Progressive disclosure** — Each experience tier presents information at different density levels. Story Mode: conversational with rich context. Normal Mode: moderate density forms. Expert Mode: maximum density spreadsheet. Same data, dramatically different information density. This has layout and component architecture implications.
+8. **Progressive disclosure** — The two surfaces present information at different density levels. My Plan: guided forms with contextual help, tooltips, and decomposed sub-fields for first-timers. Reports: maximum density financial statements with inline editing for veterans. The AI Planning Assistant (slide-in panel) adds conversational context. Same data, different information density per surface. Behavioral tiers (Story/Normal/Expert) adapt the level of guidance shown, not the surface structure.
 9. **Per-field metadata pattern** — Every financial input field carries: (a) brand default value, (b) Item 7 range reference, (c) current value (franchisee-entered or AI-populated), (d) value attribution source, (e) reset-to-default capability, (f) tier-dependent explanation content. This is a core data structure, not a UI decoration.
 
 ### Startup Cost Builder as Subsystem
@@ -369,7 +375,7 @@ generated_documents[]
   ├── generated_at: timestamp
   └── is_immutable: true (enforced — no updates, only new versions)
 
-ai_conversations[] (Story Mode chat history)
+ai_conversations[] (AI Planning Assistant chat history)
   ├── plan_id (FK → plans)
   ├── messages (JSONB array — role, content, timestamp, extracted_values)
   └── total_tokens_used: integer
@@ -557,7 +563,7 @@ Data Sharing Consent:
 Quick ROI:
   POST   /api/quick-roi                 (lightweight calculation, no auth required for initial capture)
 
-AI (Story Mode):
+AI Planning Assistant:
   POST   /api/plans/:id/conversation    (send message, receive AI response + extracted values)
   GET    /api/plans/:id/conversation    (get conversation history)
 
@@ -662,16 +668,16 @@ All errors return consistent structure. Validation errors (from Zod) return fiel
 - Cache invalidation after mutations
 
 **Local UI State (React Context):**
-- Current experience tier (story/normal/expert)
+- Active surface context (My Plan or Reports — driven by route, not stored state)
 - Active section/tab in the planning experience
 - UI-only state (sidebar open/closed, modal state, form validation state)
-- Theme preference (light/dark)
+- Theme preference (light/dark — deferred to post-MVP)
 
 **Financial Input State Flow:**
 ```
-[Story Mode Chat] ──→ extractValuesFromAI() ──→ updateFinancialInput()
-[Normal Mode Form] ──→ onFieldChange()       ──→ updateFinancialInput()
-[Expert Mode Grid] ──→ onCellEdit()          ──→ updateFinancialInput()
+[My Plan Forms]     ──→ onFieldChange()       ──→ updateFinancialInput()
+[Reports Inline]    ──→ onCellEdit()          ──→ updateFinancialInput()
+[AI Planning Asst]  ──→ extractValuesFromAI() ──→ updateFinancialInput()
                                                        │
                                                        ▼
                                               React Query Cache
@@ -690,30 +696,50 @@ All errors return consistent structure. Validation errors (from Zod) return fiel
                                               (cache invalidation)
 ```
 
-#### Decision 9: Component Architecture
+#### Decision 9: Component Architecture (Updated 2026-02-20)
 
-**Decision:** Shared detail panel + tier-specific input collection components.
+**Decision:** Two-surface architecture with shared state layer — My Plan surface and Reports surface, unified by sidebar navigation.
 
-**Layout Architecture:**
+**My Plan Surface Layout:**
 
 ```
-<PlanningLayout>                          (shared wrapper)
-  ├── <PlanningHeader>                    (shared — plan name, tier toggle, save status, booking link)
-  ├── <SplitView>                         (shared — resizable panels via react-resizable-panels)
-  │     ├── <InputPanel>                  (LEFT — tier-specific)
-  │     │     ├── <StoryModeChat />       (AI conversation interface)
-  │     │     ├── <NormalModeForm />      (section-by-section form)
-  │     │     └── <ExpertModeGrid />      (spreadsheet-style inputs)
-  │     └── <DetailPanel>                 (RIGHT — shared across all tiers)
-  │           ├── <FinancialDashboard />  (live charts, KPIs, summary)
-  │           ├── <StartupCostBuilder />  (expandable cost detail)
-  │           └── <SectionDetail />       (per-field values with metadata)
-  └── <PlanningFooter>                    (shared — navigation, document generation)
+<PlanPage>                                  (route: /plans/:planId)
+  ├── <PlanningHeader>                      (plan name, save indicator, booking link)
+  ├── <InputPanel>                          (LEFT — form sections with collapsible groups)
+  │     ├── Revenue section                 (forms-mode.tsx — collapsible)
+  │     ├── Expenses section                (forms-mode.tsx — collapsible)
+  │     ├── Startup Costs section           (startup-cost-builder.tsx — expandable line items)
+  │     └── Per-field metadata              (source-badge.tsx, field-help-icon.tsx)
+  ├── <DashboardPanel>                      (RIGHT — live financial summary)
+  │     ├── <SummaryMetrics />              (key KPIs: break-even, IRR, ROI)
+  │     ├── <DashboardCharts />             (revenue/expense/cash charts)
+  │     └── <DocumentPreviewWidget />       (progressive document preview)
+  ├── <ImpactStrip>                         (BOTTOM — real-time impact summary + deep links to Reports tabs)
+  └── [Future: AI Planning Assistant]       (slide-in panel — Epic 9)
 ```
 
-**Key Principle:** The Detail Panel (right side) is identical regardless of tier. It shows the current state of all financial inputs with their metadata (source attribution, brand defaults, Item 7 ranges). This is the "truth" view — what the engine sees.
+**Reports Surface Layout:**
 
-**Tier Switching:** Users can switch tiers mid-session. No data is lost because all tiers write to the same financial input state. Switching tiers changes only the left panel.
+```
+<ReportsPage>                               (route: /plans/:planId/reports)
+  ├── <GuardianBar>                         (plan health status, scenario selection)
+  ├── <ScenarioBar>                         (active scenario indicator + comparison toggle)
+  ├── <Tabs>                                (tab navigation across statement types)
+  │     ├── <SummaryTab />                  (high-level projections)
+  │     ├── <PnlTab />                      (P&L with inline-editable input cells)
+  │     ├── <BalanceSheetTab />             (balance sheet projections)
+  │     ├── <CashFlowTab />                 (cash flow statement)
+  │     ├── <RoicTab />                     (extended ROIC analysis — 15 fields)
+  │     ├── <ValuationTab />                (business valuation output)
+  │     └── <AuditTab />                    (13-check identity verification)
+  └── <ColumnManager>                       (show/hide monthly columns, annual rollups)
+```
+
+**Key Principle:** Both surfaces share the same financial input state. Edits on My Plan (forms) or Reports (inline cells) are immediately reflected on the other surface. There is no mode switcher — navigation between surfaces is via sidebar destinations.
+
+**Retired Components (2026-02-18 UX consolidation):**
+- `mode-switcher.tsx` — exists in codebase but no longer rendered in the UI. Will be removed in cleanup pass.
+- `quick-entry-mode.tsx` — functionality absorbed by Reports inline editing. Will be removed in cleanup pass.
 
 #### Decision 10: Routing Strategy
 
@@ -721,10 +747,11 @@ All errors return consistent structure. Validation errors (from Zod) return fiel
 
 ```
 /                                    → Landing / Login
-/onboarding                          → New user onboarding (tier detection)
+/onboarding                          → New user onboarding
 /plans                               → Plan list (franchisee sees own, franchisor sees pipeline)
-/plans/:id                           → Planning experience (tier-specific)
-/plans/:id/documents                 → Generated documents for a plan
+/plans/:planId                       → My Plan surface (form-based input)
+/plans/:planId/reports               → Reports surface (interactive financial statements)
+/plans/:planId/documents             → Generated documents for a plan
 /quick-roi                           → Quick ROI calculator (minimal auth)
 /admin/brands                        → Brand management (Katalyst only)
 /admin/brands/:brandId               → Brand parameter editor
@@ -826,8 +853,8 @@ Client receives:
 ```
 
 **Graceful Degradation:**
-- If LLM API is unavailable, Story Mode shows: "AI advisor is temporarily unavailable. Switch to Normal Mode to continue building your plan."
-- Normal and Expert modes are completely unaffected by LLM availability
+- If LLM API is unavailable, the AI Planning Assistant panel shows: "AI advisor is temporarily unavailable. Continue using My Plan forms or Reports to build your plan."
+- My Plan forms and Reports inline editing are completely unaffected by LLM availability
 - Conversation history is preserved even if AI goes down temporarily
 
 **Token Management:**
@@ -891,99 +918,96 @@ function calculateProjections(input: EngineInput): EngineOutput {
 
 ---
 
-### Engine Extension Design (Sprint Change Proposal 2026-02-15, CP-2)
+### Engine Extension Design (Sprint Change Proposal 2026-02-15, CP-2) — Implemented
 
-The financial engine requires extension to support the full financial statement output layer. All extensions are additive — existing engine computation and 140+ tests are unaffected.
+The financial engine was extended to support the full financial statement output layer. All extensions were additive — existing engine computation and 140+ tests remained unaffected. The extensions below reflect the **actual implemented interfaces** in `shared/financial-engine.ts`.
 
-**A. New Engine Inputs:**
+**A. Extended Engine Inputs (FinancialInputs):**
+
+The `FinancialInputs` interface was extended with fields required for valuation, ROIC, and P&L analysis:
 
 ```typescript
-interface EngineInputExtension {
-  ebitdaMultiple: number;                        // For valuation calculations (e.g., 5.0x)
-  targetPreTaxProfitPct: [number, number, number, number, number]; // Per-year target pre-tax profit %
-  shareholderSalaryAdj: [number, number, number, number, number]; // Per-year shareholder salary adjustment ($)
-  taxPaymentDelayMonths: number;                 // Tax payable timing on balance sheet (e.g., 9)
-  nonCapexInvestment: [number, number, number, number, number];   // Per-year non-capex investment ($)
+interface FinancialInputs {
+  // ... existing revenue, expenses, financing sections ...
+  valuation: {
+    ebitdaMultiple: FinancialFieldValue;          // e.g., 5.0x
+    shareholderSalary: FinancialFieldValue;       // Annual shareholder salary adjustment
+    targetPreTaxProfitPct: FinancialFieldValue;   // Target pre-tax profit percentage
+  };
 }
 ```
 
-**B. New Monthly Output Fields (17+):**
-
-Balance Sheet disaggregation:
-- `taxPayable`, `lineOfCredit`, `commonStock`, `retainedEarnings`
-- `totalCurrentAssets`, `totalAssets`, `totalCurrentLiabilities`, `totalLiabilities`
-- `totalEquity`, `totalLiabilitiesAndEquity`
-
-Cash Flow disaggregation:
-- Operating: `cfDepreciation` (add-back), `cfAccountsReceivableChange`, `cfInventoryChange`, `cfAccountsPayableChange`, `cfTaxPayableChange`, `cfNetOperatingCashFlow`
-- Investing: `cfCapexPurchase`, `cfNetBeforeFinancing`
-- Financing: `cfNotesPayable`, `cfLineOfCredit`, `cfInterestExpense`, `cfDistributions`, `cfEquityIssuance`, `cfNetFinancingCashFlow`
-- Net: `cfNetCashFlow`, `beginningCash`, `endingCash`
-
-**C. New Output Sections:**
+**B. New Output Sections (implemented — 3 new top-level output arrays):**
 
 ```typescript
 interface ValuationOutput {
   year: number;
-  adjustedNetOperatingIncome: number;  // EBITDA - Shareholder Salary Adj
+  grossSales: number;
+  netOperatingIncome: number;
+  shareholderSalaryAdj: number;
+  adjNetOperatingIncome: number;
+  adjNetOperatingIncomePct: number;
   ebitdaMultiple: number;
-  estimatedBusinessValue: number;
+  estimatedValue: number;
   estimatedTaxOnSale: number;
   netAfterTaxProceeds: number;
   totalCashInvested: number;
-  replacementReturnRequired: number;   // % benchmark
-  // + additional fields (11 total per year)
+  replacementReturnRequired: number;
+  businessAnnualROIC: number;
 }
 
-interface ROICOutputExtended {
+interface ROICExtendedOutput {
   year: number;
-  totalCashInvested: number;           // Equity + Debt (constant)
-  totalSweatEquity: number;            // Cumulative shareholder salary adj
-  retainedEarnings: number;            // Cumulative net income - distributions
-  totalInvestedCapital: number;        // Cash + Sweat + Retained
+  outsideCash: number;
+  totalLoans: number;
+  totalCashInvested: number;
+  totalSweatEquity: number;
+  retainedEarningsLessDistributions: number;
+  totalInvestedCapital: number;
+  preTaxNetIncome: number;
+  preTaxNetIncomeIncSweatEquity: number;
+  taxRate: number;
+  taxesDue: number;
   afterTaxNetIncome: number;
-  roicPct: number;                     // After-Tax NI / Total Invested Capital
-  // + additional fields (15 total per year)
+  roicPct: number;
+  avgCoreCapitalPerMonth: number;
+  monthsOfCoreCapital: number;
+  excessCoreCapital: number;
 }
 
-interface AuditChecksExtended {
-  checks: AuditCheck[];                // 13 checks total (currently 4)
-}
-
-interface AuditCheck {
-  id: string;
-  name: string;
-  description: string;
-  passed: boolean;
-  expected: number;
-  actual: number;
-  tolerance: number;
+interface PLAnalysisOutput {
+  year: number;
+  adjustedPreTaxProfit: number;
+  targetPreTaxProfit: number;
+  aboveBelowTarget: number;
+  nonLaborGrossMargin: number;
+  totalWages: number;
+  adjustedTotalWages: number;
+  salaryCapAtTarget: number;
+  overUnderCap: number;
+  laborEfficiency: number;
+  adjustedLaborEfficiency: number;
+  discretionaryMarketingPct: number;
+  prTaxBenefitsPctOfWages: number;
+  otherOpexPctOfRevenue: number;
 }
 ```
 
-**D. P&L Analysis Lines (12+ computed lines):**
-- Adjusted Pre-tax Profit, Target Pre-tax Profit, Above/Below Target
-- Non-Labor Gross Margin, Total Wages, Adjusted Total Wages
-- Salary Cap @ target %, (Over)/Under Cap
-- Labor Efficiency, Adjusted Labor Efficiency
-- Discretionary Marketing %, PR Taxes & Benefits as % of All Wages, Other OpEx as % of Revenue
-
-**E. Extended EngineOutput:**
+**C. Extended EngineOutput (as implemented):**
 
 ```typescript
 interface EngineOutput {
-  // ... existing fields ...
-  monthlyProjections: MonthlyProjection[];  // Extended with new Balance Sheet + Cash Flow fields
-  annualSummary: AnnualSummary[];           // Extended with P&L analysis lines
-  roiMetrics: ROIMetrics;
-  cashFlow: CashFlowProjection;
-  balanceSheet: BalanceSheetSnapshot[];
-  identityChecks: AuditCheck[];             // Extended from 4 → 13 checks
-  valuation: ValuationOutput[];             // NEW — per-year valuation
-  roicExtended: ROICOutputExtended[];       // NEW — per-year extended ROIC
-  plAnalysis: PLAnalysisLines[];            // NEW — per-year P&L analysis
+  monthlyProjections: MonthlyProjection[];  // 60 months — includes Balance Sheet + Cash Flow fields
+  annualSummaries: AnnualSummary[];         // 5 years — includes P&L analysis metrics
+  roiMetrics: ROIMetrics;                   // Break-even, 5-year ROI
+  identityChecks: IdentityCheckResult[];    // 13 identity checks (expanded from original 4)
+  valuation: ValuationOutput[];             // Per-year business valuation (5 entries)
+  roicExtended: ROICExtendedOutput[];       // Per-year extended ROIC (15 fields, 5 entries)
+  plAnalysis: PLAnalysisOutput[];           // Per-year P&L analysis (14 fields, 5 entries)
 }
 ```
+
+**Note:** The original SCP draft used placeholder names (`cashFlow`, `balanceSheet` as separate top-level sections). The implementation consolidated Balance Sheet and Cash Flow fields into `MonthlyProjection` and `AnnualSummary` respectively, which is cleaner and avoids data duplication.
 
 ### Help Content Data Model (Sprint Change Proposal 2026-02-15, Addendum)
 
@@ -1026,10 +1050,10 @@ interface FieldHelpContent {
 3. **Financial engine** → Core computation, no dependencies on UI
 4. **Storage interface (IStorage)** → CRUD operations with role scoping
 5. **API routes** → Thin layer over storage + engine
-6. **Normal Mode UI** → Form-based input + detail panel + dashboard
-7. **Expert Mode UI** → Spreadsheet-style input (reuses detail panel)
+6. **My Plan UI** → Form-based input + dashboard panel + impact strip
+7. **Reports UI** → Financial statement tabs with inline editing
 8. **Document generation** → PDF pipeline + immutable storage
-9. **Story Mode UI + AI integration** → Chat interface + LLM proxy
+9. **AI Planning Assistant** → Slide-in panel within My Plan + LLM proxy
 10. **Brand admin UI** → Parameter management
 11. **Pipeline dashboard** → Franchisor/Katalyst views
 12. **Quick ROI** → Lightweight standalone calculator
@@ -1037,14 +1061,14 @@ interface FieldHelpContent {
 **Cross-Component Dependencies:**
 
 ```
-Financial Engine ←── (consumed by) ──→ All three experience tiers
+Financial Engine ←── (consumed by) ──→ Both surfaces (My Plan + Reports)
                 ←── (consumed by) ──→ Document generation
                 ←── (consumed by) ──→ Quick ROI
                 ←── (consumed by) ──→ AI conversation (for context)
 
-Unified Financial Input State ←── (written by) ──→ Story Mode AI extraction
-                              ←── (written by) ──→ Normal Mode forms
-                              ←── (written by) ──→ Expert Mode grid
+Unified Financial Input State ←── (written by) ──→ My Plan form fields
+                              ←── (written by) ──→ Reports inline editable cells
+                              ←── (written by) ──→ AI Planning Assistant extraction
                               ←── (read by)    ──→ Financial Engine
                               ←── (read by)    ──→ Detail Panel
 
@@ -1148,7 +1172,7 @@ client/src/
   components/
     ui/                    ← Shadcn primitives (NEVER modify these)
     shared/                ← Cross-tier components (detail panel, financial dashboard, ROI card)
-    planning/              ← Plan-specific components (story mode chat, normal mode forms, expert grid)
+    planning/              ← Plan-specific components (My Plan forms, Reports statements, impact strip)
     admin/                 ← Brand admin components
     pipeline/              ← Franchisor/Katalyst dashboard components
   hooks/                   ← Custom hooks (useFinancialEngine, usePlanAutoSave, useCurrentUser)
@@ -1460,6 +1484,11 @@ katalyst-growth-planner/
 │   ├── [C] schema.ts                     # ALL Drizzle tables, Zod schemas, types
 │   ├── [C] financial-engine.ts           # Pure computation module + interfaces
 │   │                                     #   (@engine-pure — zero I/O, zero side effects)
+│   ├── [C] plan-initialization.ts        # Default plan state factory (brand defaults → initial inputs)
+│   ├── [C] help-content/                 # Contextual help data (shared — used by server + client)
+│   │   ├── index.ts                      # Help content registry + lookup
+│   │   ├── field-help.ts                 # Per-field help text, tooltips, FDD references
+│   │   └── glossary-terms.ts            # Financial term glossary definitions
 │   └── [C] brand-seed-data/
 │       └── postnet.ts                    # PostNet brand defaults, startup cost template,
 │                                         #   Item 7 ranges, and reference calculations
@@ -1475,11 +1504,12 @@ katalyst-growth-planner/
 │   ├── [C] routes/                       # Route modules (Party Mode: Amelia — keep each under 100 lines)
 │   │   ├── auth.ts                       # GET google, GET google/callback, GET me, POST logout
 │   │   ├── plans.ts                      # Plan CRUD + PATCH auto-save
-│   │   ├── startup-costs.ts              # Startup cost line items CRUD
-│   │   ├── documents.ts                  # POST generate + GET retrieve (immutable)
-│   │   ├── consent.ts                    # GET status + POST grant + POST revoke
-│   │   ├── ai.ts                         # POST conversation message (Story Mode)
-│   │   ├── quick-roi.ts                  # POST calculate (no auth — public)
+│   │   ├── brands.ts                     # Brand read endpoints (public brand info)
+│   │   ├── invitations.ts               # Invitation CRUD (create, accept, list)
+│   │   ├── users.ts                      # User profile + management
+│   │   ├── onboarding.ts                # Onboarding flow endpoints
+│   │   ├── financial-engine.ts          # POST calculate — engine invocation endpoint
+│   │   ├── help.ts                       # GET field help, glossary terms
 │   │   ├── admin.ts                      # Brand CRUD (katalyst_admin only)
 │   │   └── pipeline.ts                   # Pipeline queries (franchisor + katalyst_admin)
 │   │
@@ -1490,7 +1520,9 @@ katalyst-growth-planner/
 │   └── [C] services/
 │       ├── ai-service.ts                 # LLM proxy, conversation mgmt, NL→structured extraction
 │       ├── document-service.ts           # PDF generation, immutable doc storage
-│       └── financial-service.ts          # Orchestrates engine + persists results
+│       ├── financial-service.ts          # Orchestrates engine + persists results
+│       ├── brand-validation-service.ts   # Brand configuration completeness validation
+│       └── structured-logger.ts          # Structured logging with context (replaces raw console.log)
 │
 ├── client/
 │   └── src/
@@ -1500,61 +1532,68 @@ katalyst-growth-planner/
 │       │
 │       ├── components/
 │       │   ├── [T] ui/                   # Shadcn primitives (NEVER modify)
-│       │   │   ├── button.tsx
-│       │   │   ├── card.tsx
-│       │   │   ├── form.tsx
-│       │   │   ├── sidebar.tsx
-│       │   │   ├── toast.tsx
-│       │   │   ├── tooltip.tsx
-│       │   │   └── ...                   # Other Shadcn components as needed
+│       │   │   ├── button.tsx, card.tsx, form.tsx, sidebar.tsx, toast.tsx, tooltip.tsx
+│       │   │   └── ...                   # ~40 Shadcn components installed
 │       │   │
-│       │   ├── [C] common/               # Cross-tier components (Party Mode: Bob — renamed from shared/)
-│       │   │   ├── detail-panel.tsx       # Per-field metadata display (value, source, range, reset)
-│       │   │   ├── financial-dashboard.tsx # Summary projections, ROI metrics, charts
-│       │   │   ├── roi-summary-card.tsx   # Break-even, IRR, annual ROI display
-│       │   │   ├── startup-cost-table.tsx  # Startup cost line items (view/edit)
-│       │   │   ├── save-indicator.tsx      # "Saved" / "Saving..." / "Unsaved changes"
-│       │   │   ├── consent-dialog.tsx      # Data sharing consent grant/revoke UI
-│       │   │   ├── error-boundary.tsx      # Fault isolation per panel (Party Mode: Amelia)
-│       │   │   └── plan-header.tsx         # Plan name, tier selector, save indicator, booking link
+│       │   ├── [C] shared/               # Cross-surface components (shared between My Plan + Reports)
+│       │   │   ├── financial-input-editor.tsx # Per-field editing with source badges, help icons, ranges
+│       │   │   ├── source-badge.tsx       # Displays field source attribution (brand_default / manual / ai)
+│       │   │   ├── field-help-icon.tsx    # Contextual help icon with popover (linked to help-content)
+│       │   │   ├── startup-cost-builder.tsx # Startup cost line items (view/edit, expandable)
+│       │   │   ├── summary-metrics.tsx    # Key KPIs display (break-even, IRR, ROI)
+│       │   │   └── quick-start-overlay.tsx # First-run onboarding overlay
 │       │   │
-│       │   ├── [C] planning/             # Experience tier-specific components
-│       │   │   ├── story-layout.tsx       # Split-screen: chat left, dashboard right (Party Mode: Amelia)
-│       │   │   ├── normal-layout.tsx      # Section nav left, form center, detail panel right
-│       │   │   ├── expert-layout.tsx      # Full-width spreadsheet grid, collapsible dashboard
+│       │   ├── [C] planning/             # My Plan + Reports surface components
+│       │   │   ├── planning-header.tsx    # Plan name, save indicator, booking link
+│       │   │   ├── save-indicator.tsx     # "Saved" / "Saving..." / "Unsaved changes"
+│       │   │   ├── input-panel.tsx        # My Plan left panel — form sections container
+│       │   │   ├── forms-mode.tsx         # Collapsible form sections (revenue, expenses, etc.)
+│       │   │   ├── dashboard-panel.tsx    # My Plan right panel — live financial summary
+│       │   │   ├── dashboard-charts.tsx   # Revenue/expense/cash flow charts
+│       │   │   ├── impact-strip.tsx       # Bottom strip — real-time impact + deep links to Reports
+│       │   │   ├── document-preview-widget.tsx  # Progressive document preview in dashboard
+│       │   │   ├── document-preview-modal.tsx   # Full-screen document preview modal
+│       │   │   ├── editable-cell.tsx      # Shared editable cell component
+│       │   │   ├── financial-statements.tsx # Reports surface — tab container for all statement tabs
 │       │   │   │
-│       │   │   ├── story-mode/
-│       │   │   │   ├── chat-panel.tsx     # AI conversation interface
-│       │   │   │   ├── message-bubble.tsx  # Individual message display
-│       │   │   │   └── chat-input.tsx      # Message input with send
+│       │   │   ├── statements/            # Reports tab components (Epic 5)
+│       │   │   │   ├── summary-tab.tsx    # High-level projections overview
+│       │   │   │   ├── pnl-tab.tsx        # P&L statement with inline-editable input cells
+│       │   │   │   ├── balance-sheet-tab.tsx # Balance sheet projections
+│       │   │   │   ├── cash-flow-tab.tsx  # Cash flow statement
+│       │   │   │   ├── roic-tab.tsx       # Extended ROIC analysis (15 fields)
+│       │   │   │   ├── valuation-tab.tsx  # Business valuation output
+│       │   │   │   ├── audit-tab.tsx      # 13-check identity verification
+│       │   │   │   ├── statement-table.tsx # Shared table renderer for all statement tabs
+│       │   │   │   ├── statement-section.tsx # Collapsible section within statement tables
+│       │   │   │   ├── inline-editable-cell.tsx # Input cell with inline editing in Reports
+│       │   │   │   ├── column-manager.tsx # Show/hide monthly columns, annual rollups
+│       │   │   │   ├── guardian-bar.tsx   # Plan health status bar above tabs
+│       │   │   │   ├── scenario-bar.tsx   # Scenario selection + comparison toggle
+│       │   │   │   ├── scenario-summary-card.tsx # Scenario comparison card
+│       │   │   │   ├── callout-bar.tsx    # Contextual info/warning callouts
+│       │   │   │   └── comparison-table-head.tsx # Multi-scenario column headers
 │       │   │   │
-│       │   │   ├── normal-mode/
-│       │   │   │   ├── section-nav.tsx     # Section navigation (sidebar or tabs)
-│       │   │   │   ├── input-section.tsx   # Grouped form fields per planning section
-│       │   │   │   └── field-input.tsx     # Single financial input with metadata
-│       │   │   │
-│       │   │   └── expert-mode/
-│       │   │       ├── spreadsheet-grid.tsx # Direct-access spreadsheet-style grid
-│       │   │       └── grid-cell.tsx        # Individual editable cell
+│       │   │   ├── [RETIRED] mode-switcher.tsx    # No longer rendered — pending removal
+│       │   │   └── [RETIRED] quick-entry-mode.tsx # Absorbed by Reports inline editing — pending removal
 │       │   │
-│       │   ├── [C] admin/                # Brand administration components
-│       │   │   ├── brand-form.tsx         # Brand setup/edit form
-│       │   │   ├── brand-defaults-editor.tsx # Financial defaults + Item 7 ranges
-│       │   │   ├── startup-cost-template.tsx # Startup cost template editor
-│       │   │   └── user-management.tsx    # Invitation, role assignment
+│       │   ├── [C] brand/                # Brand administration components (Epic 2 — was admin/)
+│       │   │   ├── BrandIdentityTab.tsx   # Brand identity (name, logo, accent color)
+│       │   │   ├── FinancialParametersTab.tsx # Financial defaults + Item 7 ranges
+│       │   │   ├── StartupCostTemplateTab.tsx # Startup cost template editor
+│       │   │   ├── AccountManagerTab.tsx  # Account manager assignment per brand
+│       │   │   └── BrandValidationTab.tsx # Brand configuration validation
 │       │   │
-│       │   ├── [C] pipeline/             # Franchisor/Katalyst dashboard components
-│       │   │   ├── pipeline-board.tsx     # Kanban-style pipeline stages
-│       │   │   ├── plan-summary-card.tsx  # Pipeline card with stage + market
-│       │   │   └── pipeline-filters.tsx   # Filter by stage, market, quarter
-│       │   │
-│       │   └── [C] app-sidebar.tsx       # Application sidebar navigation
+│       │   ├── DemoModeBanner.tsx         # Demo mode indicator banner
+│       │   ├── ImpersonationBanner.tsx    # Admin impersonation indicator
+│       │   └── [C] app-sidebar.tsx        # Application sidebar navigation (My Plan + Reports destinations)
 │       │
 │       ├── [C] pages/                    # One file per route
 │       │   ├── login.tsx                  # Login page — "Sign in with Google" for Katalyst admins [PUBLIC]
 │       │   ├── register.tsx               # Invitation-based registration for franchisees [PUBLIC — token required]
 │       │   ├── plans.tsx                  # Plans list / franchisee home [PROTECTED — franchisee]
-│       │   ├── plan.tsx                   # Plan workspace — renders story/normal/expert layout [PROTECTED — franchisee]
+│       │   ├── plan.tsx                   # My Plan surface — forms + dashboard [PROTECTED — franchisee]
+│       │   ├── reports.tsx               # Reports surface — financial statements [PROTECTED — franchisee]
 │       │   ├── quick-roi.tsx             # Lightweight ROI calculator [PUBLIC — lead capture]
 │       │   ├── pipeline.tsx              # Franchisor pipeline dashboard [PROTECTED — franchisor, katalyst_admin]
 │       │   ├── admin-brands.tsx          # Katalyst brand management [PROTECTED — katalyst_admin]
@@ -1563,15 +1602,18 @@ katalyst-growth-planner/
 │       │
 │       ├── hooks/
 │       │   ├── [C] use-auth.ts           # Current user, Google OAuth redirect, logout, role checks
-│       │   ├── [C] use-financial-engine.ts # Client-side engine invocation for live preview
+│       │   ├── [C] use-plan.ts           # Plan data fetching and caching
+│       │   ├── [C] use-plan-outputs.ts   # Engine output fetching (separate from inputs)
 │       │   ├── [C] use-plan-auto-save.ts  # Debounced auto-save with conflict detection
+│       │   ├── [C] use-startup-costs.ts  # Startup cost line items CRUD
+│       │   ├── [C] use-field-editing.ts  # Per-field editing state management
+│       │   ├── [C] use-brand-theme.ts    # Brand theme application hook
 │       │   └── [T] use-toast.ts          # Toast notifications (exists in template)
 │       │
 │       └── lib/
 │           ├── [T] queryClient.ts        # TanStack Query config (exists in template)
 │           ├── [C] format.ts             # Currency, percentage, date display formatting
 │           ├── [C] brand-theme.ts        # Maps brand config → CSS custom properties at runtime
-│           │                             #   (Party Mode: Sally — dynamic, not per-brand CSS files)
 │           ├── [C] protected-route.tsx    # Route guard (redirects if not authed/wrong role)
 │           └── [T] utils.ts              # General utilities (exists in template)
 │
@@ -1590,11 +1632,12 @@ katalyst-growth-planner/
 |----------|-------------|---------|---------------|
 | `/api/auth/*` | `routes/auth.ts` | Google OAuth + session management | Mixed (OAuth routes public, /me protected) |
 | `/api/plans/*` | `routes/plans.ts` | Plan CRUD + auto-save | Yes — franchisee owns, franchisor reads (projected) |
-| `/api/plans/:id/startup-costs/*` | `routes/startup-costs.ts` | Startup cost CRUD | Yes — franchisee only |
-| `/api/plans/:id/documents/*` | `routes/documents.ts` | Create + retrieve (immutable) | Yes — franchisee creates, franchisor reads (with consent) |
-| `/api/plans/:id/consent/*` | `routes/consent.ts` | Grant/revoke/status | Yes — franchisee only |
-| `/api/plans/:id/conversation` | `routes/ai.ts` | Chat message | Yes — franchisee only (Story Mode) |
-| `/api/quick-roi` | `routes/quick-roi.ts` | Stateless calculation | No (public — lead capture) |
+| `/api/brands/*` | `routes/brands.ts` | Brand read endpoints (public brand info) | Mixed |
+| `/api/invitations/*` | `routes/invitations.ts` | Invitation CRUD (create, accept, list) | Yes — katalyst_admin creates, franchisee accepts |
+| `/api/users/*` | `routes/users.ts` | User profile + management | Yes |
+| `/api/onboarding/*` | `routes/onboarding.ts` | Onboarding flow data | Yes |
+| `/api/financial-engine/*` | `routes/financial-engine.ts` | POST calculate — engine invocation | Yes |
+| `/api/help/*` | `routes/help.ts` | GET field help, glossary terms | Yes |
 | `/api/admin/brands/*` | `routes/admin.ts` | Brand CRUD | Yes — katalyst_admin only |
 | `/api/pipeline/*` | `routes/pipeline.ts` | Pipeline queries | Yes — franchisor or katalyst_admin |
 
@@ -1630,28 +1673,26 @@ export function registerRoutes(app: Express, storage: IStorage) {
 
 ```
 Pages (route-level containers)
-  └── compose components from common/ + planning/ + admin/ + pipeline/
+  └── compose components from shared/ + planning/ + brand/
   └── own their TanStack Query hooks
   └── never contain business logic — delegate to hooks and components
-  └── plan.tsx: fetches plan → determines tier → renders {story|normal|expert}-layout
+  └── plan.tsx: fetches plan → renders My Plan surface (input-panel + dashboard-panel + impact-strip)
+  └── reports.tsx: fetches plan → renders Reports surface (financial-statements + guardian-bar + scenario-bar)
 
-Layout Components (components/planning/{story|normal|expert}-layout.tsx)
-  └── define arrangement of common/ components for each experience tier
-  └── story-layout: split-screen (chat left, dashboard right)
-  └── normal-layout: section nav left, form center, detail panel right
-  └── expert-layout: full-width grid, collapsible dashboard
-  └── each wrapped in error-boundary for fault isolation
+Surface Components (components/planning/)
+  └── My Plan: input-panel.tsx + forms-mode.tsx + dashboard-panel.tsx + impact-strip.tsx
+  └── Reports: financial-statements.tsx + statements/*.tsx tabs + guardian-bar.tsx + scenario-bar.tsx
+  └── Both surfaces write to same financial input state via same mutation hooks
 
-Common Components (components/common/)
+Shared Components (components/shared/)
   └── receive data via props — never fetch their own data
   └── emit changes via callbacks — never mutate server state directly
-  └── used identically across Story/Normal/Expert modes
-  └── error-boundary wraps each independently — dashboard crash doesn't kill chat
+  └── used identically across My Plan and Reports surfaces
+  └── financial-input-editor, source-badge, field-help-icon, startup-cost-builder, summary-metrics
 
-Tier Components (components/planning/{story|normal|expert}-mode/)
-  └── tier-specific input paradigm only
-  └── write to same financial input state via same mutation hooks
-  └── compose with common/ components (detail panel, dashboard)
+Brand Admin Components (components/brand/)
+  └── BrandIdentityTab, FinancialParametersTab, StartupCostTemplateTab, AccountManagerTab, BrandValidationTab
+  └── tabbed layout within admin-brand.tsx page
 ```
 
 **Service Boundaries (server-side):**
@@ -1719,16 +1760,16 @@ Brand Theming (client/src/lib/brand-theme.ts)
 
 | FR Category | Primary Files | Supporting Files |
 |-------------|--------------|-----------------|
-| **Financial Planning (FR1-10)** | `shared/financial-engine.ts` | `server/services/financial-service.ts`, `client/components/common/financial-dashboard.tsx`, `client/components/common/roi-summary-card.tsx` |
-| **Guided Experience (FR11-19)** | `client/pages/plan.tsx`, `client/components/planning/{story\|normal\|expert}-layout.tsx`, `client/components/planning/{story\|normal\|expert}-mode/*` | `client/components/common/plan-header.tsx` (includes booking link — Party Mode: John), `client/hooks/use-plan-auto-save.ts` |
-| **Advisory & Guardrails (FR20-23)** | `shared/financial-engine.ts` (identity checks), `client/components/common/detail-panel.tsx` (range warnings) | `server/services/financial-service.ts` |
+| **Financial Planning (FR1-10)** | `shared/financial-engine.ts` | `server/services/financial-service.ts`, `client/components/planning/dashboard-panel.tsx`, `client/components/shared/summary-metrics.tsx` |
+| **Guided Experience (FR11-19)** | `client/pages/plan.tsx` (My Plan), `client/pages/reports.tsx` (Reports), `client/components/planning/forms-mode.tsx`, `client/components/planning/financial-statements.tsx` | `client/components/planning/planning-header.tsx` (includes booking link), `client/hooks/use-plan-auto-save.ts` |
+| **Advisory & Guardrails (FR20-23)** | `shared/financial-engine.ts` (identity checks), `client/components/planning/statements/guardian-bar.tsx` (plan health), `client/components/shared/field-help-icon.tsx` (range warnings) | `server/services/financial-service.ts` |
 | **Documents (FR24-27)** | `server/services/document-service.ts`, `server/routes/documents.ts` | `server/storage.ts` (createDocument, getDocument, listDocuments — immutable only) |
 | **Auth & Access (FR28-32)** | `server/middleware/auth.ts`, `server/routes/auth.ts`, `client/pages/login.tsx`, `client/pages/register.tsx` | `client/hooks/use-auth.ts`, `client/lib/protected-route.tsx` (Katalyst admin: Google OAuth; franchisee: invitation-based, TBD) |
 | **Data Sharing (FR33-38)** | `server/middleware/rbac.ts`, `server/routes/consent.ts`, `client/components/common/consent-dialog.tsx` | `server/storage.ts` (consent CRUD) |
-| **Brand Admin (FR39-44)** | `client/pages/admin-brands.tsx`, `client/pages/admin-brand.tsx`, `client/components/admin/*`, `server/routes/admin.ts` | `server/storage.ts` (brand CRUD), `shared/brand-seed-data/postnet.ts` |
+| **Brand Admin (FR39-44)** | `client/pages/admin-brands.tsx`, `client/pages/admin-brand.tsx`, `client/components/brand/*`, `server/routes/admin.ts` | `server/storage.ts` (brand CRUD), `shared/brand-seed-data/postnet.ts` |
 | **Pipeline (FR45-48)** | `client/pages/pipeline.tsx`, `client/components/pipeline/*`, `server/routes/pipeline.ts` | `server/middleware/rbac.ts` (projectForRole) |
 | **Brand Identity (FR49)** | `client/lib/brand-theme.ts`, `shared/schema.ts` (brand theme columns + `booking_url`) | `client/components/common/plan-header.tsx` |
-| **AI Planning Advisor (FR50-54)** | `server/services/ai-service.ts`, `server/routes/ai.ts`, `client/components/planning/story-mode/*`, `client/components/planning/story-layout.tsx` | `client/pages/plan.tsx` (tier selection) |
+| **AI Planning Advisor (FR50-54)** | `server/services/ai-service.ts`, `server/routes/ai.ts` | `client/pages/plan.tsx` (AI Planning Assistant slide-in panel — Epic 9) |
 | **Advisory Board (FR55-58)** | Phase 2 — not in MVP file structure | — |
 
 **Cross-Cutting Concerns:**
@@ -1754,7 +1795,8 @@ Brand Theming (client/src/lib/brand-theme.ts)
 | Register | `/register` | PUBLIC (token required) | — |
 | Quick ROI | `/quick-roi` | PUBLIC | — (lead capture entry) |
 | Plans List | `/plans` | PROTECTED | franchisee |
-| Plan Workspace | `/plans/:planId` | PROTECTED | franchisee (owner), franchisor (read, with consent) |
+| My Plan | `/plans/:planId` | PROTECTED | franchisee (owner), franchisor (read, with consent) |
+| Reports | `/plans/:planId/reports` | PROTECTED | franchisee (owner), franchisor (read, with consent) |
 | Pipeline | `/pipeline` | PROTECTED | franchisor, katalyst_admin |
 | Brand Management | `/admin/brands` | PROTECTED | katalyst_admin |
 | Brand Config | `/admin/brands/:brandId` | PROTECTED | katalyst_admin |
@@ -1839,8 +1881,8 @@ All 15 architectural decisions are compatible. React + Express + PostgreSQL + Dr
 
 **Structure Alignment:**
 - Route modules (8 files under `server/routes/`) map 1:1 to API boundary table
-- Three layout components match the three experience tiers — clear separation
-- `components/common/` holds cross-tier components; `components/planning/` holds tier-specific
+- Two-surface architecture (My Plan + Reports) with shared state — clear separation of input paradigms
+- `components/shared/` holds cross-surface components; `components/planning/` holds surface-specific components
 - `[T]`/`[C]` legend prevents agents from recreating template files
 - Error boundary in `common/` enables fault isolation per panel in split-screen layouts
 
@@ -1984,7 +2026,7 @@ All issues found during validation have been resolved:
 
 **Key Strengths:**
 - Financial engine purity architecturally enforced — computation is deterministic and testable
-- Three-tier experience model writes to same state — no data divergence risk
+- Two-surface architecture writes to same state — no data divergence risk
 - RBAC at three layers prevents authorization gaps
 - Per-field metadata enables attribution, reset, and range display uniformly
 - Immutable document storage prevents tampering — no update/delete methods exist
@@ -2011,7 +2053,7 @@ All issues found during validation have been resolved:
 3. Respect `[T]`/`[C]` file legend — never recreate template files
 4. Financial engine (`shared/financial-engine.ts`) must remain pure — verify with `@engine-pure` comment
 5. Every component must have `data-testid` attributes following the documented convention
-6. Use `components/common/` for cross-tier components, never duplicate per tier
+6. Use `components/shared/` for cross-surface components, never duplicate per surface
 7. `routes.ts` creates `DatabaseStorage` instance and passes it to each route module via `registerXxxRoutes(app, storage)` (Party Mode: Amelia)
 8. Auto-save conflicts return `409` — no merge UI in MVP (Party Mode: Quinn)
 9. Split-screen layouts must stack/tab below 1024px viewport (Party Mode: Sally)
@@ -2020,8 +2062,8 @@ All issues found during validation have been resolved:
 
 | Priority | What | Cut Impact |
 |----------|------|-----------|
-| **NEVER CUT** | Financial engine, Normal Mode, Expert Mode, PDF generation, save/resume, auth, RBAC | Product doesn't work |
-| **First cut** | AI Planning Advisor (Story Mode) | Falls back to form-based Normal Mode |
+| **NEVER CUT** | Financial engine, My Plan (forms), Reports (statements), PDF generation, save/resume, auth, RBAC | Product doesn't work |
+| **First cut** | AI Planning Assistant | Falls back to My Plan forms + Reports inline editing |
 | **Second cut** | Franchisor pipeline dashboard | Katalyst uses direct DB queries |
 | **Third cut** | ROI Threshold Guardian (advisory guardrails) | Users see raw numbers without warnings |
 
@@ -2034,9 +2076,10 @@ All issues found during validation have been resolved:
 5. `server/middleware/auth.ts` + `server/middleware/rbac.ts` — Auth and authorization
 6. `server/routes.ts` + `server/routes/*.ts` — API endpoints (routes.ts creates storage, passes to modules)
 7. `client/src/pages/login.tsx` + `client/src/pages/plans.tsx` — Core user flow
-8. `client/src/pages/plan.tsx` + layout components — Planning experience
-9. `client/src/pages/quick-roi.tsx` — Public lead capture (with registration CTA — Party Mode: Sally)
-10. `client/src/pages/pipeline.tsx` + admin pages — Franchisor/Katalyst views
+8. `client/src/pages/plan.tsx` — My Plan surface (forms + dashboard + impact strip)
+9. `client/src/pages/reports.tsx` — Reports surface (financial statements + inline editing)
+10. `client/src/pages/quick-roi.tsx` — Public lead capture (with registration CTA)
+11. `client/src/pages/pipeline.tsx` + admin pages — Franchisor/Katalyst views
 
 **Independently Shippable Units (Party Mode: Bob — for sprint boundaries):**
 
@@ -2046,7 +2089,24 @@ All issues found during validation have been resolved:
 | Auth flow (login/register) | schema + storage | Yes — standalone user management |
 | Plans list + empty state | auth + schema + storage | Yes — CRUD without financial features |
 | Quick ROI page | financial engine only | Yes — no auth, stateless calculation |
-| Plan workspace (Normal Mode) | engine + auth + storage + routes | Yes — full planning experience |
-| Plan workspace (Story Mode) | Normal Mode + AI service | Yes — adds AI layer on top |
+| My Plan surface | engine + auth + storage + routes | Yes — full planning experience |
+| Reports surface | My Plan + engine outputs | Yes — financial statement review + inline editing |
 | Pipeline dashboard | plans + consent + RBAC | Yes — read-only view of existing plans |
 | Brand admin | schema + storage + seed data | Yes — configuration interface |
+
+---
+
+### Architecture Reconciliation History
+
+| Date | Type | Scope | Trigger | Key Changes |
+|------|------|-------|---------|-------------|
+| 2026-02-08 | Initial creation | Full document | CA workflow (Party Mode review) | 15 architectural decisions, complete project structure, validation |
+| 2026-02-15 | Addendum | Engine + Help Content | Sprint Change Proposal CP-2 | Engine extension design (Valuation, ROIC, Audit, P&L Analysis), Help Content data model |
+| 2026-02-20 | **Option A — Targeted Patch** | Experience tier, components, structure, API boundaries | Implementation Readiness Report (drift analysis) | Retired three-mode model → two-surface architecture (My Plan + Reports). Updated component tree, routing, API boundaries, FR mapping, cut order, project directory structure to reflect actual codebase (Epics 1-5). Verified `brand_account_managers` already documented. |
+
+**Remaining drift (cosmetic only — deferred to full reconciliation after Epic 5 closes):**
+- Some cross-cutting concern descriptions have minor terminology artifacts (e.g., "all modes" in booking link concern)
+- Decisions 1-8, 10-14 have minor terminology artifacts (e.g., "tier detection" in onboarding route comment)
+- Monitoring/observability gap note still says "Phase 2" — structured-logger.ts was implemented in Epic 3
+- `experience_tier` column in plans data model still references `'story' | 'normal' | 'expert'` — may need schema migration or deprecation note
+- Full reconciliation (Option B) should be scheduled after SCP-2026-02-19 remediation stabilizes the codebase
