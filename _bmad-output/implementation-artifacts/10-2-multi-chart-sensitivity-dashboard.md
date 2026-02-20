@@ -28,7 +28,8 @@ so that I can understand the full impact of changing assumptions across every di
 5. Given `ScenarioOutputs` are available, when Chart 2 renders, then it shows a 5-year line chart with three scenario curves for each of the following three series from `annualSummaries`: **Net Operating Cash Flow** (`operatingCashFlow`), **Net Cash Flow** (`netCashFlow`), and **Ending Cash Balance** (`endingCash`). The X-axis shows Year 1 through Year 5.
    - Source: `_bmad-output/planning-artifacts/epics.md` line 2138
 
-6. Given Chart 2 renders, when any scenario's `endingCash` value for any year is negative (< 0), then an amber advisory zone (`hsl(var(--chart-5))` at 15% opacity as a background band, or a `ReferenceLine y={0}` with amber fill below) highlights the cash-negative region. This advisory coloring follows the UX spec's amber advisory language — it is not a red error state.
+6. Given Chart 2 renders, when any scenario has at least one month where `monthlyProjections[m].endingCash < 0` (m = 0–59, checked across all 60 months — not just year-end values), then an amber advisory zone (`hsl(var(--chart-5))` at 15% opacity as a background band, or a `ReferenceLine y={0}` with amber fill below) highlights the cash-negative region. A scenario that dips negative mid-year but recovers by year-end must still trigger the advisory zone — checking `annualSummaries[].endingCash` alone is insufficient. This advisory coloring follows the UX spec's amber advisory language — it is not a red error state.
+   - Source: `_bmad-output/planning-artifacts/epics.md` line 2138 ("Months where any scenario goes cash-negative")
 
 ### Chart 3 — Break-Even Analysis
 
@@ -54,7 +55,7 @@ so that I can understand the full impact of changing assumptions across every di
 ### Chart 6 — Debt & Working Capital
 
 12. Given `ScenarioOutputs` are available, when Chart 6 renders, then it shows a 5-year chart with two data series:
-    - **Outstanding Debt**: `annualSummaries[].totalLiabilities` as a declining line (or use year-end `monthlyProjections[(year*12)-1].loanClosingBalance` for the loan paydown trajectory)
+    - **Outstanding Debt**: year-end `monthlyProjections[(year*12)-1].loanClosingBalance` (indices 11, 23, 35, 47, 59 for years 1–5). Do NOT use `annualSummaries[].totalLiabilities` — that value includes operating liabilities (accounts payable, tax payable) in addition to the loan balance (`totalLiabilities = loanBalance + accountsPayable + taxPayable + lineOfCredit` per `financial-engine.ts` line 572), making it unsuitable as a debt-paydown series.
     - **Working Capital**: computed as `totalCurrentAssets - totalCurrentLiabilities` from `monthlyProjections[(year*12)-1]` (year-end month for each year 1-5)
 
     Three scenario curves are displayed for each series using the standard chart color conventions. The X-axis shows Year 1 through Year 5.
@@ -186,8 +187,8 @@ so that I can understand the full impact of changing assumptions across every di
 
 - **Story 10.1 must complete before 10.2 can begin.** Story 10.2's `SensitivityCharts` component is rendered inside `WhatIfPlayground` created in Story 10.1. The interface contract: `WhatIfPlayground` computes `ScenarioOutputs` (from `computeScenarioOutputs`) and passes them to `SensitivityCharts` as a prop. If 10.1 is not done, there is no host component for 10.2's charts.
 
-- **`roicExtended` array has 5 entries (index 0-4 for years 1-5).** When mapping to chart data, use `output.roicExtended[i]` where `i` is 0-4, not `roiMetrics` (which has break-even data). `roicExtended[i].roicPct` is the ROIC percentage for year `i+1`. This is already a percentage (not cents), so do NOT divide by 100.
-  - Source: `shared/financial-engine.ts` lines 302–315 (`ROICExtendedOutput` interface), line 754 (computation)
+- **`roicExtended` array has 5 entries (index 0-4 for years 1-5).** When mapping to chart data, use `output.roicExtended[i]` where `i` is 0-4, not `roiMetrics` (which has break-even data). `roicExtended[i].roicPct` is the ROIC as a **decimal fraction** (e.g., `0.127` = 12.7%) — it is computed as `afterTaxNetIncome / totalInvestedCapital` (engine line 771). **Multiply by 100** to display as a percentage: `(roicPct * 100).toFixed(1) + "%"`. Do NOT treat this as cents (no `/100`). The correct pattern is confirmed by `callout-bar.tsx` line 105 (`roic5yr.roicPct * 100`) and `roic-tab.tsx` line 212 (`roicPct * 100`). The same decimal-fraction convention applies to `roiMetrics.fiveYearROIPct` used in the AC 13 delta cards.
+  - Source: `shared/financial-engine.ts` lines 302–315 (`ROICExtendedOutput` interface), line 771 (computation); `client/src/components/planning/statements/callout-bar.tsx` line 105; `client/src/components/planning/statements/roic-tab.tsx` line 212
 
 - **`roiMetrics.breakEvenMonth` can be `null` if break-even is not reached in 60 months.** Always handle the null case in Chart 3. Display "No break-even in 5 years" rather than crashing on `null.toString()`.
   - Source: `shared/financial-engine.ts` line 271 (`breakEvenMonth: number | null`)
@@ -228,7 +229,7 @@ so that I can understand the full impact of changing assumptions across every di
   - AC 1: Navigate to Scenarios view → verify `data-testid="what-if-charts-container"` is visible
   - AC 2: Trigger slider change → verify all 6 chart `data-testid` containers update (check for re-render or data change)
   - AC 3/5/7/9/11/12: Each chart card renders with its `data-testid`
-  - AC 6: Verify amber advisory zone appears for Chart 2 when a scenario has negative ending cash
+  - AC 6: Verify amber advisory zone appears for Chart 2 when any scenario has a month where `monthlyProjections[m].endingCash < 0` — including mid-year dips that recover by year-end (year-end `endingCash` alone is insufficient)
   - AC 13: Verify 4 metric delta cards render with `data-testid="metric-card-*"`
   - AC 14: Verify neutral state message when sliders are at zero
   - AC 15: Verify all `data-testid` attributes are present
