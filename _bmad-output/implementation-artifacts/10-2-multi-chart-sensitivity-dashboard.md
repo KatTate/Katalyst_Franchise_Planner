@@ -239,11 +239,12 @@ So that I can understand the full impact of changing assumptions across every di
 
 - **Recharts `ResponsiveContainer` requires a parent with defined height.** The `ChartContainer` wrapper handles this, but ensure each chart card has a fixed or min-height for the chart content area (e.g., `className="h-[220px] w-full"` matching existing dashboard charts).
 
-- **Scenario colors from `scenario-engine.ts`:** The existing `SCENARIO_COLORS` export provides bg and dot colors for base/conservative/optimistic. For chart lines, derive consistent HSL values:
-  - Base/Current: `hsl(var(--primary))` or foreground color (green family per UX spec)
-  - Conservative: orange-family (`hsl(25, 95%, 53%)` or similar)
-  - Optimistic: blue-family (`hsl(210, 85%, 55%)` or similar)
+- **Scenario colors — UX spec vs codebase divergence:** The UX spec (Part 5, Data Visualization) specifies scenario overlay colors as green-family tones: **Edamame Sage `#96A487`** (conservative), **Katalyst Green `#78BF26`** (base/current), **Basque `#676F13`** (optimistic). However, the existing `SCENARIO_COLORS` in `scenario-engine.ts` uses orange for conservative and blue for optimistic. For the sensitivity charts, prefer the **codebase convention** (orange/blue) to maintain visual consistency with the existing Summary tab's scenario dots and backgrounds. If the UX spec colors are preferred, all scenario indicators across the app should be updated together in a separate pass. Recommended chart line colors:
+  - Base/Current: `hsl(var(--primary))` (Katalyst Green, solid line)
+  - Conservative: `hsl(25, 95%, 53%)` (orange-family, matching `SCENARIO_COLORS.conservative.dot: bg-orange-500`)
+  - Optimistic: `hsl(210, 85%, 55%)` (blue-family, matching `SCENARIO_COLORS.optimistic.dot: bg-blue-500`)
   - These must be consistent across ALL 6 charts.
+  - Source: `client/src/lib/scenario-engine.ts:113-117`, `_bmad-output/planning-artifacts/ux-design-specification-consolidated.md` Part 5
 
 - **Existing `BreakEvenChart` in `dashboard-charts.tsx` is a DIFFERENT component.** That chart shows a single-scenario cumulative cash flow for the My Plan dashboard. The What-If Playground Break-Even chart (Chart 3) shows multi-scenario break-even comparison. Do NOT reuse the dashboard's `BreakEvenChart` — create a new component for the sensitivity dashboard.
 
