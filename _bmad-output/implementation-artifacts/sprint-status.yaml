@@ -1,5 +1,5 @@
 # generated: 2026-02-09
-# updated: 2026-02-20 (Sprint Planning regenerated: Epic 5H Create Epics workflow complete)
+# updated: 2026-02-20 (Story 10.1 context document created: Sensitivity Controls & Sandbox Engine)
 # project: Katalyst Growth Planner
 # project_key: NOKEY
 # tracking_system: file-system
@@ -35,7 +35,7 @@
 # - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
 
 generated: 2026-02-09
-updated: 2026-02-20
+updated: 2026-02-20  # Story 10.1 created (Create Story workflow)
 project: Katalyst Growth Planner
 project_key: NOKEY
 tracking_system: file-system
@@ -211,6 +211,17 @@ story_location: _bmad-output/implementation-artifacts
 #     documentation format, agent session control rules
 #   - Epic 5H status: in-progress (first story ready-for-dev)
 #   - Next action: Dev Story (DS) for 5H.1 implementation
+# 2026-02-20: Story 10.1 context document created (Create Story workflow)
+#   - Full story file: 10-1-sensitivity-controls-sandbox-engine.md (ready-for-dev)
+#   - 5 acceptance criteria blocks covering: "Scenarios" nav entry, sensitivity controls panel
+#     (5 sliders with ranges), three-scenario computation (base/conservative/optimistic),
+#     slider debounce and real-time dollar impact, and sandbox invariant (no plan mutation)
+#   - Dev notes include: WorkspaceViewContext "scenarios" view pattern (no new URL route),
+#     sensitivity-engine.ts design (extends scenario-engine.ts pattern), slider-to-EngineInput
+#     field mapping (revenue multiplier, COGS additive PP, labor/marketing/facilities
+#     multiplicative), dollar impact calculation, usePlan() data flow, anti-patterns
+#     (no PATCH, no URL route, no scenario-engine.ts reuse, max 3 engine calls)
+#   - Epic 10 status: in-progress (first story ready-for-dev)
 # 2026-02-20: Story 5H.1 adversarial code review completed (full BMAD CR workflow)
 #   - Step 1: Git change discovery — 4 source files changed, 1 undocumented (plan-initialization.test.ts) added to File List
 #   - Step 3: Adversarial review — 8 findings (3 HIGH, 2 MEDIUM, 3 LOW), all resolved:
@@ -370,8 +381,8 @@ development_status:
   # Epic 10: What-If Playground [was Scenario Comparison, part of old Epic 7]
   # Rewritten per SCP-2026-02-20 D5/D6 — standalone sensitivity dashboard, not column-splitting
   # Stories (3): Sensitivity Controls, Multi-Chart Dashboard, Scenario Persistence (optional)
-  epic-10: backlog
-  10-1-sensitivity-controls-sandbox-engine: backlog
+  epic-10: in-progress
+  10-1-sensitivity-controls-sandbox-engine: ready-for-dev
   10-2-multi-chart-sensitivity-dashboard: backlog
   10-3-scenario-persistence-sharing: backlog  # optional enhancement
   epic-10-retrospective: optional
