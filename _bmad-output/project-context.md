@@ -243,3 +243,14 @@ _This file contains critical rules and patterns that AI agents must follow when 
 **Identity Resolution (Every Route):**
 - See Auth & Identity in Development Workflow Rules (canonical reference).
 - Key rule: `getEffectiveUser(req)` for data scoping, `requireRole()` for authorization. Never swap these.
+
+**Financial Engine Reference Validation (BLOCKING for Epic 6 — from Epic 5 Retrospective):**
+- Internal consistency tests (173+) verify the engine is internally coherent. They do NOT verify correct dollar amounts. **Cell-by-cell validation against reference spreadsheets is required before any PDF generation work (Epic 6).**
+- Reference spreadsheets: `_bmad-output/planning-artifacts/reference-data/` — PostNet, Jeremiah's Italian Ice, Tint World, Ubreakifix. These are the source of truth for expected outputs.
+- **Input mapping table required:** Each validation must document how every spreadsheet input cell maps to an `FinancialInputs` field, including conversion applied (dollars→cents, monthly→annual, single→5-year tuple). Without explicit mapping, validators make different assumptions.
+- **Tolerance thresholds:** ±$1 (100 cents) per line item, ±$10 (1000 cents) per section total. Deltas within tolerance are rounding artifacts. Deltas exceeding tolerance are formula bugs.
+- **Priority outputs for validation:** (1) P&L — all line items for months 1, 12, 24, 36, 48, 60 and annual totals, (2) Balance Sheet — all line items at months 12, 24, 36, 48, 60, (3) Cash Flow — all line items for months 1, 12, 24, 36, 48, 60, (4) ROIC and Valuation — all summary metrics. Spot-check intermediate months after primary validation passes.
+- **Multi-brand coverage:** Validate at minimum 2 brands (PostNet + one other). One brand could pass by coincidence if paired bugs cancel out. Remaining brands are stretch goals.
+- **Codify as Vitest assertions:** Validation results must be permanent test assertions in a dedicated file (e.g., `shared/financial-engine-reference.test.ts`), NOT a standalone document. Tests must run in the standard `vitest` suite so every future engine change automatically regresses against reference values.
+- **Discrepancy classification (requires PO sign-off for each):** (a) **BUG** — formula error, must fix engine + add regression test, (b) **KNOWN DIVERGENCE** — intentional simplification (e.g., `otherMonthly→otherOpexPct` approximation), document rationale, (c) **SPREADSHEET ERROR** — reference spreadsheet itself has a bug, document with evidence.
+- Any engine formula fix must update BOTH `shared/financial-engine.ts` AND the engine test suite. Never fix without a regression test.
