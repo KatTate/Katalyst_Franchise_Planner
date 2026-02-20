@@ -30,7 +30,7 @@ These decisions were explicitly confirmed by the Product Owner during the 2026-0
 | D4 | Build `<FinancialValue>` component | Create the design-system primitive recommended in SCP-2026-02-19 Amendment C. This component handles all number formatting (currency, percentage, ratio, multiplier, months) with accounting-style negatives. Build it BEFORE fixing L2 (negative formatting) and CP-12 (ratio format). Eliminates the distributed `formatValue`/`formatCents` pattern and prevents the class of "wrong format tag" bugs. | **CONFIRMED** |
 | D5 | Scenarios: standalone graphical What-If Playground | Pull scenario comparison entirely out of Reports. No more column-splitting overlay. Create a dedicated sidebar destination ("What-If" or "Scenarios") with a multi-chart sensitivity dashboard. See Section 3 for full description. | **CONFIRMED** |
 | D6 | Story 5.7 retires from Epic 5 | Story 5.7 (Scenario Comparison — column splitting in Reports) is retired. Epic 5 closes with 9 stories (5.1–5.6, 5.8–5.10). The new graphical What-If Playground becomes Epic 10's scope. | **CONFIRMED** |
-| D7 | User journeys must be documented | No end-to-end user journey narrative exists anywhere in the planning artifacts. Journey maps for all key personas must be created. To be captured as a section in the UX spec or as a standalone artifact. | **CONFIRMED** |
+| D7 | User journeys must be documented | No end-to-end user journey narrative exists anywhere in the planning artifacts. Journey maps for all key personas must be created. To be captured as a section in the UX spec or as a standalone artifact. | **CONFIRMED — COMPLETED** (8 journeys added to UX spec Part 15, 2026-02-20) |
 
 ---
 

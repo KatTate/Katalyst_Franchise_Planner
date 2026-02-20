@@ -996,42 +996,213 @@ The Document Preview widget shows "DRAFT" watermark diagonally across the previe
 
 ---
 
-## Part 15: User Journey Tracing
+## Part 15: User Journey Narratives
 
-### Sam's Journey (First-Time Franchisee)
+> **Updated 2026-02-20** per SCP-2026-02-20 Decision D7. Eight comprehensive user journeys documented as step-by-step narratives. These describe what the user experiences from start to finish — not acceptance criteria or wireframes.
 
-1. Receives invitation email -> creates account -> sees branded onboarding with Quick ROI prompt
-2. Enters 5 numbers -> sees preliminary ROI range with brand context ("healthy range") -> cautious hope
-3. Navigates to **My Plan** from sidebar -> sees form sections pre-filled with PostNet defaults
-4. Clicks floating AI button -> AI Planning Assistant panel slides in -> begins conversational planning
-5. Tells the AI about his rent, location, staffing plans -> fields populate in the form, Impact Strip updates
-6. Closes AI panel -> reviews and adjusts values directly in forms -> Impact Strip shows real-time impact
-7. Clicks "View Full P&L ->" in Impact Strip -> navigates to **Reports** -> sees full financial statements
-8. Reviews the Summary tab -> sees "Break-even: Month 14 (February 2027)" -> growing conviction
-9. Navigates to **Scenarios** from sidebar -> compares Good/Better/Best -> "even the conservative case works"
-10. Returns to Dashboard -> sees Document Preview widget with his name on a professional plan -> pride
-11. Clicks "Generate Lender Package" -> downloads PDF -> "I actually feel ready for this meeting"
+---
 
-### Maria's Journey (Portfolio Operator)
+### Journey 1: New Franchisee — Normal Tier (Sam)
 
-1. Logs in -> sees All Plans with her 7 locations
-2. Creates new plan for Location #8 -> navigates directly to **Reports** from sidebar
-3. Clicks P&L tab -> tabs through input cells at spreadsheet speed -> engine recalculates as she types
-4. Switches to Balance Sheet tab -> adjusts AR Days, AP Days inline
-5. Checks Guardian Bar -> all green -> moves on
-6. Clicks "Generate PDF" in Reports header -> downloads PDF
-7. Returns to All Plans -> opens Location #9 -> repeats
+> **Persona:** Sam, first-time franchisee, PostNet. Entered the system without AI guidance — he selected Normal tier during onboarding (or was detected as Normal). He'll use structured forms in My Plan to build his plan.
 
-### Chris's Journey (Scaling Operator)
+**Phase 1: Invitation & Onboarding**
 
-1. Logs in -> sees All Plans with Location #1 (has actuals) and Location #2 (in planning)
-2. Opens Location #2 -> lands on **My Plan** -> sees completeness dashboard
-3. Edits Revenue section -> Impact Strip shows P&L impact with delta indicators
-4. Clicks "View Full P&L ->" -> navigates to **Reports** -> reviews P&L projections
-5. Notices labor costs seem high -> edits Direct Labor % inline in Reports -> values update in both surfaces
-6. Returns to **My Plan** via sidebar -> continues with Startup Costs section
-7. Opens **Scenarios** -> runs conservative scenario -> reviews comparison
-8. Navigates to **Reports** -> clicks "Generate Lender Package" -> PDF downloads
+1. Sam receives an email from Katalyst: "Denise invited you to plan your PostNet franchise." The email contains a branded call-to-action button with the PostNet logo.
+2. Sam clicks the link. He lands on a branded sign-up page — PostNet colors, PostNet logo. He creates his account with email and password.
+3. Onboarding asks three brief questions to detect his experience tier. Sam's answers indicate first-time franchisee — the system recommends Story tier, but Sam can proceed as Normal tier (forms-only, no AI assistant). For this journey, Sam proceeds as Normal.
+4. Quick ROI screen: Sam enters 5 numbers — location type, estimated investment, expected monthly revenue, and two cost percentages. In about 90 seconds, he sees a preliminary ROI range: "Based on these inputs, your estimated annual return is 12–18%." A note explains this is a rough range that his full plan will refine.
+5. Sam sees a consultant booking link in the sidebar Help section — "Book time with Denise" — and clicks it to schedule a Thursday session.
+6. Sam lands on the Dashboard. He sees a welcome message, his plan card ("Sam's PostNet Plan"), a Document Preview widget showing an empty state ("Complete your plan to preview your lender package"), and the Plan Completeness summary showing all sections at brand defaults.
+
+**Phase 2: Planning in My Plan**
+
+7. Sam clicks "My Plan" in the sidebar. He sees form sections organized by financial category: Revenue, COGS, Labor, Facilities, Startup Costs, Marketing, and more. Each section is pre-filled with PostNet brand defaults. Fields marked with "BD" badges indicate values still at brand default.
+8. Sam opens the Revenue section. He edits Monthly AUV from the PostNet default to his own estimate. The Impact Strip at the bottom of the workspace updates immediately — he sees his break-even month, 5-year ROI, and cash position shift in real time.
+9. He works through each section: enters his actual rent estimate in Facilities, adjusts labor percentages based on his local market, customizes startup costs for his specific buildout. Each edit removes the "BD" badge from that field and updates the Impact Strip.
+10. Sam notices the Impact Strip shows "Break-even: Month 14 (Feb 2027)" and "5yr ROI: 127%." He feels cautious hope. The Impact Strip includes a link: "View Full P&L →"
+11. Sam takes a break. His work is auto-saved. He closes the browser.
+
+**Phase 3: Reviewing Reports**
+
+12. Sam returns later. He logs in and lands on the Dashboard. The Plan Completeness widget shows his progress — Revenue and Facilities sections are customized, others still at defaults. He clicks "My Plan" to resume.
+13. After completing the remaining sections, Sam clicks "View Full P&L →" in the Impact Strip. He navigates to Reports and lands on the Summary tab.
+14. The Summary tab shows headline metrics: break-even month, 5-year cumulative revenue, pre-tax income trajectory, and ROI. The Guardian Bar at the top shows green indicators for his key metrics.
+15. Sam clicks the "P&L" tab. He sees his full 5-year Profit & Loss statement with annual columns. He clicks Year 1 to drill down into quarterly view, then clicks Q1 to see monthly detail. The numbers feel real — they're based on his inputs, not abstract defaults.
+16. He checks the Balance Sheet and Cash Flow tabs. Cash Flow shows his monthly cash position — no months go negative. Relief.
+17. Sam clicks the ROIC tab. He sees his return on invested capital trajectory. The Audit tab shows all checks passing with green indicators.
+
+**Phase 4: Scenarios & Document Generation**
+
+18. Sam clicks "Scenarios" in the sidebar. He sees the What-If Playground (or, pre-Epic 10, the scenario comparison view). He compares his Base Case against Conservative and Optimistic scenarios. Even the conservative case shows break-even by Month 22 — "it still works."
+19. Sam returns to the Dashboard. The Document Preview widget now shows a miniature of his lender package with his name prominently displayed — "Sam's PostNet Business Plan." A "DRAFT" watermark appears because he hasn't hit 90% completeness yet.
+20. Sam finishes customizing his remaining inputs (completeness passes 90%). The DRAFT watermark disappears. The Generate button label changes to "Generate Lender Package."
+21. Sam clicks "Generate Lender Package." A professional PDF downloads — his name, his numbers, his plan. He feels ready for his bank meeting.
+
+---
+
+### Journey 2: New Franchisee — Story Tier with AI Planning Assistant (Sam, alternate path)
+
+> **Persona:** Same Sam, but this time he accepts the Story tier recommendation during onboarding. The AI Planning Assistant guides him through planning conversationally. Note: AI Planning Assistant ships in Epic 9. Until then, Story tier users see the same forms as Normal tier.
+
+**Phase 1: Invitation & Onboarding**
+
+1–5. Identical to Journey 1, steps 1–5. Sam creates his account, completes Quick ROI, books time with Denise. The difference: when onboarding recommends Story tier, Sam accepts it this time.
+
+6. Sam lands on the Dashboard. Same welcome experience as Journey 1.
+
+**Phase 2: AI-Guided Planning in My Plan**
+
+7. Sam clicks "My Plan" in the sidebar. He sees the same form sections as Normal tier, but a floating action button (bottom-right corner) pulses gently — the AI Planning Assistant is available.
+8. Sam clicks the floating AI button. A panel slides in from the right edge of the screen. The AI greets him: "Hi Sam, I'm your planning assistant. I see you're starting your PostNet plan. Let's begin with your location — tell me about where you're planning to open."
+9. Sam types naturally: "I'm looking at a 1,200 sq ft space in a strip mall in suburban Atlanta. Rent would be about $2,800/month." The AI responds: "Got it — I've set your facilities rent to $2,800/month. For a 1,200 sq ft suburban Atlanta location, PostNet franchisees typically see monthly revenue between $25K and $35K. What's your expectation?" Sam's rent field populates in the form behind the panel. The Impact Strip updates.
+10. The conversation continues. Sam tells the AI about his staffing plans, his marketing budget, his startup timeline. Each answer populates the corresponding form fields. Sam can see the forms updating in real time alongside the conversation.
+11. At any point, Sam can close the AI panel (X button, click outside, or Escape), review and adjust values directly in the forms, then reopen the panel to continue the conversation where he left off.
+12. The AI doesn't tell Sam the "right" answers — it helps him discover them by asking targeted questions and providing context ("PostNet franchisees in similar markets typically..."). The values it suggests are always clearly labeled as suggestions that Sam can override.
+
+**Phase 3–4: Reviewing Reports & Document Generation**
+
+13–21. Identical to Journey 1, steps 12–21. The AI-assisted inputs flow through the same financial engine. Sam reviews Reports, compares scenarios, and generates his lender package.
+
+**Key difference:** Sam's planning experience felt like a guided conversation rather than a form-filling exercise. He understood *why* each number matters because the AI explained context as they went.
+
+---
+
+### Journey 3: Returning Franchisee — Session Recovery
+
+> **Persona:** Sam (or any franchisee) returning after a previous session. His plan is partially complete. He needs to pick up where he left off.
+
+1. Sam opens the app. He's still logged in (session persisted). He lands on the Dashboard.
+2. The Dashboard shows his plan card with the plan name and last-modified timestamp: "Last updated: 2 days ago." The Plan Completeness widget shows his progress: Revenue (customized), COGS (customized), Labor (brand defaults), Facilities (customized), Startup Costs (brand defaults), Marketing (brand defaults).
+3. The Document Preview widget shows his plan with a DRAFT watermark — it's only 45% complete.
+4. Sam clicks "My Plan" in the sidebar. He sees the Plan Completeness dashboard at the workspace level, showing which sections he's completed and which still need attention. Sections he's already customized show checkmarks. Sections at brand defaults show "BD" indicators.
+5. Sam clicks on the "Labor" section (still at defaults). The section expands with PostNet default values. He begins editing — entering his local wage rates, his staffing plan, his benefits costs.
+6. As he edits, the Impact Strip updates. His break-even month shifts from Month 14 to Month 16 because his labor costs are higher than the PostNet default. The Impact Strip delta indicator shows the change clearly.
+7. Sam continues through Startup Costs and Marketing. Each section's completion status updates in real time.
+8. When all sections are customized, the Plan Completeness dashboard shows 100%. The Document Preview widget drops the DRAFT watermark. Sam navigates to Reports to review his finalized projections.
+
+---
+
+### Journey 4: Franchisee Reviewing Scenarios — What-If Playground
+
+> **Persona:** Chris, scaling operator with 2 locations. She's completed her plan for Location #2 and wants to stress-test her assumptions before committing. Note: Full What-If Playground ships in Epic 10. This journey describes the target experience.
+
+1. Chris logs in and lands on the Dashboard. She sees her two plans: Location #1 (operating, has actuals) and Location #2 (in planning, 92% complete).
+2. She opens Location #2's plan. She clicks "Scenarios" in the sidebar.
+3. The What-If Playground opens. At the top, she sees a row of sensitivity sliders — one for each key assumption:
+   - Revenue: -15% ←——●——→ +15%
+   - COGS: -5% ←——●——→ +5%
+   - Payroll/Labor: -10% ←——●——→ +10%
+   - Marketing: -10% ←——●——→ +10%
+   - Facilities: -10% ←——●——→ +10%
+4. Below the sliders, she sees a dashboard of charts — all showing her Base Case (solid line) alongside Conservative (dashed) and Optimistic (dashed, lighter) scenario curves:
+   - Profitability chart: 5-year revenue, gross profit, EBITDA, pre-tax income
+   - Cash Flow chart: net operating cash flow, ending cash balance (amber zone highlights any months where cash goes negative)
+   - Break-Even Analysis: visual timeline showing months to break-even per scenario
+   - ROI & Returns: cumulative ROIC curves with plain-language callout
+   - Balance Sheet Health: assets vs liabilities, equity growth
+   - Debt & Working Capital: loan paydown trajectory
+5. Chris drags the Revenue slider to -10%. All six charts update simultaneously. She watches her break-even month shift from Month 12 to Month 18. Cash flow dips into the amber zone in Months 8–11 in the conservative scenario. The ROI callout updates: "At -10% revenue, your 5-year return drops from 145% to 98%."
+6. Chris moves the Labor slider to +5% (she suspects hiring will be harder than expected). The charts update again. She sees the combined effect of lower revenue and higher labor — the conservative scenario now shows break-even at Month 24 and first-year cash needs an additional $12K.
+7. She resets the sliders to zero (base case) and tries the optimistic direction — Revenue +10%, COGS -2%. All charts brighten. Break-even drops to Month 9.
+8. Satisfied that her plan works in most scenarios, Chris returns to the Dashboard. The slider adjustments did NOT change her actual saved plan inputs — the What-If Playground is a sandbox.
+
+---
+
+### Journey 5: Katalyst Admin Setting Up a Brand (Denise)
+
+> **Persona:** Denise, Katalyst account manager. She's responsible for onboarding a new franchise brand — Jeremiah's Italian Ice — onto the platform.
+
+1. Denise logs into the Katalyst Growth Planner with her admin credentials. She lands on the admin Dashboard. The sidebar shows: Home, Brands, Invitations (admin items visible because of her role).
+2. Denise clicks "Brands" in the sidebar. She sees a list of all brands she manages. She clicks "Create Brand."
+3. The brand setup flow begins. Denise fills in the brand identity:
+   - Brand name: "Jeremiah's Italian Ice"
+   - Display name: "Jeremiah's"
+   - Logo: she uploads the Jeremiah's logo file
+   - Brand color: she enters the Jeremiah's brand hex color
+4. Next, she configures the financial parameters. These are the brand-level defaults that will pre-fill every franchisee's plan:
+   - Average Unit Volume (AUV): $487,000
+   - Royalty rate: 6%
+   - Ad fund contribution: 4.5%
+   - COGS percentage: 22%
+   - Labor percentage: 18%
+   - Year-over-year growth rates: Year 1 (0%), Year 2 (5%), Year 3 (8%), Year 4 (6%), Year 5 (4%)
+5. She configures the startup cost template. This is brand-specific — Jeremiah's has different buildout costs than a PostNet:
+   - Franchise fee: $35,000
+   - Equipment package: $45,000
+   - Small-format buildout: $80,000
+   - Freezer units: $18,000
+   - Signage: $12,000
+   - Working capital: $25,000
+   She can add, remove, and reorder line items. Some are standard across Katalyst brands; others are Jeremiah's-specific.
+6. She sets the financing defaults:
+   - Typical equity/debt split: 30/70
+   - SBA loan terms: 10 years, 7.5% interest rate
+   - Collateral assumptions
+7. She enters her own Calendly URL as the consultant booking link. Every Jeremiah's franchisee will see "Book time with Denise" in their sidebar Help section.
+8. Denise validates the brand configuration by running the financial model against the Jeremiah's spreadsheet data she already has. She compares the engine's outputs (break-even month, 5-year ROI, cash flow trajectory) against the spreadsheet. The outputs match. Confidence.
+9. She clicks "Activate Brand." Jeremiah's Italian Ice is now live on the platform. Denise can begin inviting franchisees.
+
+---
+
+### Journey 6: Katalyst Admin Inviting a Franchisee (Denise)
+
+> **Persona:** Denise, continuing from Journey 5. She now needs to onboard David, a new Jeremiah's franchisee.
+
+1. Denise is on the Brands page. She clicks into the Jeremiah's Italian Ice brand detail view.
+2. She navigates to the "Invitations" section (or clicks "Invitations" in the sidebar).
+3. She clicks "Send Invitation." She fills in:
+   - Franchisee email: david@email.com
+   - Franchisee name: David Martinez
+   - Target market/territory: "Orlando, FL — East Colonial corridor"
+4. Denise clicks "Send." The system generates a branded invitation email and sends it to David.
+5. David receives the email. It contains the Jeremiah's logo, a welcome message from Katalyst, and a prominent "Start Your Plan" button.
+6. David clicks the button. He lands on the branded sign-up page — Jeremiah's colors, Jeremiah's logo. He creates his account.
+7. David completes the onboarding flow: three tier-detection questions, Quick ROI with 5 inputs. He sees his preliminary ROI range. He's in the system.
+8. Back in the admin dashboard, Denise can see David's status: account created, Quick ROI completed. She has a 45-minute onboarding call scheduled with David for Thursday.
+9. During the call, Denise can use "View As" to see David's plan from his perspective (see Journey 8). She watches his progress, offers guidance, and ensures data quality.
+
+---
+
+### Journey 7: Franchisor Admin Viewing Pipeline (Linda)
+
+> **Persona:** Linda, VP of Development at PostNet. She has read-only admin access. She sees pipeline data — lifecycle stages, activity dates, markets — but does NOT see financial details unless a franchisee has explicitly opted in.
+
+1. Linda receives an email from her Katalyst contact: "Your franchisees are now using the planning platform. Here's your admin login." She clicks the link and creates her franchisor admin account.
+2. Linda logs in. She lands on the Franchisor Dashboard. The sidebar shows: Home, and any franchisor-specific navigation items. She does not see Brands or Invitations (those are Katalyst admin features).
+3. The Dashboard shows a pipeline summary view:
+   - 12 franchisees in active planning
+   - 4 in site evaluation
+   - 3 with completed lender packages
+   - 2 flagged with no activity in 30+ days (stalled)
+4. Linda clicks into the pipeline list. For each franchisee, she sees the **without-opt-in data**:
+   - Franchisee name
+   - Target market/territory
+   - Current lifecycle stage (planning, site evaluation, construction, open)
+   - Last activity date
+   - Projected opening quarter (coarse — "Q3 2026," not specific dates)
+5. She does NOT see: investment amounts, revenue projections, ROI estimates, startup cost breakdowns, or financial documents. That data is behind the opt-in wall.
+6. Linda notices two franchisees flagged as stalled (no activity in 30+ days). She makes a note to have her team reach out.
+7. One franchisee, Tom, has opted in to share financials with PostNet. Linda clicks Tom's row and sees additional detail: revenue projections, startup budget, investment structure, and projected timeline. She notices Tom's projected opening is Q3 — that aligns with a territory she wants to activate. She flags Tom's franchise agreement for priority review.
+8. Linda makes the pipeline dashboard her Monday morning routine. She checks for new activity, stalled franchisees, and upcoming projected openings. For the first time, she has real development pipeline data instead of phone-call-based spreadsheet estimates.
+
+---
+
+### Journey 8: Katalyst Admin Using View As (Denise)
+
+> **Persona:** Denise, Katalyst admin. She needs to see what David's plan looks like from David's perspective — to offer guidance during a support call, verify data quality, or troubleshoot an issue.
+
+1. Denise is in the admin dashboard. She navigates to the Jeremiah's Italian Ice brand detail page.
+2. She finds the Franchisees tab — a list of all Jeremiah's franchisees with their status, last activity, and completeness.
+3. She locates David Martinez in the list. Next to his name, she sees a "View As" button.
+4. Denise clicks "View As." The application transitions to David's perspective. A prominent impersonation banner appears at the top of the screen:
+   - Background: neon construction orange (#FF6D00)
+   - Content: "David Martinez — Franchisee | Read-Only Mode | [Enable Editing] | [Exit View As]"
+5. Denise now sees exactly what David sees: his Dashboard, his My Plan, his Reports. The sidebar shows David's plan name. The data is David's real plan data.
+6. In Read-Only mode, Denise can navigate freely — she can view all of David's inputs, review his Reports, check his Guardian Bar status, see his Plan Completeness — but she cannot edit anything.
+7. During their support call, Denise asks David to navigate to the Labor section. She's looking at the same view. She notices his labor percentage seems low for the Orlando market: "David, I'm seeing 15% for labor — Jeremiah's franchisees in Florida typically run 18–20%. Want to adjust that?"
+8. If Denise needs to make an edit on David's behalf (with his permission), she clicks "Enable Editing" in the banner. The banner pulsates and text changes to "Editing Enabled." She can now edit David's values directly.
+9. When finished, Denise clicks "Exit View As." She returns to the Jeremiah's brand detail page, Franchisees tab — right where she started. The impersonation banner disappears.
 
 ---
 
@@ -1222,6 +1393,7 @@ This consolidated spec requires the following story structure for Epic 5:
 | 2026-02-16 | Financial statements spec v3 created. Eliminates mode switcher, establishes two-door architecture (My Plan / Reports), retires Quick Entry as a concept, makes inline editing always-on in Reports. | `ux-financial-statements-spec.md` |
 | 2026-02-17 | Tech spec for Story 5.2 progressive disclosure gaps completed. | `tech-spec-5.2-progressive-disclosure-gaps.md` |
 | 2026-02-18 | **Consolidated into single document.** Mode switcher retired. Quick Entry retired. AI Planning Assistant repositioned from workspace mode to contextual feature (slide-in panel within My Plan). All content from both source documents preserved, with v3 architecture taking precedence on navigation, input surfaces, and component architecture. Part 9 (AI Planning Assistant) freshly written. | This document |
+| 2026-02-20 | **Part 15 expanded to 8 comprehensive user journey narratives** per SCP-2026-02-20 Decision D7. Replaces previous 3 brief journey traces. New journeys cover: Normal tier franchisee, Story tier with AI, returning franchisee session recovery, What-If Playground scenario review, Katalyst admin brand setup, admin invitation flow, franchisor pipeline visibility, and admin View As/impersonation. | SCP-2026-02-20, Party Mode review |
 
 ---
 
