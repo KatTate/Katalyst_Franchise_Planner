@@ -45,8 +45,6 @@ test.describe("Story 4.2: Forms Mode — Section-Based Input", () => {
       page.locator("[data-testid='planning-workspace']")
     ).toBeVisible({ timeout: 15_000 });
 
-    await page.click("[data-testid='mode-switcher-forms']");
-
     await expect(
       page.locator("[data-testid='forms-mode-container']")
     ).toBeVisible({ timeout: 10_000 });
@@ -212,46 +210,6 @@ test.describe("Story 4.2: Forms Mode — Section-Based Input", () => {
 
     const restoredValue = await monthlyAuvInput.textContent();
     expect(restoredValue).toBe(originalValue);
-  });
-
-  test("mode switching preserves form state", async ({ page }) => {
-    await page.goto("/login");
-    await page.click("[data-testid='button-dev-login']");
-    await page.waitForURL("/", { timeout: 10_000 });
-    await page.goto(`/plans/${planId}`);
-
-    await expect(
-      page.locator("[data-testid='forms-mode-container']")
-    ).toBeVisible({ timeout: 15_000 });
-
-    const monthlyAuvInput = page.locator(
-      "[data-testid='field-input-monthlyAuv']"
-    );
-    await monthlyAuvInput.click();
-    const editInput = page
-      .locator("[data-testid='field-input-monthlyAuv']")
-      .locator("xpath=self::input");
-    await expect(editInput).toBeVisible({ timeout: 5_000 });
-    await editInput.fill("8000");
-    await editInput.press("Enter");
-
-    await expect(
-      page.locator("[data-testid='badge-source-monthlyAuv']")
-    ).toContainText("Your Entry", { timeout: 5_000 });
-
-    await page.click("[data-testid='mode-switcher-quick-entry']");
-    await expect(
-      page.locator("[data-testid='input-panel']")
-    ).toContainText("Quick Entry");
-
-    await page.click("[data-testid='mode-switcher-forms']");
-    await expect(
-      page.locator("[data-testid='forms-mode-container']")
-    ).toBeVisible({ timeout: 10_000 });
-
-    await expect(
-      page.locator("[data-testid='badge-source-monthlyAuv']")
-    ).toContainText("Your Entry");
   });
 
   test("completeness dashboard updates when fields are edited", async ({

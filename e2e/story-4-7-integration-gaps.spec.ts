@@ -47,7 +47,6 @@ test.describe("Story 4.7: Integration Gaps — Startup Cost Mounting & Forms Met
     page,
   }) => {
     await loginAndGoToPlan(page);
-    await page.click("[data-testid='mode-switcher-forms']");
     await expect(
       page.locator("[data-testid='forms-mode-container']")
     ).toBeVisible({ timeout: 10_000 });
@@ -62,7 +61,6 @@ test.describe("Story 4.7: Integration Gaps — Startup Cost Mounting & Forms Met
     page,
   }) => {
     await loginAndGoToPlan(page);
-    await page.click("[data-testid='mode-switcher-forms']");
     await expect(
       page.locator("[data-testid='forms-mode-container']")
     ).toBeVisible({ timeout: 10_000 });
@@ -85,7 +83,6 @@ test.describe("Story 4.7: Integration Gaps — Startup Cost Mounting & Forms Met
     page,
   }) => {
     await loginAndGoToPlan(page);
-    await page.click("[data-testid='mode-switcher-forms']");
     await expect(
       page.locator("[data-testid='forms-mode-container']")
     ).toBeVisible({ timeout: 10_000 });
@@ -118,65 +115,6 @@ test.describe("Story 4.7: Integration Gaps — Startup Cost Mounting & Forms Met
     expect(startupCostsBox!.y).toBeGreaterThan(startupCapitalBox!.y);
   });
 
-  test("AC2: StartupCostBuilder section visible in Quick Entry mode", async ({
-    page,
-  }) => {
-    await loginAndGoToPlan(page);
-    await page.click("[data-testid='mode-switcher-quick-entry']");
-    await expect(
-      page.locator("[data-testid='quick-entry-container']")
-    ).toBeVisible({ timeout: 10_000 });
-
-    const startupSection = page.locator(
-      "[data-testid='qe-section-startupCosts']"
-    );
-    await expect(startupSection).toBeVisible();
-  });
-
-  test("AC2: StartupCostBuilder section is collapsible in Quick Entry mode", async ({
-    page,
-  }) => {
-    await loginAndGoToPlan(page);
-    await page.click("[data-testid='mode-switcher-quick-entry']");
-    await expect(
-      page.locator("[data-testid='quick-entry-container']")
-    ).toBeVisible({ timeout: 10_000 });
-
-    const toggleBtn = page.locator(
-      "[data-testid='group-toggle-startupCosts']"
-    );
-    await expect(toggleBtn).toBeVisible();
-
-    await toggleBtn.click();
-    await page.waitForTimeout(500);
-    await toggleBtn.click();
-
-    await expect(
-      page.locator("[data-testid='qe-section-startupCosts']")
-    ).toBeVisible();
-  });
-
-  test("AC2: Quick Entry startup costs section appears below the grid", async ({
-    page,
-  }) => {
-    await loginAndGoToPlan(page);
-    await page.click("[data-testid='mode-switcher-quick-entry']");
-    await expect(
-      page.locator("[data-testid='quick-entry-container']")
-    ).toBeVisible({ timeout: 10_000 });
-
-    const gridBox = await page
-      .locator("[data-testid='quick-entry-grid']")
-      .boundingBox();
-    const startupBox = await page
-      .locator("[data-testid='quick-entry-startup-costs']")
-      .boundingBox();
-
-    expect(gridBox).not.toBeNull();
-    expect(startupBox).not.toBeNull();
-    expect(startupBox!.y).toBeGreaterThan(gridBox!.y);
-  });
-
   test("AC3: Forms metadata panel shows Item 7 range with real data", async ({
     page,
     request,
@@ -187,7 +125,6 @@ test.describe("Story 4.7: Integration Gaps — Startup Cost Mounting & Forms Met
     });
 
     await loginAndGoToPlan(page);
-    await page.click("[data-testid='mode-switcher-forms']");
     await expect(
       page.locator("[data-testid='forms-mode-container']")
     ).toBeVisible({ timeout: 10_000 });
@@ -207,7 +144,6 @@ test.describe("Story 4.7: Integration Gaps — Startup Cost Mounting & Forms Met
     page,
   }) => {
     await loginAndGoToPlan(page);
-    await page.click("[data-testid='mode-switcher-forms']");
     await expect(
       page.locator("[data-testid='forms-mode-container']")
     ).toBeVisible({ timeout: 10_000 });
@@ -235,7 +171,6 @@ test.describe("Story 4.7: Integration Gaps — Startup Cost Mounting & Forms Met
     page,
   }) => {
     await loginAndGoToPlan(page);
-    await page.click("[data-testid='mode-switcher-forms']");
     await expect(
       page.locator("[data-testid='forms-mode-container']")
     ).toBeVisible({ timeout: 10_000 });
@@ -256,7 +191,6 @@ test.describe("Story 4.7: Integration Gaps — Startup Cost Mounting & Forms Met
     request,
   }) => {
     await loginAndGoToPlan(page);
-    await page.click("[data-testid='mode-switcher-forms']");
     await expect(
       page.locator("[data-testid='forms-mode-container']")
     ).toBeVisible({ timeout: 10_000 });
@@ -274,7 +208,6 @@ test.describe("Story 4.7: Integration Gaps — Startup Cost Mounting & Forms Met
     page,
   }) => {
     await loginAndGoToPlan(page);
-    await page.click("[data-testid='mode-switcher-forms']");
     await expect(
       page.locator("[data-testid='forms-mode-container']")
     ).toBeVisible({ timeout: 10_000 });
@@ -304,36 +237,6 @@ test.describe("Story 4.7: Integration Gaps — Startup Cost Mounting & Forms Met
     ).toBeVisible();
     await expect(
       page.locator("[data-testid='section-progress-startupCosts']")
-    ).toBeVisible();
-  });
-
-  test("mode switching between Forms and Quick Entry preserves startup cost sections", async ({
-    page,
-  }) => {
-    await loginAndGoToPlan(page);
-
-    await page.click("[data-testid='mode-switcher-forms']");
-    await expect(
-      page.locator("[data-testid='forms-mode-container']")
-    ).toBeVisible({ timeout: 10_000 });
-    await expect(
-      page.locator("[data-testid='section-startupCosts']")
-    ).toBeVisible();
-
-    await page.click("[data-testid='mode-switcher-quick-entry']");
-    await expect(
-      page.locator("[data-testid='quick-entry-container']")
-    ).toBeVisible({ timeout: 10_000 });
-    await expect(
-      page.locator("[data-testid='qe-section-startupCosts']")
-    ).toBeVisible();
-
-    await page.click("[data-testid='mode-switcher-forms']");
-    await expect(
-      page.locator("[data-testid='forms-mode-container']")
-    ).toBeVisible({ timeout: 10_000 });
-    await expect(
-      page.locator("[data-testid='section-startupCosts']")
     ).toBeVisible();
   });
 });

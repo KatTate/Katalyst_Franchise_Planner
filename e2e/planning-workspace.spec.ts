@@ -1,6 +1,6 @@
 import { test, expect } from "@playwright/test";
 
-test.describe("Story 4.1: Planning Workspace, Mode Switcher & Dashboard", () => {
+test.describe("Story 4.1: Planning Workspace & Dashboard", () => {
   let planId: string;
   let brandId: string;
 
@@ -35,7 +35,7 @@ test.describe("Story 4.1: Planning Workspace, Mode Switcher & Dashboard", () => 
     });
   });
 
-  test("workspace renders with planning header and mode switcher", async ({
+  test("workspace renders with planning header and forms mode", async ({
     page,
   }) => {
     await page.goto("/login");
@@ -46,42 +46,6 @@ test.describe("Story 4.1: Planning Workspace, Mode Switcher & Dashboard", () => 
     await expect(
       page.locator("[data-testid='planning-workspace']")
     ).toBeVisible({ timeout: 15_000 });
-    await expect(page.locator("[data-testid='mode-switcher']")).toBeVisible();
-    await expect(
-      page.locator("[data-testid='mode-switcher-planning-assistant']")
-    ).toBeVisible();
-    await expect(
-      page.locator("[data-testid='mode-switcher-forms']")
-    ).toBeVisible();
-    await expect(
-      page.locator("[data-testid='mode-switcher-quick-entry']")
-    ).toBeVisible();
-  });
-
-  test("mode switcher shows all three modes and switches instantly", async ({
-    page,
-  }) => {
-    await page.goto("/login");
-    await page.click("[data-testid='button-dev-login']");
-    await page.waitForURL("/", { timeout: 10_000 });
-    await page.goto(`/plans/${planId}`);
-
-    await expect(
-      page.locator("[data-testid='planning-workspace']")
-    ).toBeVisible({ timeout: 15_000 });
-
-    await page.click("[data-testid='mode-switcher-planning-assistant']");
-    await expect(page.locator("[data-testid='input-panel']")).toBeVisible();
-    await expect(
-      page.locator("[data-testid='input-panel']")
-    ).toContainText("AI Planning Advisor");
-
-    await page.click("[data-testid='mode-switcher-quick-entry']");
-    await expect(
-      page.locator("[data-testid='input-panel']")
-    ).toContainText("Quick Entry");
-
-    await page.click("[data-testid='mode-switcher-forms']");
     await expect(
       page.locator("[data-testid='forms-mode-container']")
     ).toBeVisible({ timeout: 10_000 });
@@ -160,29 +124,6 @@ test.describe("Story 4.1: Planning Workspace, Mode Switcher & Dashboard", () => 
     ).toBeVisible();
   });
 
-  test("mode preference persists via API", async ({ page, request }) => {
-    await request.patch("/api/auth/me", {
-      data: { preferredTier: "forms" },
-    });
-
-    await page.goto("/login");
-    await page.click("[data-testid='button-dev-login']");
-    await page.waitForURL("/", { timeout: 10_000 });
-    await page.goto(`/plans/${planId}`);
-
-    await expect(
-      page.locator("[data-testid='planning-workspace']")
-    ).toBeVisible({ timeout: 15_000 });
-
-    await page.click("[data-testid='mode-switcher-quick-entry']");
-
-    await page.waitForTimeout(1000);
-
-    const meRes = await request.get("/api/auth/me");
-    const me = await meRes.json();
-    expect(me.preferredTier).toBe("quick_entry");
-  });
-
   test("quick start overlay shown when quickStartCompleted is false", async ({
     page,
     request,
@@ -211,10 +152,6 @@ test.describe("Story 4.1: Planning Workspace, Mode Switcher & Dashboard", () => 
     await expect(
       page.locator("[data-testid='quick-start-overlay']")
     ).toBeVisible({ timeout: 10_000 });
-
-    await expect(
-      page.locator("[data-testid='mode-switcher']")
-    ).not.toBeVisible();
   });
 });
 

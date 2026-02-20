@@ -94,21 +94,6 @@ test.describe("Story 5.2: Financial Statements Container & Summary Tab", () => {
     await expect(page.locator("[data-testid='summary-tab']")).toBeVisible();
   });
 
-  test("AC5: Mode switcher is NOT visible anywhere in the UI", async ({
-    page,
-  }) => {
-    await loginAndNavigateToPlan(page);
-
-    await expect(page.locator("[data-testid='mode-switcher']")).not.toBeVisible();
-
-    await page.click("[data-testid='nav-reports']");
-    await expect(
-      page.locator("[data-testid='financial-statements']")
-    ).toBeVisible({ timeout: 10_000 });
-
-    await expect(page.locator("[data-testid='mode-switcher']")).not.toBeVisible();
-  });
-
   test("AC7: Tab switching is instant with no loading state between tabs", async ({
     page,
   }) => {
@@ -388,7 +373,6 @@ test.describe("Story 5.2: Financial Statements Container & Summary Tab", () => {
     await expect(page.locator("[data-testid='text-plan-name']")).not.toBeEmpty();
     await expect(page.locator("[data-testid='button-sidebar-toggle']")).toBeVisible();
 
-    await expect(page.locator("[data-testid='mode-switcher']")).not.toBeVisible();
     await expect(page.locator("[data-testid='view-toggle']")).not.toBeVisible();
   });
 });

@@ -5,7 +5,7 @@ import { useBrandTheme } from "@/hooks/use-brand-theme";
 import { useImpersonation } from "@/contexts/ImpersonationContext";
 import { useDemoMode } from "@/contexts/DemoModeContext";
 import { useWorkspaceView } from "@/contexts/WorkspaceViewContext";
-import { Home, Mail, Building2, LogOut, CalendarCheck, ClipboardList, BarChart3, FlaskConical, Settings, HelpCircle, BookOpen } from "lucide-react";
+import { Home, Mail, Building2, LogOut, CalendarCheck, ClipboardList, BarChart3, FlaskConical, Settings, BookOpen } from "lucide-react";
 import {
   Sidebar,
   SidebarContent,
@@ -69,7 +69,6 @@ export function AppSidebar() {
     { title: "Home", url: "/", icon: Home, visible: true, testId: "nav-home" },
     { title: "Brands", url: "/admin/brands", icon: Building2, visible: isRealKatalystAdmin && !hideAdminNav, testId: "nav-brands" },
     { title: "Invitations", url: "/admin/invitations", icon: Mail, visible: isRealAdmin && !hideAdminNav, testId: "nav-invitations" },
-    { title: "Glossary", url: "/glossary", icon: BookOpen, visible: true, testId: "nav-glossary" },
   ].filter((item) => item.visible);
 
   const isInPlanWorkspace = /^\/plans\/[^/]+$/.test(location);
@@ -77,7 +76,7 @@ export function AppSidebar() {
   const planSectionLabel = activePlanName || null;
   const showPlanSection = isInPlanWorkspace;
   const hasBookingLink = !!(user.bookingUrl && user.accountManagerId);
-  const showHelpSection = isInPlanWorkspace && hasBookingLink;
+  const showHelpSection = isInPlanWorkspace;
 
   const displayUser = user._realUser ?? user;
   const initials = displayUser.displayName
@@ -190,18 +189,31 @@ export function AppSidebar() {
               <SidebarGroupLabel data-testid="text-sidebar-help-section">HELP</SidebarGroupLabel>
               <SidebarGroupContent>
                 <SidebarMenu>
+                  {hasBookingLink && (
+                    <SidebarMenuItem>
+                      <SidebarMenuButton
+                        onClick={() => window.open(user.bookingUrl, '_blank', 'noopener,noreferrer')}
+                        data-testid="nav-help-booking"
+                        tooltip={user.accountManagerName ? `Talk to ${user.accountManagerName}` : "Book Consultation"}
+                      >
+                        <CalendarCheck />
+                        <span className="truncate">
+                          {user.accountManagerName
+                            ? `Talk to ${user.accountManagerName}`
+                            : "Book Consultation"}
+                        </span>
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
+                  )}
                   <SidebarMenuItem>
                     <SidebarMenuButton
-                      onClick={() => window.open(user.bookingUrl, '_blank', 'noopener,noreferrer')}
-                      data-testid="nav-help-booking"
-                      tooltip={user.accountManagerName ? `Talk to ${user.accountManagerName}` : "Book Consultation"}
+                      isActive={location === "/glossary"}
+                      onClick={() => setLocation("/glossary")}
+                      data-testid="nav-glossary"
+                      tooltip="Glossary"
                     >
-                      <CalendarCheck />
-                      <span className="truncate">
-                        {user.accountManagerName
-                          ? `Talk to ${user.accountManagerName}`
-                          : "Book Consultation"}
-                      </span>
+                      <BookOpen />
+                      <span>Glossary</span>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
                 </SidebarMenu>

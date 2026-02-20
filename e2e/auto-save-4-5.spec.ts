@@ -68,7 +68,6 @@ test.describe("Story 4.5: Auto-Save & Session Recovery", () => {
       page.locator("[data-testid='planning-workspace']")
     ).toBeVisible({ timeout: 15_000 });
 
-    await page.click("[data-testid='mode-switcher-forms']");
     await expect(
       page.locator("[data-testid='forms-mode-container']")
     ).toBeVisible({ timeout: 10_000 });
@@ -122,38 +121,7 @@ test.describe("Story 4.5: Auto-Save & Session Recovery", () => {
     );
   });
 
-  test("experience mode is preserved across page reload", async ({
-    page,
-    request,
-  }) => {
-    await request.patch("/api/auth/me", {
-      data: { preferredTier: "quick_entry" },
-    });
-
-    await page.goto("/login");
-    await page.click("[data-testid='button-dev-login']");
-    await page.waitForURL("/", { timeout: 10_000 });
-    await page.goto(`/plans/${planId}`);
-
-    await expect(
-      page.locator("[data-testid='planning-workspace']")
-    ).toBeVisible({ timeout: 15_000 });
-
-    await page.click("[data-testid='mode-switcher-forms']");
-    await page.waitForTimeout(1500);
-
-    await page.reload();
-
-    await expect(
-      page.locator("[data-testid='planning-workspace']")
-    ).toBeVisible({ timeout: 15_000 });
-
-    const meRes = await request.get("/api/auth/me");
-    const me = await meRes.json();
-    expect(me.preferredTier).toBe("forms");
-  });
-
-  test("save indicator is visible in all experience modes", async ({
+  test("save indicator is visible in forms mode", async ({
     page,
   }) => {
     await page.goto("/login");
@@ -169,22 +137,9 @@ test.describe("Story 4.5: Auto-Save & Session Recovery", () => {
       page.locator("[data-testid='status-auto-save']")
     ).toBeVisible({ timeout: 10_000 });
 
-    await page.click("[data-testid='mode-switcher-forms']");
     await expect(
       page.locator("[data-testid='forms-mode-container']")
     ).toBeVisible({ timeout: 10_000 });
-    await expect(
-      page.locator("[data-testid='status-auto-save']")
-    ).toBeVisible();
-
-    await page.click("[data-testid='mode-switcher-quick-entry']");
-    await page.waitForTimeout(500);
-    await expect(
-      page.locator("[data-testid='status-auto-save']")
-    ).toBeVisible();
-
-    await page.click("[data-testid='mode-switcher-planning-assistant']");
-    await page.waitForTimeout(500);
     await expect(
       page.locator("[data-testid='status-auto-save']")
     ).toBeVisible();
