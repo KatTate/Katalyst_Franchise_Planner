@@ -8,31 +8,6 @@ description: >
 
 # BMAD Create Story Workflow
 
-## STOP — THIS WORKFLOW PRODUCES A DOCUMENT, NOT CODE
-
-**READ THIS BEFORE DOING ANYTHING ELSE.**
-
-This workflow's ONLY output is a single markdown story file. You are a **technical writer**
-during this workflow, not a developer.
-
-**FORBIDDEN actions during this entire workflow:**
-- DO NOT write, create, or modify any application source code (.ts, .tsx, .js, .jsx, .py, etc.)
-- DO NOT create task lists, implementation plans, or todo items for building features
-- DO NOT install packages, modify schemas, create routes, or build components
-- DO NOT use the write_task_list tool — this workflow is not a build task
-- DO NOT touch any file except the story output markdown file and sprint-status.yaml
-
-**PERMITTED actions:**
-- READ project files to gather context (read-only analysis)
-- WRITE the story markdown document to the output path
-- UPDATE sprint-status.yaml to reflect the story's status
-- ASK the user questions about story scope or requirements
-
-If you catch yourself about to write code or create a task list, STOP. You are violating
-the workflow. Return to writing the story document.
-
----
-
 This skill activates the BMAD Create Story workflow. It produces a story context
 document — an intent-and-constraint guide for the dev agent, not an implementation script.
 
@@ -76,22 +51,25 @@ through all 6 steps in order. The workflow engine handles:
 - Checklist validation from the workflow's checklist file
 - Output file creation in the implementation artifacts directory
 
+## Replit Task List Integration
+
+**MANDATORY on activation:** Before beginning Step 1, create a Replit task list using the `write_task_list` tool with one task per workflow step listed above (6 steps). Each task should include the step number and name (e.g., "Step 1: Determine target story — auto-discover from sprint status"). Mark the first task as `in_progress`. As you complete each step, immediately mark its task as `completed` (architect_reviewed: "not_applicable", reason: "BMAD workflow step — planning/facilitation, not code") and mark the next task as `in_progress`. This gives the user visible progress tracking throughout the workflow.
+
 ## Critical Rules
 
-- **YOUR ONLY OUTPUT IS A MARKDOWN FILE.** No code. No task lists. No implementation.
 - NEVER skip steps or optimize the sequence — execute ALL 6 steps in exact order
 - NEVER auto-proceed past WAIT points — stop and wait for user input
 - ALWAYS save output after completing EACH workflow step
 - ALWAYS follow the instructions.xml referenced in the workflow YAML
 - ALWAYS apply the checklist.md validation before completing
 - EXHAUSTIVE ANALYSIS REQUIRED — do NOT be lazy or skim artifacts
-- **FILE WRITE RESTRICTION:** The only files you may write or edit during this workflow
-  are the story output markdown file and sprint-status.yaml. All other file access is READ-ONLY.
-- **THIS WORKFLOW MUST COMPLETE BEFORE ANY IMPLEMENTATION CODE IS WRITTEN.** The story
-  context document this workflow produces is the quality gate between planning and coding.
-  Having "enough context" from reading artifacts is NOT a substitute for running this
-  workflow. If you skip this workflow and start writing code directly, you are violating
-  the BMAD process. No exceptions.
+- COMMON LLM MISTAKES TO PREVENT: reinventing wheels, wrong libraries, wrong file
+  locations, breaking regressions, ignoring UX, vague implementations
+- DOCUMENT-QUALITY MISTAKES TO PREVENT: skipping artifact analysis, vague acceptance
+  criteria, missing dev notes sections, omitting UX deliverables for user-facing stories,
+  not citing source references
+- This workflow creates a DOCUMENT, not code. Do NOT write application code, modify source
+  files, or begin implementation. Your only output is a single markdown story file.
 
 ## What's Next
 

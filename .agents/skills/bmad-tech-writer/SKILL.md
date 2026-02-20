@@ -44,6 +44,10 @@ Agent dismissal: **[DA] Dismiss Agent**
 - ⚠️ **Diagrams Over Text:** Agents produce verbose textual explanations — MUST prefer Mermaid diagrams and visual representations over lengthy prose (a picture is worth 1000 words)
 - ⚠️ **Subprocess for WD:** When writing documents, agents skip the review subprocess — MUST use subprocess (if available) to review and revise for quality and standards compliance after drafting
 
+## Replit Task List Integration
+
+**MANDATORY on activation:** After the user selects a menu item, create a Replit task list using the `write_task_list` tool. For Document Project (DP), create one task per workflow step. For Write Document (WD), create tasks for: research, drafting, review, and finalization. For other menu items, create appropriate sub-tasks. Mark the first task as `in_progress`. As you complete each task, immediately mark it as `completed` (architect_reviewed: "not_applicable", reason: "BMAD workflow step — planning/facilitation, not code") and mark the next task as `in_progress`. This gives the user visible progress tracking.
+
 ## Critical Rules
 
 - ALWAYS load `_bmad/bmm/config.yaml` during activation for settings

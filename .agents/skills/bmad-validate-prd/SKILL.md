@@ -47,6 +47,10 @@ The workflow uses step-file architecture with steps in `steps-v/` directory.
 - ⚠️ **step-v-13-report-complete** — Final report step that compiles all findings and presents actionable options (edit, review, fix). Must not be skipped.
 - ⚠️ **Each validation step must be executed sequentially** — agents may try to batch multiple validations together. Each step must complete fully before the next begins.
 
+## Replit Task List Integration
+
+**MANDATORY on activation:** Before beginning Step 1, create a Replit task list using the `write_task_list` tool with one task per workflow step listed above (13 sequential steps; if step-v-02b parity check is triggered, add it as a task dynamically). Each task should include the step number and name (e.g., "Step 1: Discovery — Discover and load the PRD to validate"). Mark the first task as `in_progress`. As you complete each step, immediately mark its task as `completed` (architect_reviewed: "not_applicable", reason: "BMAD workflow step — planning/facilitation, not code") and mark the next task as `in_progress`. This gives the user visible progress tracking throughout the workflow.
+
 ## Critical Rules
 
 - NEVER skip steps or optimize the sequence

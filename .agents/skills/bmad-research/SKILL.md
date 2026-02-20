@@ -72,6 +72,10 @@ Covers: technology evaluation, architecture decisions, implementation approaches
 - ⚠️ **Market Steps 2-4 — Individual Customer Analysis Steps**: Agents tend to collapse customer behavior, pain points, and decision analysis into a single step. These are three distinct steps that each require separate web searches and analysis.
 - ⚠️ **All Steps — Web Search Requirement**: Agents sometimes rely on training data instead of performing actual web searches. Every research step (2+) REQUIRES web search to verify and supplement with current facts.
 
+## Replit Task List Integration
+
+**MANDATORY on activation:** After determining the research type (Market/Domain/Technical), create a Replit task list using the `write_task_list` tool with one task per workflow step for that research type (6 steps each). Each task should include the step number and name (e.g., "Step 1: Initialization — Confirm research scope"). Mark the first task as `in_progress`. As you complete each step, immediately mark its task as `completed` (architect_reviewed: "not_applicable", reason: "BMAD workflow step — planning/facilitation, not code") and mark the next task as `in_progress`. This gives the user visible progress tracking throughout the workflow.
+
 ## Critical Rules (All Research Types)
 
 - ⛔ Web search is REQUIRED — if unavailable, abort and tell the user immediately

@@ -23,6 +23,9 @@ Validate that a code review was thorough and that the story implementation meets
 - [ ] Every AC individually verified against implementation
 - [ ] Each AC marked as SATISFIED, PARTIAL, or NOT SATISFIED with evidence
 - [ ] Any unsatisfied or partial ACs flagged as HIGH severity findings
+- [ ] **Dev agent evidence audited**: Each AC's verification entry reviewed for accuracy; missing evidence flagged as HIGH finding
+- [ ] **Evidence determinations recorded**: Each AC marked CONFIRMED, DISPUTED, or UNVERIFIED against dev's claims
+- [ ] **User-facing AC evidence source checked**: User-facing ACs must have UI-based evidence, not code-only
 
 ## Dev Notes Compliance
 

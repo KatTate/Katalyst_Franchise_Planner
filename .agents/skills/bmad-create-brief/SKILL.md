@@ -38,6 +38,10 @@ The workflow uses step-file architecture with 7 step files (6 sequential steps p
 - ⚠️ **Step 6 — Document Quality Check**: Agents skip the completeness and consistency validation, jumping straight to congratulations without verifying all sections align with the core problem statement.
 - ⚠️ **A/P/C Menu at Steps 2-5**: Agents sometimes auto-proceed without presenting the Advanced Elicitation / Party Mode / Continue menu, denying the user the option to dive deeper.
 
+## Replit Task List Integration
+
+**MANDATORY on activation:** Before beginning Step 1, create a Replit task list using the `write_task_list` tool with one task per workflow step listed above (6 sequential steps; if Step 1b continuation is triggered, add it as a task dynamically). Each task should include the step number and name (e.g., "Step 1: Initialization — Detect continuation, discover inputs, create output document"). Mark the first task as `in_progress`. As you complete each step, immediately mark its task as `completed` (architect_reviewed: "not_applicable", reason: "BMAD workflow step — planning/facilitation, not code") and mark the next task as `in_progress`. This gives the user visible progress tracking throughout the workflow.
+
 ## Critical Rules
 
 - NEVER skip steps or optimize the sequence

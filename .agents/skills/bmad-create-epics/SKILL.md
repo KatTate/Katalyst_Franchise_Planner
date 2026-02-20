@@ -38,6 +38,10 @@ The workflow uses step-file architecture with steps in `steps/` directory.
 - ⚠️ **step-01 requirements extraction** — Agents may rush to epic design without fully extracting ALL FRs, NFRs, and additional requirements from Architecture/UX documents. Complete extraction is critical.
 - ⚠️ **step-04 dependency validation** — Within final validation, the dependency check (no forward dependencies, each epic independently valuable) is commonly skipped but prevents implementation blockers.
 
+## Replit Task List Integration
+
+**MANDATORY on activation:** Before beginning Step 1, create a Replit task list using the `write_task_list` tool with one task per workflow step listed above (4 steps). Each task should include the step number and name (e.g., "Step 1: Validate Prerequisites — Validate required documents exist"). Mark the first task as `in_progress`. As you complete each step, immediately mark its task as `completed` (architect_reviewed: "not_applicable", reason: "BMAD workflow step — planning/facilitation, not code") and mark the next task as `in_progress`. This gives the user visible progress tracking throughout the workflow.
+
 ## Critical Rules
 
 - NEVER skip steps or optimize the sequence

@@ -53,6 +53,10 @@ Follow the workflow engine instructions precisely. The workflow engine handles:
 - ⚠️ **Validation Checklist:** Agents skip running the comprehensive checklist — MUST validate against `checklist.md` before completion
 - ⚠️ **Context Purging:** Agents keep detailed findings in context after writing — MUST purge to summaries only (1-2 sentences per section)
 
+## Replit Task List Integration
+
+**MANDATORY on activation:** Before beginning Step 1, create a Replit task list using the `write_task_list` tool with one task per workflow step listed above (4 steps). Each task should include the step number and name (e.g., "Step 1: Validate Workflow — Check project status, detect greenfield/brownfield"). Mark the first task as `in_progress`. As you complete each step, immediately mark its task as `completed` (architect_reviewed: "not_applicable", reason: "BMAD workflow step — planning/facilitation, not code") and mark the next task as `in_progress`. This gives the user visible progress tracking throughout the workflow.
+
 ## Critical Rules
 
 - NEVER skip steps or optimize the sequence

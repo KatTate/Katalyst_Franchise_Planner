@@ -19,9 +19,11 @@ Validate that a story implementation is complete and ready for code review. This
 
 ## Acceptance Criteria Verification
 
-- [ ] **Every AC satisfied**: Each acceptance criterion in the story file has been verified as met
+- [ ] **AC verification entries produced**: Every AC has an entry with Expected (plain-language user experience), Method (how verified), Observed (actual result), and SATISFIED/NOT SATISFIED status
+- [ ] **Observations are behavioral**: No entry references code constructs — all observations describe what a user sees or experiences
+- [ ] **Every AC satisfied**: Each entry shows SATISFIED status
 - [ ] **No partial implementations**: Nothing is "mostly done" or "will be finished later"
-- [ ] **Verifiable outcomes**: Each AC was verified by running, testing, or inspecting the result
+- [ ] **User-facing ACs verified in running app**: Screenshots or test runner results used, not code reading alone
 
 ## Testing & Quality
 

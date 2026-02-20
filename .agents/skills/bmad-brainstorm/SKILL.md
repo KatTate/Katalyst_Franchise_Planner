@@ -42,6 +42,10 @@ Brain techniques loaded from CSV data file. Output to brainstorming directory.
 - ⚠️ **Step 4 Action Planning:** Agents skip creating concrete next steps — MUST develop actionable plans for prioritized ideas, not just organize themes
 - ⚠️ **Technique Approach Menus:** Agents auto-select approach — MUST HALT and wait for user to choose 1-4
 
+## Replit Task List Integration
+
+**MANDATORY on activation:** Before beginning Step 1, create a Replit task list using the `write_task_list` tool with one task per major workflow phase: (1) Session Setup, (2) Technique Selection (covers steps 2a-2d based on user choice), (3) Technique Execution & Idea Generation, (4) Idea Organization & Action Planning. If Step 1b continuation is triggered, add it as a task dynamically. Each task should include the phase number and name (e.g., "Phase 1: Session Setup — Check for existing session, gather context"). Mark the first task as `in_progress`. As you complete each phase, immediately mark its task as `completed` (architect_reviewed: "not_applicable", reason: "BMAD workflow step — planning/facilitation, not code") and mark the next task as `in_progress`. This gives the user visible progress tracking throughout the workflow.
+
 ## Critical Rules
 
 - NEVER skip steps or optimize the sequence

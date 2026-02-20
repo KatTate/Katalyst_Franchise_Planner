@@ -55,6 +55,10 @@ through all 6 steps in order. The workflow engine handles:
 - Sprint status file creation at `implementation_artifacts/sprint-status.yaml`
 - Checklist validation
 
+## Replit Task List Integration
+
+**MANDATORY on activation:** Before beginning Step 1, create a Replit task list using the `write_task_list` tool with one task per workflow step listed above (6 steps). Each task should include the step number and name (e.g., "Step 1: Parse epic files and extract all work items"). Mark the first task as `in_progress`. As you complete each step, immediately mark its task as `completed` (architect_reviewed: "not_applicable", reason: "BMAD workflow step — planning/facilitation, not code") and mark the next task as `in_progress`. This gives the user visible progress tracking throughout the workflow.
+
 ## Critical Rules
 
 - NEVER skip steps or optimize the sequence — execute ALL 6 steps in exact order

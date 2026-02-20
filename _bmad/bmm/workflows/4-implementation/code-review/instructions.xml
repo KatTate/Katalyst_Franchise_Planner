@@ -79,6 +79,19 @@
       4. If NOT SATISFIED or PARTIAL → HIGH severity finding with specific evidence
     </action>
 
+    <!-- AC Evidence Audit — Cross-reference dev agent's verification -->
+    <action>Cross-reference the dev agent's AC verification entries (from Dev Agent Record or Step 8 output).
+      Each entry contains: Expected (what user should see), Method (how verified), Observed (what was actually seen).
+      For each AC:
+      - If an entry exists, audit the claim: read the Method and Observed fields, then independently spot-check:
+        - For code-level ACs: confirm the code matches the dev's Observed description
+        - For user-facing ACs: use the dev's stated Method to reproduce the Observed result
+      - Determine: CONFIRMED (dev's claim is accurate), DISPUTED (evidence contradicts claim), or UNVERIFIED (cannot reproduce)
+      - If NO entry exists for an AC → HIGH finding: "AC claimed satisfied but no evidence provided"
+      - If a user-facing AC's Method is "code inspection" only → MEDIUM finding: "User-facing AC verified by code reading only"
+      - If DISPUTED → HIGH finding with specific contradiction details
+    </action>
+
     <!-- Dev Notes Compliance -->
     <action>For EACH constraint in Dev Notes:
       1. Architecture patterns: verify implementation follows stated patterns

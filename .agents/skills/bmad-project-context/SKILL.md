@@ -37,6 +37,10 @@ Template from the workflow directory. Output: lean project-context.md optimized 
 - ⚠️ **Step 3 Optimization:** Agents skip LLM context optimization — MUST remove redundant/obvious information and keep content lean
 - ⚠️ **User Collaboration:** Agents generate content without user input — MUST treat as collaborative discovery between technical peers
 
+## Replit Task List Integration
+
+**MANDATORY on activation:** Before beginning Step 1, create a Replit task list using the `write_task_list` tool with one task per workflow step listed above (3 steps). Each task should include the step number and name (e.g., "Step 1: Context Discovery & Initialization — Discover tech stack, identify patterns"). Mark the first task as `in_progress`. As you complete each step, immediately mark its task as `completed` (architect_reviewed: "not_applicable", reason: "BMAD workflow step — planning/facilitation, not code") and mark the next task as `in_progress`. This gives the user visible progress tracking throughout the workflow.
+
 ## Critical Rules
 
 - NEVER skip steps or optimize the sequence

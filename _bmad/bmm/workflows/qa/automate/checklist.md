@@ -8,6 +8,14 @@
 - [ ] Tests cover happy path
 - [ ] Tests cover 1-2 critical error cases
 
+## AC Coverage (when story file provided)
+
+- [ ] Story file loaded and all ACs extracted
+- [ ] Each AC mapped to at least one test case with a falsifiable assertion
+- [ ] Visual/UX ACs use structural assertions (visibility, text content, attributes) not pixel-level CSS checks
+- [ ] AC Coverage Table included in test summary with covered/uncovered counts
+- [ ] Any uncovered ACs explicitly listed with justification
+
 ## Test Quality
 
 - [ ] All generated tests run successfully

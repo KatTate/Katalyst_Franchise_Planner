@@ -39,6 +39,10 @@ The workflow uses step-file architecture with steps in `steps/` directory.
 - ⚠️ **step-06-final-assessment** — Final assessment compiles all findings into actionable recommendations. Must not be skipped — it determines the READY/NEEDS WORK/NOT READY status.
 - ⚠️ **step-01 duplicate resolution** — Document discovery may find both whole and sharded versions of documents. Agents must insist on resolving duplicates before proceeding.
 
+## Replit Task List Integration
+
+**MANDATORY on activation:** Before beginning Step 1, create a Replit task list using the `write_task_list` tool with one task per workflow step listed above (6 steps). Each task should include the step number and name (e.g., "Step 1: Document Discovery — Discover and inventory all project documents"). Mark the first task as `in_progress`. As you complete each step, immediately mark its task as `completed` (architect_reviewed: "not_applicable", reason: "BMAD workflow step — planning/facilitation, not code") and mark the next task as `in_progress`. This gives the user visible progress tracking throughout the workflow.
+
 ## Critical Rules
 
 - NEVER skip steps or optimize the sequence

@@ -20,13 +20,28 @@ Check project for existing test framework:
   - Install the test framework using the platform's package management tools (not manual shell commands)
   - Create initial test configuration files as needed (e.g., vitest.config.ts, jest.config.js, playwright.config.ts)
 
-### Step 1: Identify Features
+### Step 1: Identify Test Targets
 
-Ask user what to test:
+Determine test source (in priority order):
 
-- Specific feature/component name
+**Option A — Story-driven (preferred when a story file exists):**
+
+- If user provides a story file path, load it directly
+- If user names a feature, search implementation artifacts for the matching story file
+- When story file is available:
+  - Extract ALL acceptance criteria
+  - Number each AC — these become the primary test case sources
+  - Present AC list and confirm scope with user
+  - Maintain an AC Coverage Table throughout:
+    | AC# | AC Text (short) | Test Case | Covered |
+    |-----|----------------|-----------|---------|
+
+**Option B — Feature-driven (when no story file applies):**
+
+- Specific feature/component name from user
 - Directory to scan (e.g., `src/components/`)
-- Or auto-discover features in the codebase
+- Auto-discover features in the codebase
+- Document test targets and confirm with user
 
 ### Step 2: Generate API Tests (if applicable)
 
@@ -47,6 +62,21 @@ For UI features, generate tests that:
 - Assert visible outcomes
 - Keep tests linear and simple
 - Follow project's existing test patterns
+
+#### AC-to-Test Mapping (when story file is available)
+
+For each acceptance criterion from Step 1:
+
+- Write at least one test case that directly verifies the AC
+- Each test MUST include at least one assertion that would FAIL if the AC were not implemented:
+  - BAD: `test('AC3: breadcrumb', () => { expect(true).toBe(true) })`
+  - GOOD: `test('AC3: breadcrumb shows drill path', () => { expect(page.locator('[data-testid="breadcrumb"]')).toContainText('Quarterly') })`
+- For visual/UX ACs, use structural assertions:
+  - Element exists and is visible: `toBeVisible()`
+  - Element contains expected text: `toContainText()`
+  - Element has distinguishing attribute or class: `toHaveAttribute()` or `toHaveClass()`
+  - Do NOT assert exact CSS values (colors, pixel sizes) — these break on theme changes
+- Update the AC Coverage Table with test case name and assertion summary
 
 ### Step 4: Run Tests
 
@@ -74,6 +104,12 @@ Output markdown summary:
 - [x] tests/e2e/feature.spec.ts - User workflow
 
 ## Coverage
+
+### AC Coverage (when story-driven)
+- ACs with test coverage: X/Y
+- Uncovered ACs: [list with justification]
+
+### Feature Coverage
 - API endpoints: 5/10 covered
 - UI features: 3/8 covered
 

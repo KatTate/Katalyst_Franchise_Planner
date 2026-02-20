@@ -7,6 +7,10 @@
   <critical>Execute ALL steps in exact order; do NOT skip steps. This workflow has 11 steps. You are NOT done until step 11 is complete.</critical>
   <critical>Absolutely DO NOT stop because of "milestones", "significant progress", or "session boundaries". Continue in a single execution
     until the story is COMPLETE (all ACs satisfied) UNLESS a HALT condition is triggered or the USER gives other instruction.</critical>
+  <critical>STEP 8 IS THE MOST IMPORTANT STEP IN THIS WORKFLOW. Steps 1-7 are preparation.
+    If you are running low on context, PRIORITIZE completing Step 8 (AC verification with evidence)
+    over verbose implementation narration in Step 6. A story with verified ACs and brief implementation
+    notes is better than a story with detailed implementation logs but skipped verification.</critical>
   <critical>Do NOT schedule a "next session" or request review pauses unless a HALT condition applies. Only Step 11 decides completion.</critical>
   <critical>REPLIT TIP: For best results, run this workflow in a fresh chat to maximize available context.</critical>
 
@@ -74,6 +78,19 @@
     <action>Load {project_context} for coding standards and project-wide patterns (if exists)</action>
     <action>Extract developer guidance from Dev Notes: architecture requirements, previous learnings, technical specifications</action>
     <action>Use enhanced story context to inform implementation decisions and approaches</action>
+
+    <action>DEPENDENCY VERIFICATION: If this story's Dev Notes reference infrastructure,
+      components, or hooks from a previous story:
+      1. Identify each dependency (e.g., "reuse useColumnManager from Story 5.2")
+      2. Load the ORIGINAL story file for that dependency
+      3. Read the original story's acceptance criteria for that infrastructure
+      4. Verify the dependency meets its ORIGINAL spec — not just that it runs
+      5. If the dependency is missing features specified in its original ACs, flag this
+         BEFORE implementation. Either fix the dependency first or adjust the current
+         story's approach.
+      This prevents inheriting gaps from prior stories. "It works" is not the same as
+      "it works as spec'd."
+    </action>
     <output>✅ **Context Loaded**
       Story and project context available for implementation
     </output>
@@ -201,7 +218,27 @@
     <critical>Every acceptance criterion must be verified. This is the definition of done.
       Do NOT proceed past this step until every AC is confirmed satisfied.</critical>
 
-    <action>Walk through each acceptance criterion one by one and verify it is satisfied</action>
+    <action>For EACH acceptance criterion, produce a verification entry:
+      1. Read the AC text
+      2. In your own words, describe what a user would see or experience if this AC is satisfied
+         (do NOT reference code constructs — describe observable behavior)
+      3. Verify against the running application:
+         - For interactive behaviors: execute the interaction and capture the result
+         - For visual elements: take a screenshot and describe what is visible
+         - For data/logic ACs: show test output or API response
+         - For infrastructure/code-structural ACs: evidence may reference test output, migration results, or code inspection
+      4. Record what you ACTUALLY observed (not what you expected)
+      5. Mark: SATISFIED (observation matches expected) or NOT SATISFIED (gap identified)
+
+      Format each entry as:
+      AC[N]: [SATISFIED/NOT SATISFIED]
+        Expected: [plain-language description of what a user would see]
+        Method: [how you verified — e.g., screenshot, test runner, API call, code inspection]
+        Observed: [what you actually saw in the running app, test output, or inspection]
+
+      CRITICAL: "The hook exists" or "the function is implemented" is NEVER valid as an observation.
+      Describe what you SEE, not what you WROTE.
+    </action>
 
     <critical>USER-FACING DELIVERY CHECK: If the story's "As a..." role is an end user,
       verify that every AC can be satisfied by a user interacting with the UI — not just by
