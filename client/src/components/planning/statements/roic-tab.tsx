@@ -98,7 +98,6 @@ export function RoicTab({ output, scenarioOutputs }: RoicTabProps) {
   if (comparisonActive && scenarioOutputs) {
     return (
       <div className="space-y-0 pb-8" data-testid="roic-tab">
-        <RoicCalloutBar roicExtended={roicExtended} />
         <div className="overflow-x-auto" data-testid="roic-table">
           <table className="w-full text-sm" role="grid" aria-label="ROIC Analysis — Scenario Comparison">
             <thead>
@@ -152,7 +151,6 @@ export function RoicTab({ output, scenarioOutputs }: RoicTabProps) {
 
   return (
     <div className="space-y-0 pb-8" data-testid="roic-tab">
-      <RoicCalloutBar roicExtended={roicExtended} />
       <div className="overflow-x-auto" data-testid="roic-table">
         <table className="w-full text-sm" role="grid" aria-label="ROIC Analysis">
           <thead>
@@ -188,39 +186,6 @@ export function RoicTab({ output, scenarioOutputs }: RoicTabProps) {
   );
 }
 
-function RoicCalloutBar({ roicExtended }: { roicExtended: ROICExtendedOutput[] }) {
-  if (roicExtended.length === 0) {
-    return (
-      <div className="px-4 py-3 border-b bg-muted/30 sticky top-0 z-30" data-testid="roic-callout-bar">
-        <span className="text-sm text-muted-foreground">No ROIC data available.</span>
-      </div>
-    );
-  }
-
-  const y5 = roicExtended[roicExtended.length - 1];
-  const roicPct = y5.roicPct;
-  const hasPositiveReturn = roicPct > 0;
-
-  return (
-    <div
-      className="px-4 py-3 border-b bg-muted/30 sticky top-0 z-30"
-      data-testid="roic-callout-bar"
-    >
-      {hasPositiveReturn ? (
-        <p className="text-sm" data-testid="roic-callout-interpretation">
-          Your 5-year cumulative ROIC of{" "}
-          <span className="font-semibold font-mono" data-testid="roic-callout-roic-y5">{(roicPct * 100).toFixed(1)}%</span>
-          {" "}means for every dollar you invested, you earned{" "}
-          <span className="font-semibold font-mono">${(1 + roicPct).toFixed(2)}</span> back.
-        </p>
-      ) : (
-        <p className="text-sm text-muted-foreground" data-testid="roic-callout-interpretation">
-          Your plan has not yet generated a positive return on invested capital.
-        </p>
-      )}
-    </div>
-  );
-}
 
 interface RoicSectionProps {
   section: RoicSectionDef;
