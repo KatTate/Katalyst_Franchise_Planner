@@ -159,33 +159,32 @@ This document provides the complete epic and story breakdown for the Katalyst Gr
 - TanStack React Query for server state + React Context for local UI state
 - Shared financial engine as pure TypeScript module (shared/financial-engine.ts) with no side effects
 - Server-side LLM proxy with structured extraction and graceful degradation
-- Component architecture: shared detail panel + tier-specific input collection components (StoryModeChat, NormalModeForm, ExpertModeGrid)
-- Split-view layout with resizable panels (react-resizable-panels)
+- Component architecture: two interaction surfaces (My Plan forms + Reports inline editing) sharing a single financial input state. *(Updated 2026-02-20: original three-tier component model — StoryModeChat, NormalModeForm, ExpertModeGrid — replaced by two-surface architecture per SCP-2026-02-20. Mode switcher and Quick Entry grid retired.)*
+- Split-view layout with resizable panels (react-resizable-panels) — applicable to AI Planning Assistant (Epic 9)
 - Route modules pattern for API organization
 - 409 conflict handling for auto-save concurrent edit detection
 - Document storage: PostgreSQL for metadata, Replit Object Storage for PDF binaries
 - Generated documents are immutable after creation
 
-**From UX Design Specification:**
-- Direction F (Hybrid Adaptive) layout: sidebar collapses in Planning Assistant for immersion, restores in Forms/Quick Entry
+**From UX Design Specification (updated 2026-02-20 per SCP-2026-02-20):**
+- Two-surface architecture: My Plan (guided forms with Impact Strip) + Reports (interactive financial statements with inline editing). No mode switcher.
 - 200-300ms sidebar transition animation with prefers-reduced-motion support
-- Mode switcher: segmented control (Planning Assistant | Forms | Quick Entry) always visible to all users
-- Split-screen layout for Planning Assistant: conversation panel (left, min 360px) + live financial dashboard (right, min 480px)
+- Split-screen layout for Planning Assistant (Epic 9): conversation panel (left, min 360px) + live financial dashboard (right, min 480px)
 - Stacked mode below 1024px: tabbed interface (Chat | Dashboard) with accent-colored dot indicator for changes
 - AI extraction confidence threshold: confident (silent populate), tentative (dashed border + clarify), uncertain (no populate + guide)
-- Expert/Quick Entry grid: TanStack Table with category grouping, virtualization for 60+ rows, tab-through keyboard navigation
-- Forms mode: plan completeness dashboard for session re-entry, collapsible sections by financial category
+- Reports inline editing replaces retired Quick Entry grid — input cells are always editable in financial statement tabs
+- Forms mode (My Plan): plan completeness bar for session re-entry, collapsible sections by financial category, Impact Strip at bottom with deep links to Reports
 - Quick ROI result in first 90 seconds for new users
-- Live document preview visible during planning
+- Document Preview widget on Dashboard showing progressive quality
 - Per-field source attribution badges: Brand Default / AI-Populated / Your Entry
 - Per-field reset to brand default with single action
 - Financial values shown with contextual sentiment (brand ranges, market context)
 - Auto-save status indicator: "All changes saved" / "Saving..." always visible
 - Consultant booking link persistent throughout experience
-- Three-scenario comparison (Good/Better/Best) as primary interaction pattern
-- Katalyst color system: three-layer color architecture with --katalyst-brand escape hatch for "Powered by" badge
+- What-If Playground (Epic 10): standalone sidebar destination with sensitivity sliders and 6 simultaneous charts — replaces retired three-scenario column-splitting comparison
+- Katalyst color system: three-layer color architecture with --katalyst-brand escape hatch for "Powered by" badge. Primary: #78BF26 (HSL 88 67% 45%).
 - Typography: Montserrat (headlines), Roboto (body), Roboto Mono (financial values)
-- "Gurple" (Mystical #A9A2AA) for advisory indicators (never errors)
+- Guardian Bar advisory indicators use guardian-healthy/attention/concerning tokens — never error-red
 - White-label theming via CSS custom properties: brand accent overrides --primary
 
 ### FR Coverage Map
@@ -267,8 +266,32 @@ This document provides the complete epic and story breakdown for the Katalyst Gr
 | FR59-FR65 | Epic ST | Admin "View As" impersonation of franchisees |
 | FR66-FR69 | Epic ST | Per-brand Franchisee Demo Mode |
 | FR70-FR73 | Epic ST | Franchisor Demo Mode with fictitious brand |
+| FR74 | Epic 3 | Corporation tax calculation with loss carry-forward |
+| FR75 | Epic 3 | Tax payment delay (accrual vs. cash timing) |
+| FR76 | Epic 3 | Shareholder salary adjustment and Adjusted Net PBT |
+| FR77 | Epic 3 | EBITDA-based valuation with configurable multiple |
+| FR78 | Epic 3, 5 | Full ROIC per year (Total Invested Capital, ROIC %) |
+| FR79 | Epic 3, 5 | Labor Efficiency Ratios (Direct LER, Admin LER, Adjusted Total LER, Salary Cap) |
+| FR80 | Epic 3, 5 | Breakeven burn metrics (Total Expenses, CapEx, Total Burn) |
+| FR81 | Epic 3, 5 | Payback period analysis with sweat equity adjustment |
+| FR82 | Epic 3, 5 | Retained Earnings as distinct balance sheet line item |
+| FR83 | Epic 5 | Summary Financials dashboard with all key outputs |
+| FR84 | Epic 5 | Consistent financial formatting (currency, pct, ratio, integer) via `<FinancialValue>` |
+| FR85 | Epic 5 | Accounting-style parentheses for negative values |
+| FR86 | Epic 5 | Monospace font (Roboto Mono) for financial figure cells |
+| FR87 | Epic 5 | Source badges (BD/AI) on input cells in My Plan and Reports |
+| FR88 | Epic 5, 8 | Advisory visual language — non-red info tokens for advisory content |
+| FR89 | Epic 5, 8 | Guardian Bar three-state advisory indicators (healthy/concerning/critical) |
+| FR90 | Epic 5 | Impact Strip — persistent context-sensitive metrics bar in My Plan |
+| FR91 | Epic 5 | Impact Strip section-aware metrics based on active form |
+| FR92 | Epic 5 | Impact Strip delta indicators showing change amounts |
+| FR93 | Epic 5 | Impact Strip Guardian status dots (advisory visual language) |
+| FR94 | Epic 5 | Impact Strip deep-links to corresponding Reports tabs |
+| FR95 | Epic 5 | Plan completeness indicator (section-by-section status) |
+| FR96 | Epic 5 | Dashboard Document Preview widget with completeness-aware labels |
+| FR97 | Epic 5 | Bidirectional sync — edits on either surface reflected immediately |
 
-**Coverage Summary:** 87/87 FRs mapped (73 original + 14 new FR7a-FR7n). All functional requirements covered. Stories across 11 MVP epics (+ 1 deferred Phase 2 epic + 1 admin support tools epic). Epics 5-7 contain 14 stories total (10 + 2 + 2).
+**Coverage Summary:** 96/96 FRs mapped (73 original + 14 FR7a-FR7n + 10 FR74-FR83 engine extensions + 14 FR84-FR97 display standards, advisory language, Impact Strip, plan completeness, bidirectional sync — added per SCP-2026-02-20). All functional requirements covered. Stories across 11 MVP epics (+ 1 deferred Phase 2 epic + 1 admin support tools epic).
 
 ## Epic List
 
@@ -287,16 +310,16 @@ The core calculation engine computes 5-year monthly financial projections from b
 **FRs covered:** FR1, FR2, FR3, FR4, FR5, FR6, FR7, FR8, FR9, FR10, FR41
 **NFRs addressed:** NFR1 (< 2s recalculation), NFR15 (deterministic), NFR20 (linear scaling)
 
-### Epic 4: Forms & Quick Entry Experience
-Franchisees can build financial plans using two manual input paradigms — Forms (guided sections with progressive disclosure) and Quick Entry (spreadsheet-style grid with tab-through navigation). Includes mode switching, auto-save, session recovery, navigation, and persistent consultant booking link.
+### Epic 4: Forms Experience & Planning Infrastructure
+Franchisees can build financial plans using guided form sections with progressive disclosure in My Plan. *(Updated 2026-02-20: Quick Entry grid and mode switcher retired per SCP-2026-02-20. Quick Entry functionality absorbed by Reports inline editing in Epic 5.)* Includes auto-save, session recovery, navigation, and persistent consultant booking link.
 **FRs covered:** FR11, FR12, FR13, FR15, FR16, FR17, FR18, FR19
 **NFRs addressed:** NFR2 (< 1s transitions), NFR5 (non-blocking auto-save), NFR13 (2-min auto-save), NFR14 (concurrent edit handling), NFR25 (desktop 1024px+), NFR28 (200ms feedback)
 
 ### Epic 5: Financial Statement Views & Output Layer
 Two interaction surfaces (My Plan and Reports) over a shared financial input state. Reports renders every spreadsheet output sheet as interactive tabular views with always-editable input cells. My Plan provides structured forms with an Impact Strip showing real-time financial impact and deep links to Reports. Guardian Bar provides persistent plan health. Dynamic interpretation explains "so what." Document Preview builds pride progressively.
-**FRs covered:** FR7a, FR7b, FR7c, FR7d, FR7e, FR7f, FR7g, FR7h, FR7k, FR7l, FR7m
+**FRs covered:** FR7a, FR7b, FR7c, FR7d, FR7e, FR7f, FR7g, FR7h, FR7k, FR7l, FR7m, FR84, FR85, FR86, FR87, FR88, FR89, FR90, FR91, FR92, FR93, FR94, FR95, FR96, FR97
 **NFRs addressed:** NFR1 (< 2s recalculation), NFR27 (consistent financial formatting)
-**Stories (10):** 5.1 Engine Extension, 5.2 App Navigation + Reports Container & Summary Tab, 5.3 P&L Tab (with Inline Editing), 5.4 Balance Sheet & Cash Flow Tabs (with Inline Editing), 5.5 ROIC/Valuation/Audit Tabs, 5.6 My Plan + Impact Strip + Bidirectional Data Flow, 5.7 Scenario Comparison, 5.8 Guardian Bar & Interpretation, 5.9 Document Preview & PDF Generation Trigger, 5.10 Glossary & Help
+**Stories (9):** 5.1 Engine Extension, 5.2 App Navigation + Reports Container & Summary Tab, 5.3 P&L Tab (with Inline Editing), 5.4 Balance Sheet & Cash Flow Tabs (with Inline Editing), 5.5 ROIC/Valuation/Audit Tabs, 5.6 My Plan + Impact Strip + Bidirectional Data Flow, ~~5.7 Scenario Comparison~~ (RETIRED → Epic 10), 5.8 Guardian Bar & Interpretation, 5.9 Document Preview & PDF Generation Trigger, 5.10 Glossary & Help
 **UX design authority:** `ux-design-specification-consolidated.md` (2026-02-18)
 
 ### Epic 6: Document Generation & Vault
@@ -316,13 +339,14 @@ System provides non-blocking advisory nudges when franchisee inputs fall outside
 **NFRs addressed:** NFR26 (plain-language messages), NFR27 (consistent financial formatting)
 
 ### Epic 9: AI Planning Advisor (Planning Assistant)
-Franchisees can have a natural-language conversation with an AI advisor in a split-screen layout. The advisor extracts structured financial inputs from conversation and populates the plan in real time with confidence-based extraction (confident/tentative/uncertain). Graceful degradation to Forms/Quick Entry when AI is unavailable.
+Franchisees can have a natural-language conversation with an AI advisor in a slide-in panel within My Plan. The advisor extracts structured financial inputs from conversation and populates the plan in real time with confidence-based extraction (confident/tentative/uncertain). Graceful degradation to My Plan forms and Reports inline editing when AI is unavailable.
 **FRs covered:** FR50, FR51, FR52, FR53, FR54
 **NFRs addressed:** NFR22 (< 5s AI response), NFR23 (AI value validation), NFR24 (graceful degradation)
 
 ### Epic 10: What-If Playground (formerly "Scenario Comparison")
-Standalone sidebar destination providing interactive graphical sensitivity analysis. Franchisees adjust assumption sliders (revenue, COGS, labor, marketing, facilities) and see all charts update simultaneously across Base, Conservative, and Optimistic scenarios. Replaces the retired Story 5.7 column-splitting approach. Per SCP-2026-02-20 Decision D5/D6 and Section 3.
+Standalone sidebar destination providing interactive graphical sensitivity analysis. Franchisees adjust assumption sliders (revenue, COGS, labor, marketing, facilities) and see 6 simultaneous charts (Profitability, Cash Flow, Break-Even, ROI, Balance Sheet, Debt & Working Capital) update across Base, Conservative, and Optimistic scenarios. This is a planning sandbox — slider adjustments do NOT change the user's actual plan. Replaces the retired Story 5.7 column-splitting approach. Per SCP-2026-02-20 Decision D5/D6 and Section 3.
 **FRs covered:** FR7d *(additional scenario FRs to be defined)*
+**Stories (3):** 10.1 Sensitivity Controls & Sandbox Engine, 10.2 Multi-Chart Sensitivity Dashboard, 10.3 Scenario Persistence & Sharing (optional enhancement)
 **Status:** Deferred — depends on financial statement views (Epic 5) being complete
 
 ### Epic 11: Data Sharing, Privacy & Pipeline Dashboards
@@ -788,9 +812,11 @@ So that I can confirm the financial engine produces correct results for this bra
 
 ---
 
-## Epic 4: Forms & Quick Entry Experience
+## Epic 4: Forms Experience & Planning Infrastructure
 
-Franchisees can build financial plans using two manual input paradigms — Forms (guided sections with progressive disclosure) and Quick Entry (spreadsheet-style grid with tab-through navigation). Includes mode switching, auto-save, session recovery, and persistent consultant booking link.
+> **2026-02-20 Update:** Epic 4 was originally titled "Forms & Quick Entry Experience" and included Stories 4.3 (Quick Entry grid) and 4.4 (Quick Entry keyboard navigation). Per SCP-2026-02-20 Decisions D1/D2, Quick Entry and the mode switcher were retired. Quick Entry functionality is now fully absorbed by Reports inline editing (Epic 5, Story 5.3/5.4). Stories 4.3 and 4.4 below retain their original ACs for historical reference but are effectively superseded. Story 4.1's mode switcher ACs are superseded by Epic 5's two-surface architecture.
+
+Franchisees can build financial plans using guided form sections with progressive disclosure in My Plan. Includes auto-save, session recovery, and persistent consultant booking link.
 
 ### Story 4.1: Planning Layout, Dashboard & Mode Switcher
 
@@ -1615,7 +1641,7 @@ So that I can make informed decisions about my assumptions (FR20, FR23).
 **And** the nudge uses the "Gurple" (#A9A2AA) color scheme — never red, never error-styled
 **And** the nudge does not prevent me from saving or proceeding with my chosen value (FR23)
 **And** nudges appear inline near the relevant field, not as disruptive modals or toasts
-**And** in Quick Entry mode, out-of-range values show a subtle Gurple background with range tooltip on hover
+**And** in Reports inline editing, out-of-range values show a subtle advisory-color background with range tooltip on hover
 
 ### Story 8.2: Weak Business Case Detection & Actionable Guidance
 
@@ -1703,11 +1729,11 @@ So that my work is never blocked by a technical issue (FR54).
 
 **Given** AI services are unavailable (network error, service down, rate limited)
 **When** I attempt to use Planning Assistant mode
-**Then** the system displays a clear, non-alarming message: "The planning advisor is temporarily unavailable. You can continue with Forms or Quick Entry."
-**And** a prominent suggestion to switch to Forms or Quick Entry mode is displayed
+**Then** the system displays a clear, non-alarming message: "The planning advisor is temporarily unavailable. You can continue with My Plan forms or Reports."
+**And** a prominent suggestion to navigate to My Plan or Reports is displayed
 **And** all previously AI-populated values are preserved in the financial inputs
-**And** when I switch away from Planning Assistant and return later, the conversation picks up where it left off
-**And** if financial inputs changed while in Forms/Quick Entry, the AI acknowledges them on return: "I see you've updated a few values — your break-even is now at month 15"
+**And** when I return to the Planning Assistant later, the conversation picks up where it left off
+**And** if financial inputs changed while in My Plan forms or Reports, the AI acknowledges them on return: "I see you've updated a few values — your break-even is now at month 15"
 **And** if an AI response was in progress when switching modes, it completes in the background and extracted values populate into the shared state
 
 ---
@@ -1716,22 +1742,85 @@ So that my work is never blocked by a technical issue (FR54).
 
 Standalone sidebar destination providing interactive graphical sensitivity analysis. Franchisees adjust assumption sliders and see all charts (Profitability, Cash Flow, Break-Even, ROI, Balance Sheet, Debt & Working Capital) update simultaneously across Base, Conservative, and Optimistic scenarios. This is a planning sandbox — slider adjustments do NOT change the user's actual plan. Replaces the retired Story 5.7 column-splitting approach. Per SCP-2026-02-20 Decision D5/D6 and Section 3.
 
-### Story 10.1: Scenario Management & Comparison
+**FRs covered:** (To be assigned when FRs for What-If Playground are formalized — extends scenario-related FRs from Epic 5's retired Story 5.7)
+**Stories (3):** 10.1 Sensitivity Controls & Sandbox Engine, 10.2 Multi-Chart Dashboard, 10.3 Scenario Persistence & Sharing
+
+### Story 10.1: Sensitivity Controls & Sandbox Engine
 
 As a franchisee,
-I want to create and compare multiple scenarios for my business plan,
-So that I can build conviction that my plan works even in conservative cases.
+I want to navigate to a standalone What-If Playground and adjust assumption sliders to see how my plan responds to changing conditions,
+So that I can build conviction that my plan works even in conservative cases — without modifying my actual plan.
 
 **Acceptance Criteria:**
 
-**Given** I have a plan with financial inputs
-**When** I create scenarios (Good/Better/Best or custom-named)
-**Then** I can duplicate my current inputs into a new scenario and adjust key variables
-**And** I can view scenarios side by side with key metrics compared
-**And** contextual sentiment provides meaning: "Your conservative case still shows positive ROI by month 18"
-**And** the comparison highlights which variables differ between scenarios and their impact
-**And** scenario data is stored per plan — each plan supports multiple scenarios
-**And** creating scenarios is low-friction — the AI advisor suggests it when the base plan is complete
+**Given** I have a plan with financial inputs and am on the dashboard or any planning surface
+**When** I click the "What-If" sidebar navigation item
+**Then** I see a standalone What-If Playground page (route: `/plans/:planId/what-if`)
+**And** the page header explains the purpose: "What happens to my WHOLE business if things change?"
+**And** a sticky/collapsible Sensitivity Controls panel is displayed at the top with sliders for key assumptions:
+  - Revenue adjustment: -15% ←——●——→ +15%
+  - COGS adjustment: -5% ←——●——→ +5%
+  - Payroll/Labor adjustment: -10% ←——●——→ +10%
+  - Marketing adjustment: -10% ←——●——→ +10%
+  - Facilities adjustment: -10% ←——●——→ +10%
+**And** each slider shows its current percentage adjustment and the resulting dollar impact (e.g., "Revenue: +8% → +$24,000/yr")
+**And** sliders can be supplemented by editable numeric fields for precise input
+**And** slider adjustments do NOT modify the user's actual plan — this is a sandbox (base case always reflects saved plan inputs)
+**And** the financial engine computes three scenarios client-side: Base Case (saved plan), Conservative (negative slider extremes), and Optimistic (positive slider extremes)
+**And** each computation completes in < 2 seconds (NFR1)
+**And** slider input is debounced for an instant, responsive feel
+
+**Dev Notes:**
+- Financial engine already supports this — pass modified inputs, get full projection
+- Engine runs once per scenario (3 runs total). Client-side computation with debounced slider input.
+- Base case always reflects the user's actual saved plan inputs — not slider-modified values
+- Conservative/Optimistic are computed by applying slider percentage multipliers to base case inputs
+
+### Story 10.2: Multi-Chart Sensitivity Dashboard
+
+As a franchisee,
+I want to see 6 simultaneous charts in the What-If Playground that all react to my slider adjustments,
+So that I can understand the full impact of changing assumptions across every dimension of my business.
+
+**Acceptance Criteria:**
+
+**Given** I am on the What-If Playground with sensitivity sliders
+**When** I adjust any slider
+**Then** all 6 charts update simultaneously with three scenario curves: Base Case (solid line), Conservative (dashed), Optimistic (light dashed)
+**And** Chart 1 — **Profitability (P&L Summary)**: 5-year line/area chart showing Annual Revenue, COGS, Gross Profit, EBITDA, Pre-Tax Income
+**And** Chart 2 — **Cash Flow**: 5-year line chart showing Net Operating Cash Flow, Net Cash Flow, Ending Cash Balance. Months where any scenario goes cash-negative are highlighted with an amber advisory zone
+**And** Chart 3 — **Break-Even Analysis**: Visual showing months to break-even for each scenario (horizontal bar, timeline, or annotated point)
+**And** Chart 4 — **ROI & Returns**: 5-year cumulative ROIC chart with three scenario curves. Callout card with plain-language interpretation (e.g., "Your conservative case still shows positive ROI by month 18")
+**And** Chart 5 — **Balance Sheet Health**: Total Assets vs Total Liabilities over 5 years. Equity growth visible as the gap between the lines
+**And** Chart 6 — **Debt & Working Capital**: Outstanding debt paydown trajectory, working capital position
+**And** key metric cards with delta indicators are displayed showing the impact of slider changes vs. base case (e.g., "Break-Even: 14 mo → 18 mo (+4 mo)")
+**And** charts use the application's chart color tokens (chart-1 through chart-5) and advisory color language (FR88-FR89)
+
+**Dev Notes:**
+- Charting via Recharts (already in the project dependencies via shadcn/ui charts)
+- All charts share the same 3 engine output sets (Base/Conservative/Optimistic)
+- Chart data transforms should be memoized for performance
+
+### Story 10.3: Scenario Persistence & Sharing (Optional Enhancement)
+
+As a franchisee,
+I want to optionally save a set of slider positions as a named scenario for future reference,
+So that I can return to a previous What-If exploration or share it with my advisor.
+
+**Acceptance Criteria:**
+
+**Given** I have adjusted sliders in the What-If Playground
+**When** I click "Lock this scenario"
+**Then** I can name the scenario (e.g., "Conservative Revenue + Low Marketing")
+**And** the slider positions are saved with the plan
+**And** I can later reload saved scenarios from a scenario selector dropdown
+**And** saved scenario data is stored per plan — each plan supports multiple saved scenarios
+**And** the currently selected scenario's name is displayed in the header when a saved scenario is loaded
+**And** I can delete saved scenarios I no longer need
+
+**Dev Notes:**
+- This story is an optional enhancement — the What-If Playground is fully functional without scenario persistence (Stories 10.1 and 10.2 are complete without this)
+- Scenario data stored as JSON in a `what_if_scenarios` column on the plan record or in a related table
 
 ---
 

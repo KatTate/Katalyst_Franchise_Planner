@@ -1,5 +1,5 @@
 # generated: 2026-02-09
-# updated: 2026-02-20 (CP-6/CP-7 executed — Epic 5 stories 5.5-5.10 done)
+# updated: 2026-02-20 (SCP-2026-02-20 handoff: document remediation + CP-11 border radius)
 # project: Katalyst Growth Planner
 # project_key: NOKEY
 # tracking_system: file-system
@@ -168,6 +168,22 @@ story_location: _bmad-output/implementation-artifacts
 #     Searchable glossary page at /glossary/:slug, field help icons with tooltips,
 #     expanded guidance, glossary cross-links, brand benchmarks, "See it in your plan",
 #     sidebar navigation link
+# 2026-02-20: SCP-2026-02-20 handoff — Correct Course Step 6 execution
+#   - Codebase audit: 15/16 CPs confirmed done. Only CP-11 (border radius) incomplete.
+#   - Document remediation executed (previously skipped during handoff):
+#     a) architecture.md: FR count updated 87→96, 5 new FR categories added
+#     b) epics.md: FR Coverage Map updated 87→96 (27 new FR mappings: FR74-FR97)
+#     c) epics.md: Epic 10 rewritten — Story 10.1 decomposed into 3 stories
+#        (10.1 Sensitivity Controls, 10.2 Multi-Chart Dashboard, 10.3 Scenario Persistence)
+#        matching SCP Section 3 What-If Playground vision
+#     d) epics.md: Quick Entry references updated (Epic 4 deprecation note, Epic 9 graceful
+#        degradation, Story 8.1 advisory nudge) to reflect two-surface architecture
+#     e) Epic 4 renamed: "Forms & Quick Entry Experience" → "Forms Experience & Planning Infrastructure"
+#     f) Epic 5 FR coverage expanded to include FR84-FR97, story count corrected to 9
+#   - Sprint status updated: Epic 10 stories reflect new 3-story structure
+#   - CP-11 border radius polish: audit confirmed already applied (Card=rounded-2xl,
+#     Button=rounded-xl, Input=rounded-xl). All 16/16 SCP items complete.
+#   - Epic 5 marked DONE — all 9 stories + all SCP remediation CPs confirmed complete
 
 development_status:
   # Epic 1: Auth, Onboarding & User Management
@@ -201,8 +217,9 @@ development_status:
   3-7-brand-configuration-validation: done
   epic-3-retrospective: done
 
-  # Epic 4: Forms & Quick Entry Experience
+  # Epic 4: Forms Experience & Planning Infrastructure (renamed from "Forms & Quick Entry Experience")
   # Story 4.7 added mid-epic to close integration gaps
+  # Stories 4.3/4.4 (Quick Entry) superseded — functionality absorbed by Reports inline editing (Epic 5)
   epic-4: done
   4-1-planning-layout-dashboard-mode-switcher: done
   4-2-forms-mode-section-based-input: done
@@ -222,18 +239,21 @@ development_status:
   # Dependencies: Epic 3 (engine), Epic 4 (planning workspace)
   # Pre-req: CP-2 engine extension (Story 5.1), CP-8 tech debt resolution
   # UX design authority: ux-design-specification-consolidated.md (2026-02-18)
-  # PENDING: SCP-2026-02-19 remediation (11 CPs) before Epic 5 can close
-  epic-5: in-progress
+  # FRs: FR7a-FR7m, FR84-FR97 (updated per SCP-2026-02-20 document remediation)
+  # Stories: 9 (Story 5.7 RETIRED → Epic 10)
+  # All 9 stories done + CP-11 confirmed. Epic 5 COMPLETE.
+  epic-5: done
   5-1-financial-engine-extension: done
   5-2-financial-statements-container-summary-tab: done
   5-3-pl-statement-tab: done
   5-4-balance-sheet-cash-flow-tabs: done
   5-5-roic-valuation-audit-tabs: done
-  5-6-quick-entry-input-output-integration: done
+  5-6-my-plan-impact-strip-bidirectional-data-flow: done
   5-7-scenario-comparison: done  # RETIRED per D6 — scope moves to Epic 10
   5-8-guardian-bar-dynamic-interpretation: done
-  5-9-impact-strip-document-preview-widget: done
+  5-9-document-preview-pdf-generation-trigger: done
   5-10-glossary-contextual-help: done
+  5-cp11-border-radius-polish: done  # SCP-2026-02-20 CP-11 — confirmed already applied
   epic-5-retrospective: optional
 
   # Epic 6: Document Generation & Vault [ELEVATED from old Epic 7]
@@ -270,9 +290,13 @@ development_status:
   9-4-graceful-degradation-mode-continuity: backlog
   epic-9-retrospective: optional
 
-  # Epic 10: Scenario Comparison [was part of old Epic 7]
+  # Epic 10: What-If Playground [was Scenario Comparison, part of old Epic 7]
+  # Rewritten per SCP-2026-02-20 D5/D6 — standalone sensitivity dashboard, not column-splitting
+  # Stories (3): Sensitivity Controls, Multi-Chart Dashboard, Scenario Persistence (optional)
   epic-10: backlog
-  10-1-scenario-management-comparison: backlog
+  10-1-sensitivity-controls-sandbox-engine: backlog
+  10-2-multi-chart-sensitivity-dashboard: backlog
+  10-3-scenario-persistence-sharing: backlog  # optional enhancement
   epic-10-retrospective: optional
 
   # Epic ST: Admin Support Tools — Impersonation & Demo Modes

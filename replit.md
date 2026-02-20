@@ -73,6 +73,15 @@ When the user triggers an agent or workflow, the AI MUST load the referenced fil
 - **Financial Statements View:** A workspace view toggle (Dashboard/Statements) in the planning header allows switching between the dashboard and a 7-tab financial statements container (`client/src/components/planning/financial-statements.tsx`). Components are in `client/src/components/planning/statements/` with CalloutBar, StatementSection, ColumnManager (progressive disclosure: annual→quarterly→monthly), StatementTable (data-driven row/section definitions), and SummaryTab. Dashboard metric cards link to specific statement tabs.
 - **Quick Entry Mode:** RETIRED (CP-2, SCP 2026-02-20). Deleted `quick-entry-mode.tsx` and `editable-cell.tsx`. Reports inline editing (Story 5.6) replaces this functionality. `InputPanel` now always renders `FormsMode` directly.
 - **Impact Strip & Document Preview (Story 5.9):** ImpactStrip (`client/src/components/planning/impact-strip.tsx`) renders as sticky bottom bar in Forms view with context-sensitive metrics (changes based on active section), delta indicators with 3-second highlight animation, guardian dots with pulse animation (Gurple for concerning), and deep links to financial statements. DocumentPreviewModal (`client/src/components/planning/document-preview-modal.tsx`) shows styled HTML business plan preview with cover page, financial summaries, and DRAFT watermark when completeness <90%. DocumentPreviewWidget (`client/src/components/planning/document-preview-widget.tsx`) appears on Dashboard Panel as miniature preview card. Generate PDF buttons use completeness-aware labels: <50% "Generate Draft", 50-90% "Generate Package", >90% "Generate Lender Package". Shared completeness utility in `client/src/lib/plan-completeness.ts`.
+- **FinancialValue Component:** `client/src/components/shared/financial-value.tsx` — shared formatting component for all financial display. Handles currency ($), percentages (%), ratios (x), multipliers (x), numbers, and months. Accounting-style parentheses for negatives. Monospace font, destructive color for negative values.
+
+## Recent Changes (2026-02-20)
+- Epic 5 COMPLETE — all 9 stories done, all SCP-2026-02-20 remediation CPs confirmed
+- Document remediation: architecture.md FR count 87→96, epics.md FR Coverage Map updated (27 new FR mappings FR74-FR97)
+- Epic 10 rewritten: 3 stories for What-If Playground (sensitivity sliders + 6 charts + optional scenario persistence)
+- Epic 4 renamed to "Forms Experience & Planning Infrastructure" (Quick Entry references deprecated)
+- Sprint status updated: Epic 5 done, Epic 10 restructured, all changelog entries added
+- Next epic in sequence: Epic 6 (Document Generation & Vault) or Epic 7 (Per-Year Inputs)
 
 **Feature Specifications:**
 - **Invitation Management:** Provides both UI and API capabilities for creating, monitoring, and copying invitation links.

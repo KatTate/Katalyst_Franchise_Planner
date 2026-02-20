@@ -26,13 +26,13 @@ _This document builds collaboratively through step-by-step discovery. Sections a
 
 ### Requirements Overview
 
-**Functional Requirements (87 FRs across 12 categories):**
+**Functional Requirements (96 FRs across 16 categories):**
 
-*Updated 2026-02-15 via Sprint Change Proposal — added FR7a-FR7n (financial statement views, per-year inputs, help content, PDF generation), FR74-FR83 (engine computation extensions).*
+*Updated 2026-02-15 via Sprint Change Proposal — added FR7a-FR7n (financial statement views, per-year inputs, help content, PDF generation), FR74-FR83 (engine computation extensions). Updated 2026-02-20 via SCP-2026-02-20 — added FR84-FR87 (financial display standards), FR88-FR89 (advisory visual language), FR90-FR94 (Impact Strip), FR95-FR96 (plan completeness & document preview), FR97 (bidirectional sync).*
 
 | Category | FR Count | Architectural Implication |
 |----------|----------|--------------------------|
-| Financial Planning & Calculation (FR1-FR10, FR7a-FR7n, FR74-FR83) | 24 | Core computation engine + financial statement output layer — deterministic, parameterized, with 13 accounting identity checks. Must support live-updating < 2s. Statement views render 60-month tabular documents. |
+| Financial Planning & Calculation (FR1-FR10, FR7a-FR7n, FR74-FR83) | 34 | Core computation engine + financial statement output layer — deterministic, parameterized, with 13 accounting identity checks. Must support live-updating < 2s. Statement views render 60-month tabular documents. |
 | Guided Planning Experience (FR11-FR19) | 9 | Two interaction surfaces: My Plan (structured forms with progressive disclosure) and Reports (interactive financial statements with inline editing). Multi-session with auto-save, crash recovery, and ever-present booking link. |
 | Advisory & Guardrails (FR20-FR23) | 4 | Business rules layer on top of the financial engine — advisory, never blocking. Guardian Bar in Reports surfaces plan health; field-level help in My Plan provides guardrails. |
 | Document Generation & Management (FR24-FR27) | 4 | Server-side PDF generation with immutable output storage and FTC-compliant disclaimers. |
@@ -43,6 +43,11 @@ _This document builds collaboratively through step-by-step discovery. Sections a
 | Brand Identity & Experience (FR49) | 1 | Brand-specific theming and identity display throughout the experience. |
 | AI Planning Advisor (FR50-FR54) | 5 | LLM-powered AI Planning Assistant available as a slide-in panel within My Plan (Epic 9). NL-to-structured-input extraction. Per-field attribution tracking. |
 | Advisory Board Meeting (FR55-FR58) | 4 | Multi-persona AI stress-testing of plan assumptions. Persona manifest system, topic-based selection, cross-talk orchestration. Phase 2. |
+| Financial Display Standards (FR84-FR87) | 4 | Consistent formatting rules (currency, percentage, ratio, accounting-style negatives), monospace font for tabular alignment, source badges (BD/AI) for attribution. Implemented via shared `<FinancialValue>` component. |
+| Advisory Visual Language (FR88-FR89) | 2 | Guardian Bar uses advisory color tokens (healthy/concerning/critical) — never error-red. Distinct visual language separates advisory from error states across the application. |
+| Impact Strip (FR90-FR94) | 5 | Persistent context-sensitive metrics bar at bottom of My Plan. Section-aware metrics, delta indicators, Guardian status dots, deep-links to Reports tabs. |
+| Plan Completeness & Document Preview (FR95-FR96) | 2 | Section-by-section completion indicator for re-entry context. Dashboard Document Preview widget with progressive quality and completeness-aware labels. |
+| Bidirectional Surface Sync (FR97) | 1 | Edits on either surface immediately reflected on the other. Single shared financial input state — no save-and-sync step. |
 
 **Non-Functional Requirements (28 NFRs across 6 categories):**
 
