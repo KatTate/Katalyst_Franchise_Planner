@@ -1,5 +1,5 @@
 # generated: 2026-02-09
-# updated: 2026-02-16 (Sprint Planning regenerated — story keys aligned with epics.md)
+# updated: 2026-02-20 (Sprint Planning regenerated — planning artifact alignment complete)
 # project: Katalyst Growth Planner
 # project_key: NOKEY
 # tracking_system: file-system
@@ -35,7 +35,7 @@
 # - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
 
 generated: 2026-02-09
-updated: 2026-02-16
+updated: 2026-02-20
 project: Katalyst Growth Planner
 project_key: NOKEY
 tracking_system: file-system
@@ -93,6 +93,11 @@ story_location: _bmad-output/implementation-artifacts
 #   - Container: BalanceSheetTab and CashFlowTab replace PlaceholderTab components
 #   - 20/20 acceptance criteria verified against code, LSP clean
 #   - Story status: done
+# 2026-02-18: UX Design Specification consolidated
+#   - Created ux-design-specification-consolidated.md as single source of truth
+#   - Replaces ux-financial-statements-spec.md as UX design authority for all epics
+#   - Establishes two-surface architecture (My Plan + Reports), retires three-mode model
+#   - See: ux-design-specification-consolidated.md
 # 2026-02-19: Story 5.5 adversarial code review completed
 #   - 3 HIGH, 4 MEDIUM, 3 LOW findings — documented as review notes (not fixed)
 #   - H1: Audit category names/count don't match AC14's 13 listed categories (engine produces 15)
@@ -111,6 +116,33 @@ story_location: _bmad-output/implementation-artifacts
 #   - AC7 (EBITDA Multiple) deferred: ebitdaMultiple not in PlanFinancialInputs schema
 #   - Playwright e2e tests passing, LSP clean
 #   - Story status: review
+# 2026-02-19: Sprint Change Proposal — UX Specification Compliance Remediation
+#   - 13 divergences cataloged (3 Critical, 4 High, 4 Medium, 2 Low)
+#   - 11 change proposals (CP-1 through CP-11) with execution sequence
+#   - Adversarial review: 14 findings (2 CRITICAL, 4 HIGH, 4 MEDIUM, 2 LOW)
+#   - Amendment A: Spec reconciliation — C1 reclassified as Category B (deprecate, don't delete)
+#   - Amendment B: C-ratio display bug confirmed, formatted-output audit
+#   - Selected approach: Option 1 (Direct Adjustment — patch forward)
+#   - All divergences are UI-layer; engine/auth/API untouched
+#   - See: sprint-change-proposal-2026-02-19.md
+# 2026-02-20: PRD alignment edit completed
+#   - PRD updated to align with two-surface UX architecture
+#   - 24 new FRs added (FR74-FR97) covering Reports inline editing, two-surface model,
+#     Impact Strip, Guardian Bar, Document Preview, plan completeness, glossary,
+#     contextual help, behavioral tiers, and progressive disclosure
+#   - FR12 rewritten: "two interaction surfaces" replaces "three experience tiers"
+#   - Total PRD FRs: 111 (was 87)
+# 2026-02-20: Implementation Readiness (IR) check completed
+#   - 111 FRs traced, 30 NFRs validated, all substantively covered in story ACs
+#   - 5 issues found: architecture.md still references "three modes" and retired components,
+#     epics FR Coverage Map stale (claims 87/87, PRD has 111), environment gaps
+#   - Overall status: NEEDS WORK (architecture doc + epics coverage map + remediation CPs)
+#   - See: implementation-readiness-report-2026-02-20.md
+# 2026-02-20: Sprint Planning regenerated
+#   - Updated changelog with UX consolidation, SCP-2026-02-19, PRD edit, IR check
+#   - All story counts verified: 52 stories across 13 epics (unchanged)
+#   - All statuses preserved — no downgrades
+#   - Next action: execute SCP-2026-02-19 remediation CPs to close Epic 5
 
 development_status:
   # Epic 1: Auth, Onboarding & User Management
@@ -161,10 +193,11 @@ development_status:
   # ==========================================================================
 
   # Epic 5: Financial Statement Views & Output Layer [NEW]
-  # Render every spreadsheet output sheet as interactive views
+  # Two interaction surfaces (My Plan + Reports) over shared financial input state
   # Dependencies: Epic 3 (engine), Epic 4 (planning workspace)
   # Pre-req: CP-2 engine extension (Story 5.1), CP-8 tech debt resolution
-  # UX design authority: ux-financial-statements-spec.md (v2, 2026-02-16)
+  # UX design authority: ux-design-specification-consolidated.md (2026-02-18)
+  # PENDING: SCP-2026-02-19 remediation (11 CPs) before Epic 5 can close
   epic-5: in-progress
   5-1-financial-engine-extension: done
   5-2-financial-statements-container-summary-tab: done
