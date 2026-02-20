@@ -1,0 +1,46 @@
+Dev Prompt: SCP 2026-02-20 Remaining Gaps
+Gap 1 (HIGH): Complete <FinancialValue> Migration
+Goal: Eliminate all local formatValue() and direct formatCents() usage in statement tabs. Every financial display value should go through <FinancialValue> or formatFinancialValue() from client/src/components/shared/financial-value.tsx.
+
+Files to migrate:
+
+File	Current Pattern	Action
+client/src/components/planning/statements/pnl-tab.tsx	Local formatValue() function (line ~268) + direct formatCents import	Replace with formatFinancialValue() import. Delete local formatValue. Remove formatCents import if no longer needed.
+client/src/components/planning/statements/summary-tab.tsx	formatCents import	Replace with formatFinancialValue()
+client/src/components/planning/statements/callout-bar.tsx	formatCents import	Replace with formatFinancialValue()
+client/src/components/planning/statements/cash-flow-tab.tsx	formatCents import	Replace with formatFinancialValue()
+client/src/components/planning/statements/balance-sheet-tab.tsx	formatCents import	Replace with formatFinancialValue()
+client/src/components/planning/statements/valuation-tab.tsx	formatCents import	Replace with formatFinancialValue()
+client/src/components/planning/statements/roic-tab.tsx	formatCents import	Replace with formatFinancialValue()
+client/src/components/planning/statements/audit-tab.tsx	formatCents import (lines 255-257)	Replace with formatFinancialValue()
+client/src/components/planning/statements/scenario-summary-card.tsx	formatCents import	Replace with formatFinancialValue()
+Rules:
+
+Currency values in cents → formatFinancialValue(value, "currency")
+Percentages (0-1 scale) → formatFinancialValue(value, "pct")
+Ratios → formatFinancialValue(value, "ratio")
+Where a React element is rendered (not just a string), use the <FinancialValue> component instead of the function
+Preserve existing font-mono tabular-nums styling (already built into <FinancialValue>)
+Negative values must render as ($4,200) not -$4,200 — this is already handled by formatFinancialValue, so migration alone fixes it
+Do NOT touch statement-table.tsx or impact-strip.tsx — they already use FinancialValue
+Gap 2 (MEDIUM): epics.md Documentation Updates
+File: _bmad-output/planning-artifacts/epics.md
+
+Story 5.7 — Add a **STATUS: RETIRED** banner. Prepend to the story: > ⚠️ **RETIRED (SCP 2026-02-20, Decision D6).** Scenario comparison via column-splitting is replaced by the What-If Playground (Epic 10). Epic 5 closes with 9 stories: 5.1–5.6, 5.8–5.10.
+
+Epic 10 header — Change from "Scenario Comparison" to "What-If Playground (Scenario Sensitivity Analysis)". Rewrite the epic description to match SCP Section 3 vision: standalone sidebar destination, slider-based sensitivity controls, 6 chart panels (Profitability, Cash Flow, Break-Even, ROI & Returns, Balance Sheet Health, Debt & Working Capital), client-side computation, sandbox behavior (no mutation of saved plan). Story ACs should reflect the new scope.
+
+Quick Entry cleanup in Story 7.1 — Remove Quick Entry references, replace with "Reports inline editing" or "Forms" as appropriate per context.
+
+FR12 text — Update to reflect two-surface model (My Plan + Reports) instead of three experience tiers (Planning Assistant / Forms / Quick Entry). The Planning Assistant is deferred to Epic 9.
+
+FR54 — Update graceful degradation text: remove "switch to Forms or Quick Entry" → "continue with Forms (My Plan) or Reports inline editing."
+
+Gap 3 (LOW): architecture.md Stale Reference
+File: _bmad-output/planning-artifacts/architecture.md
+
+Line 741: mode-switcher.tsx — exists in codebase but no longer rendered in the UI. Will be removed in cleanup pass. → Change to: mode-switcher.tsx — DELETED (SCP 2026-02-20, CP-1). File removed from codebase.
+Gap 4 (LOW): Audit Category Count Confirmation
+File: client/src/components/planning/statements/audit-tab.tsx
+
+The CATEGORY_CONFIG array has 15 entries. AC14 originally specified 13. The engine produces 15 categories. Add a code comment at the CATEGORY_CONFIG declaration: // 15 categories — expanded from AC14's original 13 to match engine output (Story 5.5, H1 resolution)
