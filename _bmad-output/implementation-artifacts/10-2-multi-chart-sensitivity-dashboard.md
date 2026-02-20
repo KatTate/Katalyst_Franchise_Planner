@@ -139,13 +139,13 @@ So that I can understand the full impact of changing assumptions across every di
   - Series: Revenue, COGS, Gross Profit, EBITDA, Pre-Tax Income
   - For each series, show 3 scenario lines (Current: solid, Conservative: dashed, Optimistic: light dashed)
   - Use different `--chart-N` colors for each financial metric; vary line style (solid/dashed) for scenarios
-  - Consider showing only the primary metric (e.g., EBITDA) with 3 scenario lines, with a toggle or simplified view to avoid overwhelming 15 lines on one chart
+  - All 5 metrics are REQUIRED per AC-3. Use reduced opacity (`opacity={0.35}`) on Conservative/Optimistic lines and an interactive legend toggle to manage visual density. See "Profitability chart complexity" gotcha.
 
 - **Chart 2 — Cash Flow:**
   - Type: Line chart
-  - Data: `annualSummaries[0..4]` for annual view, or `monthlyProjections` for monthly granularity
-  - Series: Net Operating Cash Flow, Net Cash Flow, Ending Cash Balance (per scenario)
-  - Amber advisory zone: Use `ReferenceArea` from Recharts with amber fill (hsl(35, 80%, 50%, 0.15)) where any scenario's ending cash < 0
+  - Data: `monthlyProjections` (60 months) — monthly granularity is REQUIRED per AC-4 so amber zones can identify specific months. Do NOT use `annualSummaries` for this chart.
+  - Series: Ending Cash Balance (per scenario). Show 3 scenario lines (Current solid, Conservative dashed, Optimistic light dashed).
+  - Amber advisory zone: Use `ReferenceArea` from Recharts with amber fill (hsl(35, 80%, 50%, 0.15)) for month ranges where any scenario's ending cash < 0
   - Source hint: existing `BreakEvenChart` uses `ReferenceLine y={0}` — extend pattern for area zones
 
 - **Chart 3 — Break-Even Analysis:**
@@ -153,7 +153,7 @@ So that I can understand the full impact of changing assumptions across every di
   - Data: `roiMetrics.breakEvenMonth` per scenario, or `monthlyProjections.cumulativeNetCashFlow` for curve visualization
   - Show months-to-break-even for each scenario with clear labeling
   - Handle null break-even (60+ months) with visual indicator
-  - Existing `BreakEvenChart` in `dashboard-charts.tsx` shows a single-scenario cumulative cash flow area chart — consider extending to 3 scenario overlay lines
+  - **Do NOT reuse or extend the dashboard's `BreakEvenChart`** from `dashboard-charts.tsx` — that is a single-scenario component for the My Plan dashboard. Create a new `BreakEvenSensitivityChart` component for multi-scenario comparison. See Gotchas section.
 
 - **Chart 4 — ROI & Returns:**
   - Type: Line chart with callout card
