@@ -184,6 +184,16 @@ story_location: _bmad-output/implementation-artifacts
 #   - CP-11 border radius polish: audit confirmed already applied (Card=rounded-2xl,
 #     Button=rounded-xl, Input=rounded-xl). All 16/16 SCP items complete.
 #   - Epic 5 marked DONE — all 9 stories + all SCP remediation CPs confirmed complete
+# 2026-02-20: Epic 5 Retrospective — DRAFT (un-finalized)
+#   - Product Owner assessment: "Dumpster fire shit show rodeo"
+#   - Readiness assessment: RED (4 RED items: engine accuracy, code review, UI quality, agent control)
+#   - 10 action items documented (3 CRITICAL, 3 HIGH, 3 MEDIUM, 1 carried)
+#   - CRITICAL blocker: Financial engine never validated cell-by-cell against reference spreadsheets
+#   - CRITICAL blocker: Code review coverage collapsed to 44%; no story has post-remediation review
+#   - CRITICAL blocker: UI layout issues visible in Balance Sheet, sidebar overlap, comparison mode
+#   - Agent control finding: Rogue agent approved own SCP amendments; process gap documented
+#   - Draft status: Pending engine validation results before finalization
+#   - See: epic-5-retrospective.md
 
 development_status:
   # Epic 1: Auth, Onboarding & User Management
@@ -263,7 +273,7 @@ development_status:
   5-9-document-preview-pdf-generation-trigger: done
   5-10-glossary-contextual-help: done
   5-cp11-border-radius-polish: done  # SCP-2026-02-20 CP-11 — confirmed already applied
-  epic-5-retrospective: optional
+  epic-5-retrospective: draft  # DRAFT — un-finalized pending engine validation results
 
   # Epic 6: Document Generation & Vault [ELEVATED from old Epic 7]
   # PDF export + document history
