@@ -88,7 +88,7 @@ This document provides the complete epic and story breakdown for the Katalyst Gr
 **9. Brand Identity & Experience**
 - FR49: Franchisee sees their franchise brand's identity (name, logo, colors) throughout the planning experience
 
-**10. AI Planning Advisor (Story Mode)**
+**10. AI Planning Advisor (Planning Assistant)**
 - FR50: In Planning Assistant mode, franchisee interacts with an AI Planning Advisor that collects plan inputs through natural language conversation
 - FR51: AI Planning Advisor extracts structured financial inputs from the franchisee's conversational responses and populates the corresponding fields
 - FR52: Franchisee can view, verify, and manually correct any value that the AI Planning Advisor populated — AI-populated values are clearly distinguishable
@@ -1914,7 +1914,7 @@ So that I can model realistic growth trajectories instead of flat projections ac
 - The `PlanFinancialInputs` → `FinancialInputs` translation layer changes from broadcasting single values to passing per-year arrays directly.
 - Migration must handle existing plans gracefully — broadcast current single values to 5-element arrays.
 - The Facilities and Other OpEx field alignment fixes are included here because they are structurally tied to the per-year restructuring.
-- See Sprint Change Proposal CP-3 (Fix PlanFinancialInputs) and UX spec Part 3 (Pre-Epic-7 / Post-Epic-7 behavior).
+- See Sprint Change Proposal SCP-2026-02-15 CP-3 (Fix PlanFinancialInputs) — note: this is NOT SCP-2026-02-20 CP-3 (Fix Navigation Architecture). See also UX spec Part 3 (Pre-Epic-7 / Post-Epic-7 behavior).
 
 ### Story 7.2: Plan CRUD & Navigation
 
