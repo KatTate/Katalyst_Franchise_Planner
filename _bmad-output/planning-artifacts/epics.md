@@ -1563,9 +1563,11 @@ So that I can confidently review my financial projections and present them to le
 The Epic 5 retrospective identified visible UI quality issues in screenshots provided by the Product Owner:
 - **Balance Sheet (Screenshot 1 — `attached_assets/image_1771605261047.png`):** Duplicate callout sections — a metrics bar at top AND a separate interpretation bar below both display overlapping information (Total Assets, Total Equity, Balance Sheet status). Sticky header architecture is visually cluttered.
 - **Balance Sheet with sidebar (Screenshot 2 — `attached_assets/image_1771605269747.png`):** Sidebar "Glossary" label overlapping with the callout metrics area. Z-index layering between sidebar and content area is not clean.
-- **Comparison mode (Screenshot 3 — `attached_assets/image_1771605283221.png`):** Column headers for Base/Conservative/Optimistic scenarios are cramped and overlapping. Row labels wrap awkwardly. Layout designed for 5 columns is forced to show 15.
+- **Comparison mode (Screenshot 3 — `attached_assets/image_1771605283221.png`):** Column cramping visible but **NOT in scope** — scenario comparison was retired from Reports per SCP-2026-02-20 Decision D5/D6. Comparison mode code remains in codebase as dead code; cleanup deferred to Epic 10 (What-If Playground).
 
 **CRITICAL NOTE:** The screenshots only captured Balance Sheet issues, but the same component patterns (callout bars, sticky headers, section collapsibles, interpretation rows) are shared across ALL statement tabs. The audit must verify whether these problems are exclusive to the Balance Sheet or persistent across other tabs. Every tab uses the same `StatementSection`, `CalloutBar`, and `ColumnManager` component patterns — if they're broken in one tab, they may be broken in others.
+
+**SCOPE EXCLUSION (SCP-2026-02-20 D5/D6):** Scenario comparison mode was retired from Reports. The column-splitting overlay is dead code awaiting removal in Epic 10. This story does NOT audit, remediate, or test comparison mode rendering. Any comparison mode code encountered during remediation should be left as-is — it is not this story's responsibility.
 
 **Acceptance Criteria:**
 
@@ -1595,12 +1597,6 @@ The Epic 5 retrospective identified visible UI quality issues in screenshots pro
 - Content area behavior when sidebar is open vs. closed
 - Z-index layering — no sidebar content overlapping report tab content
 - No content clipping or hiding behind sidebar at any viewport width ≥ 1024px (NFR25)
-
-*Comparison/Scenario Mode (if applicable):*
-- Column headers for Base/Conservative/Optimistic scenarios not cramped or overlapping
-- Row labels not wrapping awkwardly when comparison columns are shown
-- Layout gracefully handles the additional columns without horizontal overflow
-- If comparison mode is not supported on a tab, verify it is properly hidden/disabled
 
 *Responsive Behavior:*
 - Column progressive disclosure (annual → quarterly → monthly) works correctly via `ColumnManager`
@@ -1637,7 +1633,6 @@ The Epic 5 retrospective identified visible UI quality issues in screenshots pro
 **When** fixes are implemented
 **Then** the Balance Sheet duplicate callout bars issue is resolved — either consolidate into a single callout bar or clearly differentiate the two with visual separation and distinct content
 **And** the sidebar z-index layering is fixed — sidebar content never overlaps report tab content
-**And** comparison mode column layout is cleaned up — headers are readable, row labels don't wrap awkwardly, horizontal space is managed gracefully
 **And** any issues found in OTHER tabs during Phase 1 are also fixed (not just the Balance Sheet)
 **And** Medium/Low issues are documented for future resolution if they don't affect usability
 
@@ -1648,7 +1643,7 @@ The Epic 5 retrospective identified visible UI quality issues in screenshots pro
 **Then** all 7 tabs pass the Phase 1 audit checklist
 **And** the Impact Strip (in My Plan view) and Guardian Bar (in Reports view) position correctly relative to tab content
 **And** no new regressions have been introduced by the fixes
-**And** Playwright-based screenshot verification is performed for all 7 tabs in both default view and comparison mode (where applicable) — screenshots provide evidence of fix verification and serve as regression baselines for future changes
+**And** Playwright-based screenshot verification is performed for all 7 tabs in default view — screenshots provide evidence of fix verification and serve as regression baselines for future changes
 
 **Dev Notes:**
 - Statement tab components are in `client/src/components/planning/statements/` — P&L (`pl-statement-tab.tsx`), Balance Sheet (`balance-sheet-tab.tsx`), Cash Flow (`cash-flow-tab.tsx`), ROIC (`roic-tab.tsx`), Valuation (`valuation-tab.tsx`), Audit (`audit-tab.tsx`), Summary (`summary-tab.tsx`).
