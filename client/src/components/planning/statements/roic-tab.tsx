@@ -74,10 +74,13 @@ const ROIC_SECTIONS: RoicSectionDef[] = [
 ];
 
 function formatRoicValue(value: number, format: "currency" | "pct" | "number" | "months"): string {
-  if (format === "pct") return `${(value * 100).toFixed(1)}%`;
-  if (format === "number") return value.toFixed(1);
-  if (format === "months") return value.toFixed(1);
-  return formatCents(value);
+  const isNeg = value < 0;
+  const abs = Math.abs(value);
+  if (format === "pct") { const s = `${(abs * 100).toFixed(1)}%`; return isNeg ? `(${s})` : s; }
+  if (format === "number") { const s = abs.toFixed(1); return isNeg ? `(${s})` : s; }
+  if (format === "months") { const s = abs.toFixed(1); return isNeg ? `(${s})` : s; }
+  const s = formatCents(abs);
+  return isNeg ? `(${s})` : s;
 }
 
 export function RoicTab({ output, scenarioOutputs }: RoicTabProps) {

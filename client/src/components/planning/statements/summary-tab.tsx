@@ -87,8 +87,8 @@ const laborEfficiencyRows: SectionDef[] = [
     key: "labor-efficiency",
     title: "Labor Efficiency",
     rows: [
-      { key: "labor-efficiency-val", label: "Labor Efficiency Ratio", field: "laborEfficiency", format: "pct" },
-      { key: "adj-labor-efficiency", label: "Adj. Labor Efficiency", field: "adjustedLaborEfficiency", format: "pct" },
+      { key: "labor-efficiency-val", label: "Labor Efficiency Ratio", field: "laborEfficiency", format: "ratio" },
+      { key: "adj-labor-efficiency", label: "Adj. Labor Efficiency", field: "adjustedLaborEfficiency", format: "ratio" },
       { key: "salary-cap", label: "Salary Cap at Target", field: "salaryCapAtTarget", format: "currency" },
       { key: "over-under-cap", label: "Over/Under Cap", field: "overUnderCap", format: "currency" },
     ],
@@ -385,7 +385,9 @@ function ScenarioKeyMetrics({ scenarioOutputs }: { scenarioOutputs: ScenarioOutp
                     className={`py-2 px-3 text-right font-mono tabular-nums text-sm whitespace-nowrap ${SCENARIO_COLORS[s.id].bg}${isNeg ? " text-amber-700 dark:text-amber-400" : ""}`}
                     data-testid={`metric-${m.label.replace(/\s+/g, "-").toLowerCase()}-${s.id}`}
                   >
-                    {m.format === "pct" ? `${(value * 100).toFixed(1)}%` : formatCents(value)}
+                    {m.format === "pct"
+                      ? (isNeg ? `(${(Math.abs(value) * 100).toFixed(1)}%)` : `${(value * 100).toFixed(1)}%`)
+                      : (isNeg ? `(${formatCents(Math.abs(value))})` : formatCents(value))}
                   </td>
                 );
               })}

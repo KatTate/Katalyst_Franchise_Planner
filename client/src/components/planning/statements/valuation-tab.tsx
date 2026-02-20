@@ -136,9 +136,12 @@ const VAL_SECTIONS: ValSectionDef[] = [
 ];
 
 function formatValValue(value: number, format: "currency" | "pct" | "multiple"): string {
-  if (format === "pct") return `${(value * 100).toFixed(1)}%`;
-  if (format === "multiple") return `${value.toFixed(1)}x`;
-  return formatCents(value);
+  const isNeg = value < 0;
+  const abs = Math.abs(value);
+  if (format === "pct") { const s = `${(abs * 100).toFixed(1)}%`; return isNeg ? `(${s})` : s; }
+  if (format === "multiple") { const s = `${abs.toFixed(1)}x`; return isNeg ? `(${s})` : s; }
+  const s = formatCents(abs);
+  return isNeg ? `(${s})` : s;
 }
 
 export function ValuationTab({ output, scenarioOutputs }: ValuationTabProps) {

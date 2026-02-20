@@ -33,7 +33,7 @@ interface PnlRowDef {
   key: string;
   label: string;
   field: string;
-  format: "currency" | "pct";
+  format: "currency" | "pct" | "ratio";
   isInput?: boolean;
   isSubtotal?: boolean;
   isTotal?: boolean;
@@ -233,7 +233,7 @@ const PNL_SECTIONS: PnlSectionDef[] = [
         key: "labor-eff",
         label: "Labor Efficiency",
         field: "laborEfficiency",
-        format: "pct",
+        format: "ratio",
         tooltip: { explanation: "What portion of gross profit goes to all wages", formula: "Total wages / Gross Profit" },
         interpretationId: "interp-labor-eff",
         interpretation: (enriched, financialInputs, brandName) => {
@@ -250,7 +250,7 @@ const PNL_SECTIONS: PnlSectionDef[] = [
           return `${labPct.toFixed(0)}% of gross profit goes to wages — efficient labor cost structure`;
         },
       },
-      { key: "adj-labor-eff", label: "Adjusted Labor Efficiency", field: "adjustedLaborEfficiency", format: "pct", tooltip: { explanation: "Labor efficiency excluding owner salary", formula: "Wages (excl. owner salary) / Gross Profit" } },
+      { key: "adj-labor-eff", label: "Adjusted Labor Efficiency", field: "adjustedLaborEfficiency", format: "ratio", tooltip: { explanation: "Labor efficiency excluding owner salary", formula: "Wages (excl. owner salary) / Gross Profit" } },
       { key: "disc-mktg-pct", label: "Discretionary Marketing %", field: "discretionaryMarketingPct", format: "pct", tooltip: { explanation: "Discretionary marketing as a share of revenue", formula: "Discretionary Marketing / Revenue" } },
       { key: "pr-tax-ben-pct", label: "PR Taxes & Benefits % of Wages", field: "prTaxBenefitsPctOfWages", format: "pct", tooltip: { explanation: "Payroll burden relative to total wages", formula: "Payroll Taxes & Benefits / Total Wages" } },
       { key: "other-opex-pct-rev", label: "Other OpEx % of Revenue", field: "otherOpexPctOfRevenue", format: "pct", tooltip: { explanation: "Miscellaneous operating costs as a share of revenue", formula: "Other Operating Expenses / Revenue" } },
@@ -265,10 +265,20 @@ const PL_ANALYSIS_FIELDS = new Set([
   "prTaxBenefitsPctOfWages", "otherOpexPctOfRevenue",
 ]);
 
-function formatValue(value: number, format: "currency" | "pct", absDisplay?: boolean): string {
-  const displayVal = absDisplay ? Math.abs(value) : value;
-  if (format === "pct") return `${(displayVal * 100).toFixed(1)}%`;
-  return formatCents(displayVal);
+function formatValue(value: number, format: "currency" | "pct" | "ratio", absDisplay?: boolean): string {
+  const raw = absDisplay ? Math.abs(value) : value;
+  const isNegative = raw < 0;
+  const absVal = Math.abs(raw);
+  if (format === "pct") {
+    const s = `${(absVal * 100).toFixed(1)}%`;
+    return isNegative ? `(${s})` : s;
+  }
+  if (format === "ratio") {
+    const s = `${absVal.toFixed(2)}x`;
+    return isNegative ? `(${s})` : s;
+  }
+  const s = formatCents(absVal);
+  return isNegative ? `(${s})` : s;
 }
 
 function getCellValue(
@@ -277,7 +287,7 @@ function getCellValue(
   enriched: EnrichedAnnual[],
   monthly: MonthlyProjection[],
   plAnalysis: PLAnalysisOutput[],
-  format: "currency" | "pct"
+  format: "currency" | "pct" | "ratio"
 ): number {
   if (field === "monthlyRevenue") {
     if (col.level === "annual") {

@@ -8,7 +8,7 @@ export interface RowDef {
   key: string;
   label: string;
   field: string;
-  format: "currency" | "pct" | "number" | "months";
+  format: "currency" | "pct" | "ratio" | "number" | "months";
   isSubtotal?: boolean;
   isTotal?: boolean;
   indent?: number;
@@ -36,15 +36,29 @@ interface StatementTableProps {
 }
 
 function formatValue(value: number, format: RowDef["format"]): string {
+  const isNegative = value < 0;
+  const absVal = Math.abs(value);
   switch (format) {
-    case "currency":
-      return formatCents(value);
-    case "pct":
-      return `${(value * 100).toFixed(1)}%`;
-    case "number":
-      return value.toLocaleString("en-US", { maximumFractionDigits: 0 });
-    case "months":
-      return `${value.toFixed(1)} mo`;
+    case "currency": {
+      const s = formatCents(absVal);
+      return isNegative ? `(${s})` : s;
+    }
+    case "pct": {
+      const s = `${(absVal * 100).toFixed(1)}%`;
+      return isNegative ? `(${s})` : s;
+    }
+    case "ratio": {
+      const s = `${absVal.toFixed(2)}x`;
+      return isNegative ? `(${s})` : s;
+    }
+    case "number": {
+      const s = absVal.toLocaleString("en-US", { maximumFractionDigits: 0 });
+      return isNegative ? `(${s})` : s;
+    }
+    case "months": {
+      const s = `${absVal.toFixed(1)} mo`;
+      return isNegative ? `(${s})` : s;
+    }
     default:
       return String(value);
   }

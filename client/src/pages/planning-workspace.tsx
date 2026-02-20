@@ -1,4 +1,4 @@
-import { useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useParams } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -12,6 +12,9 @@ import { queryClient } from "@/lib/queryClient";
 import { PlanningHeader } from "@/components/planning/planning-header";
 import { InputPanel } from "@/components/planning/input-panel";
 import { FinancialStatements } from "@/components/planning/financial-statements";
+import { ImpactStrip } from "@/components/planning/impact-strip";
+import { DocumentPreviewModal } from "@/components/planning/document-preview-modal";
+import { PlanCompletenessBar } from "@/components/planning/plan-completeness-bar";
 
 import { QuickStartOverlay } from "@/components/shared/quick-start-overlay";
 import { SummaryMetrics } from "@/components/shared/summary-metrics";
@@ -26,6 +29,10 @@ export default function PlanningWorkspace() {
   const { plan, isLoading: planLoading, error: planError, saveStatus, queueSave, retrySave, flushSave, isSaving, hasUnsavedChanges } = usePlanAutoSave(planId);
   const { setOpen } = useSidebar();
   const { workspaceView, statementsDefaultTab, navigateToStatements, setActivePlanName, resetWorkspaceView, navigateToMyPlan } = useWorkspaceView();
+
+  const [activeSection, setActiveSection] = useState<string | null>(null);
+  const [startupCostCount, setStartupCostCount] = useState(0);
+  const [docPreviewOpen, setDocPreviewOpen] = useState(false);
 
   const brandId = plan?.brandId;
   const { data: brand } = useQuery<Brand>({
@@ -102,7 +109,6 @@ export default function PlanningWorkspace() {
   const resolvedBrandName = brand?.displayName || brand?.name;
   const financialInputs = plan?.financialInputs as PlanFinancialInputs | null | undefined;
   const startupCostsData = (plan?.startupCosts ?? null) as StartupCostLineItem[] | null;
-  const startupCostCount = Array.isArray(startupCostsData) ? startupCostsData.length : 0;
 
   const renderWorkspaceContent = () => {
     switch (workspaceView) {
@@ -154,11 +160,12 @@ export default function PlanningWorkspace() {
       default:
         return (
           <div className="flex-1 flex flex-col min-h-0">
-            <div className="sticky top-0 z-20 bg-background border-b px-4 py-3" data-testid="my-plan-summary-metrics">
+            <div className="sticky top-0 z-20 bg-background border-b px-4 py-3 space-y-3" data-testid="my-plan-summary-metrics">
+              <PlanCompletenessBar financialInputs={financialInputs ?? null} startupCostCount={startupCostCount} />
               <SummaryMetrics planId={planId} />
             </div>
             <div className="flex-1 min-h-0">
-              <InputPanel planId={planId} planName={plan.name || "My Plan"} brandName={resolvedBrandName} queueSave={queueSave} />
+              <InputPanel planId={planId} planName={plan.name || "My Plan"} brandName={resolvedBrandName} queueSave={queueSave} onSectionChange={setActiveSection} onStartupCostCountChange={setStartupCostCount} />
             </div>
           </div>
         );
@@ -175,6 +182,26 @@ export default function PlanningWorkspace() {
       <div className="flex-1 min-h-0 flex flex-col">
         {renderWorkspaceContent()}
       </div>
+
+      <ImpactStrip
+        planId={planId}
+        activeSection={activeSection}
+        financialInputs={financialInputs ?? null}
+        startupCosts={startupCostsData}
+        onNavigateToStatements={navigateToStatements}
+        onOpenDocumentPreview={() => setDocPreviewOpen(true)}
+      />
+
+      <DocumentPreviewModal
+        open={docPreviewOpen}
+        onOpenChange={setDocPreviewOpen}
+        planId={planId}
+        planName={plan.name || "My Plan"}
+        brandName={resolvedBrandName}
+        financialInputs={financialInputs ?? null}
+        startupCosts={startupCostsData}
+        startupCostCount={startupCostCount}
+      />
     </div>
   );
 }

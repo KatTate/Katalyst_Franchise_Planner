@@ -26,14 +26,8 @@ import {
 import { formatCents } from "@/lib/format-currency";
 import { useStartupCosts } from "@/hooks/use-startup-costs";
 import { StartupCostBuilder } from "@/components/shared/startup-cost-builder";
-import { computeSectionProgress, hasAnyUserEdits } from "@/lib/plan-completeness";
-import { ImpactStrip } from "@/components/planning/impact-strip";
-import { DocumentPreviewModal } from "@/components/planning/document-preview-modal";
-import { useWorkspaceView } from "@/contexts/WorkspaceViewContext";
+import { hasAnyUserEdits } from "@/lib/plan-completeness";
 import type { FieldMeta } from "@/lib/field-metadata";
-import type { SectionProgress } from "@/lib/plan-completeness";
-import type { StatementTabId } from "@/components/planning/financial-statements";
-import type { StartupCostLineItem } from "@shared/schema";
 
 type StartupCostCountCallback = (count: number) => void;
 
@@ -42,12 +36,13 @@ interface FormsModeProps {
   planName?: string;
   brandName?: string;
   queueSave?: (data: any) => void;
+  onSectionChange?: (section: string | null) => void;
+  onStartupCostCountChange?: (count: number) => void;
 }
 
-export function FormsMode({ planId, planName, brandName, queueSave }: FormsModeProps) {
+export function FormsMode({ planId, planName, brandName, queueSave, onSectionChange, onStartupCostCountChange }: FormsModeProps) {
   const { plan, isLoading, error, updatePlan, isSaving, saveError } = usePlan(planId);
   const financialInputs = plan?.financialInputs as PlanFinancialInputs | null | undefined;
-  const { navigateToStatements } = useWorkspaceView();
 
   const sectionStorageKey = `plan-active-section-${planId}`;
   const getStoredSection = (): string | null => {
@@ -55,13 +50,11 @@ export function FormsMode({ planId, planName, brandName, queueSave }: FormsModeP
   };
   const storedSection = useRef(getStoredSection());
   const scrollContainerRef = useRef<HTMLDivElement>(null);
-  const [activeSection, setActiveSection] = useState<string | null>(getStoredSection());
-  const [docPreviewOpen, setDocPreviewOpen] = useState(false);
 
   const handleSectionInteract = useCallback((category: string) => {
     try { localStorage.setItem(sectionStorageKey, category); } catch {}
-    setActiveSection(category);
-  }, [sectionStorageKey]);
+    onSectionChange?.(category);
+  }, [sectionStorageKey, onSectionChange]);
 
   useEffect(() => {
     if (!financialInputs || !storedSection.current) return;
@@ -99,10 +92,10 @@ export function FormsMode({ planId, planName, brandName, queueSave }: FormsModeP
 
   const [startupCostCount, setStartupCostCount] = useState(0);
 
-  const sectionProgress = useMemo(
-    () => (financialInputs ? computeSectionProgress(financialInputs) : []),
-    [financialInputs]
-  );
+  const handleStartupCostCountChange = useCallback((count: number) => {
+    setStartupCostCount(count);
+    onStartupCostCountChange?.(count);
+  }, [onStartupCostCountChange]);
 
   const showStartHere = useMemo(
     () => (financialInputs ? !hasAnyUserEdits(financialInputs) : false),
@@ -141,14 +134,8 @@ export function FormsMode({ planId, planName, brandName, queueSave }: FormsModeP
     );
   }
 
-  const startupCostsData = (plan?.startupCosts ?? null) as StartupCostLineItem[] | null;
-
   return (
     <div data-testid="forms-mode-container" className="h-full flex flex-col overflow-hidden">
-      <div className="sticky top-0 z-10 bg-background border-b px-4 py-3">
-        <PlanCompleteness sections={sectionProgress} startupCostCount={startupCostCount} />
-      </div>
-
       <div ref={scrollContainerRef} className="flex-1 overflow-auto px-4 py-4 space-y-3">
         {CATEGORY_ORDER.map((category, index) => (
           <FormSection
@@ -157,7 +144,6 @@ export function FormsMode({ planId, planName, brandName, queueSave }: FormsModeP
             label={CATEGORY_LABELS[category]}
             fields={FIELD_METADATA[category]}
             categoryData={financialInputs[category as keyof PlanFinancialInputs]}
-            progress={sectionProgress[index]}
             editingField={editingField}
             editValue={editValue}
             focusedField={focusedField}
@@ -173,7 +159,7 @@ export function FormsMode({ planId, planName, brandName, queueSave }: FormsModeP
           />
         ))}
 
-        <StartupCostSection planId={planId} defaultOpen={true} onCountChange={setStartupCostCount} onSectionInteract={handleSectionInteract} />
+        <StartupCostSection planId={planId} defaultOpen={true} onCountChange={handleStartupCostCountChange} onSectionInteract={handleSectionInteract} />
 
         {!queueSave && isSaving && (
           <p className="text-xs text-muted-foreground text-center pt-1" data-testid="status-saving">
@@ -187,78 +173,6 @@ export function FormsMode({ planId, planName, brandName, queueSave }: FormsModeP
           </div>
         )}
       </div>
-
-      <ImpactStrip
-        planId={planId}
-        activeSection={activeSection}
-        financialInputs={financialInputs ?? null}
-        startupCosts={startupCostsData}
-        onNavigateToStatements={navigateToStatements}
-        onOpenDocumentPreview={() => setDocPreviewOpen(true)}
-      />
-
-      <DocumentPreviewModal
-        open={docPreviewOpen}
-        onOpenChange={setDocPreviewOpen}
-        planId={planId}
-        planName={planName || plan?.name || "My Plan"}
-        brandName={brandName}
-        financialInputs={financialInputs ?? null}
-        startupCosts={startupCostsData}
-        startupCostCount={startupCostCount}
-      />
-    </div>
-  );
-}
-
-function PlanCompleteness({ sections, startupCostCount }: { sections: SectionProgress[]; startupCostCount: number }) {
-  const totalEdited = sections.reduce((sum, s) => sum + s.edited, 0);
-  const totalFields = sections.reduce((sum, s) => sum + s.total, 0);
-
-  return (
-    <div data-testid="plan-completeness-dashboard">
-      <div className="flex items-center justify-between mb-2">
-        <span className="text-sm font-medium text-foreground">Plan Progress</span>
-        <span className="text-xs text-muted-foreground">
-          {totalEdited}/{totalFields} fields customized
-        </span>
-      </div>
-      <div className="grid grid-cols-2 gap-2 sm:grid-cols-5">
-        {sections.map((section) => {
-          const pct = section.total > 0 ? (section.edited / section.total) * 100 : 0;
-          return (
-            <div
-              key={section.category}
-              className="flex flex-col gap-1"
-              data-testid={`section-progress-${section.category}`}
-            >
-              <div className="flex items-center justify-between">
-                <span className="text-xs text-muted-foreground truncate">{section.label}</span>
-                <span className="text-xs font-medium tabular-nums">
-                  {section.edited}/{section.total}
-                </span>
-              </div>
-              <div className="h-1.5 rounded-full bg-muted overflow-hidden">
-                <div
-                  className="h-full rounded-full bg-primary transition-all duration-300"
-                  style={{ width: `${pct}%` }}
-                />
-              </div>
-            </div>
-          );
-        })}
-        <div
-          className="flex flex-col gap-1"
-          data-testid="section-progress-startupCosts"
-        >
-          <div className="flex items-center justify-between">
-            <span className="text-xs text-muted-foreground truncate">Startup Costs</span>
-            <span className="text-xs font-medium tabular-nums">
-              {startupCostCount} items
-            </span>
-          </div>
-        </div>
-      </div>
     </div>
   );
 }
@@ -268,7 +182,6 @@ interface FormSectionProps {
   label: string;
   fields: Record<string, FieldMeta>;
   categoryData: Record<string, FinancialFieldValue>;
-  progress: SectionProgress;
   editingField: string | null;
   editValue: string;
   focusedField: string | null;
@@ -288,7 +201,6 @@ function FormSection({
   label,
   fields,
   categoryData,
-  progress,
   editingField,
   editValue,
   focusedField,
@@ -329,7 +241,7 @@ function FormSection({
           </div>
           <div className="flex items-center gap-2 shrink-0">
             <span className="text-xs text-muted-foreground tabular-nums">
-              {progress.edited}/{progress.total} edited
+              {Object.values(categoryData).filter((f: any) => f && f.source !== "brand_default").length}/{Object.keys(fields).length} edited
             </span>
             <ChevronDown
               className={`h-4 w-4 text-muted-foreground transition-transform duration-200 ${
