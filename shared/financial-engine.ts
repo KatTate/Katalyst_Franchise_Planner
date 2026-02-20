@@ -430,8 +430,11 @@ export function calculateProjections(input: EngineInput): EngineOutput {
     if (m <= fi.revenue.monthsToReachAuv) {
       const startPct = fi.revenue.startingMonthAuvPct;
       if (startPct !== 0) {
-        const monthsRemaining = fi.revenue.monthsToReachAuv - m;
-        auvPct = startPct + ((1 - startPct) * (fi.revenue.monthsToReachAuv - monthsRemaining) / fi.revenue.monthsToReachAuv);
+        if (m === 1) {
+          auvPct = startPct;
+        } else {
+          auvPct = startPct + ((1 - startPct) * m / fi.revenue.monthsToReachAuv);
+        }
       } else {
         auvPct = m / fi.revenue.monthsToReachAuv;
       }

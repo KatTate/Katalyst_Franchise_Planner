@@ -76,15 +76,15 @@ When the user triggers an agent or workflow, the AI MUST load the referenced fil
 - **FinancialValue Component:** `client/src/components/shared/financial-value.tsx` — shared formatting component for all financial display. Handles currency ($), percentages (%), ratios (x), multipliers (x), numbers, and months. Accounting-style parentheses for negatives. Monospace font, destructive color for negative values.
 
 ## Recent Changes (2026-02-20)
+- **Story 5H.1 complete (review):** Financial engine cell-by-cell validation against 2 brand reference spreadsheets (PostNet + Jeremiah's Italian Ice)
+  - 67 reference validation tests + 173 existing tests = 240 total engine tests, all passing
+  - 1 BUG fixed: Month 1 revenue ramp-up now uses `startingMonthAuvPct` directly (was interpolated)
+  - 2 KNOWN DIVERGENCES documented: (1) 30-day month simplification for working capital AR/Inv/AP, (2) tax accrual on balance sheet
+  - taxRate TODO (AI-10, carried since Epic 3) resolved: confirmed 21% correct, help content updated
 - Epic 5 COMPLETE — all 9 stories done, all SCP-2026-02-20 remediation CPs confirmed
 - Epic 5 Retrospective finalized — 10 action items (AI-1 through AI-10), 3 CRITICAL blockers identified
-- **Epic 5H (Hardening Sprint) created** — 4 stories gating Epic 6: engine validation (5H.1), report UI audit (5H.2), Epic 6 AC audit (5H.3), planning artifact alignment (5H.4)
-- AI-7 through AI-10 integrated: AI-7→dev note on 6.1, AI-8→pre-Epic-6 checklist, AI-9→architecture note, AI-10→absorbed into 5H.1
-- Document remediation: architecture.md FR count 87→96, epics.md FR Coverage Map updated (27 new FR mappings FR74-FR97)
-- Epic 10 rewritten: 3 stories for What-If Playground (sensitivity sliders + 6 charts + optional scenario persistence)
-- Epic 4 renamed to "Forms Experience & Planning Infrastructure" (Quick Entry references deprecated)
-- Sprint status updated: Epic 5 done, Epic 5H added, Epic 10 restructured
-- Next epic in sequence: **Epic 5H (hardening sprint — must complete before Epic 6)**
+- **Epic 5H (Hardening Sprint) in-progress** — Story 5H.1 in review, 3 stories remaining
+- Next action: **Story 5H.2 (Report Tab UI Audit) after 5H.1 code review completes**
 
 **Feature Specifications:**
 - **Invitation Management:** Provides both UI and API capabilities for creating, monitoring, and copying invitation links.

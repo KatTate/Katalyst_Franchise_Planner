@@ -57,7 +57,7 @@ export const FIELD_HELP_CONTENT: FieldHelpContent[] = [
   {
     fieldId: "corporationTax",
     tooltip: "The federal corporate tax rate applied to pre-tax income. The standard rate is 21%. Adjust only if your business structure or state taxes require a different rate.",
-    expandedGuidance: "TODO: Extract from Loom video content — Corporation Tax video covers tax structures and when to adjust this rate.",
+    expandedGuidance: "The standard US federal corporate tax rate is 21%, which applies to C-corporations. S-corporations, LLCs, and sole proprietorships pass income through to the owner's personal tax return at their individual rate. For most franchise financial models, 21% is the correct default. Adjust if your business structure uses pass-through taxation or if you need to account for combined state and federal rates.",
     glossaryTermSlug: null,
     parentFieldId: null,
     isDecomposedField: false,
