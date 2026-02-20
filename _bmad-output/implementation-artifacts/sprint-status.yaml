@@ -249,6 +249,19 @@ story_location: _bmad-output/implementation-artifacts
 #   - Phase 3 remediation plan PO-approved: consolidate all per-tab callout bars into parent CalloutBar
 #   - Story document: 5h-2-report-tab-ui-audit-remediation.md (Phases 1-2 complete, 3-4 pending)
 #   - Next action: Phase 3 remediation implementation (separate dev session)
+# 2026-02-20: Story 5H.2 context document created (Create Story workflow)
+#   - Full story file rewritten from template: 5h-2-report-tab-ui-audit-remediation.md (ready-for-dev)
+#   - 9 acceptance criteria covering: duplicate callout bar removal (AC-1), BS identity check
+#     preservation (AC-2), Valuation Net After-Tax Proceeds (AC-3), comparison mode CalloutBar
+#     visibility (AC-4), comparison column layout (AC-5), sidebar z-index (AC-6),
+#     all-tab consistency (AC-7), no regressions (AC-8), Playwright verification (AC-9)
+#   - Dev notes include: rendering stack diagram, UX spec callout bar table, anti-patterns
+#     (no new per-tab callout bars), gotchas (2 unique content items to preserve, comparison
+#     mode CalloutBar hidden condition, 2 call sites per tab), file change summary (8 files),
+#     agent session control rules (carried from 5H.1)
+#   - Phases 1-2 audit findings preserved as architectural context in dev notes
+#   - Story status: ready-for-dev
+#   - Next action: dev-story implementation (fresh context recommended)
 
 development_status:
   # Epic 1: Auth, Onboarding & User Management
@@ -339,7 +352,7 @@ development_status:
   # AI-10 (taxRate TODO) → absorbed into 5H.1 engine validation
   epic-5h: in-progress
   5h-1-financial-engine-reference-validation: done  # AI-1: cell-by-cell vs reference spreadsheets. 99 tests, 2 brands (PostNet + Jeremiah's), 1 BUG fixed (ramp-up M1), 2 KNOWN DIVERGENCES documented, taxRate TODO resolved, adversarial code review completed
-  5h-2-report-tab-ui-audit-remediation: in-progress     # AI-2: Phase 1-2 complete (audit + documentation), Phase 3-4 pending (remediation + verification)
+  5h-2-report-tab-ui-audit-remediation: ready-for-dev    # AI-2: Story context document created (Create Story workflow). Phases 1-2 audit preserved in story doc. Ready for dev-story implementation.
   5h-3-epic-6-ac-audit-user-journeys: backlog           # AI-3: Story ACs vs 8 user journeys, gap analysis
   5h-4-planning-artifact-alignment: backlog              # AI-5: 111 FR traceability, fix stale coverage map
   epic-5h-retrospective: optional
