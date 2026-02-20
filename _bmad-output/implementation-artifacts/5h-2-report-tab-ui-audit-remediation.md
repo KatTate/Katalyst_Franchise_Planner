@@ -1,6 +1,6 @@
 # Story 5H.2: Report Tab UI Audit & Remediation Across All Tabs
 
-Status: in-progress
+Status: review
 
 ## Story
 
@@ -278,13 +278,34 @@ Execute in this order for incremental testability:
 ## Dev Agent Record
 
 ### Agent Model Used
-(Record the model used for implementation here)
+Claude 4.6 Opus (Replit Agent)
 
 ### Completion Notes
-(Record completion status, any deviations from the story, and any issues encountered)
+All 7 acceptance criteria verified and passing. Implementation completed in prior session; this session executed the BMAD dev story workflow Steps 5-11 (verification, testing, documentation, platform diagnostics, story/sprint updates, architect review, completion gate).
+
+No deviations from the story. All 5 per-tab callout bars removed, parent CalloutBar enriched with BS identity check and Valuation net proceeds, CalloutBar renders unconditionally in comparison mode, comparison table label column width reduced from 200px to 180px.
+
+Minor observation: Compare Scenarios dropdown can overlay tab triggers during rapid tab switching — this is pre-existing UX behavior, not introduced by this story.
 
 ### File List
-(List all files modified with a one-line summary of changes per file)
+1. `client/src/components/planning/statements/callout-bar.tsx` — Added BS identity check status metric (Check/AlertTriangle icons, Balanced/Imbalanced text) and Valuation Net After-Tax Proceeds metric to getTabContent() switch
+2. `client/src/components/planning/financial-statements.tsx` — Removed `{!comparisonActive && (` conditional wrapper so CalloutBar renders unconditionally
+3. `client/src/components/planning/statements/pnl-tab.tsx` — Removed PnlCalloutBar function, CalloutMetric helper, both JSX usage sites, cleaned unused imports
+4. `client/src/components/planning/statements/balance-sheet-tab.tsx` — Removed BsCalloutBar function, CalloutMetric helper, both JSX usage sites, cleaned unused imports (Check, AlertTriangle)
+5. `client/src/components/planning/statements/cash-flow-tab.tsx` — Removed CfCalloutBar function, CalloutMetric helper, both JSX usage sites, cleaned unused imports
+6. `client/src/components/planning/statements/roic-tab.tsx` — Removed RoicCalloutBar function, both JSX usage sites, cleaned unused imports
+7. `client/src/components/planning/statements/valuation-tab.tsx` — Removed ValCalloutBar function, CalloutMetric helper, both JSX usage sites, cleaned unused imports
+8. `client/src/components/planning/statements/comparison-table-head.tsx` — Changed label column min-width from 200px to 180px
 
 ### Testing Summary
-(Record: Playwright pass/fail, LSP diagnostics clean/errors, dark mode verified yes/no, git diff stat output)
+- **Playwright e2e**: PASS — All 7 tabs verified callout-bar count = 1; BS identity status visible ("Balanced"); Valuation net proceeds visible ($); callout bar visible in comparison mode; tab switching stability confirmed
+- **LSP diagnostics**: CLEAN — 0 errors, 0 warnings across all 8 modified files
+- **Dark mode**: Not separately verified via Playwright (code review confirmed correct dark: class usage)
+- **Visual verification**: Playwright screenshots confirmed correct rendering in demo mode with PostNet financial data
+
+### LSP Status
+- lsp_error_count: 0
+- lsp_warning_count: 0
+
+### Visual Verification
+- visual_verification_done: yes (Playwright e2e with PostNet demo data)
