@@ -147,8 +147,11 @@ so that I can understand the full impact of changing assumptions across every di
 **Metric Delta Card Strip (above or between chart grid):**
 - 4 metric delta cards in a horizontal row (or 2×2 grid on mobile)
 - Each card shows: metric name, base case value, arrow, conservative case value, delta in parentheses
-- Positive deltas (optimistic better than base) use green text; negative deltas use amber text
-- When sliders are all at zero: show neutral state with helper text
+- Delta coloring is desirability-based (per AC 13), not raw-sign-based:
+  - Revenue, ROI, Cash (higher = better): positive delta → green; negative delta → amber
+  - Break-Even (lower month = better): positive delta → amber; negative delta → green
+  - Null Break-Even deltas ("N/A") → muted/neutral
+- On initial page load (before user slider interaction): show helper text "Adjust sliders above to see impact on your business" alongside the delta cards (per AC 14)
 
 **Responsive behavior:**
 - Desktop (≥1024px): 2-column chart grid, 4-column metric strip
@@ -203,7 +206,8 @@ so that I can understand the full impact of changing assumptions across every di
 - **Working Capital formula:** Working capital = `totalCurrentAssets - totalCurrentLiabilities`. Both fields exist on `MonthlyProjection` (lines 213, 215). The result can be negative (current liabilities exceed current assets) — this is a valid data state, not an error.
   - Source: `shared/financial-engine.ts` lines 213–215
 
-- **Slider state in 10.1 modifies `PlanFinancialInputs` before passing to `computeScenarioOutputs`.** Story 10.2 does not need to know about slider percentage values — it only consumes the resulting `ScenarioOutputs`. The delta cards (AC 13) show "base vs conservative" differences, which are always derived from the current `ScenarioOutputs.base` vs `ScenarioOutputs.conservative` outputs.
+- **Story 10.1 passes the UNMODIFIED saved plan inputs to `computeScenarioOutputs` — do NOT apply slider state to `PlanFinancialInputs` before calling it.** The `Base` scenario always reflects the user's saved plan as-is (epics 10.1 lines 2115, 2123). Slider percentage values influence the Conservative/Optimistic scenario factors applied *internally* within `computeScenarioOutputs` (or a Story 10.1 wrapper that replaces the static `CONSERVATIVE_*` / `OPTIMISTIC_*` constants with slider-derived values). Story 10.2 only consumes the resulting `ScenarioOutputs` prop — it does not touch slider state or plan inputs.
+  - Source: `_bmad-output/planning-artifacts/epics.md` Story 10.1 line 2115 ("slider adjustments do NOT modify the user's actual plan"), line 2123 ("Base case always reflects the user's actual saved plan inputs — not slider-modified values")
 
 - **`annualSummaries` has exactly 5 entries (index 0-4).** Do not assume more or fewer. Map over all 5 for year labels "Year 1" through "Year 5".
 
