@@ -1,6 +1,6 @@
 import { useState, useCallback, useRef, useEffect } from "react";
 import { ChevronDown, ChevronRight } from "lucide-react";
-import { formatCents } from "@/lib/format-currency";
+import { formatFinancialValue, type FinancialFormat } from "@/components/shared/financial-value";
 import type { AnnualSummary, MonthlyProjection, PLAnalysisOutput, ROICExtendedOutput, ValuationOutput } from "@shared/financial-engine";
 import { type ColumnDef, type DrillLevel, getAnnualValue, getQuarterlyValue, getMonthlyValue } from "./column-manager";
 
@@ -8,7 +8,7 @@ export interface RowDef {
   key: string;
   label: string;
   field: string;
-  format: "currency" | "pct" | "ratio" | "number" | "months";
+  format: FinancialFormat;
   isSubtotal?: boolean;
   isTotal?: boolean;
   indent?: number;
@@ -33,35 +33,6 @@ interface StatementTableProps {
   onDrillDown?: (year: number) => void;
   onDrillUp?: (year: number) => void;
   testIdPrefix: string;
-}
-
-function formatValue(value: number, format: RowDef["format"]): string {
-  const isNegative = value < 0;
-  const absVal = Math.abs(value);
-  switch (format) {
-    case "currency": {
-      const s = formatCents(absVal);
-      return isNegative ? `(${s})` : s;
-    }
-    case "pct": {
-      const s = `${(absVal * 100).toFixed(1)}%`;
-      return isNegative ? `(${s})` : s;
-    }
-    case "ratio": {
-      const s = `${absVal.toFixed(2)}x`;
-      return isNegative ? `(${s})` : s;
-    }
-    case "number": {
-      const s = absVal.toLocaleString("en-US", { maximumFractionDigits: 0 });
-      return isNegative ? `(${s})` : s;
-    }
-    case "months": {
-      const s = `${absVal.toFixed(1)} mo`;
-      return isNegative ? `(${s})` : s;
-    }
-    default:
-      return String(value);
-  }
 }
 
 function getCellValue(
@@ -298,7 +269,7 @@ function DataRow({
               className="py-1.5 px-3 text-right font-mono tabular-nums text-sm whitespace-nowrap"
               data-testid={`value-${row.key}-${col.key}`}
             >
-              {formatValue(value, row.format)}
+              {formatFinancialValue(value, row.format)}
             </td>
           );
         })}

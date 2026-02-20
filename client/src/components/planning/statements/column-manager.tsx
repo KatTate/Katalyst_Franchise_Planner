@@ -524,7 +524,7 @@ export function getQuarterlyValue(
   year: number,
   quarter: number,
   monthly: MonthlyProjection[],
-  format?: "currency" | "pct" | "ratio" | "number" | "months"
+  format?: string
 ): number {
   const startMonth = (year - 1) * 12 + (quarter - 1) * 3;
   let sum = 0;

@@ -4,8 +4,8 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { usePlanOutputs } from "@/hooks/use-plan-outputs";
 import { computeGuardianState, isAllDefaults } from "@/lib/guardian-engine";
-import { formatCents } from "@/lib/format-currency";
-import { formatROI, formatBreakEven } from "@/components/shared/summary-metrics";
+import { formatFinancialValue, formatFinancialDelta, type FinancialFormat } from "@/components/shared/financial-value";
+import { formatBreakEven } from "@/components/shared/summary-metrics";
 import type { EngineOutput, PlanFinancialInputs } from "@shared/financial-engine";
 import type { GuardianLevel, GuardianIndicator } from "@/lib/guardian-engine";
 import type { StartupCostLineItem } from "@shared/schema";
@@ -24,8 +24,7 @@ interface MetricDef {
   key: string;
   label: string;
   getValue: (output: EngineOutput) => number | null;
-  format: (value: number | null) => string;
-  formatDelta: (delta: number) => string;
+  financialFormat: FinancialFormat;
 }
 
 const METRICS: Record<string, MetricDef> = {
@@ -33,36 +32,31 @@ const METRICS: Record<string, MetricDef> = {
     key: "pre-tax-income",
     label: "Pre-Tax Income",
     getValue: (o) => o.annualSummaries[0]?.preTaxIncome ?? null,
-    format: (v) => (v === null ? "—" : formatCents(v)),
-    formatDelta: (d) => (d >= 0 ? `+${formatCents(d)}` : formatCents(d)),
+    financialFormat: "currency",
   },
   "break-even": {
     key: "break-even",
     label: "Break-even",
     getValue: (o) => o.roiMetrics.breakEvenMonth,
-    format: (v) => formatBreakEven(v),
-    formatDelta: (d) => (d > 0 ? `+${d} mo` : `${d} mo`),
+    financialFormat: "months",
   },
   "gross-margin": {
     key: "gross-margin",
     label: "Gross Margin %",
     getValue: (o) => o.annualSummaries[0]?.grossProfitPct ?? null,
-    format: (v) => (v === null ? "—" : `${(v * 100).toFixed(1)}%`),
-    formatDelta: (d) => (d >= 0 ? `+${(d * 100).toFixed(1)}%` : `${(d * 100).toFixed(1)}%`),
+    financialFormat: "pct",
   },
   "five-yr-roi": {
     key: "five-yr-roi",
     label: "5yr ROI",
     getValue: (o) => o.roiMetrics.fiveYearROIPct,
-    format: (v) => (v === null ? "—" : formatROI(v)),
-    formatDelta: (d) => (d >= 0 ? `+${(d * 100).toFixed(1)}%` : `${(d * 100).toFixed(1)}%`),
+    financialFormat: "pct",
   },
   ebitda: {
     key: "ebitda",
     label: "EBITDA",
     getValue: (o) => o.annualSummaries[0]?.ebitda ?? null,
-    format: (v) => (v === null ? "—" : formatCents(v)),
-    formatDelta: (d) => (d >= 0 ? `+${formatCents(d)}` : formatCents(d)),
+    financialFormat: "currency",
   },
   "labor-efficiency": {
     key: "labor-efficiency",
@@ -72,8 +66,7 @@ const METRICS: Record<string, MetricDef> = {
       if (!s || s.revenue === 0) return null;
       return s.directLabor / s.revenue;
     },
-    format: (v) => (v === null ? "—" : `${(v * 100).toFixed(1)}%`),
-    formatDelta: (d) => (d >= 0 ? `+${(d * 100).toFixed(1)}%` : `${(d * 100).toFixed(1)}%`),
+    financialFormat: "pct",
   },
   "cash-position": {
     key: "cash-position",
@@ -82,8 +75,7 @@ const METRICS: Record<string, MetricDef> = {
       if (!o.monthlyProjections.length) return null;
       return Math.min(...o.monthlyProjections.map((m) => m.endingCash));
     },
-    format: (v) => (v === null ? "—" : formatCents(v)),
-    formatDelta: (d) => (d >= 0 ? `+${formatCents(d)}` : formatCents(d)),
+    financialFormat: "currency",
   },
   "debt-service-coverage": {
     key: "debt-service-coverage",
@@ -93,15 +85,13 @@ const METRICS: Record<string, MetricDef> = {
       if (!s || s.interestExpense === 0) return null;
       return s.ebitda / Math.abs(s.interestExpense);
     },
-    format: (v) => (v === null ? "—" : `${v.toFixed(1)}x`),
-    formatDelta: (d) => (d >= 0 ? `+${d.toFixed(1)}x` : `${d.toFixed(1)}x`),
+    financialFormat: "multiplier",
   },
   "total-investment": {
     key: "total-investment",
     label: "Total Investment",
     getValue: (o) => o.roiMetrics.totalStartupInvestment,
-    format: (v) => (v === null ? "—" : formatCents(v)),
-    formatDelta: (d) => (d >= 0 ? `+${formatCents(d)}` : formatCents(d)),
+    financialFormat: "currency",
   },
 };
 
@@ -278,7 +268,7 @@ export function ImpactStrip({
                       className="text-sm font-semibold font-mono tabular-nums"
                       style={{ opacity: isFetching ? 0.5 : 1 }}
                     >
-                      {def.format(val)}
+                      {key === "break-even" ? formatBreakEven(val) : formatFinancialValue(val, def.financialFormat)}
                     </span>
                     {hasDelta && (
                       <span
@@ -286,7 +276,7 @@ export function ImpactStrip({
                           delta > 0 ? "text-guardian-healthy" : "text-guardian-attention"
                         }`}
                       >
-                        {def.formatDelta(delta)}
+                        {key === "break-even" ? `${delta > 0 ? "+" : ""}${delta} mo` : formatFinancialDelta(delta, def.financialFormat)}
                       </span>
                     )}
                   </>
