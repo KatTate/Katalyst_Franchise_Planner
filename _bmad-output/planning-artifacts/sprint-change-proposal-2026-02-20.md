@@ -349,6 +349,45 @@ All items approved. Execution sequence finalized.
 
 ---
 
+## Section 8: Correct Course Workflow Completion (Step 7)
+
+**Workflow:** Correct Course — Sprint Change Management
+**Date completed:** 2026-02-20
+**Change scope:** Moderate (backlog reorganization + document remediation)
+
+### Issue Addressed
+Party Mode review identified 13 UI divergences from the consolidated UX spec, an unresolved Scenario vision (D5), and missing user journey documentation (D7). The three-mode model needed retirement in favor of a two-surface architecture.
+
+### Artifacts Modified
+| Artifact | Changes |
+|----------|---------|
+| `sprint-change-proposal-2026-02-20.md` | Created — consolidated SCP with 13 CPs, 7 decisions, 9 open items (all approved) |
+| `architecture.md` | Retired three-mode model → two-surface architecture. FR count 87→96. Updated component tree, routing, API boundaries, project directory structure. |
+| `epics.md` | FR Coverage Map expanded (87→96 mapped, all 111 PRD FRs referenced). Story 5.7 retired → Epic 10. Epic 10 rewritten as 3-story What-If Playground. Epic 4 renamed. Quick Entry references deprecated throughout. |
+| `ux-design-specification-consolidated.md` | Part 15 expanded to 8 comprehensive user journey narratives per D7. |
+| `sprint-status.yaml` | Regenerated — Epic 5 marked done (9 stories), Epic 10 restructured (3 stories), all CP statuses tracked, changelog updated. |
+| `client/src/index.css` | CP-4 (color system), CP-5 (typography) |
+| `client/src/components/ui/card.tsx` | CP-11 (rounded-2xl) |
+| `client/src/components/ui/button.tsx` | CP-11 (rounded-xl) |
+| `client/src/components/ui/input.tsx` | CP-11 (rounded-xl) |
+| `client/src/components/shared/financial-value.tsx` | D4 — new design-system primitive for financial formatting |
+| `client/src/components/planning/*` | CP-1, CP-2, CP-3, CP-6, CP-7, CP-8, CP-9, CP-10, CP-12, CP-13 |
+
+### Code CPs Executed (16/16)
+CP-1 (delete mode switcher) ✅, CP-2 (retire Quick Entry) ✅, CP-3 (fix navigation) ✅, CP-4 (fix color system) ✅, CP-5 (fix typography) ✅, CP-6 (Story 5.5 HIGHs) ✅, CP-7 (re-verify 5.6–5.10) ✅, CP-8 (reposition Impact Strip) ✅, CP-9 (Dashboard preview) ✅, CP-10 (Plan Completeness dashboard) ✅, CP-11 (border radius) ✅, CP-12 (ratio format) ✅, CP-13 (negative formatting) ✅, D4 (FinancialValue component) ✅, D5/D6 (Epic 10 restructure) ✅, D7 (user journeys) ✅
+
+### Routed To
+- **PM (document updates):** architecture.md, epics.md, UX spec — completed
+- **SM (sprint planning):** sprint-status.yaml regenerated — completed
+- **Dev (implementation):** All 13 code CPs executed per Section 6 sequence — completed
+
+### Known Gap
+The epics.md FR Coverage Map formal summary counts 96/96 FRs, while the PRD contains 111 FRs. All 111 FRs appear in story ACs and dev notes throughout epics.md, but 15 are not explicitly listed in the coverage map table. This is a documentation summary gap, not a coverage gap.
+
+✅ Correct Course workflow complete.
+
+---
+
 ## References
 
 - `sprint-change-proposal-2026-02-19.md` — Historical predecessor (preserved, not superseded for context)
