@@ -247,21 +247,21 @@ export class DatabaseStorage implements IStorage {
       .select({
         id: brandAccountManagers.id,
         brandId: brandAccountManagers.brandId,
-        userId: brandAccountManagers.userId,
+        accountManagerId: brandAccountManagers.accountManagerId,
         bookingUrl: brandAccountManagers.bookingUrl,
         createdAt: brandAccountManagers.createdAt,
         displayName: users.displayName,
         email: users.email,
       })
       .from(brandAccountManagers)
-      .innerJoin(users, eq(brandAccountManagers.userId, users.id))
+      .innerJoin(users, eq(brandAccountManagers.accountManagerId, users.id))
       .where(eq(brandAccountManagers.brandId, brandId));
     return rows;
   }
 
   async getBrandAccountManager(brandId: string, userId: string): Promise<any | undefined> {
     const [row] = await db.select().from(brandAccountManagers).where(
-      and(eq(brandAccountManagers.brandId, brandId), eq(brandAccountManagers.userId, userId))
+      and(eq(brandAccountManagers.brandId, brandId), eq(brandAccountManagers.accountManagerId, userId))
     );
     return row;
   }
@@ -276,7 +276,7 @@ export class DatabaseStorage implements IStorage {
     }
     const [created] = await db.insert(brandAccountManagers).values({
       brandId,
-      userId,
+      accountManagerId: userId,
       bookingUrl,
     }).returning();
     return created;
@@ -284,7 +284,7 @@ export class DatabaseStorage implements IStorage {
 
   async removeBrandAccountManager(brandId: string, userId: string): Promise<void> {
     await db.delete(brandAccountManagers).where(
-      and(eq(brandAccountManagers.brandId, brandId), eq(brandAccountManagers.userId, userId))
+      and(eq(brandAccountManagers.brandId, brandId), eq(brandAccountManagers.accountManagerId, userId))
     );
   }
 

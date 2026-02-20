@@ -1,5 +1,8 @@
 import type { Express } from "express";
-import { createServer, type Server } from "http";
+import type { Server } from "http";
+import session from "express-session";
+import connectPgSimple from "connect-pg-simple";
+import passport from "./auth";
 import { requireReadOnlyImpersonation } from "./middleware/auth";
 
 import authRoutes from "./routes/auth";
@@ -15,6 +18,29 @@ export async function registerRoutes(
   httpServer: Server,
   app: Express
 ): Promise<Server> {
+  const PgStore = connectPgSimple(session);
+
+  app.use(
+    session({
+      store: new PgStore({
+        conString: process.env.DATABASE_URL,
+        createTableIfMissing: true,
+      }),
+      secret: process.env.SESSION_SECRET || "katalyst-dev-secret",
+      resave: false,
+      saveUninitialized: false,
+      cookie: {
+        maxAge: 24 * 60 * 60 * 1000,
+        httpOnly: true,
+        sameSite: "lax",
+        secure: false,
+      },
+    })
+  );
+
+  app.use(passport.initialize());
+  app.use(passport.session());
+
   app.use("/api/auth", authRoutes);
   app.use("/api/brands", brandRoutes);
   app.use("/api/plans", requireReadOnlyImpersonation, planRoutes);

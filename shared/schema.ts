@@ -138,12 +138,12 @@ export const brandAccountManagers = pgTable(
   {
     id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
     brandId: varchar("brand_id").notNull(),
-    userId: varchar("user_id").notNull(),
+    accountManagerId: varchar("account_manager_id").notNull(),
     bookingUrl: text("booking_url"),
     createdAt: timestamp("created_at").defaultNow(),
   },
   (table) => [
-    uniqueIndex("brand_account_managers_brand_user_idx").on(table.brandId, table.userId),
+    uniqueIndex("brand_account_managers_brand_user_idx").on(table.brandId, table.accountManagerId),
   ]
 );
 
