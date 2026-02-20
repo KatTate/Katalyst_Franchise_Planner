@@ -6,6 +6,9 @@ sections_completed: ['technology_stack', 'language_rules', 'framework_rules', 't
 existing_patterns_found: 18
 last_updated: '2026-02-20'
 update_source: 'Epic 5 Retrospective (AI-1, AI-4, AI-6)'
+status: 'complete'
+rule_count: 85
+optimized_for_llm: true
 ---
 
 # Project Context for AI Agents
@@ -140,7 +143,7 @@ _This file contains critical rules and patterns that AI agents must follow when 
 - Test names reference requirements: `"Determinism (FR9, NFR15)"`.
 
 **`data-testid` Convention:**
-- Interactive elements: `{action}-{target}` (e.g., `button-dev-login`, `mode-switcher-forms`)
+- Interactive elements: `{action}-{target}` (e.g., `button-dev-login`, `button-save-plan`)
 - Display elements: `{type}-{description}` (e.g., `planning-workspace`, `text-username`)
 - Dynamic lists: append unique ID (`card-product-${id}`)
 
@@ -254,3 +257,20 @@ _This file contains critical rules and patterns that AI agents must follow when 
 - **Codify as Vitest assertions:** Validation results must be permanent test assertions in a dedicated file (e.g., `shared/financial-engine-reference.test.ts`), NOT a standalone document. Tests must run in the standard `vitest` suite so every future engine change automatically regresses against reference values.
 - **Discrepancy classification (requires PO sign-off for each):** (a) **BUG** — formula error, must fix engine + add regression test, (b) **KNOWN DIVERGENCE** — intentional simplification (e.g., `otherMonthly→otherOpexPct` approximation), document rationale, (c) **SPREADSHEET ERROR** — reference spreadsheet itself has a bug, document with evidence.
 - Any engine formula fix must update BOTH `shared/financial-engine.ts` AND the engine test suite. Never fix without a regression test.
+
+---
+
+## Usage Guidelines
+
+**For AI Agents:**
+- Read this file before implementing any code.
+- Follow ALL rules exactly as documented — when in doubt, prefer the more restrictive option.
+- Pay special attention to the Agent Session Control and Code Review Discipline sections — these are mandatory process gates, not suggestions.
+- The Critical Don't-Miss Rules section contains the highest-density bug-prevention rules. Read it last so it stays freshest in context.
+
+**For Humans:**
+- Keep this file lean and focused on what agents get wrong. Remove rules that become obvious over time.
+- Update when technology stack changes, new patterns emerge, or retrospectives surface new failure modes.
+- Review after each epic retrospective for new rules or outdated ones.
+
+Last Updated: 2026-02-20 (Epic 5 Retrospective integration)
