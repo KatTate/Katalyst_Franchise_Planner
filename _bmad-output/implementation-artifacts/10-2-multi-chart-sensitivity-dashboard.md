@@ -89,6 +89,9 @@ so that I can understand the full impact of changing assumptions across every di
 
 ### Architecture Patterns to Follow
 
+- **Epic 10 is the sole scenario analysis surface (SCP-2026-02-20 D5/D6):** The column-splitting scenario comparison was retired from Reports. Epic 10 (What-If Playground) is now the **canonical and only** home for scenario analysis in the product. The dev agent is building the definitive feature, not a parallel one. `ScenarioBar`, `ComparisonTableHead`, and `ScenarioSummaryCard` remain in the codebase as dead code pending cleanup — do not integrate them.
+  - Source: `_bmad-output/planning-artifacts/prd.md` (SCP-2026-02-20 entry), `_bmad-output/planning-artifacts/architecture.md` lines 727–728
+
 - **Workspace view integration:** The What-If Playground lives at `workspaceView === "scenarios"` in `WorkspaceViewContext`. Story 10.1 replaces the placeholder `<div data-testid="placeholder-scenarios">` in `planning-workspace.tsx` `case "scenarios"` with a `<WhatIfPlayground>` component. Story 10.2 adds a `<SensitivityCharts>` component INSIDE `what-if-playground.tsx` — it does NOT modify `planning-workspace.tsx` independently.
   - Source: `client/src/pages/planning-workspace.tsx` lines 127–142 (placeholder), `client/src/contexts/WorkspaceViewContext.tsx` line 4 (`WorkspaceView` type)
 
@@ -162,8 +165,8 @@ so that I can understand the full impact of changing assumptions across every di
 - **DO NOT use red/destructive colors for the cash-negative advisory zone on Chart 2.** The cash-negative zone uses amber advisory coloring (`hsl(var(--chart-5))` at 15% opacity). Red is reserved for actual system errors. This is an advisory/warning, not a failure state.
   - Source: UX spec Part 12 (Guardian advisory language), `client/src/index.css` (guardian tokens)
 
-- **DO NOT import or use `ScenarioBar` or `ScenarioSummaryCard` from Epic 5 statements.** Those components are designed for the inline statement column-comparison pattern (retired Story 5.7). The What-If Playground uses a fresh chart-based approach. Reusing those components would bring in column-switching logic that doesn't belong here.
-  - Source: `_bmad-output/planning-artifacts/architecture.md` lines 1577–1580 (scenario-bar.tsx is in statements/ folder — different use case)
+- **DO NOT import or use `ScenarioBar` or `ScenarioSummaryCard` from Epic 5 statements.** Those components are officially marked `[DEAD CODE]` in `architecture.md` per SCP-2026-02-20 D5/D6 — they are the retired column-splitting comparison UI from Reports. The What-If Playground uses a fresh chart-based approach. Importing dead code would bring in column-switching logic that has no place here and is pending removal.
+  - Source: `_bmad-output/planning-artifacts/architecture.md` lines 1577–1580 (`scenario-bar.tsx`, `scenario-summary-card.tsx`, `comparison-table-head.tsx` all tagged `[DEAD CODE — retired per SCP-2026-02-20 D5/D6]`)
 
 - **DO NOT hardcode hex color values for scenario lines.** Use CSS variables: `hsl(var(--chart-1))`, `hsl(var(--chart-2))`, `hsl(var(--chart-5))`. This ensures dark mode works correctly.
   - Source: `client/src/index.css` lines 48–52 (light mode chart vars), 139–143 (dark mode chart vars)
@@ -243,7 +246,9 @@ so that I can understand the full impact of changing assumptions across every di
 
 - `_bmad-output/planning-artifacts/epics.md` → Epic 10, Story 10.2 (lines 2126–2150) — user story, acceptance criteria, dev notes
 - `_bmad-output/planning-artifacts/epics.md` → Epic 10, Story 10.1 (lines 2095–2125) — prerequisite story context
-- `_bmad-output/planning-artifacts/ux-design-specification-consolidated.md` → Part 11 (Scenario Comparison, lines 829–877) — scenario model and advisory language rules
+- `_bmad-output/planning-artifacts/ux-design-specification-consolidated.md` → Part 12 (Guardian Bar + Dynamic Interpretation) — advisory color language ("Guardian speaks in amber, not red"); amber is a caution, not an error state
+- `_bmad-output/planning-artifacts/ux-design-specification-consolidated.md` → Part 5 Color Palette — advisory color tokens (amber = caution, red = destructive error)
+- ~~Part 11 (Scenario Comparison)~~ **RETIRED (SCP-2026-02-20 D5/D6)** — no longer design authority; do not reference
 - `_bmad-output/planning-artifacts/ux-design-specification-consolidated.md` → Journey 4 (lines 1086–1108) — Chris's What-If Playground experience (target UX)
 - `_bmad-output/planning-artifacts/ux-design-specification-consolidated.md` → Part 5 Color Palette (lines 327–331) — advisory color language
 - `_bmad-output/planning-artifacts/ux-design-specification-consolidated.md` → Part 7 Charting (lines 440–447) — Recharts, chart type guidance, scenario overlay
