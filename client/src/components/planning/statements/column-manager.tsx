@@ -524,7 +524,7 @@ export function getQuarterlyValue(
   year: number,
   quarter: number,
   monthly: MonthlyProjection[],
-  format?: string
+  format?: "currency" | "pct" | "ratio" | "multiplier" | "number" | "months"
 ): number {
   const startMonth = (year - 1) * 12 + (quarter - 1) * 3;
   let sum = 0;
@@ -536,7 +536,7 @@ export function getQuarterlyValue(
       count++;
     }
   }
-  if ((format === "pct" || format === "ratio") && count > 0) {
+  if ((format === "pct" || format === "ratio" || format === "multiplier") && count > 0) {
     return Math.round((sum / count) * 10000) / 10000;
   }
   return Math.round(sum * 100) / 100;

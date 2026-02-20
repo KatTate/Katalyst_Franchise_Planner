@@ -6,9 +6,8 @@ import { usePlanOutputs } from "@/hooks/use-plan-outputs";
 import { computeGuardianState, isAllDefaults } from "@/lib/guardian-engine";
 import { formatFinancialValue, formatFinancialDelta, type FinancialFormat } from "@/components/shared/financial-value";
 import { formatBreakEven } from "@/components/shared/summary-metrics";
-import type { EngineOutput, PlanFinancialInputs } from "@shared/financial-engine";
+import type { EngineOutput, PlanFinancialInputs, StartupCostLineItem } from "@shared/financial-engine";
 import type { GuardianLevel, GuardianIndicator } from "@/lib/guardian-engine";
-import type { StartupCostLineItem } from "@shared/schema";
 import type { StatementTabId } from "@/components/planning/financial-statements";
 
 interface ImpactStripProps {
@@ -276,7 +275,7 @@ export function ImpactStrip({
                           delta > 0 ? "text-guardian-healthy" : "text-guardian-attention"
                         }`}
                       >
-                        {key === "break-even" ? `${delta > 0 ? "+" : ""}${delta} mo` : formatFinancialDelta(delta, def.financialFormat)}
+                        {formatFinancialDelta(delta, def.financialFormat)}
                       </span>
                     )}
                   </>
