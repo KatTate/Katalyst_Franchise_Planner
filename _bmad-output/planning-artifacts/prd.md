@@ -1,11 +1,13 @@
 ---
-stepsCompleted: ['step-01-init', 'step-02-discovery', 'step-03-success', 'step-04-journeys', 'step-05-domain', 'step-06-innovation', 'step-07-project-type', 'step-08-scoping', 'step-09-functional', 'step-10-nonfunctional', 'step-11-polish', 'step-12-complete', 'step-e-01-discovery', 'step-e-02-review', 'step-e-03-edit']
-inputDocuments: ['_bmad-output/planning-artifacts/product-brief-workspace-2026-02-08.md', '_bmad-output/brainstorming/brainstorming-session-2026-02-08.md', 'attached_assets/katalyst-replit-agent-context-final_1770513125481.md', '_bmad-output/planning-artifacts/reference-data/PostNet_-_Business_Plan_1770511701987.xlsx', 'attached_assets/Pasted-Persona-A-First-Time-Franchisee-Sam-The-New-Owner-Snaps_1770523428988.txt', 'attached_assets/Pasted-Financial-Model-Engine-Testable-Requirements-Derived-fr_1771137277359.txt']
+stepsCompleted: ['step-01-init', 'step-02-discovery', 'step-03-success', 'step-04-journeys', 'step-05-domain', 'step-06-innovation', 'step-07-project-type', 'step-08-scoping', 'step-09-functional', 'step-10-nonfunctional', 'step-11-polish', 'step-12-complete', 'step-e-01-discovery', 'step-e-02-review', 'step-e-03-edit', 'step-e-01-discovery-2', 'step-e-02-review-2', 'step-e-03-edit-2']
+inputDocuments: ['_bmad-output/planning-artifacts/product-brief-workspace-2026-02-08.md', '_bmad-output/brainstorming/brainstorming-session-2026-02-08.md', 'attached_assets/katalyst-replit-agent-context-final_1770513125481.md', '_bmad-output/planning-artifacts/reference-data/PostNet_-_Business_Plan_1770511701987.xlsx', 'attached_assets/Pasted-Persona-A-First-Time-Franchisee-Sam-The-New-Owner-Snaps_1770523428988.txt', 'attached_assets/Pasted-Financial-Model-Engine-Testable-Requirements-Derived-fr_1771137277359.txt', '_bmad-output/planning-artifacts/ux-design-specification-consolidated.md', '_bmad-output/planning-artifacts/sprint-change-proposal-2026-02-19.md', '_bmad-output/project-context.md', '_bmad-output/course-corrections/cc-2026-02-15-financial-output-layer.md']
 workflowType: 'prd'
-lastEdited: '2026-02-15'
+lastEdited: '2026-02-20'
 editHistory:
   - date: '2026-02-15'
     changes: 'Added complete financial model output requirements (tax modeling, valuation, ROIC, labor efficiency, payback period, burn metrics, summary financials), expanded input parameter specification, added Executive Summary, tightened NFR8 and FR20'
+  - date: '2026-02-20'
+    changes: 'Two-surface architecture alignment: replaced three-mode (Story/Normal/Expert Mode) framing with two-surface (My Plan + Reports) + behavioral tiers model throughout. Rewrote FR7h (Reports inline editing), FR7m (My Plan decomposition + Reports consolidated). Added 14 new FRs: Financial Display Standards (FR84-FR87), Advisory vs. Error Visual Language (FR88-FR89), Impact Strip (FR90-FR94), Plan Completeness & Document Preview (FR95-FR96), Bidirectional Surface Sync (FR97). Updated FR12 to define two-surface architecture, FR21 with advisory visual language cross-reference, NFR27 with formatting standards cross-reference. Moved Quick Scenario comparison from Phase 2 to MVP. Updated all User Journeys, Success Criteria, MVP Feature Set, Innovation section, and Resource-Constrained Cut Order to use two-surface + tier language. Input documents: UX Design Specification (consolidated, 2026-02-18), Sprint Change Proposal (2026-02-19), Project Context (2026-02-19).'
 briefCount: 1
 brainstormingCount: 1
 researchCount: 0
@@ -23,23 +25,23 @@ classification:
 
 **Author:** User
 **Date:** 2026-02-08
-**Last Edited:** 2026-02-15
+**Last Edited:** 2026-02-20
 
 ## Executive Summary
 
 Katalyst Franchise Planning Toolbox is a B2B2C vertical SaaS platform that replaces static spreadsheets with a guided, interactive financial planning experience for franchise owners. The platform serves three stakeholders from a single data layer: franchisees build lender-grade business plans, franchisors gain first-ever development pipeline visibility, and Katalyst (the platform operator) gains operational intelligence to deliver better consulting services.
 
-**Core differentiator:** A parameterized financial engine that produces identical-structure outputs across any franchise brand using only ~25-30 seed values — no per-brand formula logic, no structural variation. Combined with an AI-powered conversational planning interface (Story Mode), adaptive experience tiers (Story/Normal/Expert), and FTC-compliant content positioning where the franchisee is always the author of their projections.
+**Core differentiator:** A parameterized financial engine that produces identical-structure outputs across any franchise brand using only ~25-30 seed values — no per-brand formula logic, no structural variation. Combined with a two-surface interaction architecture (My Plan for guided input with AI Planning Assistant, Reports for interactive financial statements with inline editing), adaptive experience tiers (Story/Normal/Expert) that modulate behavior within those surfaces, and FTC-compliant content positioning where the franchisee is always the author of their projections.
 
-**Target users:** First-time franchisees (guided experience), scaling operators (form-based efficiency), portfolio operators (spreadsheet-speed direct input), Katalyst account managers (brand configuration and client guidance), and franchisor development teams (pipeline visibility).
+**Target users:** First-time franchisees (guided experience via My Plan with AI Planning Assistant), scaling operators (form-based efficiency via My Plan), portfolio operators (Reports inline editing at spreadsheet speed), Katalyst account managers (brand configuration and client guidance), and franchisor development teams (pipeline visibility).
 
-**MVP thesis:** Replace the PostNet spreadsheet with a better experience for one brand, proving the financial engine accuracy, the adaptive UX model, and the three-stakeholder ("throuple") data architecture. Success is measured by adoption and empowerment, not platform fee revenue.
+**MVP thesis:** Replace the PostNet spreadsheet with a better experience for one brand, proving the financial engine accuracy, the two-surface adaptive UX model, and the three-stakeholder ("throuple") data architecture. Success is measured by adoption and empowerment, not platform fee revenue.
 
 ## Project Classification
 
 - **Project Type:** B2B2C Vertical SaaS Platform
 - **Domain:** Franchise Operations with Financial Planning & Analysis engine
-- **Complexity:** High — primary driver is parameterization and startup cost detail (brand-parameterized financial engine, UX, documents, planning experience, educational content), compounded by multi-stakeholder data isolation ("the throuple problem"), AI-powered conversational planning layer (Story Mode), complex location lifecycle state management, and FTC compliance constraints on content positioning
+- **Complexity:** High — primary driver is parameterization and startup cost detail (brand-parameterized financial engine, UX, documents, planning experience, educational content), compounded by multi-stakeholder data isolation ("the throuple problem"), two-surface architecture (My Plan + Reports) with AI Planning Assistant, complex location lifecycle state management, and FTC compliance constraints on content positioning
 - **Project Context:** Greenfield
 
 **Key Classification Notes:**
@@ -125,19 +127,19 @@ Total parameter count: 13 global + 13 per-year x 5 years + 8 investment = 86 ind
 
 ### User Success
 
-**Sam (First-Time Franchisee — Story Mode):**
+**Sam (First-Time Franchisee — Story Tier, primarily My Plan with AI Planning Assistant):**
 - Completes a lender-ready financial package within 2-3 guided sessions with their account manager
 - Walks into a bank feeling confident — documents look professional and complete
 - Understands their own numbers well enough to explain them to a lender (empowerment, not dependency)
 - Has ever-present access to book consultant time when stuck or wanting guidance (Calendly-style booking link)
 - Can edit any number in the plan — including brand defaults — because they are the author of their plan and responsible for their decisions
 
-**Chris (Scaling Operator — Normal Mode):**
+**Chris (Scaling Operator — Normal Tier, primarily My Plan forms):**
 - Builds location #2 plan using location #1 actuals — measurably tighter assumptions
 - Identifies where first location deviated from plan and adjusts proactively
 - Transitions from "figuring it out each time" to having a repeatable process
 
-**Maria (Portfolio Operator — Expert Mode):**
+**Maria (Portfolio Operator — Expert Tier, primarily Reports with inline editing):**
 - Sees exactly when portfolio cash flow supports the next opening
 - Compresses development schedule by identifying earlier opening windows
 - Spends less time assembling data for lenders/investors — the tool produces it natively
@@ -165,7 +167,7 @@ Total parameter count: 13 global + 13 per-year x 5 years + 8 investment = 86 ind
 - **Parameterized financial model validated:** Single universal model produces correct outputs for all four existing brand parameter sets (PostNet, Jeremiah's, Ubreakifix, Tint World)
 - **Startup/construction cost detail builder:** Brand-defined templates with variable line items per brand. Franchisees can add/remove/edit any line item. "Reset to brand defaults" restores template without losing custom additions. Total feeds into financial engine as "Total Investment Required"
 - **All values franchisee-editable:** Every number in the plan is editable by the franchisee (franchisee empowerment). Defaults are seeded by brand parameters with easy "reset to default" buttons, but nothing is locked
-- **Multi-session planning stability:** Save mid-session, resume days later, zero data loss. Auto-save every few minutes for crash recovery. Applies across all three experience tiers (Story Mode conversation, Normal Mode forms, Expert Mode spreadsheet).
+- **Multi-session planning stability:** Save mid-session, resume days later, zero data loss. Auto-save every few minutes for crash recovery. Applies across both surfaces (My Plan and Reports) and all three experience tiers.
 - **Document accuracy:** Financial outputs match manual spreadsheet calculations exactly
 - **Data isolation with opt-in sharing:** Franchisee data invisible to other franchisees. Without opt-in, franchisor sees pipeline status only (when/where: stage, quarter, market). With opt-in, franchisor additionally sees financial details (how much: projections, investment, documents). Opt-in UI makes value exchange visible
 - **Performance:** ROI/summary calculations < 2 seconds (live-updating as franchisee adjusts inputs); document generation can take longer (not expected to be live-update)
@@ -190,7 +192,7 @@ Total parameter count: 13 global + 13 per-year x 5 years + 8 investment = 86 ind
 
 ## User Journeys
 
-### Journey 1: Sam — First Location, First Plan (Story Mode)
+### Journey 1: Sam — First Location, First Plan (Story Tier — My Plan with AI Planning Assistant)
 
 **Opening Scene:** Sam signed his PostNet franchise agreement six weeks ago. He's sitting at his kitchen table at 9 PM, laptop open, trying to make sense of a 47-page Franchise Disclosure Document and a spreadsheet someone emailed him. He needs to go to the bank next month. His wife asks how it's going. He says "fine" but his stomach knots.
 
@@ -198,9 +200,9 @@ His Katalyst account manager, Denise, sends him a link: "Hey Sam, before our cal
 
 **Rising Action:**
 
-*Session 1 (alone, 10 minutes):* Sam clicks the link. Three onboarding questions determine he's a first-timer — Story Mode activates. The Quick ROI asks for 5 inputs: location type, estimated investment, expected revenue, and two quick cost percentages. In 90 seconds, Sam sees a preliminary ROI range: "Based on these inputs, your estimated annual return is 12-18%." There's a note: "This is a rough range. Your full plan will refine this significantly." He sees the consultant booking link in the corner — "Book time with Denise" — and clicks it. Thursday confirmed.
+*Session 1 (alone, 10 minutes):* Sam clicks the link. Three onboarding questions determine he's a first-timer — Story tier is recommended. The Quick ROI asks for 5 inputs: location type, estimated investment, expected revenue, and two quick cost percentages. In 90 seconds, Sam sees a preliminary ROI range: "Based on these inputs, your estimated annual return is 12-18%." There's a note: "This is a rough range. Your full plan will refine this significantly." He sees the consultant booking link in the corner — "Book time with Denise" — and clicks it. Thursday confirmed.
 
-*Session 2 (with Denise, 45 minutes):* They open the planning tool together. Story Mode activates the AI Planning Advisor — a conversational interface on the left with a live financial dashboard on the right. The advisor opens: "Welcome back, Sam! Last time we got your Quick ROI range. Let's start building your full plan. Tell me about the location you're considering."
+*Session 2 (with Denise, 45 minutes):* They open the planning tool together. Sam lands on My Plan — the guided input surface. He opens the AI Planning Assistant (a slide-in panel within My Plan) which starts a conversational interface alongside the structured form sections. The advisor opens: "Welcome back, Sam! Last time we got your Quick ROI range. Let's start building your full plan. Tell me about the location you're considering."
 
 Sam types: "I'm looking at a spot on Main Street, rent is about $4,200 a month." The advisor extracts the location and rent, populates the facilities cost field, and the dashboard updates in real-time. "Great — $4,200/month for Main Street. I've updated your plan. The PostNet average is around $10,000/month, so your rent is favorable. Now, let's talk startup costs."
 
@@ -214,15 +216,15 @@ They continue through revenue assumptions, operating expenses, financing structu
 
 **Resolution:** Two months later, Sam is in construction. He opens the tool and starts updating estimates with actuals — the contractor bid came in $8K over his estimate for fixtures. He updates it, sees the ROI impact (minimal), and feels in control. He books time with Denise to review the timeline. The plan is alive.
 
-**Requirements revealed:** Quick ROI entry, onboarding tier detection, Story Mode guidance, startup cost detail builder with brand defaults, real-time calculation updates, save/resume with auto-save, 3-scenario modeling, ROI Threshold Guardian, document generation, estimated vs. actual tracking, consultant booking link, PDF export.
+**Requirements revealed:** Quick ROI entry, onboarding tier detection, My Plan with AI Planning Assistant guidance (Story tier), startup cost detail builder with brand defaults, real-time calculation updates, Impact Strip with deep links to Reports, save/resume with auto-save, scenario modeling, ROI Threshold Guardian, document generation with in-app preview, estimated vs. actual tracking, consultant booking link, PDF export.
 
-### Journey 2: Chris — Second Location, Smarter This Time (Normal Mode)
+### Journey 2: Chris — Second Location, Smarter This Time (Normal Tier — My Plan forms)
 
 **Opening Scene:** Chris opened her first Tint World location 18 months ago. It went well — profitable by month 10 — but the construction ran 5 weeks over and cost $22K more than planned. Now she's planning location #2 and wants to avoid repeating those mistakes. Her Katalyst account manager, Marcus, has already set up her account.
 
 **Rising Action:**
 
-*Session 1 (alone, 20 minutes):* Chris logs in and the onboarding detects Normal Mode — she's done this before but isn't a portfolio operator. She sees her location #1 in the system with the estimated vs. actual data she's been updating. She starts a new location plan for location #2. The form-based planning sections pre-fill brand defaults for Tint World, and Chris immediately starts editing — she knows her COGS run closer to 23% than the default 20%, and her labor is higher than average at 22%.
+*Session 1 (alone, 20 minutes):* Chris logs in and the onboarding detects Normal tier — she's done this before but isn't a portfolio operator. She sees her location #1 in the system with the estimated vs. actual data she's been updating. She starts a new location plan for location #2. On My Plan, the form-based planning sections pre-fill brand defaults for Tint World, and Chris immediately starts editing — she knows her COGS run closer to 23% than the default 20%, and her labor is higher than average at 22%.
 
 The Startup Cost Detail Builder is where Chris shines this time. She goes line by line, cross-referencing against her location #1 actuals. Leasehold improvements — her first location was $15K over because of HVAC work she didn't anticipate. She adds a buffer. Equipment — she knows which suppliers give better pricing now, adjusts down. She finishes the startup costs section feeling sharp.
 
@@ -232,15 +234,15 @@ The Startup Cost Detail Builder is where Chris shines this time. She goes line b
 
 **Resolution:** Chris generates her lender package and adds it to the document vault alongside her location #1 documents. She's already thinking about location #3 — she asks Marcus about the cascade modeling feature coming later.
 
-**Requirements revealed:** Multi-location per user, estimated vs. actual from prior location visible during new plan creation, Normal Mode (education available but not forced), pre-fill from brand defaults with user edits, side-by-side comparison, document vault per location, consultant booking.
+**Requirements revealed:** Multi-location per user, estimated vs. actual from prior location visible during new plan creation, Normal tier on My Plan (education available but not forced), pre-fill from brand defaults with user edits, side-by-side comparison, document vault per location, consultant booking.
 
-### Journey 3: Maria — Portfolio Expansion Planning (Expert Mode)
+### Journey 3: Maria — Portfolio Expansion Planning (Expert Tier — Reports with inline editing)
 
 **Opening Scene:** Maria owns 7 Ubreakifix locations and is under contract to open 5 more over the next 3 years. She doesn't need hand-holding — she needs speed, accuracy, and portfolio-level visibility. Her Katalyst rep, James, just onboarded her to the platform.
 
 **Rising Action:**
 
-*Session 1 (alone, 15 minutes):* Expert Mode activates. No tooltips, no educational overlays — just the inputs in a spreadsheet-style interface. Maria rips through the plan for location #8 in 15 minutes flat. She adjusts COGS to 34% (she runs higher materials than the brand default of 32%), drops the ad fund to 0% (Ubreakifix doesn't charge one), and enters her negotiated lease rate. She runs three scenarios in rapid succession, toggling growth rates and staffing levels.
+*Session 1 (alone, 15 minutes):* Expert tier activates — no tooltips, no educational overlays. Maria goes straight to Reports, where every financial statement tab has inline-editable input cells. She rips through the plan for location #8 in 15 minutes flat, editing directly within the financial statements at spreadsheet speed. She adjusts COGS to 34% (she runs higher materials than the brand default of 32%), drops the ad fund to 0% (Ubreakifix doesn't charge one), and enters her negotiated lease rate. She runs three scenarios in rapid succession, toggling growth rates and staffing levels.
 
 She notices something in the sensitivity analysis — her break-even is highly sensitive to the first 6 months' revenue ramp. She adjusts the "starting month AUV %" from the default 8% up to 15% — her brand recognition in this market should drive faster initial traffic.
 
@@ -250,7 +252,7 @@ She notices something in the sensitivity analysis — her break-even is highly s
 
 **Resolution:** Maria is the kind of user who will push the tool's limits. She wants to import her existing 7 locations' actuals, model the full portfolio cash flow, and identify when she can accelerate to locations #11 and #12. That's post-MVP — but the tool has earned her trust with speed and accuracy on the current plans.
 
-**Requirements revealed:** Expert Mode (no hand-holding, all inputs exposed), fast input flow, sensitivity analysis, adjustable ramp-up parameters, multi-location plan creation, document generation for multiple locations, consultant booking (minimal use but present).
+**Requirements revealed:** Expert tier with Reports inline editing (no hand-holding, all inputs exposed via financial statement tabs), fast input flow, sensitivity analysis, adjustable ramp-up parameters, multi-location plan creation, document generation for multiple locations, consultant booking (minimal use but present).
 
 ### Journey 4: Denise (Katalyst Account Manager) — Brand Setup & Client Guidance
 
@@ -267,7 +269,7 @@ She notices something in the sensitivity analysis — her break-even is highly s
 
 She validates by running the model against the Jeremiah's spreadsheet data she already has. The outputs match. Brand is live.
 
-*Client Onboarding (per franchisee):* A new Jeremiah's franchisee, David, gets an invitation email with his login. Denise has a 45-minute call scheduled. She can see David's progress in the Katalyst dashboard — he completed Quick ROI on his own before the call (good sign). During the call, she walks him through the planning tool, Story Mode active — the AI Planning Advisor guides David through conversation while Denise observes. She watches his inputs populate in her admin view — not to judge, but to ensure data quality. She notices his facilities estimate seems low for his market and mentions it. David adjusts.
+*Client Onboarding (per franchisee):* A new Jeremiah's franchisee, David, gets an invitation email with his login. Denise has a 45-minute call scheduled. She can see David's progress in the Katalyst dashboard — he completed Quick ROI on his own before the call (good sign). During the call, she walks him through the planning tool — Story tier active, with the AI Planning Assistant guiding David through conversation in My Plan while Denise observes. She watches his inputs populate in her admin view — not to judge, but to ensure data quality. She notices his facilities estimate seems low for his market and mentions it. David adjusts.
 
 **Climax:** Three months in, Denise has 8 Jeremiah's franchisees active in the tool. She pulls up the Katalyst dashboard — she can see who's in planning, who's in site evaluation, who's stuck. She notices one franchisee hasn't logged in for 3 weeks and reaches out. He was stalled on financing — Denise connects him with a lending partner. Without the tool's visibility, she wouldn't have known until it was too late.
 
@@ -320,7 +322,7 @@ One franchisee, Tom, has opted in to share financials with PostNet. Linda clicks
 
 **Rising Action:**
 
-Kevin clicks the link because Denise asked him to. Three onboarding questions — Story Mode is recommended. He overrides to Normal (he's not a newbie in his mind, even though this is his first franchise). The Quick ROI asks for 5 inputs. Kevin fills them in quickly — maybe a bit carelessly. 90 seconds later: "Estimated annual return: 8-14%." Kevin thinks: "That seems about right" and closes the tab.
+Kevin clicks the link because Denise asked him to. Three onboarding questions — Story tier is recommended. He overrides to Normal (he's not a newbie in his mind, even though this is his first franchise). The Quick ROI asks for 5 inputs. Kevin fills them in quickly — maybe a bit carelessly. 90 seconds later: "Estimated annual return: 8-14%." Kevin thinks: "That seems about right" and closes the tab.
 
 The Katalyst dashboard shows Denise that Kevin completed Quick ROI but didn't proceed to the full planning tool. His last activity: 12 days ago.
 
@@ -360,9 +362,9 @@ In another session, Sam tries to generate his lender package but hasn't complete
 |-----------|-----|-------|-------|-------------------|----------------|-----------------|
 | Quick ROI Entry | Primary entry | Quick check | Quick check | Minimum data capture | Validates output | - |
 | Onboarding & Tier Detection | Critical | Useful | Skip-through | Overrides recommendation | Configures | - |
-| Story Mode Guidance | Primary | - | - | Recommended but resisted | - | - |
-| Normal Mode | - | Primary | - | Self-selected | - | - |
-| Expert Mode | - | - | Primary | - | - | - |
+| My Plan + AI Planning Assistant (Story tier) | Primary | - | - | Recommended but resisted | - | - |
+| My Plan forms (Normal tier) | - | Primary | - | Self-selected | - | - |
+| Reports inline editing (Expert tier) | - | - | Primary | - | - | - |
 | Startup Cost Detail Builder | Learns from it | Compares to actuals | Speed-runs it | Catches missed expenses | Configures template | - |
 | Real-time Calculations | Essential | Essential | Essential | Notices during session | - | - |
 | 3-Scenario Modeling | With consultant | Independent | Rapid iteration | With consultant | - | - |
@@ -427,7 +429,7 @@ Each startup cost line item must be classified as one of three categories, becau
 - **Non-CapEx** (franchise fee, initial inventory, professional fees) → Expensed in period → P&L impact
 - **Working Capital** (cash reserve, additional funds) → Cash reserve → Balance Sheet and Cash Flow
 
-Brand templates pre-tag each default line item (franchise fee = non-CapEx, equipment = CapEx, etc.). When franchisees add custom line items, they classify them. In Story Mode, this is presented simply: "Is this something you'll own for years (like equipment) or something you'll use up quickly (like initial inventory)?"
+Brand templates pre-tag each default line item (franchise fee = non-CapEx, equipment = CapEx, etc.). When franchisees add custom line items, they classify them. For Story tier users, the AI Planning Assistant presents this simply: "Is this something you'll own for years (like equipment) or something you'll use up quickly (like initial inventory)?"
 
 **Rounding and Determinism:**
 - Lender-grade documents cannot have $1 discrepancies between summary and detail
@@ -470,7 +472,7 @@ Brand templates pre-tag each default line item (franchise fee = non-CapEx, equip
 - Severity: Medium — fixable but embarrassing if franchisees see wrong defaults
 
 **Risk 6: CapEx/non-CapEx misclassification in startup costs**
-- Mitigation: Brand templates pre-tag defaults correctly. Story Mode simplifies the classification question for custom items. Financial identity checks catch downstream errors (depreciation doesn't match CapEx total)
+- Mitigation: Brand templates pre-tag defaults correctly. The AI Planning Assistant (Story tier) simplifies the classification question for custom items. Financial identity checks catch downstream errors (depreciation doesn't match CapEx total)
 - Severity: Medium — affects EBITDA and valuation calculations but catchable via identity checks
 
 ## Innovation & Novel Patterns
@@ -481,7 +483,7 @@ This product has several genuinely innovative aspects — not technological brea
 
 1. **Three-stakeholder value from single data entry** — The "throuple" architecture where one franchisee action (entering their plan data) simultaneously serves the franchisee (planning power), the franchisor (pipeline visibility), and Katalyst (operational intelligence). No existing franchise tool serves all three stakeholders from a single data layer.
 
-2. **Adaptive experience tiers on a shared financial engine** — Story/Normal/Expert modes are not different products. They're different presentation layers over the same calculation engine, producing equally rigorous outputs. This is distinct from "beginner/advanced" feature gating — the output quality doesn't degrade in Story Mode.
+2. **Two-surface architecture with adaptive experience tiers** — My Plan (guided input with AI Planning Assistant) and Reports (interactive financial statements with inline editing) are two persistent surfaces over the same calculation engine. Story/Normal/Expert tiers modulate behavior within those surfaces (how much AI guidance, how much educational content), not switch between separate UIs. All tiers produce equally rigorous outputs — the output quality doesn't degrade for Story tier users.
 
 3. **Configuration via parameterization** — The spreadsheet analysis revealed that brand "configuration" is really just ~25-30 seed value definitions (13 global, 13 per-year arrays, 8 investment/financing), not structural model changes. This insight enables a simpler, more reliable architecture than a fully configurable financial engine. The one exception (startup cost detail builder) is handled as a template pattern, not a schema-definition pattern.
 
@@ -498,7 +500,7 @@ This product has several genuinely innovative aspects — not technological brea
 
 ### Risk Mitigation
 
-- If adaptive tiers prove unnecessary (all users prefer one mode), the engine still works — tiers are a presentation layer, not a structural dependency
+- If adaptive tiers prove unnecessary (all users prefer one surface and tier), the engine still works — tiers are a behavioral layer, not a structural dependency
 - If throuple model doesn't deliver franchisor value, the tool still serves franchisees and Katalyst — franchisor dashboard is the lightest-weight component
 - If return engagement is low, the tool still produces value as a one-time planning tool — the "living plan" is additive, not foundational
 
@@ -526,7 +528,7 @@ Three roles with distinct access patterns:
 
 | Role | Data Access | Actions | UX |
 |------|------------|---------|-----|
-| **Franchisee** | Own locations and plans only. Can opt in to share financial details with franchisor | Create/edit plans, run scenarios, generate documents, manage document vault, update estimated vs. actual | Wizard-driven with adaptive tiers (Story/Normal/Expert) |
+| **Franchisee** | Own locations and plans only. Can opt in to share financial details with franchisor | Create/edit plans, run scenarios, generate documents, manage document vault, update estimated vs. actual | Two surfaces (My Plan + Reports) with adaptive experience tiers (Story/Normal/Expert) |
 | **Franchisor Admin** | Pipeline status for all brand franchisees (read-only). Financial details only for opted-in franchisees (read-only). Optional: acknowledge/review franchisee plans (status signal, not data edit) | View pipeline, view opted-in financials, acknowledge plans (if brand-configured) | Dashboard-only, primarily read-only |
 | **Katalyst Admin** | All data across all franchisees and all brands; impersonation scopes view to target user's data boundaries | Brand parameter setup, startup cost template creation, franchisee invitation/provisioning, model validation, cross-brand views, "View As" impersonation of any franchisee (FR59-FR65), Franchisee Demo Mode per brand (FR66-FR69), Franchisor Demo Mode with fictitious brand (FR70-FR73) | Admin dashboard with configuration tools; impersonation banner (orange) and demo banner (distinct color) indicate active mode |
 
@@ -567,7 +569,8 @@ Experience tier (Story/Normal/Expert) is a **persistent user preference stored o
 - Onboarding questions set the initial recommendation
 - User can change their tier anytime from profile/settings
 - Tier persists across sessions — no re-answering onboarding questions on every login
-- Allows natural progression: Sam starts Story Mode, switches to Normal after his second location
+- Allows natural progression: Sam starts Story tier, switches to Normal after his second location
+- Tier modulates behavior (AI guidance level, educational content density, default landing surface) within the two persistent surfaces (My Plan and Reports) — it does not switch between separate UIs
 
 ### Access / Subscription Model
 
@@ -613,9 +616,9 @@ The ever-present booking link is configurable at the **franchisee-to-account-man
 ### MVP Feature Set (Phase 1)
 
 **Core User Journeys Supported:**
-- **Sam (Story Mode — AI Planning Advisor)** — First-time franchisee guided planning via AI conversation. Primary MVP journey. If Sam can produce a lender-grade business plan through conversational interaction with the AI advisor, the product works.
-- **Chris (Normal Mode — Form-based)** — Experienced operator standard planning. Validates that the same engine serves a different experience level through structured forms.
-- **Maria (Expert Mode — Spreadsheet-style)** — Portfolio operator direct input. Validates that the same engine serves power users. Also serves as the validation interface for Katalyst to verify engine outputs against known-good spreadsheets.
+- **Sam (Story Tier — My Plan with AI Planning Assistant)** — First-time franchisee guided planning via AI conversation within the My Plan surface. Primary MVP journey. If Sam can produce a lender-grade business plan through conversational interaction with the AI Planning Assistant, the product works.
+- **Chris (Normal Tier — My Plan forms)** — Experienced operator standard planning via My Plan's structured form sections. Validates that the same engine serves a different experience level through guided forms.
+- **Maria (Expert Tier — Reports inline editing)** — Portfolio operator direct input via Reports' inline-editable financial statement tabs. Validates that the same engine serves power users at spreadsheet speed. Also serves as the validation interface for Katalyst to verify engine outputs against known-good spreadsheets.
 - **Denise (Katalyst Admin)** — Brand parameter setup. Must work to onboard PostNet. Validates < 30 minute brand onboarding target.
 - **Linda (Franchisor Admin)** — Pipeline visibility dashboard. Lightweight read-only view. Validates franchisor value proposition and proves the throuple model.
 
@@ -629,11 +632,11 @@ The ever-present booking link is configurable at the **franchisee-to-account-man
 |-----------|-----------|-----------|
 | Financial Engine | Full 5-year monthly model with all accounting identity checks, complete P&L (including tax with loss carry-forward), balance sheet (with retained earnings and tax payable), cash flow, ROIC, valuation, labor efficiency ratios, breakeven/burn metrics, and payback period analysis | This is the product. No shortcuts here. Complete Summary Financials output matching reference spreadsheets. |
 | Startup Cost Detail Builder | Full — configurable line items, CapEx/non-CapEx classification, Item 7 ranges | Critical for accurate financial projections |
-| Three Experience Tiers | Story Mode (AI Planning Advisor conversation), Normal Mode (form-based), Expert Mode (spreadsheet-style direct input). All three tiers write to the same financial input state. | Three fundamentally different interaction paradigms serving three persona types (Sam/Chris/Maria), unified by one engine. Expert Mode also serves as engine validation interface. |
+| Two Surfaces + Three Experience Tiers | Two persistent surfaces: **My Plan** (structured input forms + AI Planning Assistant slide-in panel) and **Reports** (interactive financial statements with inline-editable input cells). Three experience tiers (Story/Normal/Expert) modulate behavior within those surfaces — controlling AI guidance level, educational content density, and default landing surface. All tiers and both surfaces write to the same financial input state with bidirectional sync. | Two-surface architecture serves all personas: Sam uses My Plan with AI Planning Assistant (Story tier), Chris uses My Plan forms (Normal tier), Maria uses Reports inline editing (Expert tier). The surfaces are always available regardless of tier — tiers modulate behavior, not access. Reports inline editing also serves as the engine validation interface for Katalyst. |
 | Real-time Calculations | Live-updating summary financial dashboard as franchisee edits inputs (via any tier) | Core UX differentiator vs. spreadsheet |
 | Editable Values + Reset (per-field pattern) | Every input has four states: (1) brand default value, (2) franchisee-modified value, (3) AI-populated value, (4) Item 7 range reference. Reset restores state 1. UI shows state 4 for context. Value attribution tracks source. | Franchisee empowerment philosophy — non-negotiable. AI attribution ensures trust and verifiability. |
-| AI Planning Advisor (Story Mode) | LLM-powered conversational interface that collects plan inputs through natural dialogue. Split-screen: conversation panel + live financial dashboard. | The 2026 experience — transforms Story Mode from a linear form into an AI consulting conversation. Gracefully degrades to Normal/Expert mode if AI unavailable. |
-| ROI Threshold Guardian | Advisory nudges for outlier inputs + weak business case guidance with specific levers. In Story Mode, integrated naturally into the AI Advisor conversation. | Safety net without blocking. Includes consultant booking prompt |
+| AI Planning Advisor (Story Tier) | LLM-powered conversational interface that collects plan inputs through natural dialogue. Implemented as a slide-in panel within My Plan — appears alongside structured form sections, not as a separate screen. | The 2026 experience — transforms Story tier from a linear form into an AI consulting conversation. Gracefully degrades: Story tier users can use My Plan forms or Reports inline editing if AI unavailable. |
+| ROI Threshold Guardian | Advisory nudges for outlier inputs + weak business case guidance with specific levers. In Story tier, integrated naturally into the AI Planning Assistant conversation. Uses advisory visual language (FR88-FR89). | Safety net without blocking. Includes consultant booking prompt |
 | Document Generation (PDF) | Lender-grade P&L, cash flow, balance sheet, break-even, summary package | Primary deliverable — this goes to banks |
 | Basic Document Vault | Simple list of generated PDFs with timestamps, plan version metadata, and download links. No organization, tagging, or search. | Prevents real user pain: Sam generates multiple versions, brings wrong one to bank. Minimal development effort. |
 | Save/Resume + Auto-save | Persistent multi-session state with auto-save | Losing work is trust-destroying |
@@ -649,8 +652,8 @@ The ever-present booking link is configurable at the **franchisee-to-account-man
 
 | Capability | Phase | Rationale |
 |-----------|-------|-----------|
-| Advisory Board Meeting | Phase 2 | Multi-persona stress-testing is the differentiator feature but requires the AI Planning Advisor to be stable first. Can be released as "bring your plan to the board" once Story Mode AI is proven. |
-| 3-Scenario Modeling | Phase 2 | One excellent plan with ROI Threshold Guardian is sufficient for MVP. Reduces engine, document, and UX complexity. |
+| Advisory Board Meeting | Phase 2 | Multi-persona stress-testing is the differentiator feature but requires the AI Planning Advisor to be stable first. Can be released as "bring your plan to the board" once Story tier AI is proven. |
+| ~~3-Scenario Modeling~~ | ~~Phase 2~~ | **Moved to MVP.** Quick Scenario comparison (Conservative/Optimistic with sensitivity factors) is implemented and provides meaningful user value. The full 3-scenario modeling with independent parameter sets remains Phase 2, but the quick comparison pattern is MVP. |
 | Estimated vs. Actual tracking | Phase 2 | Requires post-opening data — MVP franchisees haven't opened yet |
 | Multi-location planning | Phase 2 | First location first |
 | Deep Sensitivity Analysis | Phase 2 | ROI Threshold Guardian covers the MVP need |
@@ -662,11 +665,11 @@ The ever-present booking link is configurable at the **franchisee-to-account-man
 
 If resources are critically constrained, cut in this order (each cut is independent):
 
-1. **First cut: AI Planning Advisor (Story Mode AI).** Fall back to form-based Story Mode with educational guidance (original wizard concept). Normal + Expert modes are unaffected. The AI conversation layer is the highest-effort, highest-reward feature — cutting it reduces the product to a very good form-based tool rather than a 2026 AI-powered experience.
+1. **First cut: AI Planning Advisor.** Fall back to form-based My Plan with educational guidance (original wizard concept). My Plan forms and Reports inline editing are unaffected. The AI conversation layer is the highest-effort, highest-reward feature — cutting it reduces the product to a very good form-based tool rather than a 2026 AI-powered experience.
 2. **Second cut: Franchisor dashboard.** Linda's pipeline view is the lightest-weight component and easiest to add later. Data model still captures everything — just no franchisor-facing UI yet. Katalyst shares pipeline updates manually via account manager conversations.
 3. **Third cut: ROI Threshold Guardian.** Painful to cut because it's the safety net, but the account manager relationship provides a human safety net. Guardian is a business rules layer on top of the engine — can be added later without engine changes.
 
-**Never cut:** Financial engine, Normal Mode (form-based planning), Expert Mode (spreadsheet input), PDF generation + basic document vault, save/resume, invitation auth, RBAC with data isolation, brand parameter setup. These are the irreducible core.
+**Never cut:** Financial engine, My Plan (form-based planning), Reports (inline editing of financial statements), PDF generation + basic document vault, save/resume, invitation auth, RBAC with data isolation, brand parameter setup. These are the irreducible core.
 
 ### MVP Internal Phasing (AI Integration Strategy)
 
@@ -674,17 +677,17 @@ The MVP itself is internally phased to manage AI dependency risk. Each phase is 
 
 | Phase | What Ships | AI Dependency | Value Delivered |
 |-------|-----------|---------------|-----------------|
-| **MVP Core** | Financial engine + Expert Mode + Normal Mode + all infrastructure (auth, RBAC, data isolation, documents, auto-save, dashboards) | None | Product fully functional. Chris and Maria are productive. Katalyst can validate engine. Franchisor sees pipeline. |
-| **MVP Enhanced** | AI Planning Advisor (Story Mode) | LLM required for Story Mode only | Sam gets the 2026 experience. Normal/Expert modes unaffected if AI unavailable. |
+| **MVP Core** | Financial engine + My Plan forms + Reports inline editing + all infrastructure (auth, RBAC, data isolation, documents, auto-save, dashboards) | None | Product fully functional. Chris and Maria are productive. Katalyst can validate engine. Franchisor sees pipeline. |
+| **MVP Enhanced** | AI Planning Assistant (Story tier) | LLM required for Story tier only | Sam gets the 2026 experience. My Plan forms and Reports inline editing unaffected if AI unavailable. |
 | **MVP Complete** | Advisory Board Meeting (Phase 2 feature, built after MVP validation) | LLM required for advisory sessions | The differentiator. Multi-persona stress testing. Category-creating feature. |
 
-**Architectural principle:** If the LLM has a bad day, franchisees can still build complete financial plans using Normal or Expert mode. The AI layer degrades gracefully — it's never a single point of failure.
+**Architectural principle:** If the LLM has a bad day, franchisees can still build complete financial plans using My Plan forms or Reports inline editing. The AI layer degrades gracefully — it's never a single point of failure.
 
 ### Post-MVP Features
 
 **Phase 2 (after MVP validation):**
 - Advisory Board Meeting — multi-persona AI stress-testing of plan assumptions (the category-creating differentiator)
-- 3-Scenario Modeling (base/optimistic/pessimistic)
+- Full 3-Scenario Modeling with independent parameter sets (Quick Scenario comparison moved to MVP)
 - Additional brands (Jeremiah's, Ubreakifix, Tint World) — should be configuration tasks, not development
 - Estimated vs. actual tracking
 - Enhanced Document Vault (organization, tagging)
@@ -735,12 +738,12 @@ This section defines THE CAPABILITY CONTRACT for the entire product. UX designer
 - **FR7e:** Franchisee can view Returns on Invested Capital (ROIC) analysis showing invested capital composition, after-tax income, ROIC percentage, and core capital metrics (matching "Returns on Invested Capital" sheet)
 - **FR7f:** Franchisee can view Valuation analysis showing EBITDA-multiple valuation, estimated business value, after-tax proceeds, and replacement return (matching "Valuation" sheet)
 - **FR7g:** Franchisee can view Audit/integrity check results showing pass/fail status for all financial statement cross-checks (matching "Audit" sheet — 13 checks total)
-- **FR7h:** In Quick Entry mode, franchisee can edit input values directly within financial statement views — input cells are editable inline while computed cells update in real-time
+- **FR7h:** In Reports, franchisee can edit input values directly within financial statement views — input cells are always editable inline (no mode toggle gates this) while computed cells are read-only and update in real-time as inputs change
 - **FR7i:** All input assumptions support per-year (Year 1 through Year 5) values matching the reference spreadsheet column structure, enabling growth trajectory modeling
 - **FR7j:** Input Assumptions include: EBITDA Multiple, Target Pre-tax Profit (Y1-Y5), Shareholder Salary Adjustment (Y1-Y5), Distributions (Y1-Y5), AR Days, AP Days, Inventory Days, Tax Payment Delay, Company Name, Start Date, and Financial Year End — matching all fields in the reference spreadsheet
 - **FR7k:** Application includes a Glossary page with financial term definitions accessible from main navigation. Benchmark values, where shown, are sourced from brand-specific defaults configured by the franchisor
-- **FR7l:** Application includes contextual help for every input field — tooltip explanation and expanded guidance. Help content covers both consolidated spreadsheet-level fields (sourced from reference spreadsheet comments and video content) AND decomposed sub-fields in Forms mode (newly authored guidance). Content is stored as platform-level text data
-- **FR7m:** In Forms mode, composite input fields (Facilities, Financing, Management Salaries, Shareholder Salary Adjustment, and optionally Direct Labor) are decomposed into guided sub-fields with their own help content that are rolled up into the engine's consolidated inputs. In Quick Entry mode, the same fields appear in their consolidated spreadsheet-level form. All decomposition is opt-in — Quick Entry always provides the direct path
+- **FR7l:** Application includes contextual help for every input field — tooltip explanation and expanded guidance. Help content covers both consolidated spreadsheet-level fields (sourced from reference spreadsheet comments and video content) AND decomposed sub-fields in My Plan (newly authored guidance). Content is stored as platform-level text data
+- **FR7m:** In My Plan, composite input fields (Facilities, Financing, Management Salaries, Shareholder Salary Adjustment, and optionally Direct Labor) are decomposed into guided sub-fields with their own help content that are rolled up into the engine's consolidated inputs. In Reports, the same fields appear in their consolidated spreadsheet-level form with inline editing. Both surfaces write to the same financial input state — edits in either surface are reflected in the other (bidirectional sync)
 - **FR7n:** Franchisee can generate and download a professional PDF business plan package containing all financial statements, formatted for lender presentation
 - **FR8:** System validates accounting identities on every calculation: balance sheet balances (Assets = Liabilities + Equity), P&L-to-cash-flow consistency (Net Income + Depreciation + WC changes = Operating CF), depreciation-to-CapEx consistency (total depreciation = CapEx over depreciation period), ROIC derivation (ROIC = Pre-Tax Net Income / Total Invested Capital), tax payable flows correctly to balance sheet and cash flow with payment delay, and valuation derives from adjusted EBITDA
 - **FR9:** System produces deterministic outputs — identical inputs always produce identical financial projections
@@ -759,11 +762,14 @@ This section defines THE CAPABILITY CONTRACT for the entire product. UX designer
 ### 2. Guided Planning Experience
 
 - **FR11:** Franchisee can complete a planning experience that collects all inputs needed for a complete financial projection
-- **FR12:** Franchisee can experience the planning tool in three experience tiers, each representing a fundamentally different interaction paradigm over the same financial engine:
-  - **Story Mode:** AI Planning Advisor — a conversational interface where an LLM-powered advisor asks questions in natural language, extracts structured financial inputs from the conversation, and populates the plan. Split-screen layout: conversation panel + live financial dashboard. Designed for first-time franchisees (Sam).
-  - **Normal Mode:** Form-based guided sections — structured sections with field-by-field input, labels, and validation. Efficient for experienced operators who know their numbers (Chris).
-  - **Expert Mode:** Spreadsheet-style direct input — minimal UI, maximum speed, direct access to every parameter. Also serves as the validation interface for Katalyst to verify engine outputs against known-good spreadsheets (Maria). 
-- **FR13:** Franchisee can switch between experience tiers (Story/Normal/Expert) at any time from their profile settings
+- **FR12:** Franchisee interacts with the planning tool through two persistent surfaces and three adaptive experience tiers:
+  - **My Plan surface:** Structured input forms that decompose composite fields into guided sub-fields with contextual help. Includes the AI Planning Assistant as a slide-in panel for conversational input collection.
+  - **Reports surface:** Interactive financial statements (P&L, Balance Sheet, Cash Flow, ROIC, Valuation, Summary, Audit) with inline-editable input cells and read-only computed cells. Both surfaces write to the same financial input state with bidirectional sync.
+  - **Story Tier:** AI Planning Assistant active by default, maximum educational content, guided conversation for input collection. Designed for first-time franchisees (Sam).
+  - **Normal Tier:** My Plan forms as primary interaction, educational content available but not forced. Efficient for experienced operators who know their numbers (Chris).
+  - **Expert Tier:** Reports inline editing as default landing, minimal educational overlays, maximum speed. Also serves as the validation interface for Katalyst to verify engine outputs against known-good spreadsheets (Maria).
+  - Both surfaces are always accessible regardless of tier — tiers modulate behavior (AI guidance level, educational content density, default landing surface), not access.
+- **FR13:** Franchisee can switch between experience tiers (Story/Normal/Expert) at any time from their profile settings; both surfaces (My Plan and Reports) remain accessible in all tiers
 - **FR14:** System recommends an initial experience tier based on onboarding questions (franchise experience, financial literacy, planning experience)
 - **FR15:** Franchisee can navigate freely between completed sections without losing progress
 - **FR16:** Franchisee can save their progress and resume from where they left off across sessions
@@ -774,7 +780,7 @@ This section defines THE CAPABILITY CONTRACT for the entire product. UX designer
 ### 3. Advisory & Guardrails
 
 - **FR20:** System flags franchisee inputs that deviate more than 25% from the FDD Item 7 range midpoint or brand average with advisory nudges (non-blocking) — the deviation threshold is a configurable brand parameter
-- **FR21:** System identifies when a franchisee's overall business case is weak (e.g., negative ROI, break-even beyond 5 years) and provides specific guidance on which inputs to reconsider
+- **FR21:** System identifies when a franchisee's overall business case is weak (e.g., negative ROI, break-even beyond 5 years) and provides specific guidance on which inputs to reconsider. All weak-case indicators use advisory visual language (FR88-FR89) — never error-red styling
 - **FR22:** System suggests consultant booking when flagging weak business cases or outlier inputs
 - **FR23:** All advisory nudges are informational — the system never blocks a franchisee from proceeding with their chosen values
 
@@ -822,13 +828,13 @@ This section defines THE CAPABILITY CONTRACT for the entire product. UX designer
 
 - **FR49:** Franchisee sees their franchise brand's identity (name, logo, colors) throughout the planning experience
 
-### 10. AI Planning Advisor (Story Mode)
+### 10. AI Planning Advisor (Story Tier — slide-in panel within My Plan)
 
-- **FR50:** In Story Mode, franchisee interacts with an AI Planning Advisor that collects plan inputs through natural language conversation rather than form fields
+- **FR50:** In Story tier, franchisee interacts with an AI Planning Advisor (presented as a slide-in panel within My Plan) that collects plan inputs through natural language conversation alongside the structured form sections
 - **FR51:** AI Planning Advisor extracts structured financial inputs from the franchisee's conversational responses and populates the corresponding fields in the financial input state
 - **FR52:** Franchisee can view, verify, and manually correct any value that the AI Planning Advisor populated — AI-populated values are clearly distinguishable from manually entered values and brand defaults
 - **FR53:** AI Planning Advisor has access to the brand's parameter set, Item 7 ranges, and the current state of the franchisee's plan to provide contextually relevant questions and guidance
-- **FR54:** System gracefully degrades when AI services are unavailable — franchisee can switch to Normal or Expert mode to continue planning without interruption
+- **FR54:** System gracefully degrades when AI services are unavailable — franchisee can use My Plan forms or Reports inline editing to continue planning without interruption
 
 ### 11. Advisory Board Meeting
 
@@ -864,6 +870,35 @@ _Scope: Katalyst admins only. Franchisors and franchisees never see or access th
 - **FR71:** Katalyst admin can activate Franchisor Demo Mode via a "Demo Mode" menu item in the Katalyst admin sidebar; the system loads the fictitious brand's franchisor dashboard as the demo franchisor would see it, with the pipeline of demo franchisees
 - **FR72:** From within Franchisor Demo Mode, the admin can click into any demo franchisee to enter that franchisee's planning experience (Franchisee Demo within Franchisor Demo), with the demo banner updating to reflect the nested context; exiting the nested franchisee demo returns to the franchisor demo dashboard
 - **FR73:** While in Franchisor Demo Mode, the application header displays a demo banner indicating "Demo Mode: [Fictitious Brand] — Franchisor View" with an "Exit Demo" button; the demo banner is visually distinct from the impersonation banner (FR60) and uses the same demo color scheme as Franchisee Demo Mode (FR68)
+
+### 13. Financial Display Standards
+
+- **FR84:** All financial values throughout the application are rendered using consistent formatting rules: currency values display with leading "$", comma separators, and 2 decimal places (e.g., "$42,150.00"); percentage values display with 1 decimal place and "%" suffix (e.g., "13.0%"); ratio values display with 2 decimal places and "x" suffix (e.g., "0.35x"); integer values display with comma separators (e.g., "14" for months)
+- **FR85:** All negative financial values are displayed using accounting-style parentheses — e.g., "($4,200.00)" — not minus signs. This applies to every financial display surface including Reports tabs, Summary Financials, Impact Strip, and generated PDF documents
+- **FR86:** Financial figure cells in Reports use a monospace font (Roboto Mono) for tabular alignment — digits align vertically across rows for scannable financial statements
+- **FR87:** Input cells that still contain the brand default value display a "BD" (Brand Default) source badge. AI-populated values display an "AI" source badge. These badges are visible in both My Plan forms and Reports inline editing to support franchisee trust and verifiability
+
+### 14. Advisory vs. Error Visual Language
+
+- **FR88:** The application uses a distinct visual language for advisory/educational content versus actual errors. Advisory indicators (ROI Threshold Guardian bar, out-of-range warnings, educational callouts) use the "info" design token color (non-red, non-destructive). Red is reserved exclusively for actual errors: missing required fields, system failures, validation errors, and form submission problems
+- **FR89:** The ROI Threshold Guardian bar uses three visual states: "healthy" (green/positive — business case is strong), "concerning" (info token color — metrics are outside typical ranges, advisory guidance provided), and "critical" (still advisory, not error — very weak business case with specific levers suggested). None of these states use error-red styling
+
+### 15. Impact Strip
+
+- **FR90:** My Plan displays a persistent Impact Strip at the bottom of the view — a context-sensitive metrics bar showing key financial impact indicators that update in real-time as the franchisee edits inputs
+- **FR91:** The Impact Strip displays metrics relevant to the active form section — e.g., when editing Revenue assumptions, it shows projected revenue, break-even impact, and ROI delta; when editing Startup Costs, it shows total investment, equity requirement, and payback period
+- **FR92:** Impact Strip metrics include delta indicators showing the change amount from the previous value when a franchisee modifies an input (e.g., "ROI: 14.2% (+1.3%)")
+- **FR93:** The Impact Strip includes Guardian status dots — compact visual indicators of the ROI Threshold Guardian's assessment of the current plan state, using the advisory visual language (FR88)
+- **FR94:** Impact Strip metrics are deep-linked to the corresponding Reports tab — clicking a metric navigates the franchisee to the relevant financial statement in Reports for detailed review
+
+### 16. Plan Completeness & Document Preview
+
+- **FR95:** The planning workspace displays a plan completeness indicator showing section-by-section completion status (e.g., Revenue ✓, Operating Expenses partial, Startup Costs incomplete). This serves as the re-entry context for returning users — when a franchisee resumes a saved plan, they can immediately see where they left off and what remains
+- **FR96:** The Dashboard displays a Document Preview widget showing a live preview of the franchisee's business plan document for their active plan. The preview shows progressive quality as more sections are completed, includes a "DRAFT" watermark when the plan is incomplete, and displays completeness-aware button labels (e.g., "Preview Draft" vs. "Generate Final Package")
+
+### 17. Bidirectional Surface Sync
+
+- **FR97:** Edits made on either surface (My Plan or Reports) are immediately reflected on the other surface. When a franchisee edits a decomposed sub-field in My Plan (e.g., individual facilities cost components), the consolidated value updates in the corresponding Reports inline cell. When a franchisee edits a consolidated value in Reports, the corresponding My Plan fields reflect the change. Both surfaces share a single financial input state — there is no "save and sync" step
 
 ## Non-Functional Requirements
 
@@ -904,13 +939,13 @@ _Scope: Katalyst admins only. Franchisors and franchisees never see or access th
 
 - **NFR22:** AI Planning Advisor responds to franchisee conversation inputs within 5 seconds — visual typing indicator shown while processing
 - **NFR23:** AI-populated financial values are validated against the field's expected type and range before being written to the financial input state — AI cannot silently inject invalid data
-- **NFR24:** System remains fully functional when AI services are unavailable — franchisee can seamlessly switch to Normal or Expert mode without data loss
+- **NFR24:** System remains fully functional when AI services are unavailable — franchisee can seamlessly use My Plan forms or Reports inline editing without data loss
 
 ### Usability
 
 - **NFR25:** Planning experience is usable on desktop browsers (minimum 1024px width) — mobile optimization is not required for MVP but layout should not break on tablet
 - **NFR26:** All user-facing error messages written in plain language, not technical jargon — franchisees are not technical users
-- **NFR27:** Financial values displayed with consistent formatting (currency symbols, thousand separators, appropriate decimal places) throughout the application
+- **NFR27:** Financial values displayed with consistent formatting per FR84-FR87 (currency with "$" and commas, accounting-style parentheses for negatives, monospace font for financial figures, source badges for attribution) throughout the application
 - **NFR28:** The system provides visual feedback within 200ms for any user action (click, keystroke, toggle) — even if the underlying operation takes longer
 
 ### Admin Support Tools
