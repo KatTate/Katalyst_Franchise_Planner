@@ -2,9 +2,9 @@
 title: 'FDD Document AI Ingestion'
 slug: 'fdd-document-ai-ingestion'
 created: '2026-02-20'
-status: 'in-progress'
-stepsCompleted: [1]
-tech_stack: ['TypeScript 5.6', 'React 18', 'Express 5', 'PostgreSQL/Drizzle', 'shadcn/ui', 'Claude API (Anthropic SDK)', 'multer (file upload)']
+status: 'ready-for-dev'
+stepsCompleted: [1, 2, 3, 4]
+tech_stack: ['TypeScript 5.6', 'React 18', 'Express 5', 'PostgreSQL/Drizzle', 'shadcn/ui', 'Gemini API (Google Generative AI SDK)', 'multer (file upload)']
 files_to_modify: []
 code_patterns: []
 test_patterns: []
@@ -22,13 +22,13 @@ Katalyst admins currently configure brand financial parameters (~20 seed values)
 
 ### Solution
 
-Add an FDD document upload and AI extraction feature to the brand admin configuration experience. A Katalyst admin uploads an FDD PDF for a brand, the backend sends it to Claude's API (which natively understands PDFs) with a structured extraction prompt, and the AI returns financial parameters and startup cost line items mapped to the existing `brandParameterSchema` and `startupCostTemplateSchema`. The admin reviews the extracted data with confidence indicators, can edit any values, then applies the extraction to populate the brand's configuration with a single action.
+Add an FDD document upload and AI extraction feature to the brand admin configuration experience. A Katalyst admin uploads an FDD PDF for a brand, the backend sends it to Google's Gemini API (which natively understands PDFs and offers 1M+ token context windows — critical for 200-400 page FDD documents) with a structured extraction prompt, and the AI returns financial parameters and startup cost line items mapped to the existing `brandParameterSchema` and `startupCostTemplateSchema`. The admin reviews the extracted data with confidence indicators, can edit any values, then applies the extraction to populate the brand's configuration with a single action. The extraction service uses a provider-agnostic interface so alternative AI providers (Claude, OpenAI) can be swapped in later.
 
 ### Scope
 
 **In Scope:**
 - PDF file upload endpoint for FDD documents (Katalyst admin only)
-- Server-side AI extraction service using Claude API with structured output
+- Server-side AI extraction service using Gemini API with structured output (provider-agnostic interface)
 - Extraction of brand financial parameters (revenue, operating costs, financing, startup capital)
 - Extraction of startup cost template items (name, default amount, CapEx classification, Item 7 ranges)
 - Review UI with confidence indicators and inline editing before applying
@@ -40,7 +40,7 @@ Add an FDD document upload and AI extraction feature to the brand admin configur
 - Franchisee-facing FDD access or viewing
 - AI extraction of non-financial FDD content (territory restrictions, legal terms, etc.)
 - Batch processing of multiple FDDs at once
-- OCR for scanned/image-based PDFs (Claude handles text-based PDFs natively; scanned documents are a future enhancement)
+- OCR for scanned/image-based PDFs (Gemini handles text-based PDFs natively; scanned documents are a future enhancement)
 - Integration with the AI Planning Assistant (Epic 9) or Advisory Board (Epic 10)
 - Automatic re-extraction when FDD is updated (manual re-upload and re-extract)
 
@@ -76,11 +76,24 @@ Add an FDD document upload and AI extraction feature to the brand admin configur
 
 ### Technical Decisions
 
-1. **Claude API for extraction**: Claude natively understands PDFs — no need for a separate PDF parsing library. Send the PDF as base64-encoded content in the API message. Use structured output prompting to get JSON matching our Zod schemas.
-2. **multer for file upload**: Standard Express middleware for multipart form data. Stores temporarily on disk, validates file type/size, then reads for API submission.
-3. **No new database table for FDD storage**: Store FDD metadata (filename, upload date, extraction status) as a new JSONB column on the brands table or a lightweight `fdd_ingestion_runs` table. The PDF binary can be stored on filesystem or as base64 in the database for MVP (small scale — max 10 brands).
-4. **Review-before-apply pattern**: AI extraction produces a preview that the admin reviews and edits before committing to the brand configuration. This prevents bad AI output from silently corrupting brand parameters.
-5. **Confidence scoring**: The extraction prompt asks Claude to rate confidence per field (high/medium/low). Low-confidence fields are highlighted in the review UI.
+1. **Gemini API as primary extraction provider**: Gemini 2.5 natively understands PDFs and offers 1M+ token context windows — FDD documents are typically 200-400 pages, and Gemini can process the entire document in a single pass without chunking. This is a decisive advantage over Claude (200K tokens, may need chunking) and OpenAI (128K tokens, would need chunking). Gemini also has competitive pricing for large input documents. Use `@google/generative-ai` SDK with the Gemini Files API for PDF upload.
+2. **Provider-agnostic extraction interface**: The extraction service defines an `FddExtractor` interface that any AI provider can implement. The initial implementation is `GeminiFddExtractor`. This allows swapping to Claude or OpenAI later if needed without changing the route layer or frontend.
+   ```typescript
+   interface FddExtractionResult {
+     parameters: Partial<BrandParameters>;
+     startupCosts: StartupCostTemplate;
+     confidence: Record<string, "high" | "medium" | "low">;
+     extractionNotes: string[];
+   }
+   interface FddExtractor {
+     extract(pdfBuffer: Buffer, brandName: string): Promise<FddExtractionResult>;
+   }
+   ```
+3. **multer for file upload**: Standard Express middleware for multipart form data. Stores temporarily on disk, validates file type/size, then reads for API submission.
+4. **`fdd_ingestion_runs` database table**: Track extraction history with status, filename, extracted data snapshot, who ran it, and whether results were applied. Lightweight table — max 10 brands with a handful of runs each.
+5. **Review-before-apply pattern**: AI extraction produces a preview that the admin reviews and edits before committing to the brand configuration. This prevents bad AI output from silently corrupting brand parameters.
+6. **Confidence scoring**: The extraction prompt asks Gemini to rate confidence per field (high/medium/low). Low-confidence fields are highlighted in the review UI.
+7. **Gemini Files API for large PDFs**: For documents exceeding the inline data limit, use Gemini's File API to upload the PDF first, then reference it in the generation request. This handles arbitrarily large FDD documents.
 
 ## Acceptance Criteria
 
@@ -112,7 +125,7 @@ Add an FDD document upload and AI extraction feature to the brand admin configur
 
 ### Architecture Patterns to Follow
 
-1. **Route → Service → Storage**: Create `server/routes/fdd-ingestion.ts` for the API endpoints, `server/services/fdd-ingestion-service.ts` for the AI extraction logic, and add storage methods for ingestion run tracking.
+1. **Route → Service → Storage**: Create `server/routes/fdd-ingestion.ts` for the API endpoints, `server/services/fdd-ingestion-service.ts` for the provider-agnostic extraction orchestration and `server/services/extractors/gemini-fdd-extractor.ts` for the Gemini implementation, and add storage methods for ingestion run tracking.
 2. **Zod validation at API boundary**: Validate upload constraints (file type, size) in the route handler. Validate AI extraction output against existing `brandParameterSchema` and `startupCostTemplateSchema` before returning to the client.
 3. **Existing brand config endpoints for apply**: The "apply" action should call the existing parameter and startup cost update logic (via storage methods), not create parallel write paths.
 4. **Tab component pattern**: Create `client/src/components/brand/FddIngestionTab.tsx` following the pattern of `BrandValidationTab.tsx` — receives `brand` prop, uses `useQuery`/`useMutation`, displays structured results.
@@ -122,17 +135,18 @@ Add an FDD document upload and AI extraction feature to the brand admin configur
 
 1. **Do NOT send FDD documents to the client** — PDFs stay server-side. Only extracted structured data goes to the frontend.
 2. **Do NOT auto-apply extracted data** — always require admin review and explicit apply action.
-3. **Do NOT store API keys in client code** — Claude API key is server-side only via `process.env.ANTHROPIC_API_KEY`.
+3. **Do NOT store API keys in client code** — Gemini API key is server-side only via `process.env.GOOGLE_GENERATIVE_AI_API_KEY`.
 4. **Do NOT modify the existing `brandParameterSchema` or `startupCostTemplateSchema`** — the extraction output must conform to existing schemas.
 5. **Do NOT use `require()` or CommonJS** — ESM only throughout.
-6. **Currency values must be in cents** when writing to brand parameters (the extraction prompt must instruct Claude to convert dollar values to cents).
+6. **Currency values must be in cents** when writing to brand parameters (the extraction prompt must instruct Gemini to convert dollar values to cents, or conversion is handled in the service layer post-extraction).
 7. **Percentage values must be decimals** (e.g., 5% → 0.05) when writing to brand parameters.
 
 ### File Change Summary
 
 **New files:**
 - `server/routes/fdd-ingestion.ts` — API endpoints for upload, extract, apply
-- `server/services/fdd-ingestion-service.ts` — AI extraction logic using Claude API
+- `server/services/fdd-ingestion-service.ts` — Provider-agnostic extraction orchestration (interface + factory)
+- `server/services/extractors/gemini-fdd-extractor.ts` — Gemini implementation of the FddExtractor interface
 - `client/src/components/brand/FddIngestionTab.tsx` — Review and apply UI
 - `server/services/fdd-ingestion-service.test.ts` — Unit tests for extraction service
 - `server/routes/fdd-ingestion.test.ts` — Route handler tests
@@ -140,30 +154,31 @@ Add an FDD document upload and AI extraction feature to the brand admin configur
 **Modified files:**
 - `server/routes.ts` — Register new FDD ingestion router
 - `client/src/pages/admin-brand-detail.tsx` — Add FDD Ingestion tab
-- `shared/schema.ts` — Add `fddIngestionRuns` table schema (if using DB tracking)
-- `package.json` — Add `@anthropic-ai/sdk` and `multer` + `@types/multer` dependencies
+- `shared/schema.ts` — Add `fddIngestionRuns` table schema for extraction tracking
+- `package.json` — Add `@google/generative-ai` and `multer` + `@types/multer` dependencies
 
 ### Dependencies
 
 **New npm packages:**
-- `@anthropic-ai/sdk` — Anthropic's official TypeScript SDK for Claude API
+- `@google/generative-ai` — Google's official TypeScript SDK for Gemini API (supports PDF upload via Files API, structured output, 1M+ token context)
 - `multer` — Express middleware for multipart form data (file uploads)
 - `@types/multer` — TypeScript types for multer
 
 **Environment variables:**
-- `ANTHROPIC_API_KEY` — Required for Claude API access
+- `GOOGLE_GENERATIVE_AI_API_KEY` — Required for Gemini API access
 
 **External services:**
-- Claude API (Anthropic) — for PDF document understanding and structured data extraction
+- Google Gemini API — for PDF document understanding and structured data extraction. Model: `gemini-2.5-pro` (or latest available). Chosen for its 1M+ token context window (handles 200-400 page FDDs in a single pass), native PDF support, competitive large-document pricing, and strong structured output capabilities.
 
 ### Testing Guidance
 
 **Unit tests (Vitest):**
 - Test the extraction service's prompt construction and response parsing
+- Test the provider-agnostic interface contract (FddExtractor interface)
 - Test schema validation of AI-extracted output against `brandParameterSchema` and `startupCostTemplateSchema`
 - Test currency/percentage conversion logic (dollars → cents, percent → decimal)
 - Test error handling for malformed AI responses
-- Mock the Anthropic SDK client for deterministic testing
+- Mock the Google Generative AI SDK client for deterministic testing
 
 **Route tests (Vitest + supertest):**
 - Test auth/role enforcement (401 for unauthenticated, 403 for non-admin)
@@ -181,15 +196,17 @@ Add an FDD document upload and AI extraction feature to the brand admin configur
 
 **High-risk items:**
 - AI extraction quality varies by FDD document formatting — some FDDs have clear tabular Item 7 data, others embed it in prose. The extraction prompt needs to be robust.
-- Claude API costs — each FDD extraction uses a large context window (FDD documents can be 100+ pages). Consider sending only relevant sections (Item 7, fee schedule pages) if document is very large. Claude's PDF support has a page limit.
-- Rate limiting — Claude API has rate limits. A single extraction is a single API call, so this is low risk for MVP scale (10 brands).
+- Gemini API costs — FDD documents are large (200-400 pages), but Gemini's input pricing is competitive for large documents. A single extraction is a single API call, so this is low risk for MVP scale (10 brands).
+- Rate limiting — Gemini API has rate limits. A single extraction is a single API call, so this is low risk for MVP scale.
 
 **Known limitations:**
-- Scanned/image-only PDFs will not extract well — Claude's PDF support works best with text-layer PDFs.
-- The extraction is a best-effort mapping — some FDD formats may not map cleanly to all brand parameter fields (e.g., per-year growth rates may not be in the FDD).
+- Scanned/image-only PDFs will not extract well — Gemini's PDF support works best with text-layer PDFs.
+- The extraction is a best-effort mapping — some FDD formats may not map cleanly to all brand parameter fields (e.g., per-year growth rates may not be in the FDD). The `confidence` field and `extractionNotes` help the admin understand what was and wasn't found.
 - Item 7 ranges are the primary extraction target. Operating cost percentages (COGS, labor, etc.) may not be present in all FDDs and would need to come from brand knowledge separate from the FDD.
+- Extraction result returns `Partial<BrandParameters>` — fields not found in the FDD are omitted rather than guessed.
 
 **Future considerations:**
+- Add alternative extractor implementations (Claude, OpenAI) behind the same `FddExtractor` interface — swap via environment variable or admin setting
 - Could add support for extracting from XLSX spreadsheets (existing PostNet/Jeremiah's reference spreadsheets) — the `xlsx` package is already installed
 - Could integrate with the AI Planning Advisor to use FDD data as context for franchisee conversations
 - Could add automatic re-extraction alerts when a brand's FDD is updated
