@@ -1,7 +1,7 @@
 # Sprint Change Proposal: Epic 5 Remediation & Scenario Redesign
 
 **Date:** 2026-02-20
-**Status:** ⚠️ WORKING DRAFT — NOT APPROVED
+**Status:** ✅ APPROVED — Product Owner reviewed all 9 open items on 2026-02-20
 **Author:** Party Mode session (Bob, John, Sally, Winston, Amelia, BMad Master + Product Owner)
 **Supersedes:** Builds on SCP-2026-02-19 (preserved as historical record)
 **Triggered by:** Party Mode review identifying unresolved decisions, new Scenario vision, and need for clean consolidated plan
@@ -69,13 +69,12 @@ These items were classified as "Category A — Spec is right, code must change" 
 
 **Files:** Sidebar component (`app-sidebar.tsx` or equivalent)
 
-- MY LOCATIONS section header with "All Plans" item
-- [Active Plan Name] section: My Plan, Reports, What-If (new — replaces "Scenarios"), Settings
-- HELP section: "Planning Assistant" (placeholder for Epic 9), "Book Consultation"
-- Glossary relocated from top-level nav to contextual access or Help section
+- Top-level nav: Home, Brands (admin), Invitations (admin) — Glossary REMOVED from top nav
+- [Active Plan Name] section: My Plan, Reports, Scenarios, Settings — CONFIRMED as-is
+- HELP section: "Book Consultation" (existing), Glossary (moved here from top nav)
 - Brands / Invitations remain as admin-level items (visible by role)
 
-**Open sub-question (from AR finding #7):** The current sidebar may already have some of these elements. Need to verify current state before specifying exact changes. Flagged for review during execution.
+**PO Review (2026-02-20):** Current sidebar structure confirmed as mostly correct. Only change: move Glossary from top nav down to Help section. Rest stays as-is.
 
 ### CP-4: Fix Color System (was H1)
 
@@ -90,41 +89,41 @@ These items were classified as "Category A — Spec is right, code must change" 
 
 ### CP-5: Fix Typography (was H2)
 
-**Status: OPEN — Not yet reviewed by Product Owner.** See Section 5, Open Item 1.
+**Status: ✅ APPROVED.** Montserrat (headings), Roboto (body), Roboto Mono (financial figures). See Section 5, Open Item 1.
 
 ### CP-6: Fix Story 5.5 HIGHs (was H3)
 
-**Status: OPEN — Not yet reviewed by Product Owner.** See Section 5, Open Item 2.
+**Status: ✅ APPROVED.** Fix all 3 HIGH findings per ACs as written. See Section 5, Open Item 2.
 
 ### CP-7: Re-verify Stories 5.6–5.10 (was H4)
 
-**Status: OPEN — Not yet reviewed by Product Owner.** See Section 5, Open Item 3.
+**Status: ✅ APPROVED.** Re-verify after structural changes. See Section 5, Open Item 3.
 
 ### CP-8: Reposition Impact Strip (was M1)
 
-**Status: OPEN — Not yet reviewed by Product Owner.** See Section 5, Open Item 4.
+**Status: ✅ APPROVED.** Move to planning-workspace level. See Section 5, Open Item 4.
 
 ### CP-9: Add Document Preview to Dashboard (was M2)
 
-**Status: OPEN — Not yet reviewed by Product Owner.** See Section 5, Open Item 5.
+**Status: ✅ APPROVED.** Dashboard widget with empty state. See Section 5, Open Item 5.
 
 ### CP-10: Reposition Plan Completeness Dashboard (was M4)
 
-**Status: OPEN — Not yet reviewed by Product Owner.** See Section 5, Open Item 6.
+**Status: ✅ APPROVED.** Move to workspace level as re-entry dashboard. See Section 5, Open Item 6.
 
 **Note from SCP-2026-02-19 Amendment A:** This was reclassified as Category C ("Both need work"). AR finding #12 proved the `PlanCompleteness` component already exists inside FormsMode (lines 214-264). This is a repositioning task, not a creation task.
 
 ### CP-11: Polish — Border Radius (was L1)
 
-**Status: OPEN — Not yet reviewed by Product Owner.** See Section 5, Open Item 7.
+**Status: ✅ APPROVED.** `rounded-2xl` for cards, `rounded-xl` for inputs/buttons. See Section 5, Open Item 7.
 
 ### CP-12: Ratio Format Fix (from Amendment B)
 
-**Status: OPEN — Not yet reviewed by Product Owner.** See Section 5, Open Item 8.
+**Status: ✅ APPROVED.** `0.35x` format for ratios via `<FinancialValue>`. See Section 5, Open Item 8.
 
 ### CP-13: Negative Number Formatting (was L2, upgraded to HIGH)
 
-**Status: OPEN — Not yet reviewed by Product Owner.** See Section 5, Open Item 9.
+**Status: ✅ APPROVED.** Accounting-style parentheses via `<FinancialValue>`. See Section 5, Open Item 9.
 
 SCP-2026-02-19 Amendment A upgraded this from LOW to HIGH. Negative numbers currently display as `-$4,200` instead of accounting-style `($4,200)`. This is a pervasive financial display issue affecting user trust. Will be implemented via `<FinancialValue>` component (Decision D4).
 
@@ -211,17 +210,17 @@ To be determined: either a new section in the UX spec or a standalone `user-jour
 
 ---
 
-## Section 5: Open Items — Require Product Owner Review
+## Section 5: Open Items — ALL APPROVED
 
-The following items from SCP-2026-02-19 were never explicitly discussed or confirmed during Party Mode. They need Product Owner review before execution.
+All 9 open items were reviewed and approved by the Product Owner on 2026-02-20. Decisions are recorded inline below.
 
 ### Open Item 1: CP-5 — Typography (Montserrat/Roboto/Roboto Mono)
 
 **Proposal:** Replace Open Sans with Montserrat (headings), Roboto (body), Roboto Mono (financial figures). Load via Google Fonts CDN.
 
-**Question:** Is this type stack correct? Any brand-specific typography requirements?
+**Decision:** Type stack confirmed as proposed. No brand-specific overrides needed.
 
-**Status:** ⏳ AWAITING REVIEW
+**Status:** ✅ APPROVED
 
 ---
 
@@ -232,9 +231,9 @@ The following items from SCP-2026-02-19 were never explicitly discussed or confi
 - H2: Passing audit categories missing muted text styling (AC16)
 - H3: Failing check detail missing per-row pass/fail icon (AC17)
 
-**Question:** Proceed with fixing these per the acceptance criteria as written?
+**Decision:** Proceed with fixes per acceptance criteria as written. Will be addressed via `<FinancialValue>` component rollout.
 
-**Status:** ⏳ AWAITING REVIEW
+**Status:** ✅ APPROVED
 
 ---
 
@@ -242,9 +241,9 @@ The following items from SCP-2026-02-19 were never explicitly discussed or confi
 
 **Proposal:** After structural changes (mode switcher deletion, Quick Entry retirement, nav fix), systematically re-verify each story's acceptance criteria.
 
-**Question:** Any concerns with this approach?
+**Decision:** Proceed with re-verification after structural changes. `<FinancialValue>` component covers formatting concerns across 5.2–5.6, 5.8–5.10.
 
-**Status:** ⏳ AWAITING REVIEW
+**Status:** ✅ APPROVED
 
 ---
 
@@ -252,9 +251,9 @@ The following items from SCP-2026-02-19 were never explicitly discussed or confi
 
 **Proposal:** Move `ImpactStrip` from inside `forms-mode.tsx` to `planning-workspace.tsx` level. Render as persistent sticky bar at bottom of My Plan view.
 
-**Question:** Correct placement?
+**Decision:** Move to planning-workspace level for persistent visibility across all plan views.
 
-**Status:** ⏳ AWAITING REVIEW
+**Status:** ✅ APPROVED
 
 ---
 
@@ -262,9 +261,9 @@ The following items from SCP-2026-02-19 were never explicitly discussed or confi
 
 **Proposal:** Add `DocumentPreviewWidget` card to Dashboard page. Shows first page/summary of lender document for user's active plan with DRAFT watermark.
 
-**Question:** Is this the right placement? Any concerns about data source (AR finding #14 — what if user has no plans)?
+**Decision:** Place on Dashboard with empty state for users with no plans. Note future multi-location evolution.
 
-**Status:** ⏳ AWAITING REVIEW
+**Status:** ✅ APPROVED
 
 ---
 
@@ -272,9 +271,9 @@ The following items from SCP-2026-02-19 were never explicitly discussed or confi
 
 **Proposal:** Move existing `PlanCompleteness` component from inside FormsMode to workspace level. Shows section-by-section completion status for session re-entry context.
 
-**Question:** Correct approach? The component already exists — this is repositioning, not creation.
+**Decision:** Move to workspace level as re-entry dashboard. Component already exists — repositioning only.
 
-**Status:** ⏳ AWAITING REVIEW
+**Status:** ✅ APPROVED
 
 ---
 
@@ -282,9 +281,9 @@ The following items from SCP-2026-02-19 were never explicitly discussed or confi
 
 **Proposal:** Update card components to `rounded-2xl`, input/button components to `rounded-xl` (currently using default `rounded-md`).
 
-**Question:** Agree with the radius change?
+**Decision:** Confirmed. `rounded-2xl` for cards, `rounded-xl` for inputs/buttons.
 
-**Status:** ⏳ AWAITING REVIEW
+**Status:** ✅ APPROVED
 
 ---
 
@@ -292,9 +291,9 @@ The following items from SCP-2026-02-19 were never explicitly discussed or confi
 
 **Proposal:** Add `"ratio"` to `RowDef["format"]` union type. Fix labor efficiency display from `35.0%` to `0.35x`. Change `laborEfficiency` and `adjustedLaborEfficiency` rows from `format: "pct"` to `format: "ratio"`.
 
-**Question:** Is `0.35x` the right display format for ratios?
+**Decision:** Confirmed. `0.35x` is the correct display format for ratios. Will be handled via `<FinancialValue>` component.
 
-**Status:** ⏳ AWAITING REVIEW
+**Status:** ✅ APPROVED
 
 ---
 
@@ -302,15 +301,15 @@ The following items from SCP-2026-02-19 were never explicitly discussed or confi
 
 **Proposal:** All negative financial values display as `($4,200)` instead of `-$4,200` (accounting-style parentheses). Implemented via `<FinancialValue>` component (Decision D4). Upgraded from LOW to HIGH severity.
 
-**Question:** Confirm accounting-style parentheses for all negative numbers?
+**Decision:** Confirmed. Accounting-style parentheses for all negative numbers. Implemented via `<FinancialValue>` component.
 
-**Status:** ⏳ AWAITING REVIEW
+**Status:** ✅ APPROVED
 
 ---
 
-## Section 6: Execution Sequence (DRAFT — pending open item resolution)
+## Section 6: Execution Sequence (FINAL — all items approved)
 
-This sequence will be finalized after all open items are reviewed.
+All items approved. Execution sequence finalized.
 
 1. **Verify HSL conversion** — Compute precise HSL for `#78BF26` (blocks CP-4)
 2. **CP-4 + CP-5** (Design tokens) — Color and typography
@@ -343,9 +342,10 @@ This sequence will be finalized after all open items are reviewed.
 
 ## Approval Record
 
-**Status:** ⚠️ NOT APPROVED — WORKING DRAFT
-**Open items remaining:** 9 (see Section 5)
-**Next step:** Product Owner reviews open items 1–9
+**Status:** ✅ FULLY APPROVED
+**Open items remaining:** 0 — all 9 items reviewed and approved by Product Owner on 2026-02-20
+**Approved by:** Product Owner (2026-02-20)
+**Next step:** Execute per Section 6 sequence
 
 ---
 
