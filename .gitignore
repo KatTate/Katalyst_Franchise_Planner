@@ -6,3 +6,5 @@ vite.config.ts.*
 *.tar.gz
 .cache/
 .local/
+.agent_state_main.bin
+repl_state.bin

@@ -306,6 +306,7 @@
 
     <invoke-task>Validate against checklist at {installed_path}/checklist.md using _bmad/core/tasks/validate-workflow.xml</invoke-task>
     <action>Save story document</action>
+    <action>Set {{story_quality_validated}} = "yes"</action>
 
     <!-- Update sprint status -->
     <check if="sprint status file exists">
@@ -314,6 +315,10 @@
       <action>Find development_status key matching {{story_key}}</action>
       <action>Update development_status[{{story_key}}] = "ready-for-dev"</action>
       <action>Save file, preserving ALL comments and structure</action>
+      <action>Set {{sprint_status_updated}} = "yes"</action>
+    </check>
+    <check if="sprint status file does NOT exist">
+      <action>Set {{sprint_status_updated}} = "N/A"</action>
     </check>
 
     <action>Report completion and present next steps menu</action>

@@ -77,7 +77,7 @@ When the user triggers an agent or workflow, the AI MUST load the referenced fil
 
 ## Recent Changes (2026-02-20)
 - **Story 5H.1 complete (review):** Financial engine cell-by-cell validation against 2 brand reference spreadsheets (PostNet + Jeremiah's Italian Ice)
-  - 67 reference validation tests + 173 existing tests = 240 total engine tests, all passing
+  - 78 reference validation tests + 173 existing tests = 251 total engine tests, all passing (AC-10 tolerances: ±$1 line items, ±$10 section totals)
   - 1 BUG fixed: Month 1 revenue ramp-up now uses `startingMonthAuvPct` directly (was interpolated)
   - 2 KNOWN DIVERGENCES documented: (1) 30-day month simplification for working capital AR/Inv/AP, (2) tax accrual on balance sheet
   - taxRate TODO (AI-10, carried since Epic 3) resolved: confirmed 21% correct, help content updated

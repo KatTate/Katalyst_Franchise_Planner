@@ -26,6 +26,9 @@ document — an intent-and-constraint guide for the dev agent, not an implementa
   systematic extraction. Every relevant section must be checked.
 - **Step 6 (Validate and update sprint status):** Agents tend to skip validation and sprint
   status updates after the "exciting" work of writing the story is done. This step is MANDATORY.
+  The sprint-status.yaml MUST be updated with the story's "ready-for-dev" status.
+  The checklist validation MUST be applied before reporting success.
+  Set {{story_quality_validated}} = "yes" and {{sprint_status_updated}} = "yes" to confirm completion.
 
 ## Activation
 
