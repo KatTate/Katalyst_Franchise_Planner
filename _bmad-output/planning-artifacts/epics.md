@@ -937,7 +937,7 @@ Epic 5 implements two interaction surfaces — **My Plan** and **Reports** — a
 **UX Design Authority:** `ux-design-specification-consolidated.md` (2026-02-18) — Single Source of Truth. Supersedes `ux-design-specification.md` and `ux-financial-statements-spec.md`.
 **FRs covered:** FR7a, FR7b, FR7c, FR7d, FR7e, FR7f, FR7g, FR7h, FR7k, FR7l, FR7m
 **Dependencies:** Epic 3 (financial engine), Epic 4 (planning workspace, EditableCell component)
-**Story sequence rationale:** Stories follow the consolidated UX spec's recommended rewrite structure (Part 20), building from engine → navigation + container → individual statements with inline editing → My Plan + Impact Strip → scenario comparison → interpretation → document preview → help. Each story has its dependencies met.
+**Story sequence rationale:** Stories follow the consolidated UX spec's recommended rewrite structure (Part 20), building from engine → navigation + container → individual statements with inline editing → My Plan + Impact Strip → ~~scenario comparison (RETIRED — D5/D6, moved to Epic 10)~~ → interpretation → document preview → help. Each story has its dependencies met. Story 5.7 was retired per SCP-2026-02-20 Decision D6; scenario functionality now lives in Epic 10 (What-If Playground).
 
 ### Story 5.1: Financial Engine Extension
 
@@ -1723,7 +1723,7 @@ The following areas are specifically checked for gaps:
 **Dev Notes:**
 - User journeys are in `_bmad-output/planning-artifacts/ux-design-specification-consolidated.md`, Part 15.
 - Stories 6.1 and 6.2 are in `_bmad-output/planning-artifacts/epics.md`, Epic 6 section.
-- The scenario comparison AC in Story 6.1 references a feature that has been retired from Epic 5 and moved to Epic 10. This AC likely needs to be deferred or modified.
+- ~~The scenario comparison AC in Story 6.1 references a feature that has been retired from Epic 5 and moved to Epic 10. This AC likely needs to be deferred or modified.~~ **FIXED 2026-02-20:** Stale scenario comparison AC removed from Story 6.1 (was lines 1838-1840). Scenario PDF export deferred to Epic 10 if/when What-If Playground supports export.
 - Story 5.9 (Document Preview & PDF Generation Trigger) established the entry points for PDF generation — Dashboard widget, Impact Strip icon, Reports header button. Story 6.1 is the actual generation engine. Verify these handoff points are documented in both stories.
 - FTC disclaimer language (FR25) must be reviewed by the Product Owner before implementation — generic placeholder language is not acceptable for a product used in bank presentations.
 
@@ -1835,9 +1835,10 @@ So that I can walk into a bank meeting feeling confident and prepared (FR24, FR2
 **Then** the generated PDF includes a "DRAFT" watermark on every page
 **And** a brief note on the cover: "This plan contains brand default assumptions that have not been personalized. Review and update inputs for a complete projection."
 
-**Given** scenario comparison is active when PDF is generated
-**When** the PDF renders
-**Then** the PDF includes the comparison summary card text and scenario columns in the P&L and key metrics tables
+~~**Given** scenario comparison is active when PDF is generated~~
+~~**When** the PDF renders~~
+~~**Then** the PDF includes the comparison summary card text and scenario columns in the P&L and key metrics tables~~
+> **RETIRED (SCP-2026-02-20 D5/D6):** Scenario comparison was pulled out of Reports. Scenario PDF export deferred to Epic 10 (What-If Playground) if that feature supports export.
 
 **And** the PDF is available for immediate download upon generation
 **And** the generated PDF is stored for future access (Story 6.2)

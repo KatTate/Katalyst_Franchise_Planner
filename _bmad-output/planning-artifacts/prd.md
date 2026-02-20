@@ -653,7 +653,7 @@ The ever-present booking link is configurable at the **franchisee-to-account-man
 | Capability | Phase | Rationale |
 |-----------|-------|-----------|
 | Advisory Board Meeting | Phase 2 | Multi-persona stress-testing is the differentiator feature but requires the AI Planning Advisor to be stable first. Can be released as "bring your plan to the board" once Story tier AI is proven. |
-| ~~3-Scenario Modeling~~ | ~~Phase 2~~ | **Moved to MVP.** Quick Scenario comparison (Conservative/Optimistic with sensitivity factors) is implemented and provides meaningful user value. The full 3-scenario modeling with independent parameter sets remains Phase 2, but the quick comparison pattern is MVP. |
+| ~~3-Scenario Modeling~~ | ~~Phase 2~~ | **Redesigned (SCP-2026-02-20 D5/D6).** The column-splitting scenario comparison in Reports has been retired. Scenario analysis is now a standalone **What-If Playground** (Epic 10) — a dedicated sidebar destination with sensitivity sliders and multi-chart dashboard. The ScenarioBar code remains in the codebase as dead code pending Epic 10 cleanup. |
 | Estimated vs. Actual tracking | Phase 2 | Requires post-opening data — MVP franchisees haven't opened yet |
 | Multi-location planning | Phase 2 | First location first |
 | Deep Sensitivity Analysis | Phase 2 | ROI Threshold Guardian covers the MVP need |

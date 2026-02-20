@@ -324,7 +324,7 @@ Epic 6 will permanently capture engine output into lender-facing PDF documents. 
 
 **AI-2: UI Remediation — Fix Visible Layout Issues**
 - Owner: Charlie (Senior Dev) + Sally (UX Designer)
-- Success criteria: Balance Sheet duplicate callout bars resolved, sidebar z-index layering fixed, comparison mode column layout cleaned up. All statement tabs reviewed for similar issues.
+- Success criteria: Balance Sheet duplicate callout bars resolved, sidebar z-index layering fixed. All statement tabs reviewed for similar issues. ~~comparison mode column layout cleaned up~~ (REMOVED — scenario comparison retired from Reports per SCP-2026-02-20 D5/D6; comparison code is dead code, cleanup deferred to Epic 10).
 - Priority: CRITICAL — these are usability issues, not cosmetic
 - Screenshots: `attached_assets/image_1771605261047.png`, `image_1771605269747.png`, `image_1771605283221.png`
 
