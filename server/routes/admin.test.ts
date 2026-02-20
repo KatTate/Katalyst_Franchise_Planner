@@ -134,7 +134,7 @@ describe("Admin Routes", () => {
 
   describe("POST /api/admin/demo/franchisee/:brandId", () => {
     const brand = { id: "b1", name: "PostNet", slug: "postnet", displayName: "PostNet Franchise" };
-    const demoUser = { id: "d1", email: "demo-franchisee@postnet.katalyst.internal", role: "franchisee", brandId: "b1", displayName: "PostNet Demo Franchisee", isDemoUser: true };
+    const demoUser = { id: "d1", email: "demo-franchisee@postnet.katalyst.internal", role: "franchisee", brandId: "b1", displayName: "PostNet Demo Franchisee", isDemo: true };
 
     it("enters demo mode for an existing brand (creates demo user on first entry)", async () => {
       (storage.getBrand as any).mockResolvedValue(brand);
