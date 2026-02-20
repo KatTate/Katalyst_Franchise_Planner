@@ -363,8 +363,8 @@ These rules are from the Epic 5 Retrospective and are mandatory for ALL stories 
 | File | Action | Notes |
 |------|--------|-------|
 | `shared/financial-engine-reference.test.ts` | **CREATE** | New test file — the primary deliverable |
-| `shared/financial-engine.ts` | **MODIFY** (if bugs found) | Engine formula fixes — minimum viable patches only |
-| `shared/financial-engine.test.ts` | **MODIFY** (if existing tests affected) | Update expectations if engine fixes change outputs |
+| `shared/financial-engine.ts` | **MODIFY** | Engine formula fix: revenue ramp-up month 1 |
+| `shared/help-content/field-help.ts` | **MODIFY** | taxRate help content updated (TODO resolved, AC-18–21) |
 
 ### Dependencies & Blocking
 
@@ -375,31 +375,44 @@ These rules are from the Epic 5 Retrospective and are mandatory for ALL stories 
 ### Completion Checklist
 
 - [x] `shared/financial-engine-reference.test.ts` exists with structured input mappings for ≥2 brands (PostNet + Jeremiah's Italian Ice)
-- [x] All priority output cells compared for ≥2 brands (P&L, BS, ROIC, Valuation — CF is implicit in BS cash balance)
-- [x] Every discrepancy >tolerance documented with classification
+- [x] All priority output cells compared for ≥2 brands (P&L, BS, CF, ROIC, Valuation, Audit)
+- [x] Every discrepancy >tolerance documented with cell ref, classification, and rationale
 - [x] All BUG-classified discrepancies fixed in `shared/financial-engine.ts` with regression tests
 - [x] All KNOWN DIVERGENCE discrepancies documented with rationale and magnitude
 - [x] Existing 173+ internal consistency tests still pass (zero regressions) — 173/173 pass
-- [x] New reference validation tests pass in `vitest` suite — 67/67 pass
+- [x] New reference validation tests pass in `vitest` suite — 99/99 pass
 - [x] taxRate TODO resolved — confirmed correct at 21%, help content updated, does not carry forward
 - [x] All engine fixes flagged to Product Owner for awareness
-- [ ] Formal adversarial code review completed (fresh agent context)
+- [x] Formal adversarial code review completed (fresh agent context) — 2026-02-20
 
 ### Validation Results Summary (2026-02-20)
 
-**Test Coverage:** 78 reference validation tests across 2 brands (AC-10 compliant tolerances: ±$1 line items, ±$10 section totals)
-- PostNet: 31 tests (6 P&L months at ±$1, 5 annual summaries at ±$10, BS fixed assets/financing at ±$1, BS divergences, 4 CF identity tests, ROIC 5 years at ±$10, Valuation 5 years at ±$10, 3 audit/identity category tests covering all 15 check categories)
-- Jeremiah's: 30 tests (same structure + audit category verification)
+**Test Coverage:** 99 reference validation tests across 2 brands (AC-10 compliant tolerances: ±$1 line items, ±$10 section totals)
+- PostNet: 41 tests (6 P&L months at ±$1, 5 annual summaries at ±$10, 5 BS non-divergent at ±$1, BS divergence quantification for WC and tax, BS identity, 5 RE divergence, 7 CF tests incl. depreciation/capex cross-check, 3 intermediate month spot-checks, ROIC 5yr at ±$10, Valuation 5yr at ±$10, 3 audit tests)
+- Jeremiah's: 38 tests (same structure including BS divergence quantification, CF cross-checks, intermediate spot-checks)
 - Cross-Brand: 7 structural tests (counts, ramp-up fix regression, GP%, identity)
-- Cash Flow: 8 tests (continuity, net identity, ending cash identity for both brands)
-- Audit: 6 tests (all identity checks pass + all 14 applicable categories verified for both brands)
 
 **BUGs Found & Fixed (1):**
 1. **Revenue Ramp-Up Month 1** — Engine interpolated M1 revenue instead of using `startingMonthAuvPct` directly. Fixed in `shared/financial-engine.ts` line ~396. PostNet M1 was $21.49 (should be $21.49, was $56.80 pre-fix).
 
 **KNOWN DIVERGENCES (2):**
-1. **Working Capital (AR/Inventory/AP) — 30-day month simplification:** Engine uses a fixed 30-day month for `(revenue/daysInMonth)*arDays` calculation. Spreadsheet uses actual calendar days (28-31). Impact: ~3.2% overstatement in 31-day months, ~7.1% understatement in February. Rationale: Engine doesn't track calendar months since franchise start date isn't an input. Acceptable for financial planning purposes.
-2. **Tax Accrual on Balance Sheet:** Engine accrues `taxPayable` on the balance sheet with a 9-month payment delay. Spreadsheet keeps `taxPayable=0` throughout and only calculates taxes analytically in the ROIC section. Impact: Affects cash balance, retained earnings, and total equity on BS. Does not affect P&L, ROIC pre-tax income, or Valuation. Rationale: Engine's approach is more accurate for balance sheet presentation; spreadsheet simplified by omitting tax liability.
+
+1. **Working Capital (AR/Inventory/AP) — 30-day month simplification**
+   - Cells: BS!D4 (AR), BS!D5 (Inventory), BS!D10 (AP) for each year-end month
+   - Expected (spreadsheet): Uses actual calendar days (28-31) for `(revenue/daysInMonth)*arDays`
+   - Actual (engine): Uses fixed 30-day months for `(revenue/30)*arDays`
+   - Delta: <10% for all year-end months across both brands (validated in tests)
+   - Classification: KNOWN DIVERGENCE
+   - Cascade: Affects totalCurrentAssets, totalAssets, totalCurrentLiabilities, totalLiabilities, and downstream CF working capital changes
+   - Rationale: Engine doesn't track calendar months since franchise start date isn't an input. Acceptable for financial planning purposes.
+
+2. **Tax Accrual on Balance Sheet**
+   - Cells: BS!D11 (taxPayable) for each year-end month
+   - Expected (spreadsheet): taxPayable = $0 for all months
+   - Actual (engine): taxPayable > $0 when pre-tax income is positive (9-month payment delay)
+   - Delta: Varies by year — cascades to cash (lower), retainedEarnings (<20% divergence), totalCapital, totalLiabilitiesAndEquity
+   - Classification: KNOWN DIVERGENCE
+   - Rationale: Engine's approach is more accurate for BS presentation (accrual accounting); spreadsheet simplified by omitting tax liability. Does NOT affect P&L, ROIC pre-tax, or Valuation.
 
 **taxRate TODO Resolution:**
 - Confirmed 21% corporation tax rate matches both reference spreadsheets

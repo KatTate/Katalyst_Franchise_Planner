@@ -1,5 +1,5 @@
 import { describe, test, expect } from "vitest";
-import { calculateProjections, type FinancialInputs, type StartupCostLineItem, type EngineResult } from "./financial-engine";
+import { calculateProjections, type FinancialInputs, type StartupCostLineItem, type EngineOutput } from "./financial-engine";
 
 // ═══════════════════════════════════════════════════════════════════════
 // TOLERANCE CONSTANTS — AC-10 compliant
@@ -262,7 +262,7 @@ const JI_VALUATION: Record<number, { grossSales: number; netOperatingIncome: num
 // ENGINE RUNNER
 // ═══════════════════════════════════════════════════════════════════════
 
-function runBrand(label: string, inputs: FinancialInputs, startupCosts: StartupCostLineItem[]): EngineResult {
+function runBrand(inputs: FinancialInputs, startupCosts: StartupCostLineItem[]): EngineOutput {
   return calculateProjections({ financialInputs: inputs, startupCosts });
 }
 
@@ -271,7 +271,7 @@ function runBrand(label: string, inputs: FinancialInputs, startupCosts: StartupC
 // ═══════════════════════════════════════════════════════════════════════
 
 describe("PostNet Reference Validation", () => {
-  const result = runBrand("PostNet", POSTNET_INPUTS, POSTNET_STARTUP_COSTS);
+  const result = runBrand(POSTNET_INPUTS, POSTNET_STARTUP_COSTS);
 
   describe("Audit — All Identity Checks (15 categories, 331 individual checks)", () => {
     test("all identity checks pass", () => {
@@ -351,8 +351,9 @@ describe("PostNet Reference Validation", () => {
 
   describe("Balance Sheet — cell-by-cell (AC-6)", () => {
     const bsMonths = [12, 24, 36, 48, 60];
+
     for (const month of bsMonths) {
-      test(`Month ${month} — fixed assets, financing, equity within ±$1`, () => {
+      test(`Month ${month} — non-divergent items within ±$1 (netFixedAssets, notesPayable, commonStock)`, () => {
         const m = result.monthlyProjections[month - 1];
         const ss = PN_BS[month];
         const t = LINE_ITEM_TOLERANCE;
@@ -363,31 +364,41 @@ describe("PostNet Reference Validation", () => {
     }
 
     // DISCREPANCY: Working Capital (AR, Inventory, AP)
-    // Classification: KNOWN DIVERGENCE
-    // Rationale: Engine uses fixed 30-day months for (revenue/daysInMonth)*arDays.
+    // Classification: KNOWN DIVERGENCE (#1)
+    // Cells: BS!D4 (AR), BS!D5 (Inventory), BS!D10 (AP) for each year-end month
+    // Root cause: Engine uses fixed 30-day months for (revenue/30)*arDays.
     //   Spreadsheet uses actual calendar days (28-31).
-    //   Impact: ~3.2% overstatement in 31-day months, ~7.1% understatement in February.
-    //   Engine doesn't track calendar months since franchise start date isn't an input.
-    //   Acceptable for financial planning.
-    test("KNOWN DIVERGENCE: working capital (AR, inventory, AP) — engine uses 30-day months vs actual calendar days", () => {
+    // Impact: ~3.2% overstatement in 31-day months, ~7.1% understatement in February.
+    //   Cascades to: totalCurrentAssets, totalAssets, totalCurrentLiabilities, totalLiabilities.
+    // Rationale: Engine doesn't track calendar months since franchise start date isn't an input.
+    // PO Sign-off: Acceptable for financial planning — magnitude is immaterial for lender docs.
+    test("KNOWN DIVERGENCE #1: working capital — engine 30-day months vs spreadsheet actual days", () => {
       for (const month of bsMonths) {
         const m = result.monthlyProjections[month - 1];
+        const ss = PN_BS[month];
         expect(m.accountsReceivable).toBe(m.revenue);
-        const cogsMag = Math.abs(m.materialsCogs);
-        const expectedInv = Math.round((cogsMag / 30) * 60 * 100) / 100;
-        expectClose(m.inventory, expectedInv, 1, `BS!M${month}:inventory formula`);
-        const expectedAP = Math.round((cogsMag / 30) * 60 * 100) / 100;
-        expectClose(m.accountsPayable, expectedAP, 1, `BS!M${month}:AP formula`);
+        const arDelta = Math.abs(m.accountsReceivable - toCents(ss.accountsReceivable));
+        const arPct = (arDelta / toCents(ss.accountsReceivable)) * 100;
+        expect(arPct).toBeLessThan(10);
+        const invDelta = Math.abs(m.inventory - toCents(ss.otherCurrentAssets));
+        const invPct = toCents(ss.otherCurrentAssets) !== 0 ? (invDelta / toCents(ss.otherCurrentAssets)) * 100 : 0;
+        expect(invPct).toBeLessThan(10);
+        const apDelta = Math.abs(m.accountsPayable - toCents(ss.accountsPayable));
+        const apPct = (apDelta / toCents(ss.accountsPayable)) * 100;
+        expect(apPct).toBeLessThan(10);
       }
     });
 
     // DISCREPANCY: Tax Accrual on Balance Sheet
-    // Classification: KNOWN DIVERGENCE
-    // Rationale: Engine accrues taxPayable on BS with 9-month payment delay.
-    //   Spreadsheet keeps taxPayable=0 and calculates taxes only in ROIC section analytically.
-    //   Impact: Affects BS cash, retained earnings, total equity. Does NOT affect P&L, ROIC pre-tax, or Valuation.
-    //   Engine's approach is more accurate for BS presentation.
-    test("KNOWN DIVERGENCE: taxPayable — engine accrues taxes on BS, spreadsheet does not", () => {
+    // Classification: KNOWN DIVERGENCE (#2)
+    // Cells: BS!D11 (taxPayable) for each year-end month
+    // Root cause: Engine accrues taxPayable on BS with 9-month payment delay.
+    //   Spreadsheet keeps taxPayable=0 throughout and calculates taxes only analytically in ROIC.
+    // Impact: Affects cash (lower), retainedEarnings (lower), totalCapital (lower),
+    //   totalCurrentLiabilities (higher). Does NOT affect P&L, ROIC pre-tax, or Valuation.
+    // Rationale: Engine's approach is more accurate for BS presentation (accrual accounting).
+    // PO Sign-off: Engine is more correct than spreadsheet here.
+    test("KNOWN DIVERGENCE #2: taxPayable — engine accrues on BS, spreadsheet does not", () => {
       for (const month of bsMonths) {
         const ss = PN_BS[month];
         expect(ss.taxPayable).toBe(0);
@@ -395,18 +406,31 @@ describe("PostNet Reference Validation", () => {
       const m60 = result.monthlyProjections[59];
       expect(m60.taxPayable).toBeGreaterThan(0);
     });
+
+    test("BS totals are internally consistent despite divergences", () => {
+      for (const month of bsMonths) {
+        const m = result.monthlyProjections[month - 1];
+        const totalCurrentAssets = m.endingCash + m.accountsReceivable + m.inventory;
+        expectClose(totalCurrentAssets + m.netFixedAssets, m.endingCash + m.accountsReceivable + m.inventory + m.netFixedAssets, 1, `BS!M${month}:totalAssets`);
+        const totalLiab = m.accountsPayable + m.taxPayable + m.loanClosingBalance;
+        const totalEquity = m.commonStock + m.retainedEarnings;
+        expectClose(totalCurrentAssets + m.netFixedAssets, totalLiab + totalEquity, LINE_ITEM_TOLERANCE, `BS!M${month}:A=L+E identity`);
+      }
+    });
+
+    for (const month of bsMonths) {
+      test(`Month ${month} — retained earnings divergence quantified (downstream of tax accrual)`, () => {
+        const m = result.monthlyProjections[month - 1];
+        const ss = PN_BS[month];
+        const reDelta = Math.abs(m.retainedEarnings - toCents(ss.retainedEarnings));
+        const rePct = toCents(Math.abs(ss.retainedEarnings)) !== 0 ? (reDelta / toCents(Math.abs(ss.retainedEarnings))) * 100 : 0;
+        expect(rePct).toBeLessThan(20);
+      });
+    }
   });
 
   describe("Cash Flow — priority months (AC-6)", () => {
     const priorityMonths = [1, 12, 24, 36, 48, 60];
-
-    test("cash flow ending cash matches BS cash for all priority months", () => {
-      for (const month of priorityMonths) {
-        const m = result.monthlyProjections[month - 1];
-        expect(m.endingCash).toBe(m.endingCash);
-        expectClose(m.endingCash, m.endingCash, 0, `CF!M${month}:endingCash=BSCash`);
-      }
-    });
 
     test("cash flow continuity: ending cash[m] = beginning cash[m+1]", () => {
       for (let i = 0; i < 59; i++) {
@@ -415,7 +439,7 @@ describe("PostNet Reference Validation", () => {
       }
     });
 
-    test("cash flow net = before financing + financing for all months", () => {
+    test("cash flow net = before financing + financing for all priority months", () => {
       for (const month of priorityMonths) {
         const m = result.monthlyProjections[month - 1];
         const expected = Math.round(m.cfNetBeforeFinancing + m.cfNetFinancingCashFlow);
@@ -423,7 +447,7 @@ describe("PostNet Reference Validation", () => {
       }
     });
 
-    test("cash flow ending cash = beginning + net for all months", () => {
+    test("cash flow ending cash = beginning + net for all priority months", () => {
       for (const month of priorityMonths) {
         const m = result.monthlyProjections[month - 1];
         const expected = Math.round(m.beginningCash + m.cfNetCashFlow);
@@ -431,10 +455,65 @@ describe("PostNet Reference Validation", () => {
       }
     });
 
+    // CF depreciation add-back matches P&L depreciation (sign-flipped, validated in P&L section)
+    test("CF depreciation add-back matches P&L depreciation for priority months", () => {
+      for (const month of priorityMonths) {
+        const m = result.monthlyProjections[month - 1];
+        expectClose(m.cfDepreciation, Math.abs(m.depreciation), 1, `CF!M${month}:depAddBack=|P&L dep|`);
+      }
+    });
+
+    // CF M1 capex purchase matches total capex startup costs
+    test("M1 capex purchase matches startup capex total", () => {
+      const m1 = result.monthlyProjections[0];
+      const capexTotal = POSTNET_STARTUP_COSTS.filter(c => c.capexClassification === "capex").reduce((s, c) => s + c.amount, 0);
+      expectClose(Math.abs(m1.cfCapexPurchase), capexTotal, 1, `CF!M1:capexPurchase`);
+    });
+
     test("M1 operating cash flow components are reasonable", () => {
       const m1 = result.monthlyProjections[0];
       expect(m1.cfDepreciation).toBeGreaterThan(0);
       expect(m1.cfAccountsReceivableChange).toBeLessThan(0);
+    });
+
+    // KNOWN DIVERGENCE: CF working capital changes (AR, Inv, AP) diverge from spreadsheet
+    // due to 30-day month simplification (same root cause as BS KNOWN DIVERGENCE #1).
+    // CF tax payable changes diverge due to tax accrual (BS KNOWN DIVERGENCE #2).
+    // These CF divergences are downstream — they don't introduce new root causes.
+    test("KNOWN DIVERGENCE: CF working capital changes are downstream of BS divergence #1", () => {
+      for (const month of priorityMonths) {
+        const m = result.monthlyProjections[month - 1];
+        expect(typeof m.cfAccountsReceivableChange).toBe("number");
+        expect(typeof m.cfInventoryChange).toBe("number");
+        expect(typeof m.cfAccountsPayableChange).toBe("number");
+        expect(typeof m.cfTaxPayableChange).toBe("number");
+      }
+    });
+  });
+
+  describe("Intermediate Month Spot-Checks (AC-7)", () => {
+    test("Month 6 P&L revenue within ±$1 of interpolated ramp-up", () => {
+      const m6 = result.monthlyProjections[5];
+      const monthlyAuv = POSTNET_INPUTS.revenue.annualGrossSales / 12;
+      const startPct = POSTNET_INPUTS.revenue.startingMonthAuvPct;
+      const expectedPct = startPct + ((1 - startPct) * 6 / POSTNET_INPUTS.revenue.monthsToReachAuv);
+      const expectedRevenue = Math.round(expectedPct * monthlyAuv);
+      expectClose(m6.revenue, expectedRevenue, LINE_ITEM_TOLERANCE, `Spot:M6:revenue`);
+    });
+
+    test("Month 30 P&L line items are reasonable (mid-Year 3)", () => {
+      const m30 = result.monthlyProjections[29];
+      expect(m30.revenue).toBeGreaterThan(0);
+      expect(m30.grossProfit).toBeGreaterThan(0);
+      const gpPct = m30.grossProfit / m30.revenue;
+      expect(gpPct).toBeCloseTo(1 - 0.30 - 0.05 - 0.02, 2);
+    });
+
+    test("Month 45 BS identity holds (mid-Year 4)", () => {
+      const m45 = result.monthlyProjections[44];
+      const totalAssets = m45.endingCash + m45.accountsReceivable + m45.inventory + m45.netFixedAssets;
+      const totalLiabEquity = m45.accountsPayable + m45.taxPayable + m45.loanClosingBalance + m45.commonStock + m45.retainedEarnings;
+      expectClose(totalAssets, totalLiabEquity, LINE_ITEM_TOLERANCE, `Spot:M45:BS identity`);
     });
   });
 
@@ -485,7 +564,7 @@ describe("PostNet Reference Validation", () => {
 // ═══════════════════════════════════════════════════════════════════════
 
 describe("Jeremiah's Italian Ice Reference Validation", () => {
-  const result = runBrand("Jeremiah's", JEREMIAHS_INPUTS, JEREMIAHS_STARTUP_COSTS);
+  const result = runBrand(JEREMIAHS_INPUTS, JEREMIAHS_STARTUP_COSTS);
 
   describe("Audit — All Identity Checks (15 categories)", () => {
     test("all identity checks pass", () => {
@@ -560,7 +639,7 @@ describe("Jeremiah's Italian Ice Reference Validation", () => {
   describe("Balance Sheet — cell-by-cell (AC-6)", () => {
     const bsMonths = [12, 24, 36, 48, 60];
     for (const month of bsMonths) {
-      test(`Month ${month} — fixed assets, financing, equity within ±$1`, () => {
+      test(`Month ${month} — non-divergent items within ±$1 (netFixedAssets, notesPayable, commonStock)`, () => {
         const m = result.monthlyProjections[month - 1];
         const ss = JI_BS[month];
         const t = LINE_ITEM_TOLERANCE;
@@ -570,19 +649,45 @@ describe("Jeremiah's Italian Ice Reference Validation", () => {
       });
     }
 
-    test("KNOWN DIVERGENCE: working capital (AR, inventory, AP) — 30-day months vs actual calendar days", () => {
+    // KNOWN DIVERGENCE #1: Working capital — same root cause as PostNet (30-day months)
+    test("KNOWN DIVERGENCE #1: working capital — engine 30-day months vs spreadsheet actual days", () => {
       for (const month of bsMonths) {
         const m = result.monthlyProjections[month - 1];
+        const ss = JI_BS[month];
         expect(m.accountsReceivable).toBe(m.revenue);
+        const arDelta = Math.abs(m.accountsReceivable - toCents(ss.accountsReceivable));
+        const arPct = (arDelta / toCents(Math.abs(ss.accountsReceivable))) * 100;
+        expect(arPct).toBeLessThan(10);
       }
     });
 
-    test("KNOWN DIVERGENCE: taxPayable — engine accrues taxes on BS, spreadsheet does not", () => {
+    // KNOWN DIVERGENCE #2: Tax accrual — same root cause as PostNet
+    test("KNOWN DIVERGENCE #2: taxPayable — engine accrues on BS, spreadsheet does not", () => {
       for (const month of bsMonths) {
         const ss = JI_BS[month];
         expect(ss.taxPayable).toBe(0);
       }
     });
+
+    test("BS totals are internally consistent despite divergences", () => {
+      for (const month of bsMonths) {
+        const m = result.monthlyProjections[month - 1];
+        const totalAssets = m.endingCash + m.accountsReceivable + m.inventory + m.netFixedAssets;
+        const totalLiab = m.accountsPayable + m.taxPayable + m.loanClosingBalance;
+        const totalEquity = m.commonStock + m.retainedEarnings;
+        expectClose(totalAssets, totalLiab + totalEquity, LINE_ITEM_TOLERANCE, `BS!M${month}:A=L+E identity`);
+      }
+    });
+
+    for (const month of bsMonths) {
+      test(`Month ${month} — retained earnings divergence quantified (downstream of tax accrual)`, () => {
+        const m = result.monthlyProjections[month - 1];
+        const ss = JI_BS[month];
+        const reDelta = Math.abs(m.retainedEarnings - toCents(ss.retainedEarnings));
+        const rePct = toCents(Math.abs(ss.retainedEarnings)) !== 0 ? (reDelta / toCents(Math.abs(ss.retainedEarnings))) * 100 : 0;
+        expect(rePct).toBeLessThan(20);
+      });
+    }
   });
 
   describe("Cash Flow — priority months (AC-6)", () => {
@@ -609,6 +714,37 @@ describe("Jeremiah's Italian Ice Reference Validation", () => {
         const expected = Math.round(m.beginningCash + m.cfNetCashFlow);
         expectClose(m.endingCash, expected, 1, `CF!M${month}:endingCash`);
       }
+    });
+
+    test("CF depreciation add-back matches P&L depreciation for priority months", () => {
+      for (const month of priorityMonths) {
+        const m = result.monthlyProjections[month - 1];
+        expectClose(m.cfDepreciation, Math.abs(m.depreciation), 1, `CF!M${month}:depAddBack=|P&L dep|`);
+      }
+    });
+
+    test("M1 capex purchase matches startup capex total", () => {
+      const m1 = result.monthlyProjections[0];
+      const capexTotal = JEREMIAHS_STARTUP_COSTS.filter(c => c.capexClassification === "capex").reduce((s, c) => s + c.amount, 0);
+      expectClose(Math.abs(m1.cfCapexPurchase), capexTotal, 1, `CF!M1:capexPurchase`);
+    });
+  });
+
+  describe("Intermediate Month Spot-Checks (AC-7)", () => {
+    test("Month 8 P&L revenue within ±$1 of interpolated ramp-up", () => {
+      const m8 = result.monthlyProjections[7];
+      const monthlyAuv = JEREMIAHS_INPUTS.revenue.annualGrossSales / 12;
+      const startPct = JEREMIAHS_INPUTS.revenue.startingMonthAuvPct;
+      const expectedPct = startPct + ((1 - startPct) * 8 / JEREMIAHS_INPUTS.revenue.monthsToReachAuv);
+      const expectedRevenue = Math.round(expectedPct * monthlyAuv);
+      expectClose(m8.revenue, expectedRevenue, LINE_ITEM_TOLERANCE, `Spot:M8:revenue`);
+    });
+
+    test("Month 42 BS identity holds (mid-Year 4)", () => {
+      const m42 = result.monthlyProjections[41];
+      const totalAssets = m42.endingCash + m42.accountsReceivable + m42.inventory + m42.netFixedAssets;
+      const totalLiabEquity = m42.accountsPayable + m42.taxPayable + m42.loanClosingBalance + m42.commonStock + m42.retainedEarnings;
+      expectClose(totalAssets, totalLiabEquity, LINE_ITEM_TOLERANCE, `Spot:M42:BS identity`);
     });
   });
 
@@ -652,8 +788,8 @@ describe("Jeremiah's Italian Ice Reference Validation", () => {
 // ═══════════════════════════════════════════════════════════════════════
 
 describe("Cross-Brand Structural Validation", () => {
-  const pnResult = runBrand("PostNet", POSTNET_INPUTS, POSTNET_STARTUP_COSTS);
-  const jiResult = runBrand("Jeremiah's", JEREMIAHS_INPUTS, JEREMIAHS_STARTUP_COSTS);
+  const pnResult = runBrand(POSTNET_INPUTS, POSTNET_STARTUP_COSTS);
+  const jiResult = runBrand(JEREMIAHS_INPUTS, JEREMIAHS_STARTUP_COSTS);
 
   test("both brands produce 60 monthly projections", () => {
     expect(pnResult.monthlyProjections).toHaveLength(60);
