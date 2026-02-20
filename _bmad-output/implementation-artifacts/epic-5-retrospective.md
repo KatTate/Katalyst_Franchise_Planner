@@ -1,15 +1,17 @@
 # Epic 5 Retrospective: Financial Statement Views & Output Layer
 
-**Status:** ⚠️ DRAFT — UN-FINALIZED
+**Status:** ✅ FINALIZED
 **Date:** 2026-02-20
+**Finalized:** 2026-02-20
 **Facilitator:** Bob (Scrum Master)
 **Epic Status:** Done (9/9 stories — Story 5.7 retired per SCP-2026-02-20 Decision D6)
 **Participants:** User (Project Lead), Bob (SM), Alice (PO), Charlie (Senior Dev), Dana (QA), Elena (Junior Dev), Sally (UX Designer)
 
-> **DRAFT NOTE:** This retrospective is saved in un-finalized status. The following items remain open before finalization:
-> 1. **Financial engine cell-by-cell validation** against reference spreadsheets (PostNet, Jeremiah's, Tint World, Ubreakifix) has not been completed. Results must be incorporated before finalization.
-> 2. **UI remediation** for issues documented in the screenshots has not been verified as complete.
-> 3. **Action items** may require revision based on engine validation results.
+> **FINALIZATION NOTE:** The following action items from this retrospective are captured for resolution via Sprint Planning — they do not block retrospective finalization:
+> 1. **AI-1: Financial engine cell-by-cell validation** — BLOCKING for Epic 6. To be planned as a story.
+> 2. **AI-2: UI remediation** — CRITICAL. To be planned as a story.
+> 3. **AI-3: Story AC audit** — To be completed before Epic 6 implementation.
+> Process rules from AI-4 (Code Review Discipline) and AI-6 (Agent Control) have been codified in `_bmad-output/project-context.md`.
 
 ---
 
