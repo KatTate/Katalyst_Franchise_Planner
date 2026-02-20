@@ -387,10 +387,12 @@ These rules are from the Epic 5 Retrospective and are mandatory for ALL stories 
 
 ### Validation Results Summary (2026-02-20)
 
-**Test Coverage:** 67 reference validation tests across 2 brands
-- PostNet: 33 tests (6 P&L months, 5 annual summaries, BS fixed assets/financing, BS divergences, ROIC 5 years, Valuation 5 years, identity checks)
-- Jeremiah's: 27 tests (same structure)
-- Cross-Brand: 7 structural tests (counts, ramp-up fix, GP%, identity)
+**Test Coverage:** 78 reference validation tests across 2 brands (AC-10 compliant tolerances: ±$1 line items, ±$10 section totals)
+- PostNet: 31 tests (6 P&L months at ±$1, 5 annual summaries at ±$10, BS fixed assets/financing at ±$1, BS divergences, 4 CF identity tests, ROIC 5 years at ±$10, Valuation 5 years at ±$10, 3 audit/identity category tests covering all 15 check categories)
+- Jeremiah's: 30 tests (same structure + audit category verification)
+- Cross-Brand: 7 structural tests (counts, ramp-up fix regression, GP%, identity)
+- Cash Flow: 8 tests (continuity, net identity, ending cash identity for both brands)
+- Audit: 6 tests (all identity checks pass + all 14 applicable categories verified for both brands)
 
 **BUGs Found & Fixed (1):**
 1. **Revenue Ramp-Up Month 1** — Engine interpolated M1 revenue instead of using `startingMonthAuvPct` directly. Fixed in `shared/financial-engine.ts` line ~396. PostNet M1 was $21.49 (should be $21.49, was $56.80 pre-fix).
