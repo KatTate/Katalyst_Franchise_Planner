@@ -242,6 +242,10 @@ development_status:
   # FRs: FR7a-FR7m, FR84-FR97 (updated per SCP-2026-02-20 document remediation)
   # Stories: 9 (Story 5.7 RETIRED → Epic 10)
   # All 9 stories done + CP-11 confirmed. Epic 5 COMPLETE.
+  # CODE REVIEW GAP: Only 5.1, 5.2, 5.3, 5.5 had formal adversarial code reviews.
+  # Stories 5.4, 5.6, 5.8, 5.9, 5.10 were NOT formally code-reviewed.
+  # CP-7 re-verified ACs for 5.6-5.10 but did NOT run adversarial code review.
+  # Retrospective should assess whether code reviews are needed before next epic.
   epic-5: done
   5-1-financial-engine-extension: done
   5-2-financial-statements-container-summary-tab: done
