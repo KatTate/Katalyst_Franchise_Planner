@@ -13,14 +13,14 @@ This skill activates the BMAD Sprint Planning workflow. It extracts all epics
 and stories from epic files and creates the sprint status tracking file that
 drives the implementation lifecycle.
 
-## Workflow Steps (6 Total)
+## Workflow Steps (6 Total — ALL MANDATORY)
 
 1. **Parse epic files and extract all work items** — find all epic files, extract epic numbers, story IDs, convert to kebab-case keys
-2. **Step 0.5: Discover and load project documents** — invoke discovery protocol, load all epics content (FULL_LOAD strategy)
+2. **Discover and load project documents** — invoke discovery protocol, load all epics content (FULL_LOAD strategy)
 3. **Build sprint status structure** — create epic entries, story entries, and retrospective entries in correct order
 4. **Apply intelligent status detection** — check for existing story files, preserve advanced statuses, never downgrade status
 5. **Generate sprint status file** — write complete YAML with dual metadata (comments + fields), ensure proper ordering
-6. **⚠️ Validate and report** — verify every epic/story appears, check for orphans, validate YAML syntax, display summary
+6. **Validate and report** — verify every epic/story appears, check for orphans, validate YAML syntax, display summary
 
 ## Commonly Missed Steps
 

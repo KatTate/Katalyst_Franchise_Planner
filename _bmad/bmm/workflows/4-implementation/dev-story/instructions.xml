@@ -254,14 +254,17 @@
   </step>
 
   <step n="9" goal="Platform verification">
-    <critical>This step is NOT optional. Complete all platform checks before proceeding.</critical>
+    <critical>This step is MANDATORY. Do NOT skip it. Complete all platform checks before proceeding.</critical>
 
-    <!-- LSP Diagnostics -->
-    <action>Run LSP diagnostics on all files that were created or modified during this story.
-      Check for:
+    <!-- LSP Diagnostics — use the specific tool -->
+    <action>Use the LSP diagnostics tool to check each file that was created or modified during this story.
+      Call the LSP diagnostics tool with each file path individually.
+      For each file, check for:
       - Type errors or unresolved references introduced by the implementation
       - Unused imports or variables
       - Syntax warnings or deprecated usage
+      Set {{lsp_error_count}} to the total errors found across all checked files.
+      Set {{lsp_warning_count}} to the total warnings found.
       If LSP reports errors in files changed during this story, fix them before proceeding.
       Warnings should be noted but do not block completion.
     </action>
@@ -272,11 +275,12 @@
       - No untracked files that should be committed are missing
       - No unexpected files were modified outside the story's scope
       - The working directory state is clean and documented
+      Set {{git_status_clean}} = "yes" if clean, "no" if issues found.
     </action>
 
     <!-- Visual Verification for UI Stories -->
     <check if="story's 'As a...' role is an end user OR story has UI/UX Deliverables section">
-      <action>If the application has a running web server, take screenshots of the pages/views
+      <action>If the application has a running web server, use the screenshot tool to capture the pages/views
         that were built or modified by this story.
         Navigate to the routes referenced in the acceptance criteria.
         Verify that:
@@ -284,7 +288,11 @@
         - No visual regressions or broken layouts are apparent
         - The page looks like what a user would expect from the story description
         If screenshots reveal missing or broken UI elements, fix them before proceeding.
+        Set {{visual_verification_done}} = "yes" (or "N/A" if not a user-facing story).
       </action>
+    </check>
+    <check if="story is NOT user-facing">
+      <action>Set {{visual_verification_done}} = "N/A"</action>
     </check>
   </step>
 
@@ -294,14 +302,15 @@
       Do NOT skip this step under any circumstances.</critical>
 
     <action>Update story file Status to "review"</action>
+    <action>Set {{story_status_updated}} = "yes"</action>
 
     <action>Update Dev Agent Record:
       - Agent Model Used
       - Completion Notes: brief summary of what was implemented and key decisions
       - File List: all files created, modified, or deleted (paths relative to repo root)
       - Testing Summary: test approach used, test files created/modified, ACs covered by tests, all tests passing (yes/no)
-      - LSP Status: clean / [N] errors found and fixed / [N] warnings remaining
-      - Visual Verification: screenshots taken and verified (if user-facing story) / N/A
+      - LSP Status: {{lsp_error_count}} errors, {{lsp_warning_count}} warnings
+      - Visual Verification: {{visual_verification_done}}
     </action>
 
     <!-- Update sprint status -->
@@ -310,13 +319,36 @@
       <action>Load the FULL file: {{sprint_status}}</action>
       <action>Update development_status[{{story_key}}] = "review"</action>
       <action>Save file, preserving ALL comments and structure</action>
+      <action>Set {{sprint_status_updated}} = "yes"</action>
+    </check>
+    <check if="{{sprint_status}} file does NOT exist">
+      <action>Set {{sprint_status_updated}} = "N/A"</action>
     </check>
 
-    <action>Use the platform's architect/review tool to review the implementation for quality</action>
+    <!-- Architect review — use the specific tool -->
+    <action>Use the architect tool (the platform's built-in code review/analysis capability) to review the implementation.
+      When calling the architect tool, provide:
+      - task: A description requesting evaluation of the story implementation against its acceptance criteria
+      - relevant_files: The list of all files created or modified during this story
+      - include_git_diff: true
+      Incorporate any critical findings before proceeding to Step 11.
+      Set {{architect_review_done}} = "yes"
+    </action>
   </step>
 
-  <step n="11" goal="Communicate completion">
-    <critical>This is the FINAL step. The workflow is complete ONLY after this step executes.</critical>
+  <step n="11" goal="Validate completion and communicate results">
+    <critical>This is the FINAL step. The workflow is complete ONLY after this step executes AND the completion gate passes.</critical>
+
+    <!-- Completion Validation Gate -->
+    <critical>COMPLETION GATE: Before producing the final summary, verify ALL of the following variables are set. If ANY variable is missing, a prior step was skipped — go back and complete it NOW.</critical>
+    <action>Verify completion:
+      1. {{lsp_error_count}} must be set — if not, go back to Step 9 and run LSP diagnostics tool
+      2. {{git_status_clean}} must be set — if not, go back to Step 9 and run git status
+      3. {{visual_verification_done}} must be set — if not, go back to Step 9
+      4. {{story_status_updated}} must equal "yes" — if not, go back to Step 10
+      5. {{sprint_status_updated}} must be set — if not, go back to Step 10
+      6. {{architect_review_done}} must equal "yes" — if not, go back to Step 10 and run architect tool
+    </action>
 
     <action>Summarize what was implemented: story key, key changes, files modified</action>
 
@@ -327,6 +359,19 @@
     </action>
 
     <output>
+      **✅ Story Implementation Complete**
+
+      **Story:** {{story_key}}
+      **Status:** review
+
+      **Completion Verification:**
+      - LSP Diagnostics: {{lsp_error_count}} errors, {{lsp_warning_count}} warnings
+      - Git Status: {{git_status_clean}}
+      - Visual Verification: {{visual_verification_done}}
+      - Story Status Updated: {{story_status_updated}}
+      - Sprint Status Updated: {{sprint_status_updated}}
+      - Architect Review: {{architect_review_done}}
+
       **Recommended Next Steps:**
       1. **Start a fresh chat** and say **"code review"** — a fresh perspective catches what the implementer missed
       2. In that review session: run **"party mode"** on the findings, apply fixes, and close the story

@@ -61,6 +61,9 @@ Follow the workflow engine instructions precisely. The workflow engine handles:
 - Tests should be runnable without manual intervention
 - ALWAYS run the generated tests (Step 4) before considering the workflow complete — generating files is NOT enough
 - ALWAYS produce the test-summary.md (Step 5) with actual coverage metrics — do NOT skip the summary
+- The workflow is NOT complete until tests have been executed AND the summary document exists on disk
+- Set {{tests_executed}} = "yes" after Step 4 and {{summary_created}} = "yes" after Step 5
+- The final output MUST confirm both variables are set — if either is missing, the workflow is incomplete
 
 ## What's Next
 
