@@ -211,6 +211,19 @@ story_location: _bmad-output/implementation-artifacts
 #     documentation format, agent session control rules
 #   - Epic 5H status: in-progress (first story ready-for-dev)
 #   - Next action: Dev Story (DS) for 5H.1 implementation
+# 2026-02-20: Story 5H.1 adversarial code review completed (full BMAD CR workflow)
+#   - Step 1: Git change discovery — 4 source files changed, 1 undocumented (plan-initialization.test.ts) added to File List
+#   - Step 3: Adversarial review — 8 findings (3 HIGH, 2 MEDIUM, 3 LOW), all resolved:
+#     H2: CF validation expanded (depreciation/capex cross-checks, downstream divergence docs)
+#     H3: BS full line-item comparison with quantified divergences (<10% WC, <20% RE)
+#     M1: field-help.ts added to File List; M2: structured discrepancy docs (cell refs, deltas)
+#     L1: tautological test removed; L2: intermediate month spot-checks (AC-7); L3: confirmed clean
+#   - Step 3.5: LSP diagnostics — 0 errors/0 warnings on all 4 changed files
+#   - Step 3.5: Architect deep analysis — concerns addressed (full file coverage verified)
+#   - Step 5: Story status → done, sprint-status.yaml synced
+#   - Final test count: 99 reference + 173 internal + 127 plan-init = 399/399 passing
+#   - Story status: done
+#   - Next action: Story 5H.2 (Report Tab UI Audit)
 
 development_status:
   # Epic 1: Auth, Onboarding & User Management
@@ -300,7 +313,7 @@ development_status:
   # AI-9 (large file decision) → architecture note during Epic 6 planning
   # AI-10 (taxRate TODO) → absorbed into 5H.1 engine validation
   epic-5h: in-progress
-  5h-1-financial-engine-reference-validation: review  # AI-1: cell-by-cell vs reference spreadsheets. 67 tests, 2 brands (PostNet + Jeremiah's), 1 BUG fixed (ramp-up M1), 2 KNOWN DIVERGENCES documented, taxRate TODO resolved
+  5h-1-financial-engine-reference-validation: done  # AI-1: cell-by-cell vs reference spreadsheets. 99 tests, 2 brands (PostNet + Jeremiah's), 1 BUG fixed (ramp-up M1), 2 KNOWN DIVERGENCES documented, taxRate TODO resolved, adversarial code review completed
   5h-2-report-tab-ui-audit-remediation: backlog        # AI-2: ALL 7 report tabs, not just Balance Sheet
   5h-3-epic-6-ac-audit-user-journeys: backlog           # AI-3: Story ACs vs 8 user journeys, gap analysis
   5h-4-planning-artifact-alignment: backlog              # AI-5: 111 FR traceability, fix stale coverage map
