@@ -18,9 +18,10 @@ so that I can understand the full impact of changing assumptions across every di
 
 ### Chart 1 — Profitability (P&L Summary)
 
-3. Given `ScenarioOutputs` are available, when Chart 1 renders, then it shows a 5-year line/area chart (one set of lines per scenario) for the following metrics from `annualSummaries`: **Annual Revenue** (primary) and **Pre-Tax Income** (secondary). The chart X-axis shows Year 1 through Year 5; Y-axis shows dollar amounts. Revenue lines are displayed as a line/area chart; Pre-Tax Income as overlaid lines. The three scenario curves use the application's CSS chart color tokens: Base Case uses `hsl(var(--chart-1))` as a solid line, Conservative uses `hsl(var(--chart-5))` as a dashed line, Optimistic uses `hsl(var(--chart-2))` as a lighter dashed line.
+3. Given `ScenarioOutputs` are available, when Chart 1 renders, then it shows a 5-year line/area chart (one set of lines per scenario) for all five P&L metrics from `annualSummaries`: **Annual Revenue** (`revenue`, primary area), **COGS** (`totalCogs`), **Gross Profit** (`grossProfit`), **EBITDA** (`ebitda`), and **Pre-Tax Income** (`preTaxIncome`) — all rendered as overlaid lines. The chart X-axis shows Year 1 through Year 5; Y-axis shows dollar amounts. The three scenario curves use the application's CSS chart color tokens: Base Case uses `hsl(var(--chart-1))` as a solid line, Conservative uses `hsl(var(--chart-5))` as a dashed line, Optimistic uses `hsl(var(--chart-2))` as a lighter dashed line.
+   - Source: `_bmad-output/planning-artifacts/epics.md` line 2137; `ux-design-specification-consolidated.md` Journey 4 line 1099
 
-4. Given Chart 1 renders, when I hover over any data point, then a tooltip displays the year, scenario name, Revenue amount, and Pre-Tax Income amount, formatted as dollar values (e.g., "$142,000").
+4. Given Chart 1 renders, when I hover over any data point, then a tooltip displays the year, scenario name, and all five series values — Revenue, COGS, Gross Profit, EBITDA, and Pre-Tax Income — each formatted as a dollar value (e.g., "$142,000").
 
 ### Chart 2 — Cash Flow
 
@@ -115,7 +116,7 @@ so that I can understand the full impact of changing assumptions across every di
   - Source: `_bmad-output/planning-artifacts/epics.md` Story 10.2 Dev Notes
 
 - **EngineOutput data fields for each chart:**
-  - Chart 1 (Profitability): `output.annualSummaries[y].revenue`, `.preTaxIncome` — 5 values (year 1-5)
+  - Chart 1 (Profitability): `output.annualSummaries[y].revenue`, `.totalCogs`, `.grossProfit`, `.ebitda`, `.preTaxIncome` — 5 values per series (years 1–5); all are in cents
   - Chart 2 (Cash Flow): `output.annualSummaries[y].operatingCashFlow`, `.endingCash` — 5 values
   - Chart 3 (Break-Even): `output.roiMetrics.breakEvenMonth` — single number per scenario
   - Chart 4 (ROI): `output.roicExtended[y].roicPct` — 5 values (year 1-5)
