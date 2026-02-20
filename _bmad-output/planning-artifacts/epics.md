@@ -1455,12 +1455,341 @@ So that I can understand what each metric means and make informed decisions (FR7
 
 ---
 
+## Epic 5H: Post-Epic-5 Hardening Sprint
+
+Retrospective-driven validation and remediation work that must be completed before Epic 6 (Document Generation) begins. These stories address the four CRITICAL and HIGH action items from the Epic 5 retrospective: unverified engine accuracy, untested UI quality across all report tabs, story AC gaps against user journeys, and planning artifact misalignment. This is a quality gate — Epic 6 turns engine output into permanent lender-facing documents, so the engine must be verified and the UI must be correct before that work begins.
+
+**Origin:** Epic 5 Retrospective action items AI-1, AI-2, AI-3, AI-5
+**Dependencies:** Epic 5 (complete — all 9 stories done)
+**Blocks:** Epic 6 (Document Generation & Vault)
+**Stories (4):** 5H.1 Engine Validation, 5H.2 Report Tab UI Audit, 5H.3 Epic 6 AC Audit, 5H.4 Planning Artifact Alignment
+
+### Story 5H.1: Financial Engine Cell-by-Cell Validation Against Reference Spreadsheets
+
+As a project stakeholder,
+I want the financial engine validated cell-by-cell against multiple brand reference spreadsheets,
+So that we have verified confidence that engine output matches the source-of-truth calculations before those outputs are permanently captured in lender-facing PDF documents (Epic 6).
+
+**Context:**
+
+The financial engine (`shared/financial-engine.ts`) has 173+ internal consistency tests verifying that the balance sheet balances, cash flow reconciles, depreciation schedules are consistent, and accounting identities hold. However, **no test compares engine output cell-by-cell against the reference spreadsheet values.** Internal consistency tests prove the engine is internally coherent — they do NOT prove the engine produces correct dollar amounts. A perfectly consistent engine with a wrong formula produces consistently wrong numbers.
+
+Four reference spreadsheets exist in `_bmad-output/planning-artifacts/reference-data/`:
+- PostNet Business Plan (`.xlsx`)
+- Jeremiah's Italian Ice Business Plan (`.xlsx`)
+- Tint World Business Plan (`.xlsx`)
+- Ubreakifix Business Plan (`.xlsx`)
+
+Reference tab screenshots are also available in the same directory (Start Here, Input, P&L, Balance Sheet, Cash Flow, ROIC, Valuation, Audit, Summary tabs).
+
+**Acceptance Criteria:**
+
+**Phase 1: Input Mapping (all brands)**
+
+**Given** a reference spreadsheet for a brand
+**When** the input mapping is created
+**Then** a documented input mapping table exists for EACH brand being validated, showing how every spreadsheet input cell maps to a `FinancialInputs` field
+**And** the mapping explicitly documents every conversion applied (dollars→cents, monthly→annual, single→5-year tuple, percentage display→decimal)
+**And** the mapping accounts for the `unwrapForEngine()` transformation pipeline in `shared/plan-initialization.ts` — specifically: `monthlyAuv * 12 → annualGrossSales`, `fill5()` for single→tuple, `monthly fixed costs → annual with 3% escalation`, `otherMonthly (cents) → otherOpexPct (% of revenue)`, `loanAmount / totalInvestment → equityPct`, `depreciationYears → depreciationRate (1/years)`
+**And** without explicit input mapping, validators make different assumptions — this mapping is the prerequisite for all subsequent validation
+
+**Phase 2: Cell-by-Cell Output Comparison (minimum 2 brands)**
+
+**Given** the input values from a reference spreadsheet are loaded into the engine via the documented input mapping
+**When** the engine computes projections via `calculateProjections()`
+**Then** every output cell is compared against the corresponding spreadsheet output cell for the following priority outputs:
+- P&L: all line items for months 1, 12, 24, 36, 48, 60 AND annual totals (Years 1-5)
+- Balance Sheet: all line items at months 12, 24, 36, 48, 60
+- Cash Flow: all line items for months 1, 12, 24, 36, 48, 60
+- ROIC: all summary metrics per year
+- Valuation: all summary metrics per year
+- Audit: all 15 audit checks pass/fail status
+**And** intermediate months are spot-checked after primary validation passes
+**And** validation covers at minimum **2 brands** (PostNet + one other) — one brand could pass by coincidence if paired bugs cancel out. Remaining brands are stretch goals.
+**And** each discrepancy is documented with: cell reference (tab + row + column), expected value (from spreadsheet), actual value (from engine), delta (absolute and percentage), and classification
+
+**Phase 3: Tolerance & Discrepancy Classification**
+
+**Given** a discrepancy between engine output and spreadsheet value
+**When** the delta is evaluated
+**Then** tolerance thresholds are: ±$1 (100 cents) per line item, ±$10 (1000 cents) per section total
+**And** deltas within tolerance are classified as rounding artifacts and documented but not fixed
+**And** deltas exceeding tolerance are classified into one of three categories, each requiring Product Owner sign-off:
+- **(a) BUG** — formula error in the engine. Must fix `shared/financial-engine.ts` AND add regression test. Engine test suite must be updated.
+- **(b) KNOWN DIVERGENCE** — intentional simplification in the engine (e.g., `otherMonthly→otherOpexPct` approximation, monthly-to-annual cost escalation model). Document the rationale, the magnitude of divergence, and whether it's acceptable for lender-facing documents.
+- **(c) SPREADSHEET ERROR** — the reference spreadsheet itself has a bug. Document with evidence (formula inspection, cross-check against other brands).
+
+**Phase 4: Codify as Permanent Test Assertions**
+
+**Given** the validation results for each brand
+**When** the validation is codified
+**Then** validation results are permanent Vitest assertions in a dedicated test file (`shared/financial-engine-reference.test.ts`)
+**And** tests run in the standard `vitest` suite so every future engine change automatically regresses against reference values
+**And** the test file documents: input values used, expected output values, tolerance applied, and source spreadsheet cell reference
+**And** any formula fix includes BOTH the engine fix AND a new regression test assertion
+**And** this is NOT a standalone validation document — it is executable test code
+
+**Phase 5: Carried Item Resolution**
+
+**Given** the `taxRate` TODO has been carried from Epic 3 (now 4 epics old, documented as AI-10)
+**When** the cell-by-cell validation runs
+**Then** the validation reveals whether the current tax rate implementation matches the reference spreadsheets
+**And** if the implementation matches, the TODO is resolved as "confirmed correct" with a comment referencing the validation
+**And** if the implementation does not match, the fix is included in the engine corrections from Phase 3
+**And** either way, the `taxRate` TODO is resolved — it does not carry to another epic
+
+**Dev Notes:**
+- The `unwrapForEngine()` transformation pipeline is the most likely source of discrepancies — it contains non-trivial conversions that may not match spreadsheet assumptions.
+- The `otherMonthly → otherOpexPct` conversion is a known approximation (documented in project-context.md). This will likely surface as a KNOWN DIVERGENCE.
+- Engine purity is non-negotiable: same inputs must produce same outputs. Any fix must maintain `calculateProjections()` as a pure function with no side effects.
+- Currency in tests: cents as integers (15000 = $150.00). Percentages: decimals (0.065 = 6.5%). See project-context.md Critical Don't-Miss Rules.
+- Spreadsheet screenshots in the reference-data directory can help verify cell references when .xlsx parsing is ambiguous.
+- See `_bmad-output/project-context.md` section "Financial Engine Reference Validation" for the complete rule set governing this work.
+
+---
+
+### Story 5H.2: Report Tab UI Audit & Remediation Across All Tabs
+
+As a franchisee,
+I want all financial report tabs to render correctly without layout issues, overlapping elements, or visual clutter,
+So that I can confidently review my financial projections and present them to lenders (FR7a-FR7g, FR84-FR86).
+
+**Context:**
+
+The Epic 5 retrospective identified visible UI quality issues in screenshots provided by the Product Owner:
+- **Balance Sheet (Screenshot 1 — `attached_assets/image_1771605261047.png`):** Duplicate callout sections — a metrics bar at top AND a separate interpretation bar below both display overlapping information (Total Assets, Total Equity, Balance Sheet status). Sticky header architecture is visually cluttered.
+- **Balance Sheet with sidebar (Screenshot 2 — `attached_assets/image_1771605269747.png`):** Sidebar "Glossary" label overlapping with the callout metrics area. Z-index layering between sidebar and content area is not clean.
+- **Comparison mode (Screenshot 3 — `attached_assets/image_1771605283221.png`):** Column headers for Base/Conservative/Optimistic scenarios are cramped and overlapping. Row labels wrap awkwardly. Layout designed for 5 columns is forced to show 15.
+
+**CRITICAL NOTE:** The screenshots only captured Balance Sheet issues, but the same component patterns (callout bars, sticky headers, section collapsibles, interpretation rows) are shared across ALL statement tabs. The audit must verify whether these problems are exclusive to the Balance Sheet or persistent across other tabs. Every tab uses the same `StatementSection`, `CalloutBar`, and `ColumnManager` component patterns — if they're broken in one tab, they may be broken in others.
+
+**Acceptance Criteria:**
+
+**Phase 1: Systematic Visual Audit — All Tabs**
+
+**Given** the Reports workspace is loaded with a plan containing financial projections
+**When** each of the following tabs is reviewed
+**Then** a structured audit is performed on ALL 7 report tabs:
+- (1) Summary tab
+- (2) P&L tab
+- (3) Balance Sheet tab
+- (4) Cash Flow tab
+- (5) ROIC tab
+- (6) Valuation tab
+- (7) Audit tab
+
+**And** the audit checks EACH tab for the following issues:
+
+*Layout & Spacing:*
+- Duplicate or overlapping callout/metrics bars (the Balance Sheet had TWO — a `CalloutBar` and a separate interpretation section both showing similar metrics)
+- Sticky header conflicts (z-index stacking between tab headers, callout bars, section headers, and Guardian Bar)
+- Section header alignment and collapse/expand behavior
+- Adequate whitespace between sections
+- Financial table column alignment (right-aligned numbers, consistent column widths)
+
+*Sidebar Interaction:*
+- Content area behavior when sidebar is open vs. closed
+- Z-index layering — no sidebar content overlapping report tab content
+- No content clipping or hiding behind sidebar at any viewport width ≥ 1024px (NFR25)
+
+*Comparison/Scenario Mode (if applicable):*
+- Column headers for Base/Conservative/Optimistic scenarios not cramped or overlapping
+- Row labels not wrapping awkwardly when comparison columns are shown
+- Layout gracefully handles the additional columns without horizontal overflow
+- If comparison mode is not supported on a tab, verify it is properly hidden/disabled
+
+*Responsive Behavior:*
+- Column progressive disclosure (annual → quarterly → monthly) works correctly via `ColumnManager`
+- Tables remain readable at 1024px minimum viewport width
+- No horizontal overflow that hides data without a scroll indicator
+
+*Component Consistency:*
+- `CalloutBar` rendering is consistent across tabs (same height, same padding, same font treatment)
+- `StatementSection` collapsible sections work identically across tabs
+- `FinancialValue` component formatting is consistent (currency, percentages, ratios, negative value parentheses per FR84-FR86)
+- Interpretation rows (`InterpretationRow`) display correctly below their parent data rows
+- Guardian Bar remains visible and correctly positioned at the top of every tab
+
+**Phase 2: Issue Documentation & Prioritization**
+
+**Given** the audit identifies visual issues
+**When** issues are documented
+**Then** each issue includes: tab affected, description, screenshot reference (if applicable), severity (Critical/High/Medium/Low), and whether it's a regression from SCP-2026-02-20 remediation or a pre-existing issue
+**And** issues affecting multiple tabs are documented once with a list of affected tabs
+
+**Phase 3: Remediation**
+
+**Given** documented issues with severity Critical or High
+**When** fixes are implemented
+**Then** the Balance Sheet duplicate callout bars issue is resolved — either consolidate into a single callout bar or clearly differentiate the two with visual separation and distinct content
+**And** the sidebar z-index layering is fixed — sidebar content never overlaps report tab content
+**And** comparison mode column layout is cleaned up — headers are readable, row labels don't wrap awkwardly, horizontal space is managed gracefully
+**And** any issues found in OTHER tabs during Phase 1 are also fixed (not just the Balance Sheet)
+**And** Medium/Low issues are documented for future resolution if they don't affect usability
+
+**Phase 4: Verification**
+
+**Given** all Critical and High fixes are implemented
+**When** the audit is re-run
+**Then** all 7 tabs pass the Phase 1 audit checklist
+**And** the Impact Strip (in My Plan view) and Guardian Bar (in Reports view) position correctly relative to tab content
+**And** no new regressions have been introduced by the fixes
+
+**Dev Notes:**
+- Statement tab components are in `client/src/components/planning/statements/` — P&L (`pl-statement-tab.tsx`), Balance Sheet (`balance-sheet-tab.tsx`), Cash Flow (`cash-flow-tab.tsx`), ROIC (`roic-tab.tsx`), Valuation (`valuation-tab.tsx`), Audit (`audit-tab.tsx`), Summary (`summary-tab.tsx`).
+- Shared components: `StatementSection` (collapsible sections), `CalloutBar` (metrics bars), `ColumnManager` (progressive disclosure), `StatementTable` (data-driven row/section definitions), `FinancialValue` (formatting).
+- The Guardian Bar component is at `client/src/components/planning/guardian-bar.tsx`.
+- The Impact Strip component is at `client/src/components/planning/impact-strip.tsx`.
+- Z-index layering involves: sidebar (shadcn sidebar component), Guardian Bar, tab headers, sticky section headers, callout bars, and the Impact Strip. Fixing one without breaking others requires careful z-index management.
+- See UX spec Part 1 (Layout Architecture), Part 2 (Financial Statement Views), Part 6 (ROI Threshold Guardian), and Part 14 (Empty & Incomplete States).
+- See `references/layout_and_spacing.md` and `references/sidebar_rules.md` for project layout conventions.
+
+---
+
+### Story 5H.3: Epic 6 Story Acceptance Criteria Audit Against User Journeys
+
+As a product stakeholder,
+I want Stories 6.1 and 6.2 reviewed against user journeys to verify the documented journey produces the expected outcome,
+So that Epic 6 implementation begins with verified, complete acceptance criteria that reflect real user needs.
+
+**Context:**
+
+The Epic 5 retrospective identified that user journeys did not exist until the final day (SCP-2026-02-20 Decision D7). Eight user journeys are now documented in the UX spec Part 15. Stories 6.1 (PDF Document Generation) and 6.2 (Document History & Downloads) must be read against these journeys to find any gaps between what the stories promise and what the journeys describe.
+
+The document IS the product's primary deliverable — what Sam takes to the bank, what Chris uses for location #2 financing, what Jordan presents to investors. Any gap between the user's journey and the story's acceptance criteria becomes a gap in the product.
+
+**Acceptance Criteria:**
+
+**Phase 1: Journey-to-Story Mapping**
+
+**Given** Stories 6.1 and 6.2 exist in the epics file
+**When** they are read against the user journeys
+**Then** the following journey steps are explicitly mapped to story ACs:
+
+*Journey 1 (Sam — Normal Tier), relevant steps:*
+- Step 19: Sam sees Document Preview widget on Dashboard with his name displayed — "Sam's PostNet Business Plan." DRAFT watermark appears because completeness < 90%.
+- Step 20: Sam finishes customizing remaining inputs (completeness > 90%). DRAFT watermark disappears. Button label changes to "Generate Lender Package."
+- Step 21: Sam clicks "Generate Lender Package." A professional PDF downloads — his name, his numbers, his plan. He feels ready for his bank meeting.
+
+*Journey 2 (Sam — Story Tier), relevant steps:*
+- Steps 13-21: Identical to Journey 1 steps 12-21 — AI-assisted inputs flow through same engine, same document generation experience.
+
+*Journey 3 (Returning Franchisee), relevant step:*
+- Step 3: Document Preview widget shows DRAFT watermark at 45% completeness.
+
+*Journey 5 (Denise — Brand Setup), relevant step:*
+- Step 8: Denise validates brand configuration by comparing engine outputs against the reference spreadsheet. This validates the engine, not the document, but the document depends on the engine.
+
+**And** each journey step is annotated with: which Story AC(s) cover it, whether coverage is complete or partial, and any gap identified
+
+**Phase 2: Gap Analysis**
+
+**Given** the journey-to-story mapping is complete
+**When** gaps are identified
+**Then** each gap is documented with: the journey step, what the journey describes that the story ACs don't cover, the impact (blocker, quality risk, or enhancement), and a proposed AC amendment
+
+The following areas are specifically checked for gaps:
+- **Pride moment:** Does Story 6.1 explicitly require the franchisee's name to appear prominently on the document? (Journey 1, Step 21: "his name, his numbers, his plan")
+- **Completeness-aware behavior:** Do the ACs handle the full spectrum: <50% (DRAFT watermark + default-values note), 50-90% (partial, "Generate Package" label), >90% ("Generate Lender Package" label, no watermark)?
+- **Multi-brand identity:** Does the PDF render with brand-specific identity (logo, colors) per the brand configuration? (Journey 5: PostNet branding vs. Jeremiah's branding)
+- **Document content completeness:** Does the PDF include ALL sections listed in Story 6.1 AC (cover page, executive summary, P&L, Balance Sheet, Cash Flow, ROIC, Valuation, break-even analysis, startup capital summary)?
+- **FTC disclaimers:** Are FR25 disclaimers on every page, not just the cover?
+- **Download behavior:** Is the PDF available for immediate download? Is it also stored for Story 6.2 document history?
+- **Error states:** What happens if PDF generation fails? (Network error, server timeout, missing data) The journeys describe a happy path — stories must also cover unhappy paths.
+- **Scenario content:** Story 6.1 AC mentions "if scenario comparison is active when PDF is generated" — is this still valid now that scenarios have moved to Epic 10 (What-If Playground)? Should this AC be removed or deferred?
+- **Document history access:** Does Journey 1 describe accessing previously generated documents, or is that only in Story 6.2? Is there a journey gap for document history?
+
+**Phase 3: AC Amendment Proposals**
+
+**Given** gaps are identified
+**When** amendments are proposed
+**Then** each proposed amendment includes: the specific AC text to add or modify, the journey step that justifies it, and the FR traceability (FR24, FR25, FR26, FR27, FR7n)
+**And** amendments are documented in a format ready for Product Owner review and approval before implementation begins
+**And** the Product Owner must approve all amendments — no implementation begins on unapproved AC changes
+
+**Dev Notes:**
+- User journeys are in `_bmad-output/planning-artifacts/ux-design-specification-consolidated.md`, Part 15.
+- Stories 6.1 and 6.2 are in `_bmad-output/planning-artifacts/epics.md`, Epic 6 section.
+- The scenario comparison AC in Story 6.1 references a feature that has been retired from Epic 5 and moved to Epic 10. This AC likely needs to be deferred or modified.
+- Story 5.9 (Document Preview & PDF Generation Trigger) established the entry points for PDF generation — Dashboard widget, Impact Strip icon, Reports header button. Story 6.1 is the actual generation engine. Verify these handoff points are documented in both stories.
+- FTC disclaimer language (FR25) must be reviewed by the Product Owner before implementation — generic placeholder language is not acceptable for a product used in bank presentations.
+
+---
+
+### Story 5H.4: Planning Artifact Alignment Audit — FR-to-Story Traceability
+
+As a product stakeholder,
+I want all 111 PRD functional requirements cross-referenced against epics and stories,
+So that no requirement falls through the cracks as we move into Epic 6 and beyond.
+
+**Context:**
+
+The Implementation Readiness report (2026-02-20) flagged that the epics FR Coverage Map is stale — it claims "96/96 FRs mapped" but the PRD contains 111 FRs after the SCP-2026-02-20 additions. The FR count in the coverage map header (96) is inconsistent with the actual breakdown in the same section (73 original + 14 FR7a-FR7n + 10 FR74-FR83 + 14 FR84-FR97 = 111). The IR report also noted that `architecture.md` still references "three modes" and retired components, creating confusion for future agents.
+
+This story ensures every requirement has a clear implementation home and every story can trace back to its requirements.
+
+**Acceptance Criteria:**
+
+**Phase 1: FR-to-Story Cross-Reference**
+
+**Given** the PRD contains 111 functional requirements (FR1-FR97, including FR7a-FR7n, FR59-FR73 as ranges)
+**When** each FR is cross-referenced against the epics file
+**Then** every FR has at least one story mapping documented
+**And** the mapping shows: FR number, description, Epic, Story number, and coverage status (Full/Partial/Deferred/Not Covered)
+**And** any FR marked "Partial" includes a note explaining what is covered and what is not
+**And** any FR marked "Deferred" includes the deferral reason and which epic/story will cover it
+**And** any FR marked "Not Covered" is flagged for Product Owner review
+
+**Phase 2: Story-to-FR Reverse Trace**
+
+**Given** the epics file contains stories across 13 epics
+**When** each story's acceptance criteria are reviewed
+**Then** every story has at least one FR traceability link
+**And** stories without FR traceability are flagged — a story with no requirement justification may be unnecessary or may indicate a missing FR in the PRD
+
+**Phase 3: Coverage Map Correction**
+
+**Given** the epics FR Coverage Map header says "96/96" but the actual count is 111
+**When** the coverage map is corrected
+**Then** the header accurately reflects the total FR count (111)
+**And** all FRs from FR74-FR97 are present in the coverage map table with their epic/story assignments
+**And** the coverage summary math is correct and verifiable
+
+**Phase 4: Architecture Document Alignment**
+
+**Given** the IR report noted that `architecture.md` still references "three modes" and retired components
+**When** the architecture document is reviewed
+**Then** all references to "three experience modes" are updated to reflect the two-surface architecture (My Plan + Reports)
+**And** references to retired components (`quick-entry-mode.tsx`, `editable-cell.tsx`, `mode-switcher.tsx`) are removed or marked as retired
+**And** the architecture document's FR count matches the PRD's FR count (111)
+**And** any other stale references identified during the review are corrected
+
+**Phase 5: Deliverable**
+
+**Given** all phases are complete
+**When** the audit is delivered
+**Then** the updated epics FR Coverage Map is committed to `epics.md`
+**And** the updated architecture document is committed to `architecture.md`
+**And** a summary of findings is documented: total FRs mapped, any gaps found, any corrections made
+**And** the Product Owner reviews and approves the final alignment
+
+**Dev Notes:**
+- PRD is at `_bmad-output/planning-artifacts/prd.md` — 111 FRs across 10 sections.
+- Epics file is at `_bmad-output/planning-artifacts/epics.md` — FR Coverage Map starts at line ~190.
+- Architecture file is at `_bmad-output/planning-artifacts/architecture.md`.
+- Implementation Readiness report is at `_bmad-output/implementation-artifacts/implementation-readiness-report-2026-02-20.md` — contains the specific issues found.
+- The FR74-FR97 additions came from the PRD edit on 2026-02-20 (SCP-2026-02-20 document remediation). The epics FR Coverage Map was partially updated during that remediation but the header count was not corrected.
+- Phase 4 (architecture alignment) addresses IR report finding #1: architecture.md still references "three modes" and mentions retired components.
+- This story does NOT involve code changes — it is purely a planning artifact alignment task. However, it ensures that all future implementation work has clear requirement traceability.
+
+---
+
 ## Epic 6: Document Generation & Vault
 
 Generate lender-grade PDF business plan packages and maintain document history with download capability. Elevated from old Epic 7 (stories 7.2 and 7.3). The document is the product's primary deliverable — what Sam takes to the bank, what Chris uses for location #2 financing, what Jordan presents to investors.
 
 **FRs covered:** FR24, FR25, FR26, FR27
-**Dependencies:** Epic 5 (financial statement views provide the content that PDF exports)
+**Dependencies:** Epic 5 (financial statement views provide the content that PDF exports), **Epic 5H (hardening sprint must complete first — engine validation, UI remediation, AC audit)**
 
 ### Story 6.1: PDF Document Generation
 
