@@ -54,11 +54,11 @@ const ROIC_SECTIONS: RoicSectionDef[] = [
     title: "Return Analysis",
     rows: [
       { key: "pre-tax-net-income", label: "Pre-Tax Net Income", field: "preTaxNetIncome", format: "currency", indent: 1, tooltip: { explanation: "Profit before taxes from the income statement", formula: "Revenue - All Expenses" } },
-      { key: "pre-tax-inc-sweat", label: "Pre-Tax Net Income incl. Sweat Equity", field: "preTaxNetIncomeIncSweatEquity", format: "currency", indent: 1, tooltip: { explanation: "Net income adjusted for owner's below-market salary", formula: "Pre-Tax Net Income + Shareholder Salary Adjustment" } },
+      { key: "pre-tax-inc-sweat", label: "Pre-Tax Net Income incl. Sweat Equity", field: "preTaxNetIncomeIncSweatEquity", format: "currency", indent: 1, tooltip: { explanation: "Net income adjusted for owner's below-market salary (subtracts the unpaid salary as an expense)", formula: "Pre-Tax Net Income - Shareholder Salary Adjustment" } },
       { key: "tax-rate", label: "Tax Rate", field: "taxRate", format: "pct", indent: 1, tooltip: { explanation: "Applicable corporate/franchise tax rate", formula: "From financial inputs" } },
       { key: "taxes-due", label: "Taxes Due", field: "taxesDue", format: "currency", indent: 1, tooltip: { explanation: "Estimated tax liability for the year", formula: "Max(0, Pre-Tax incl. Sweat Equity) x Tax Rate" } },
       { key: "after-tax-net-income", label: "After-Tax Net Income", field: "afterTaxNetIncome", format: "currency", isSubtotal: true, tooltip: { explanation: "Net income after estimated taxes", formula: "Pre-Tax incl. Sweat Equity - Taxes Due" } },
-      { key: "roic-pct", label: "ROIC %", field: "roicPct", format: "pct", isTotal: true, tooltip: { explanation: "Return on total invested capital — measures how efficiently the business uses all capital", formula: "After-Tax Net Income / Total Invested Capital", glossarySlug: "roic" } },
+      { key: "roic-pct", label: "ROIC %", field: "roicPct", format: "pct", isTotal: true, tooltip: { explanation: "Return on total invested capital — measures how efficiently the business uses all capital", formula: "Pre-Tax Net Income (incl. Sweat Equity) / Total Invested Capital", glossarySlug: "roic" } },
     ],
   },
   {

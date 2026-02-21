@@ -85,6 +85,7 @@ When the user triggers an agent or workflow, the AI MUST load the referenced fil
   - what-if-playground.tsx updated: Reset button, 2-column metric layout
   - All 8 change proposals (CP-1 through CP-8) applied to planning artifacts and code
 - **Epic 5H (Hardening Sprint) in-progress** — Stories 5H.1, 5H.2 done; 5H.3 in review
+- **Engine formula fixes (AI-3/AI-4/AI-5):** Labor Efficiency inverted formula fixed (now NLGM/Wages), ROIC switched to pre-tax, salary adjustment sign corrected in ROIC & P&L Analysis, businessAnnualROIC synced from ROIC tab. 104 reference tests passing. Runtime crash in pnl-tab interpretation function fixed (plAnalysis data source).
 - **Epic 10 in-progress** — Story 10.1 needs-revision (AC rewrite applied), 10-2a/10-2b needs-revision, 10.3 ready-for-dev
 
 **Feature Specifications:**
