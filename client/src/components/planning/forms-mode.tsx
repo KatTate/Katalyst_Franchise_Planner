@@ -14,7 +14,7 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
-import { ChevronDown, RotateCcw, AlertCircle, Sparkles } from "lucide-react";
+import { ChevronDown, RotateCcw, AlertCircle, Sparkles, Info } from "lucide-react";
 import { FieldHelpIcon } from "@/components/shared/field-help-icon";
 import {
   FIELD_METADATA,
@@ -156,27 +156,48 @@ export function FormsMode({ planId, planName, brandName, queueSave, onSectionCha
   return (
     <div data-testid="forms-mode-container" className="h-full flex flex-col overflow-hidden">
       <div ref={scrollContainerRef} className="flex-1 overflow-auto px-4 py-4 space-y-3">
-        {CATEGORY_ORDER.map((category, index) => (
-          <FormSection
-            key={category}
-            category={category}
-            label={CATEGORY_LABELS[category]}
-            fields={FIELD_METADATA[category]}
-            categoryData={resolveCategoryData(financialInputs, category)}
-            editingField={editingField}
-            editValue={editValue}
-            focusedField={focusedField}
-            onEditValueChange={setEditValue}
-            onEditStart={handleEditStart}
-            onEditCommit={handleEditCommit}
-            onEditCancel={handleEditCancel}
-            onReset={handleReset}
-            onFocusChange={setFocusedField}
-            onSectionInteract={handleSectionInteract}
-            showStartHere={showStartHere && index === 0}
-            defaultOpen={showStartHere ? index === 0 : true}
-          />
-        ))}
+        {CATEGORY_ORDER.map((category, index) => {
+          if (category === "facilitiesDecomposition") {
+            return (
+              <FacilitiesDecompositionSection
+                key={category}
+                financialInputs={financialInputs}
+                editingField={editingField}
+                editValue={editValue}
+                focusedField={focusedField}
+                onEditValueChange={setEditValue}
+                onEditStart={handleEditStart}
+                onEditCommit={handleEditCommit}
+                onEditCancel={handleEditCancel}
+                onReset={handleReset}
+                onFocusChange={setFocusedField}
+                onSectionInteract={handleSectionInteract}
+                defaultOpen={true}
+              />
+            );
+          }
+          return (
+            <FormSection
+              key={category}
+              category={category}
+              label={CATEGORY_LABELS[category]}
+              fields={FIELD_METADATA[category]}
+              categoryData={resolveCategoryData(financialInputs, category)}
+              editingField={editingField}
+              editValue={editValue}
+              focusedField={focusedField}
+              onEditValueChange={setEditValue}
+              onEditStart={handleEditStart}
+              onEditCommit={handleEditCommit}
+              onEditCancel={handleEditCancel}
+              onReset={handleReset}
+              onFocusChange={setFocusedField}
+              onSectionInteract={handleSectionInteract}
+              showStartHere={showStartHere && index === 0}
+              defaultOpen={showStartHere ? index === 0 : true}
+            />
+          );
+        })}
 
         <StartupCostSection planId={planId} defaultOpen={true} onCountChange={handleStartupCostCountChange} onSectionInteract={handleSectionInteract} />
 
@@ -473,6 +494,141 @@ function FormField({
         </div>
       )}
     </div>
+  );
+}
+
+const DECOMP_KEYS = ["rent", "utilities", "telecomIt", "vehicleFleet", "insurance"] as const;
+
+function computeDecompSum(decomp: PlanFinancialInputs["operatingCosts"]["facilitiesDecomposition"], yearIndex: number): number {
+  let total = 0;
+  for (const key of DECOMP_KEYS) {
+    const arr = decomp?.[key];
+    if (arr && arr[yearIndex]) total += arr[yearIndex].currentValue;
+  }
+  return total;
+}
+
+interface FacilitiesDecompositionSectionProps {
+  financialInputs: PlanFinancialInputs;
+  editingField: string | null;
+  editValue: string;
+  focusedField: string | null;
+  onEditValueChange: (v: string) => void;
+  onEditStart: (category: string, fieldName: string, field: FinancialFieldValue) => void;
+  onEditCommit: (allYears?: boolean) => void;
+  onEditCancel: () => void;
+  onReset: (category: string, fieldName: string) => void;
+  onFocusChange: (key: string | null) => void;
+  onSectionInteract: (category: string) => void;
+  defaultOpen: boolean;
+}
+
+function FacilitiesDecompositionSection({
+  financialInputs,
+  editingField,
+  editValue,
+  focusedField,
+  onEditValueChange,
+  onEditStart,
+  onEditCommit,
+  onEditCancel,
+  onReset,
+  onFocusChange,
+  onSectionInteract,
+  defaultOpen,
+}: FacilitiesDecompositionSectionProps) {
+  const [isOpen, setIsOpen] = useState(defaultOpen);
+  const category = "facilitiesDecomposition";
+  const fields = FIELD_METADATA[category];
+  const decomp = financialInputs.operatingCosts?.facilitiesDecomposition;
+  const facilitiesAnnual = financialInputs.operatingCosts?.facilitiesAnnual;
+  const categoryData = (decomp ?? {}) as Record<string, FinancialFieldValue | FinancialFieldValue[]>;
+
+  const handleOpenChange = useCallback((open: boolean) => {
+    setIsOpen(open);
+    if (open) onSectionInteract(category);
+  }, [onSectionInteract]);
+
+  const decompSumYear0 = useMemo(() => decomp ? computeDecompSum(decomp, 0) : 0, [decomp]);
+  const facilitiesAnnualYear0 = facilitiesAnnual?.[0]?.currentValue ?? 0;
+  const hasMismatch = decomp && facilitiesAnnual && Math.abs(facilitiesAnnualYear0 - decompSumYear0) > 0;
+
+  return (
+    <Collapsible open={isOpen} onOpenChange={handleOpenChange}>
+      <div className="border rounded-md" data-testid={`section-${category}`}>
+        <CollapsibleTrigger className="flex items-center justify-between gap-2 w-full px-4 py-3 hover-elevate rounded-t-md">
+          <div className="flex items-center gap-2 min-w-0">
+            <span className="text-sm font-semibold truncate">{CATEGORY_LABELS[category]}</span>
+          </div>
+          <div className="flex items-center gap-2 shrink-0">
+            <span className="text-xs text-muted-foreground tabular-nums">
+              {countEditedFields(fields, categoryData)}/{Object.keys(fields).length} edited
+            </span>
+            <ChevronDown
+              className={`h-4 w-4 text-muted-foreground transition-transform duration-200 ${isOpen ? "" : "-rotate-90"}`}
+            />
+          </div>
+        </CollapsibleTrigger>
+        <CollapsibleContent>
+          <div className="px-4 pb-4 space-y-1">
+            {hasMismatch && (
+              <div
+                className="flex items-start gap-2 rounded-md bg-muted/50 border border-border px-3 py-2 mb-2"
+                data-testid="facilities-mismatch-note"
+              >
+                <Info className="h-4 w-4 text-muted-foreground shrink-0 mt-0.5" />
+                <p className="text-xs text-muted-foreground">
+                  Total was adjusted to {formatCents(facilitiesAnnualYear0)} in Reports. Your breakdown below may not match.
+                </p>
+              </div>
+            )}
+            {Object.entries(fields).map(([fieldName, meta]) => {
+              const raw = categoryData[fieldName];
+              if (!raw) return null;
+              const isPerYear = Array.isArray(raw);
+              const field = (isPerYear ? raw[0] : raw) as FinancialFieldValue;
+              if (!field) return null;
+              const key = `${category}.${fieldName}`;
+              const isEditing = editingField === key;
+              const isFocused = focusedField === key;
+              const hasCustomPerYearValues = isPerYear && (raw as FinancialFieldValue[]).some(
+                (item, i) => i > 0 && item.currentValue !== (raw as FinancialFieldValue[])[0].currentValue
+              );
+              return (
+                <FormField
+                  key={key}
+                  fieldKey={key}
+                  category={category}
+                  fieldName={fieldName}
+                  meta={meta}
+                  field={field}
+                  isPerYear={isPerYear}
+                  hasCustomPerYearValues={hasCustomPerYearValues}
+                  isEditing={isEditing}
+                  isFocused={isFocused}
+                  editValue={editValue}
+                  onEditValueChange={onEditValueChange}
+                  onEditStart={onEditStart}
+                  onEditCommit={onEditCommit}
+                  onEditCancel={onEditCancel}
+                  onReset={onReset}
+                  onFocusChange={onFocusChange}
+                />
+              );
+            })}
+            <div
+              className="flex items-center justify-between rounded-md bg-muted/30 px-3 py-2.5 mt-2"
+              data-testid="facilities-total"
+            >
+              <span className="text-sm font-semibold text-foreground">Facilities Total</span>
+              <span className="font-mono tabular-nums text-sm font-semibold" data-testid="facilities-total-value">
+                {formatCents(decompSumYear0)}
+              </span>
+            </div>
+          </div>
+        </CollapsibleContent>
+      </div>
+    </Collapsible>
   );
 }
 

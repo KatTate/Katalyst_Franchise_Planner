@@ -226,7 +226,7 @@ const PNL_SECTIONS: PnlSectionDef[] = [
       { key: "facilities", label: "Facilities", field: "facilities", format: "currency", isInput: true, isExpense: true, indent: 1 },
       { key: "marketing", label: "Marketing / Advertising", field: "marketing", format: "currency", isInput: true, isExpense: true, indent: 1 },
       { key: "disc-marketing", label: "Discretionary Marketing", field: "discretionaryMarketing", format: "currency", indent: 1, isExpense: true, tooltip: { explanation: "Owner-directed marketing spend beyond required brand contributions", formula: "Same as Marketing in current model" } },
-      { key: "other-opex", label: "Other OpEx", field: "otherOpex", format: "currency", isInput: true, isExpense: true, indent: 1 },
+      { key: "other-opex", label: "Other OpEx %", field: "otherOpex", format: "currency", isInput: true, isExpense: true, indent: 1 },
       { key: "total-opex", label: "Total Operating Expenses", field: "totalOpex", format: "currency", isSubtotal: true, isExpense: true, tooltip: { explanation: "Total cost of running the business day-to-day", formula: "Sum of all operating expense line items" } },
     ],
   },

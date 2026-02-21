@@ -1,6 +1,6 @@
 # Story 7.1d: Facilities Guided Decomposition & Other OpEx Correction
 
-Status: ready-for-dev
+Status: in-progress
 
 ## Story
 

@@ -60,14 +60,29 @@ function buildUpdatedInputs(
   }
 
   if (category === "facilitiesDecomposition") {
+    const updatedDecomp = {
+      ...categoryObj,
+      [fieldName]: newValue,
+    };
+    const decompKeys = ["rent", "utilities", "telecomIt", "vehicleFleet", "insurance"] as const;
+    const updatedFacilitiesAnnual = Array.from({ length: 5 }, (_, yi) => {
+      let total = 0;
+      for (const dk of decompKeys) {
+        const arr = updatedDecomp[dk] as FinancialFieldValue[] | undefined;
+        if (arr && arr[yi]) total += arr[yi].currentValue;
+      }
+      const existing = inputs.operatingCosts.facilitiesAnnual?.[yi];
+      if (existing) {
+        return { ...existing, currentValue: total, source: "user_entry" as const, isCustom: true, lastModifiedAt: new Date().toISOString() };
+      }
+      return { currentValue: total, source: "user_entry" as const, brandDefault: null, item7Range: null, lastModifiedAt: new Date().toISOString(), isCustom: true };
+    });
     return {
       ...inputs,
       operatingCosts: {
         ...inputs.operatingCosts,
-        facilitiesDecomposition: {
-          ...categoryObj,
-          [fieldName]: newValue,
-        },
+        facilitiesDecomposition: updatedDecomp,
+        facilitiesAnnual: updatedFacilitiesAnnual,
       },
     } as PlanFinancialInputs;
   }
@@ -184,14 +199,30 @@ export function useFieldEditing({ financialInputs, isSaving, onSave }: UseFieldE
         );
         let updatedInputs: PlanFinancialInputs;
         if (category === "facilitiesDecomposition") {
+          const updatedDecomp = {
+            ...categoryObj,
+            [fieldName]: resetArr,
+          };
+          const decompKeys = ["rent", "utilities", "telecomIt", "vehicleFleet", "insurance"] as const;
+          const now = new Date().toISOString();
+          const updatedFacilitiesAnnual = Array.from({ length: 5 }, (_, yi) => {
+            let total = 0;
+            for (const dk of decompKeys) {
+              const arr = updatedDecomp[dk] as FinancialFieldValue[] | undefined;
+              if (arr && arr[yi]) total += arr[yi].currentValue;
+            }
+            const existing = financialInputs.operatingCosts.facilitiesAnnual?.[yi];
+            if (existing) {
+              return { ...existing, currentValue: total, source: "user_entry" as const, isCustom: true, lastModifiedAt: now };
+            }
+            return { currentValue: total, source: "user_entry" as const, brandDefault: null, item7Range: null, lastModifiedAt: now, isCustom: true };
+          });
           updatedInputs = {
             ...financialInputs,
             operatingCosts: {
               ...financialInputs.operatingCosts,
-              facilitiesDecomposition: {
-                ...categoryObj,
-                [fieldName]: resetArr,
-              },
+              facilitiesDecomposition: updatedDecomp,
+              facilitiesAnnual: updatedFacilitiesAnnual,
             },
           } as PlanFinancialInputs;
         } else {
