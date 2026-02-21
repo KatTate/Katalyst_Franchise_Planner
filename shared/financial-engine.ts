@@ -845,8 +845,8 @@ export function calculateProjections(input: EngineInput): EngineOutput {
     const nonWageOpex = round2(annualFacilities + annualPayrollTax + annualMarketing + annualOtherOpex + annualNonCapex);
     const salaryCapAtTarget = round2(nonLaborGrossMargin - targetPreTaxProfit - nonWageOpex);
     const overUnderCap = round2(salaryCapAtTarget - adjustedTotalWages);
-    const laborEfficiency = totalWages !== 0 ? round2(nonLaborGrossMargin / totalWages) : 0;
-    const adjustedLaborEfficiency = adjustedTotalWages !== 0 ? round2(nonLaborGrossMargin / adjustedTotalWages) : 0;
+    const laborEfficiency = revenue !== 0 ? round2(totalWages / revenue) : 0;
+    const adjustedLaborEfficiency = revenue !== 0 ? round2(adjustedTotalWages / revenue) : 0;
     const discretionaryMarketingPct = revenue !== 0 ? round2(annualMarketing / revenue) : 0;
     const prTaxBenefitsPctOfWages = totalWages !== 0 ? round2(annualPayrollTax / totalWages) : 0;
     const otherOpexPctOfRevenue = revenue !== 0 ? round2(annualOtherOpex / revenue) : 0;
@@ -1102,10 +1102,6 @@ export function calculateProjections(input: EngineInput): EngineOutput {
       actual: v.estimatedValue,
       tolerance,
     });
-  }
-
-  for (let y = 0; y < 5; y++) {
-    valuation[y].businessAnnualROIC = roicExtended[y].roicPct;
   }
 
   return {

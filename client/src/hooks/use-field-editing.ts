@@ -19,6 +19,13 @@ function resolveCategoryObj(inputs: PlanFinancialInputs, category: string): Reco
   return (inputs as any)[category];
 }
 
+function resolveField(categoryObj: Record<string, any>, fieldName: string): FinancialFieldValue | undefined {
+  const raw = categoryObj[fieldName];
+  if (!raw) return undefined;
+  if (Array.isArray(raw)) return raw[0] as FinancialFieldValue;
+  return raw as FinancialFieldValue;
+}
+
 function buildUpdatedInputs(
   inputs: PlanFinancialInputs,
   category: string,
@@ -26,6 +33,16 @@ function buildUpdatedInputs(
   fieldName: string,
   updatedField: FinancialFieldValue,
 ): PlanFinancialInputs {
+  const raw = categoryObj[fieldName];
+  let newValue: FinancialFieldValue | FinancialFieldValue[];
+  if (Array.isArray(raw)) {
+    newValue = raw.map((item: FinancialFieldValue, i: number) =>
+      i === 0 ? updatedField : item
+    );
+  } else {
+    newValue = updatedField;
+  }
+
   if (category === "facilitiesDecomposition") {
     return {
       ...inputs,
@@ -33,7 +50,7 @@ function buildUpdatedInputs(
         ...inputs.operatingCosts,
         facilitiesDecomposition: {
           ...categoryObj,
-          [fieldName]: updatedField,
+          [fieldName]: newValue,
         },
       },
     } as PlanFinancialInputs;
@@ -42,7 +59,7 @@ function buildUpdatedInputs(
     ...inputs,
     [category]: {
       ...categoryObj,
-      [fieldName]: updatedField,
+      [fieldName]: newValue,
     },
   };
 }
@@ -76,6 +93,9 @@ export function useFieldEditing({ financialInputs, isSaving, onSave }: UseFieldE
         case "integer":
           setEditValue(String(field.currentValue));
           break;
+        case "decimal":
+          setEditValue(String(field.currentValue));
+          break;
       }
     },
     [isSaving]
@@ -99,7 +119,8 @@ export function useFieldEditing({ financialInputs, isSaving, onSave }: UseFieldE
     }
     const categoryObj = resolveCategoryObj(financialInputs, category);
     if (!categoryObj) return;
-    const field = categoryObj[fieldName] as FinancialFieldValue;
+    const field = resolveField(categoryObj, fieldName);
+    if (!field) return;
     if (parsedValue !== field.currentValue) {
       const updatedField = updateFieldValue(field, parsedValue, new Date().toISOString());
       const updatedInputs = buildUpdatedInputs(financialInputs, category, categoryObj, fieldName, updatedField);
@@ -120,7 +141,8 @@ export function useFieldEditing({ financialInputs, isSaving, onSave }: UseFieldE
       if (!financialInputs || isSaving) return;
       const categoryObj = resolveCategoryObj(financialInputs, category);
       if (!categoryObj) return;
-      const field = categoryObj[fieldName] as FinancialFieldValue;
+      const field = resolveField(categoryObj, fieldName);
+      if (!field) return;
       if (parsedValue !== field.currentValue) {
         const updatedField = updateFieldValue(field, parsedValue, new Date().toISOString());
         const updatedInputs = buildUpdatedInputs(financialInputs, category, categoryObj, fieldName, updatedField);
@@ -135,10 +157,40 @@ export function useFieldEditing({ financialInputs, isSaving, onSave }: UseFieldE
       if (!financialInputs || isSaving) return;
       const categoryObj = resolveCategoryObj(financialInputs, category);
       if (!categoryObj) return;
-      const field = categoryObj[fieldName] as FinancialFieldValue;
-      const resetField = resetFieldToDefault(field, new Date().toISOString());
-      const updatedInputs = buildUpdatedInputs(financialInputs, category, categoryObj, fieldName, resetField);
-      onSave(updatedInputs);
+      const raw = categoryObj[fieldName];
+      if (!raw) return;
+      if (Array.isArray(raw)) {
+        const resetArr = raw.map((item: FinancialFieldValue) =>
+          resetFieldToDefault(item, new Date().toISOString())
+        );
+        let updatedInputs: PlanFinancialInputs;
+        if (category === "facilitiesDecomposition") {
+          updatedInputs = {
+            ...financialInputs,
+            operatingCosts: {
+              ...financialInputs.operatingCosts,
+              facilitiesDecomposition: {
+                ...categoryObj,
+                [fieldName]: resetArr,
+              },
+            },
+          } as PlanFinancialInputs;
+        } else {
+          updatedInputs = {
+            ...financialInputs,
+            [category]: {
+              ...categoryObj,
+              [fieldName]: resetArr,
+            },
+          };
+        }
+        onSave(updatedInputs);
+      } else {
+        const field = raw as FinancialFieldValue;
+        const resetField = resetFieldToDefault(field, new Date().toISOString());
+        const updatedInputs = buildUpdatedInputs(financialInputs, category, categoryObj, fieldName, resetField);
+        onSave(updatedInputs);
+      }
     },
     [financialInputs, isSaving, onSave]
   );

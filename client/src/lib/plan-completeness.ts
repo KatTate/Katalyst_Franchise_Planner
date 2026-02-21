@@ -29,12 +29,15 @@ function isEdited(field: unknown): boolean {
 export function computeSectionProgress(financialInputs: PlanFinancialInputs): SectionProgress[] {
   return CATEGORY_ORDER.map((category) => {
     const fields = FIELD_METADATA[category];
+    if (!fields) return { category, label: CATEGORY_LABELS[category] || category, edited: 0, total: 0 };
     const categoryData = resolveCategoryData(financialInputs, category);
+    if (!categoryData) return { category, label: CATEGORY_LABELS[category] || category, edited: 0, total: Object.keys(fields).length };
     const fieldNames = Object.keys(fields);
     const total = fieldNames.length;
     const edited = fieldNames.filter((name) => {
-      if (!categoryData) return false;
-      return isEdited(categoryData[name]);
+      const fieldData = categoryData[name];
+      if (!fieldData) return false;
+      return isEdited(fieldData);
     }).length;
     return { category, label: CATEGORY_LABELS[category] || category, edited, total };
   });

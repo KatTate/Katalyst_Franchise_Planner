@@ -248,7 +248,7 @@ function FormSection({
           </div>
           <div className="flex items-center gap-2 shrink-0">
             <span className="text-xs text-muted-foreground tabular-nums">
-              {Object.keys(fields).filter((k) => { const f: any = categoryData[k]; if (!f) return false; if (Array.isArray(f)) return f[0]?.source !== "brand_default"; return f.source !== "brand_default"; }).length}/{Object.keys(fields).length} edited
+              {Object.keys(fields).filter((k) => { const f: any = categoryData?.[k]; if (!f) return false; if (Array.isArray(f)) return f[0]?.source !== "brand_default"; return f?.source !== "brand_default"; }).length}/{Object.keys(fields).length} edited
             </span>
             <ChevronDown
               className={`h-4 w-4 text-muted-foreground transition-transform duration-200 ${
@@ -261,7 +261,9 @@ function FormSection({
           <div className="px-4 pb-4 space-y-1">
             {Object.entries(fields).map(([fieldName, meta]) => {
               const raw = categoryData[fieldName];
+              if (!raw) return null;
               const field = (Array.isArray(raw) ? raw[0] : raw) as FinancialFieldValue;
+              if (!field) return null;
               const key = `${category}.${fieldName}`;
               const isEditing = editingField === key;
               const isFocused = focusedField === key;

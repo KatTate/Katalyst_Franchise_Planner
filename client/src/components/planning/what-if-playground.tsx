@@ -33,13 +33,13 @@ const METRICS: MetricDefinition[] = [
   {
     key: "break-even",
     label: "Break-Even Month",
-    getValue: (o) => o.roiMetrics.breakEvenMonth,
+    getValue: (o) => o.roiMetrics?.breakEvenMonth ?? null,
     format: "months",
   },
   {
     key: "roi",
     label: "5-Year ROI %",
-    getValue: (o) => o.roiMetrics.fiveYearROIPct,
+    getValue: (o) => o.roiMetrics?.fiveYearROIPct ?? null,
     format: "pct",
   },
   {

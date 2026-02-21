@@ -621,7 +621,20 @@ export class DatabaseStorage implements IStorage {
 
 function migratePlanInPlace(plan: Plan): void {
   if (plan.financialInputs) {
+    const original = JSON.stringify(plan.financialInputs);
     plan.financialInputs = migratePlanFinancialInputs(plan.financialInputs as any) as any;
+    const migrated = JSON.stringify(plan.financialInputs);
+    if (original !== migrated) {
+      db.update(plans)
+        .set({ financialInputs: plan.financialInputs as any, updatedAt: new Date() })
+        .where(eq(plans.id, plan.id))
+        .then(() => {
+          console.log(`[migration] Persisted migrated financial_inputs for plan ${plan.id}`);
+        })
+        .catch((err) => {
+          console.error(`[migration] Failed to persist migrated financial_inputs for plan ${plan.id}:`, err);
+        });
+    }
   }
 }
 

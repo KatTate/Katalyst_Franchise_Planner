@@ -1436,22 +1436,22 @@ describe("Financial Engine", () => {
   });
 
   describe("Story 5.1 — AC5: ROIC Extended Detailed", () => {
-    it("preTaxNetIncomeIncSweatEquity = preTaxNetIncome + shareholderSalaryAdj", () => {
+    it("preTaxNetIncomeIncSweatEquity = preTaxNetIncome - shareholderSalaryAdj", () => {
       const customInput: EngineInput = {
         financialInputs: { ...postNetInputs, shareholderSalaryAdj: [100000, 100000, 150000, 150000, 200000] },
         startupCosts: postNetStartupCosts,
       };
       const customResult = calculateProjections(customInput);
       customResult.roicExtended.forEach((r, i) => {
-        const expected = r.preTaxNetIncome + [100000, 100000, 150000, 150000, 200000][i];
+        const expected = r.preTaxNetIncome - [100000, 100000, 150000, 150000, 200000][i];
         expect(Math.abs(r.preTaxNetIncomeIncSweatEquity - expected)).toBeLessThanOrEqual(1);
       });
     });
 
-    it("roicPct = afterTaxNetIncome / totalInvestedCapital when > 0", () => {
+    it("roicPct = preTaxNetIncomeIncSweatEquity / totalInvestedCapital when > 0", () => {
       result.roicExtended.forEach((r) => {
         if (r.totalInvestedCapital > 0) {
-          const expected = r.afterTaxNetIncome / r.totalInvestedCapital;
+          const expected = r.preTaxNetIncomeIncSweatEquity / r.totalInvestedCapital;
           expect(Math.abs(r.roicPct - expected)).toBeLessThanOrEqual(0.01);
         }
       });
