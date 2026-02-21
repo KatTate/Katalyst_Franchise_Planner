@@ -1,6 +1,6 @@
 # Story 7.2: Plan CRUD & Navigation
 
-Status: ready-for-dev
+Status: in-progress
 
 ## Story
 

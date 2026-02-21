@@ -82,6 +82,8 @@ export interface IStorage {
   getPlansByBrand(brandId: string): Promise<Plan[]>;
   updatePlan(id: string, data: UpdatePlan): Promise<Plan>;
   deletePlan(id: string): Promise<void>;
+  clonePlan(id: string, newName: string): Promise<Plan>;
+  getPlanCountByUser(userId: string): Promise<number>;
   getKatalystAdmins(): Promise<Array<{ id: string; email: string; displayName: string | null; profileImageUrl: string | null }>>;
   getBrandAccountManagers(brandId: string): Promise<BrandAccountManager[]>;
   getBrandAccountManager(brandId: string, accountManagerId: string): Promise<BrandAccountManager | undefined>;
@@ -350,6 +352,41 @@ export class DatabaseStorage implements IStorage {
 
   async deletePlan(id: string): Promise<void> {
     await db.delete(plans).where(eq(plans.id, id));
+  }
+
+  async clonePlan(id: string, newName: string): Promise<Plan> {
+    const source = await this.getPlan(id);
+    if (!source) throw new Error("Source plan not found");
+    const clonedFinancialInputs = source.financialInputs
+      ? JSON.parse(JSON.stringify(source.financialInputs))
+      : null;
+    const clonedStartupCosts = source.startupCosts
+      ? JSON.parse(JSON.stringify(source.startupCosts))
+      : null;
+    const [created] = await db
+      .insert(plans)
+      .values({
+        userId: source.userId,
+        brandId: source.brandId,
+        name: newName,
+        financialInputs: clonedFinancialInputs as any,
+        startupCosts: clonedStartupCosts as any,
+        status: "draft" as const,
+        pipelineStage: source.pipelineStage,
+        quickStartCompleted: false,
+        targetMarket: source.targetMarket,
+        targetOpenQuarter: source.targetOpenQuarter,
+      } as any)
+      .returning();
+    return created;
+  }
+
+  async getPlanCountByUser(userId: string): Promise<number> {
+    const result = await db
+      .select({ count: sql<number>`count(*)::int` })
+      .from(plans)
+      .where(eq(plans.userId, userId));
+    return result[0]?.count ?? 0;
   }
 
   async getKatalystAdmins(): Promise<Array<{ id: string; email: string; displayName: string | null; profileImageUrl: string | null }>> {
