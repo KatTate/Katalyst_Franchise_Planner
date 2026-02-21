@@ -157,6 +157,51 @@ And new categories `profitabilityAndDistributions` and `workingCapitalAndValuati
 
 ### Completion Notes
 
+**7.1a Core Implementation (completed):**
+- PlanFinancialInputs restructured to per-year FinancialFieldValue[] arrays for all applicable fields
+- Migration (migratePlanFinancialInputs) handles old→new format with transactional safety, idempotency, and lossless conversion
+- unwrapForEngine updated to pass per-year arrays directly to engine instead of fill5() broadcasting
+- FIELD_METADATA extended with all new fields, "decimal" FormatType added
+- Sensitivity engine updated to apply multipliers across all 5 per-year values independently
+- Scenario engine verified — computes on-the-fly from PlanFinancialInputs, no migration needed
+- 686 unit tests passing
+
+**Revenue Drill-Down Enhancement (completed 2026-02-21):**
+- Merged separate "Monthly Revenue" and "Annual Revenue" P&L rows into a single editable "Revenue" row
+- Revenue row now shows engine-computed totals at each drill level:
+  - Annual: shows full-year revenue total (e.g., $331,100)
+  - Quarterly: shows quarterly revenue totals (e.g., Q1=$31,271, Q2=$67,414, Q3=$99,943, Q4=$132,471), reflecting ramp-up effects
+  - Monthly: shows individual month's revenue from engine projections
+- Added `storedGranularity` field to `InputFieldMapping` interface to distinguish currency fields (which aggregate across time periods) from percentage fields (which stay constant)
+- Added reverse-computation in handleCommitEdit: annual edits ÷12, quarterly edits ÷3 before saving to monthlyAuv
+- Added helper functions `getDrillLevelFromColKey` (parses column key to determine drill level) and `scaleForStorage` (applies reverse-scaling math)
+- Updated both PnlRow and ComparisonPnlRow display logic to use engine-computed values for storedGranularity fields
+- Design decision: percentage fields (COGS%, Labor%, Marketing%) continue using getRawValue at all drill levels since percentages don't aggregate; only currency fields with storedGranularity use getCellValue
+
 ### File List
 
+**7.1a Core:**
+- `shared/financial-engine.ts` — MODIFIED: PlanFinancialInputs interface restructured to per-year arrays
+- `shared/plan-initialization.ts` — MODIFIED: buildPlanFinancialInputs, unwrapForEngine, migratePlanFinancialInputs
+- `shared/plan-initialization.test.ts` — MODIFIED: Updated all tests, added migration/per-year tests
+- `shared/schema.ts` — MODIFIED: Updated type annotation
+- `server/storage.ts` — MODIFIED: Migration-on-read with write-back
+- `client/src/lib/field-metadata.ts` — MODIFIED: New field entries, decimal FormatType
+- `client/src/lib/sensitivity-engine.ts` — MODIFIED: Per-year multiplier application
+- `client/src/lib/scenario-engine.ts` — MODIFIED: Verified cloneFinancialInputs compiles
+
+**Revenue Drill-Down:**
+- `client/src/components/planning/statements/input-field-map.ts` — MODIFIED: Added storedGranularity to InputFieldMapping interface, added getDrillLevelFromColKey and scaleForStorage helper functions
+- `client/src/components/planning/statements/pnl-tab.tsx` — MODIFIED: Merged monthly-revenue/annual-revenue into single "Revenue" row (field: "revenue"), updated PnlRow and ComparisonPnlRow editable cell display to use engine-computed values for storedGranularity fields, added reverse-scaling in handleCommitEdit
+
 ### Testing Summary
+
+**7.1a Core:** 686 unit tests passing (Vitest) covering migration, per-year extraction, engine output identity, new field defaults, sensitivity multipliers.
+
+**Revenue Drill-Down:** E2E test (Playwright) verified:
+- Single "Revenue" row visible in P&L (no separate Monthly/Annual rows)
+- Annual revenue shows $331,100 for Year 1
+- Quarterly drill-down shows Q1=$31,271, Q2=$67,414, Q3=$99,943, Q4=$132,471 (ramp-up correctly reflected)
+- All quarterly values positive, non-zero, and not equal to annual total
+- Edit mode activates on cell click, Escape cancels correctly
+- AC coverage: Revenue drill-down display (AC-1 of drill-down enhancement), editing at quarterly level (AC-2 partial — entry verified, save+rollup not yet tested in E2E)
