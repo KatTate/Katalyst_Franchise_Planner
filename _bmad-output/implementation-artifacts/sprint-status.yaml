@@ -587,7 +587,7 @@ development_status:
   7-1a-data-model-restructuring-migration: done                # Foundation: per-year arrays, migration, drill-down display, storedGranularity, revenue drill-down
   7-1b-all-fields-editable-reports: done                        # DONE 2026-02-21: 15 editable fields, Copy Y1 to All, flash cleanup. AC-2 (per-month) deferred to 7.1b.1.
   7-1c-forms-onboarding-new-fields: done                 # DONE 2026-02-21: Adversarial code review completed. 8 findings (1H, 5M, 2L) all fixed. Per-month handling, safe defaults, hint text, naming, brand-default detection.
-  7-1d-facilities-decomposition-opex: done                      # DONE 2026-02-21: Facilities guided decomposition in Forms (5 sub-fields, computed total, mismatch detection). Other OpEx % label corrected in Forms + Reports. E2E verified.
+  7-1d-facilities-decomposition-opex: review                     # 2026-02-21: Implementation complete. Facilities guided decomposition in Forms (5 sub-fields, computed total, mismatch detection). Other OpEx % label corrected in Forms + Reports. E2E verified. Pending code review.
   7-1e-balance-sheet-valuation-editing: ready-for-dev          # NEW: Balance Sheet (AR/AP/Inventory Days, Tax Delay) + Valuation (EBITDA Multiple) inline editing in Reports.
   7-2-plan-crud-navigation: backlog
   epic-7-retrospective: optional
