@@ -331,7 +331,13 @@ Generate lender-grade PDF business plan packages and maintain document history w
 ### Epic 7: Per-Year Inputs & Multi-Plan Management
 Enable Year 1-5 independent input values for all per-year financial assumptions, unlocking growth trajectory modeling. Add plan creation, naming, cloning, and navigation for multi-location planning. Includes PlanFinancialInputs restructuring, Facilities field alignment, and Other OpEx unit correction.
 **FRs covered:** FR7i, FR7j, FR15, FR16
-**Stories (2):** 7.1 Per-Year Input Columns, 7.2 Plan CRUD & Navigation
+**Stories (5):**
+- 7.1a Data Model Restructuring & Migration (foundation — PlanFinancialInputs interface, migration, unwrapForEngine rewrite, field metadata, sensitivity/scenario engine updates)
+- 7.1b Reports Per-Year Inline Editing (independent per-year editing in Reports, linked-column removal, "Copy Year 1 to all", PerYearEditableRow component, INPUT_FIELD_MAP extensions)
+- 7.1c Forms Mode Per-Year Layout (5-column per-year editing in My Plan forms, new field sections, "Copy Year 1 to all")
+- 7.1d New Field Surfaces (Facilities decomposition, Other OpEx unit correction, Balance Sheet inline editing, Valuation inline editing)
+- 7.2 Plan CRUD & Navigation
+**Dependency chain:** 7.1a → 7.1b + 7.1c (parallel) → 7.1d
 
 ### Epic 8: Advisory Guardrails & Smart Guidance
 System provides non-blocking advisory nudges when franchisee inputs fall outside FDD Item 7 ranges or brand averages. Identifies weak business cases with actionable guidance on which inputs to reconsider. Suggests consultant booking when appropriate. All guidance is advisory — never blocks the franchisee.
@@ -1913,46 +1919,54 @@ Enable Year 1-5 independent input values for all per-year financial assumptions,
 **FRs covered:** FR7i, FR7j, FR15, FR16
 **Dependencies:** Epic 5 (financial statement views with linked-column indicators provide the visual foundation that this epic unlocks)
 
-### Story 7.1: Per-Year Input Columns
+### Story 7.1a: Data Model Restructuring & Migration
 
 As a franchisee,
-I want to set different values for each year (Year 1 through Year 5) for my financial assumptions,
-So that I can model realistic growth trajectories instead of flat projections across all 5 years (FR7i).
+I want the system's data model to support different values for each year (Year 1 through Year 5) for my financial assumptions,
+So that per-year input editing (Stories 7.1b–7.1d) can be built on a stable foundation without data loss (FR7i).
 
-**Acceptance Criteria:**
-
-**Given** the `PlanFinancialInputs` interface is restructured
-**When** per-year fields are stored
-**Then** all 10 per-year operating cost categories use 5-element arrays: growthRates[5], royaltyPct[5], adFundPct[5], cogsPct[5], laborPct[5], facilitiesAnnual[5], marketingPct[5], managementSalariesAnnual[5], payrollTaxPct[5], otherOpexPct[5]
-**And** new per-year fields are added: targetPreTaxProfitPct[5], shareholderSalaryAdj[5], distributions[5], nonCapexInvestment[5]
-**And** missing single-value fields are added to the UI: arDays, apDays, inventoryDays, taxPaymentDelayMonths, ebitdaMultiple
-**And** existing plans are migrated by broadcasting current single values into 5-element arrays (semantically identical — no data loss)
-
-**Given** I am editing inputs via Reports inline editing (Financial Statement tabs)
-**When** I edit a value in a specific year column
-**Then** only that year's value changes — other years retain their independent values
-**And** the linked-column indicators from Story 5.2 are removed (link icons disappear, cells no longer flash on broadcast)
-**And** a "Copy Year 1 to all years" action is available for users who want to broadcast a single value
-
-**Given** I am editing inputs in Forms mode (My Plan)
-**When** the form renders per-year fields
-**Then** each per-year field shows 5 input columns labeled Year 1 through Year 5
-**And** by default, Year 2-5 inherit Year 1's value with a visual indicator (link icon, lighter text) showing they are inherited
-**And** editing Year 2-5 breaks the inheritance for that specific year — the value becomes independent
-**And** a "Reset to Year 1" action is available per cell to re-establish inheritance
-
-**Given** the Facilities field alignment
-**When** the input structure is corrected
-**Then** the engine's single `facilitiesAnnual[5]` field is exposed directly in Reports inline editing as "Facilities ($)" per year (matching the spreadsheet)
-**And** in Forms mode (My Plan), the guided decomposition (rent, utilities, telecom, vehicle fleet, insurance) rolls up into `facilitiesAnnual[year]` with per-year support
-**And** Other OpEx changes from flat dollar amount to % of revenue (matching the spreadsheet), with migration converting existing dollar values to equivalent percentages based on projected revenue
+**Acceptance Criteria:** PlanFinancialInputs restructured to per-year arrays (13 per-year fields + 5 single-value fields). Existing plan migration is lossless, transactionally safe, idempotent, and writes back on first load. unwrapForEngine updated to pass per-year arrays directly. Scenario/sensitivity engines updated. FIELD_METADATA and FormatType extended for new fields including "decimal" type.
 
 **Dev Notes:**
-- This is the story that removes the "linked columns" behavior introduced in Story 5.2 and replaces it with independent per-year editing.
-- The `PlanFinancialInputs` → `FinancialInputs` translation layer changes from broadcasting single values to passing per-year arrays directly.
-- Migration must handle existing plans gracefully — broadcast current single values to 5-element arrays.
-- The Facilities and Other OpEx field alignment fixes are included here because they are structurally tied to the per-year restructuring.
-- See Sprint Change Proposal SCP-2026-02-15 CP-3 (Fix PlanFinancialInputs) — note: this is NOT SCP-2026-02-20 CP-3 (Fix Navigation Architecture). See also UX spec Part 3 (Pre-Epic-7 / Post-Epic-7 behavior).
+- Foundation story — all other 7.1x stories depend on this.
+- See full story: `_bmad-output/implementation-artifacts/7-1-per-year-input-columns.md`
+- See Sprint Change Proposal SCP-2026-02-15 CP-3 (Fix PlanFinancialInputs). See also UX spec Part 3 (Pre-Epic-7 / Post-Epic-7 behavior).
+
+### Story 7.1b: Reports Per-Year Inline Editing
+
+As a franchisee,
+I want to edit each year's financial assumption independently in the Reports view,
+So that I can fine-tune my 5-year projections directly within the financial statements (FR7i).
+
+**Acceptance Criteria:** Independent per-year editing in Reports (no linked-column broadcast). Link icons and flash animations removed. "Copy Year 1 to all years" with confirmation dialog. INPUT_FIELD_MAP extended for new editable rows. PerYearEditableRow component created (composing InlineEditableCell).
+
+**Dev Notes:**
+- Removes the "linked columns" behavior introduced in Story 5.2.
+- See full story: `_bmad-output/implementation-artifacts/7-1b-reports-per-year-editing.md`
+
+### Story 7.1c: Forms Mode Per-Year Layout
+
+As a franchisee,
+I want to see and edit Year 1 through Year 5 values for each assumption in the My Plan forms,
+So that I can model growth trajectories through the guided planning experience (FR7i).
+
+**Acceptance Criteria:** Per-year fields show 5 input columns (Year 1–5). Single-value fields show 1 column. All years are independent (no inheritance detection — simplified from original design). "Copy Year 1 to all years" with confirmation. New field sections rendered (Profitability & Distributions, Working Capital & Valuation).
+
+**Dev Notes:**
+- Inheritance model simplified: all 5 years always independent with "Copy Year 1 to all" for convenience. No fragile value-equality heuristic.
+- See full story: `_bmad-output/implementation-artifacts/7-1c-forms-per-year-layout.md`
+
+### Story 7.1d: New Field Surfaces — Facilities, Other OpEx, Balance Sheet & Valuation
+
+As a franchisee,
+I want to edit Facilities costs as a guided decomposition, see Other OpEx as a percentage, and edit working capital and valuation assumptions inline,
+So that my financial model matches the reference spreadsheet's full input set (FR7i, FR7j).
+
+**Acceptance Criteria:** Facilities exposed as per-year in Reports, guided decomposition in Forms (Rent, Utilities, Telecom/IT, Vehicle Fleet, Insurance) with rollup. Decomposition is authoritative source; mismatch warning with re-sync options when Reports direct edit diverges. Other OpEx displays as percentage. Balance Sheet tab: arDays, apDays, inventoryDays, taxPaymentDelayMonths inline-editable with validation. Valuation tab: ebitdaMultiple inline-editable with decimal format and validation.
+
+**Dev Notes:**
+- Facilities dual-source-of-truth resolved: decomposition is authoritative in Forms; Reports allows direct total editing with mismatch detection and re-sync.
+- See full story: `_bmad-output/implementation-artifacts/7-1d-new-field-surfaces.md`
 
 ### Story 7.2: Plan CRUD & Navigation
 
