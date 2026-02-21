@@ -4,7 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { RefreshCw, FlaskConical, Settings } from "lucide-react";
+import { RefreshCw, Settings } from "lucide-react";
 import { useSidebar } from "@/components/ui/sidebar";
 import { usePlanAutoSave } from "@/hooks/use-plan-auto-save";
 import { planKey } from "@/hooks/use-plan";
@@ -15,13 +15,14 @@ import { FinancialStatements } from "@/components/planning/financial-statements"
 import { ImpactStrip } from "@/components/planning/impact-strip";
 import { DocumentPreviewModal } from "@/components/planning/document-preview-modal";
 import { PlanCompletenessBar } from "@/components/planning/plan-completeness-bar";
+import { WhatIfPlayground } from "@/components/planning/what-if-playground";
 
 import { QuickStartOverlay } from "@/components/shared/quick-start-overlay";
 import { SummaryMetrics } from "@/components/shared/summary-metrics";
 import { useWorkspaceView } from "@/contexts/WorkspaceViewContext";
 import type { Brand, Plan } from "@shared/schema";
 import type { PlanFinancialInputs } from "@shared/financial-engine";
-import type { StartupCostLineItem } from "@shared/schema";
+import type { StartupCostLineItem } from "@shared/financial-engine";
 
 export default function PlanningWorkspace() {
   const params = useParams<{ planId: string }>();
@@ -125,21 +126,7 @@ export default function PlanningWorkspace() {
           />
         );
       case "scenarios":
-        return (
-          <div data-testid="placeholder-scenarios" className="flex-1 flex items-center justify-center p-8">
-            <Card>
-              <CardContent className="flex flex-col items-center justify-center py-16 px-8 text-center">
-                <div className="rounded-full bg-muted p-4 mb-4">
-                  <FlaskConical className="h-8 w-8 text-muted-foreground" />
-                </div>
-                <h3 className="text-lg font-semibold mb-2">Scenarios</h3>
-                <p className="text-muted-foreground text-sm max-w-sm">
-                  Coming soon — scenario comparison will appear here.
-                </p>
-              </CardContent>
-            </Card>
-          </div>
-        );
+        return <WhatIfPlayground planId={planId} />;
       case "settings":
         return (
           <div data-testid="placeholder-settings" className="flex-1 flex items-center justify-center p-8">

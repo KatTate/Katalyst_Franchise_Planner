@@ -1,6 +1,6 @@
 # Story 10.1: Sensitivity Controls & Sandbox Engine
 
-Status: ready-for-dev
+Status: review
 
 ## Story
 
@@ -181,16 +181,25 @@ So that I can build conviction that my plan works even in conservative cases —
 
 ### Agent Model Used
 
-_to be filled by dev agent_
+Claude 4.6 Opus (Replit Agent)
 
 ### Completion Notes
 
-_to be filled by dev agent_
+Implemented the What-If Playground as a client-side sandbox feature. Created a new sensitivity engine (`sensitivity-engine.ts`) following the existing `scenario-engine.ts` pattern — clones `FinancialInputs`, applies slider-based adjustments, and runs `calculateProjections()` three times (base, conservative-extreme, optimistic-extreme). Built the `WhatIfPlayground` React component with 5 sensitivity sliders (Revenue, COGS, Labor, Marketing, Facilities), each with percentage display, dollar impact label, and numeric input. Metric cards display Break-Even Month, 5-Year ROI %, Y1 Revenue, Y1 EBITDA, and Y1 Pre-Tax Income across all three scenarios with delta indicators. The component is purely sandbox — no PATCH calls, no plan mutations. Slider changes update dollar impact labels immediately; scenario metric cards reflect hardcoded slider extremes (not current slider position). Replaced the "scenarios" placeholder in `planning-workspace.tsx` with `<WhatIfPlayground planId={planId} />`. Also fixed a pre-existing LSP error where `StartupCostLineItem` was incorrectly imported from `@shared/schema` instead of `@shared/financial-engine`.
 
 ### File List
 
-_to be filled by dev agent_
+- `client/src/lib/sensitivity-engine.ts` — CREATED: Sensitivity computation engine with `computeSensitivityOutputs()`, `SliderValues`, `SliderConfig`, `SLIDER_CONFIGS`, `DEFAULT_SLIDER_VALUES`
+- `client/src/components/planning/what-if-playground.tsx` — CREATED: What-If Playground React component with sensitivity controls panel and metric cards
+- `client/src/pages/planning-workspace.tsx` — MODIFIED: Replaced `case "scenarios":` placeholder with `<WhatIfPlayground planId={planId} />`, added import, fixed `StartupCostLineItem` import source
+- `_bmad-output/implementation-artifacts/10-1-sensitivity-controls-sandbox-engine.md` — MODIFIED: Status updates and Dev Agent Record
 
 ### Testing Summary
 
-_to be filled by dev agent_
+- **Test approach:** E2E browser testing via Playwright + Vitest regression testing
+- **Vitest:** All 646 existing tests pass — no regressions
+- **E2E test:** Playwright test verified: navigation to Scenarios view, header text, 5 slider rows with controls, 5 metric cards with 3 scenario columns, slider interaction (set revenue to +8% → showed "+$35,000/yr" impact), visual layout captured via screenshot
+- **ACs covered:** All 5 acceptance criteria verified (navigation, slider rendering, scenario computation, slider interaction, sandbox invariant)
+- **All tests passing:** Yes
+- **LSP Status:** 0 errors, 0 warnings
+- **Visual Verification:** Yes — E2E screenshots confirmed correct rendering
