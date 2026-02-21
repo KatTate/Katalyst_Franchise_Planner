@@ -8,7 +8,13 @@ import {
   updatePlanSchema,
   type Plan,
 } from "@shared/schema";
+import { z } from "zod";
 import { computePlanOutputs } from "../services/financial-service";
+import { buildPlanFinancialInputs, buildPlanStartupCosts } from "@shared/plan-initialization";
+
+const createPlanRequestSchema = z.object({
+  name: z.string().min(1, "Plan name is required").max(100, "Plan name must be 100 characters or less"),
+});
 
 const router = Router();
 
@@ -73,12 +79,12 @@ router.get(
   }
 );
 
-// POST /api/plans — create a new plan
+// POST /api/plans — create a new plan with brand defaults
 router.post(
   "/",
   requireAuth,
   async (req: Request, res: Response) => {
-    const parsed = insertPlanSchema.safeParse(req.body);
+    const parsed = createPlanRequestSchema.safeParse(req.body);
     if (!parsed.success) {
       return res.status(400).json({
         message: "Validation failed",
@@ -88,7 +94,32 @@ router.post(
         })),
       });
     }
-    const plan = await storage.createPlan(parsed.data);
+
+    const effectiveUser = await getEffectiveUser(req);
+    if (!effectiveUser.brandId) {
+      return res.status(400).json({ message: "No brand associated with this user" });
+    }
+
+    const brand = await storage.getBrand(effectiveUser.brandId);
+    if (!brand) {
+      return res.status(400).json({ message: "Brand not found" });
+    }
+
+    const financialInputs = brand.brandParameters
+      ? buildPlanFinancialInputs(brand.brandParameters as any)
+      : null;
+    const startupCosts = brand.startupCostTemplate
+      ? buildPlanStartupCosts(brand.startupCostTemplate as any)
+      : null;
+
+    const plan = await storage.createPlan({
+      userId: effectiveUser.id,
+      brandId: effectiveUser.brandId,
+      name: parsed.data.name,
+      financialInputs: financialInputs as any,
+      startupCosts: startupCosts as any,
+      status: "draft",
+    } as any);
     return res.status(201).json(plan);
   }
 );
@@ -271,6 +302,41 @@ router.get(
         },
       });
     }
+  }
+);
+
+// POST /api/plans/:planId/clone — clone a plan
+router.post(
+  "/:planId/clone",
+  requireAuth,
+  requireReadOnlyImpersonation,
+  async (req: Request<{ planId: string }>, res: Response) => {
+    const plan = await requirePlanAccess(req, res);
+    if (plan === null) return;
+
+    const newName = `${plan.name} (Copy)`;
+    const cloned = await storage.clonePlan(req.params.planId, newName);
+    return res.status(201).json(cloned);
+  }
+);
+
+// DELETE /api/plans/:planId — delete a plan
+router.delete(
+  "/:planId",
+  requireAuth,
+  requireReadOnlyImpersonation,
+  async (req: Request<{ planId: string }>, res: Response) => {
+    const plan = await requirePlanAccess(req, res);
+    if (plan === null) return;
+
+    const effectiveUser = await getEffectiveUser(req);
+    const planCount = await storage.getPlanCountByUser(effectiveUser.id);
+    if (planCount <= 1) {
+      return res.status(400).json({ message: "You must have at least one plan" });
+    }
+
+    await storage.deletePlan(req.params.planId);
+    return res.json({ message: "Plan deleted" });
   }
 );
 
