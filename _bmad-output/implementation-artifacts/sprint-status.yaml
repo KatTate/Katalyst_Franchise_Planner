@@ -36,6 +36,7 @@
 
 generated: 2026-02-09
 updated: 2026-02-21  # Story 5H.4 context document created (Create Story workflow)
+updated: 2026-02-21  # SCP-2026-02-21 approved: Epic 10 pivot to user-authored scenario modeling
 updated: 2026-02-21  # Story 5H.2 → done (adversarial code review completed, all findings fixed)
 updated: 2026-02-20  # Story 10.2 context document created (Create Story workflow)
 updated: 2026-02-20  # Story 5H.2 → review (dev-story workflow complete, pending code review)
@@ -47,6 +48,16 @@ story_location: _bmad-output/implementation-artifacts
 
 # CHANGE LOG:
 # ===========
+# 2026-02-21: SCP-2026-02-21 approved — Epic 10 pivot to user-authored scenario modeling
+#   - Conservative/Optimistic system-defined columns KILLED (D1)
+#   - Replaced with Base Case vs Your Scenario (user's live slider state) (D2/D3)
+#   - Slider ranges widened: ±50%/±100% visual range, uncapped numeric input (D6)
+#   - Story 10.2 split → 10-2a (Chart Dashboard) + 10-2b (Metric Delta Cards)
+#   - Story 10.3 promoted from optional to essential (Scenario Persistence & Comparison)
+#   - sensitivity-engine.ts simplified: 4→2 engine calls (CP-7)
+#   - what-if-playground.tsx updated: Reset button, 2-column metric layout (CP-8)
+#   - All 8 change proposals (CP-1 through CP-8) applied to artifacts and code
+#   - See: sprint-change-proposal-2026-02-21.md
 # 2026-02-15: Sprint Change Proposal approved — Financial Statement Output Layer
 #   - New Epic 5: Financial Statement Views & Output Layer (10 stories)
 #   - New Epic 6: Document Generation & Vault (2 stories, elevated from old Epic 7)
@@ -473,15 +484,15 @@ development_status:
   9-4-graceful-degradation-mode-continuity: backlog
   epic-9-retrospective: optional
 
-  # Epic 10: What-If Playground [was Scenario Comparison, part of old Epic 7]
+  # Epic 10: What-If Playground — User-Authored Scenario Modeling [was Scenario Comparison, part of old Epic 7]
   # Rewritten per SCP-2026-02-20 D5/D6 — standalone sensitivity dashboard, not column-splitting
-  # Stories (3): Sensitivity Controls, Multi-Chart Dashboard, Scenario Persistence (optional)
-  epic-10: backlog
-  10-1-sensitivity-controls-sandbox-engine: backlog
+  # Pivoted per SCP-2026-02-21 — user-authored scenarios replace system-defined Conservative/Optimistic
+  # Stories (4): Sensitivity Controls, Chart Dashboard, Metric Delta Cards, Scenario Persistence & Comparison
   epic-10: in-progress
-  10-1-sensitivity-controls-sandbox-engine: ready-for-dev
-  10-2-multi-chart-sensitivity-dashboard: ready-for-dev
-  10-3-scenario-persistence-sharing: backlog  # optional enhancement
+  10-1-sensitivity-controls-sandbox-engine: needs-revision  # AC rewrite + code modification per SCP-2026-02-21 CP-2/CP-7/CP-8
+  10-2a-sensitivity-chart-dashboard: needs-revision  # AC rewrite per SCP-2026-02-21 CP-3 (split from 10-2)
+  10-2b-metric-delta-cards: needs-revision  # AC rewrite per SCP-2026-02-21 CP-4 (split from 10-2)
+  10-3-scenario-persistence-comparison: ready-for-dev  # Promoted from optional to essential per SCP-2026-02-21 CP-5
   epic-10-retrospective: optional
 
   # Epic ST: Admin Support Tools — Impersonation & Demo Modes

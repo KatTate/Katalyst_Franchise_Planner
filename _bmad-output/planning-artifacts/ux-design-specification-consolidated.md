@@ -1098,23 +1098,23 @@ The Document Preview widget shows "DRAFT" watermark diagonally across the previe
 
 1. Chris logs in and lands on the Dashboard. She sees her two plans: Location #1 (operating, has actuals) and Location #2 (in planning, 92% complete).
 2. She opens Location #2's plan. She clicks "Scenarios" in the sidebar.
-3. The What-If Playground opens. At the top, she sees a row of sensitivity sliders — one for each key assumption:
-   - Revenue: -15% ←——●——→ +15%
-   - COGS: -5% ←——●——→ +5%
-   - Payroll/Labor: -10% ←——●——→ +10%
-   - Marketing: -10% ←——●——→ +10%
-   - Facilities: -10% ←——●——→ +10%
-4. Below the sliders, she sees a dashboard of charts — all showing her Base Case (solid line) alongside Conservative (dashed) and Optimistic (dashed, lighter) scenario curves:
+3. The What-If Playground opens. At the top, she sees a row of sensitivity sliders — one for each key assumption (with practical visual ranges but uncapped numeric input):
+   - Revenue: -50% ←——●——→ +100%
+   - COGS: -20pp ←——●——→ +20pp
+   - Payroll/Labor: -50% ←——●——→ +100%
+   - Marketing: -50% ←——●——→ +100%
+   - Facilities: -50% ←——●——→ +100%
+4. Below the sliders, she sees a dashboard of charts — all showing her Base Case (solid line) alongside Your Scenario (dashed line) showing the effect of her slider adjustments:
    - Profitability chart: 5-year revenue, gross profit, EBITDA, pre-tax income
    - Cash Flow chart: net operating cash flow, ending cash balance (amber zone highlights any months where cash goes negative)
-   - Break-Even Analysis: visual timeline showing months to break-even per scenario
+   - Break-Even Analysis: visual timeline showing months to break-even for Base + Your Scenario
    - ROI & Returns: cumulative ROIC curves with plain-language callout
    - Balance Sheet Health: assets vs liabilities, equity growth
    - Debt & Working Capital: loan paydown trajectory
-5. Chris drags the Revenue slider to -10%. All six charts update simultaneously. She watches her break-even month shift from Month 12 to Month 18. Cash flow dips into the amber zone in Months 8–11 in the conservative scenario. The ROI callout updates: "At -10% revenue, your 5-year return drops from 145% to 98%."
-6. Chris moves the Labor slider to +5% (she suspects hiring will be harder than expected). The charts update again. She sees the combined effect of lower revenue and higher labor — the conservative scenario now shows break-even at Month 24 and first-year cash needs an additional $12K.
-7. She resets the sliders to zero (base case) and tries the optimistic direction — Revenue +10%, COGS -2%. All charts brighten. Break-even drops to Month 9.
-8. Satisfied that her plan works in most scenarios, Chris returns to the Dashboard. The slider adjustments did NOT change her actual saved plan inputs — the What-If Playground is a sandbox.
+5. Chris drags the Revenue slider to -10%. All six charts update simultaneously. She watches her break-even month shift from Month 12 to Month 18. Cash flow dips into the amber zone in Months 8–11. The ROI callout updates: "Your scenario: 98% ROIC at Year 5."
+6. Chris moves the Labor slider to +5% (she suspects hiring will be harder than expected). The charts update again. She sees the combined effect of lower revenue and higher labor — her scenario now shows break-even at Month 24 and first-year cash needs an additional $12K.
+7. She clicks "Save as Scenario" and names it "Low Revenue". She resets the sliders, then creates a "Low Revenue + High Labor" scenario. She uses the comparison overlay to see both saved scenarios against her Base Case simultaneously on the charts.
+8. Satisfied that her plan works under the assumptions she actually cares about, Chris returns to the Dashboard. The slider adjustments did NOT change her actual saved plan inputs — the What-If Playground is a sandbox.
 
 ---
 

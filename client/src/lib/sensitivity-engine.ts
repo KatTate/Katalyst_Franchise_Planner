@@ -1,7 +1,6 @@
 import { calculateProjections, type EngineInput, type FinancialInputs } from "@shared/financial-engine";
 import { unwrapForEngine } from "@shared/plan-initialization";
 import type { PlanFinancialInputs, StartupCostLineItem } from "@shared/financial-engine";
-import type { ScenarioOutputs } from "./scenario-engine";
 
 export interface SliderValues {
   revenue: number;
@@ -21,11 +20,11 @@ export interface SliderConfig {
 }
 
 export const SLIDER_CONFIGS: SliderConfig[] = [
-  { key: "revenue", label: "Revenue", min: -15, max: 15, step: 1, unit: "%" },
-  { key: "cogs", label: "COGS", min: -5, max: 5, step: 0.5, unit: "pp" },
-  { key: "labor", label: "Payroll / Labor", min: -10, max: 10, step: 1, unit: "%" },
-  { key: "marketing", label: "Marketing", min: -10, max: 10, step: 1, unit: "%" },
-  { key: "facilities", label: "Facilities", min: -10, max: 10, step: 1, unit: "%" },
+  { key: "revenue", label: "Revenue", min: -50, max: 100, step: 5, unit: "%" },
+  { key: "cogs", label: "COGS", min: -20, max: 20, step: 1, unit: "pp" },
+  { key: "labor", label: "Payroll / Labor", min: -50, max: 100, step: 5, unit: "%" },
+  { key: "marketing", label: "Marketing", min: -50, max: 100, step: 5, unit: "%" },
+  { key: "facilities", label: "Facilities", min: -50, max: 100, step: 5, unit: "%" },
 ];
 
 export const DEFAULT_SLIDER_VALUES: SliderValues = {
@@ -40,7 +39,7 @@ function clamp01(v: number): number {
   return Math.max(0, Math.min(1, v));
 }
 
-function cloneFinancialInputs(fi: FinancialInputs): FinancialInputs {
+export function cloneFinancialInputs(fi: FinancialInputs): FinancialInputs {
   return {
     revenue: { ...fi.revenue, growthRates: [...fi.revenue.growthRates] as [number, number, number, number, number] },
     operatingCosts: {
@@ -67,7 +66,7 @@ function cloneFinancialInputs(fi: FinancialInputs): FinancialInputs {
   };
 }
 
-function applySensitivityFactors(
+export function applySensitivityFactors(
   fi: FinancialInputs,
   sliders: SliderValues,
 ): FinancialInputs {
@@ -92,8 +91,9 @@ function applySensitivityFactors(
   return fi;
 }
 
-export interface SensitivityOutputs extends ScenarioOutputs {
-  custom: ScenarioOutputs["base"];
+export interface SensitivityOutputs {
+  base: ReturnType<typeof calculateProjections>;
+  current: ReturnType<typeof calculateProjections>;
 }
 
 export function computeSensitivityOutputs(
@@ -104,50 +104,18 @@ export function computeSensitivityOutputs(
   const baseEngineInput: EngineInput = unwrapForEngine(planInputs, startupCosts);
   const baseOutput = calculateProjections(baseEngineInput);
 
-  const conservativeSliders: SliderValues = {
-    revenue: -15,
-    cogs: 5,
-    labor: 10,
-    marketing: 10,
-    facilities: 10,
-  };
-  const conservativeInputs = applySensitivityFactors(
-    cloneFinancialInputs(baseEngineInput.financialInputs),
-    conservativeSliders,
-  );
-  const conservativeOutput = calculateProjections({
-    financialInputs: conservativeInputs,
-    startupCosts: baseEngineInput.startupCosts,
-  });
-
-  const optimisticSliders: SliderValues = {
-    revenue: 15,
-    cogs: -5,
-    labor: -10,
-    marketing: -10,
-    facilities: -10,
-  };
-  const optimisticInputs = applySensitivityFactors(
-    cloneFinancialInputs(baseEngineInput.financialInputs),
-    optimisticSliders,
-  );
-  const optimisticOutput = calculateProjections({
-    financialInputs: optimisticInputs,
-    startupCosts: baseEngineInput.startupCosts,
-  });
-
-  const hasCustomAdjustment = Object.values(currentSliders).some((v) => v !== 0);
-  let customOutput = baseOutput;
-  if (hasCustomAdjustment) {
-    const customInputs = applySensitivityFactors(
+  const hasAdjustment = Object.values(currentSliders).some((v) => v !== 0);
+  let currentOutput = baseOutput;
+  if (hasAdjustment) {
+    const currentInputs = applySensitivityFactors(
       cloneFinancialInputs(baseEngineInput.financialInputs),
       currentSliders,
     );
-    customOutput = calculateProjections({
-      financialInputs: customInputs,
+    currentOutput = calculateProjections({
+      financialInputs: currentInputs,
       startupCosts: baseEngineInput.startupCosts,
     });
   }
 
-  return { base: baseOutput, conservative: conservativeOutput, optimistic: optimisticOutput, custom: customOutput };
+  return { base: baseOutput, current: currentOutput };
 }
