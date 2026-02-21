@@ -22,17 +22,19 @@ So that no requirement falls through the cracks as we move into Epic 6 and beyon
 
 ### AC-2: Story-to-FR Reverse Trace (Phase 2)
 
-**Given** the epics file contains stories across 14 epics (including Epic 5H and Epic ST)
+**Given** the epics file contains 57 stories across 14 epics (including Epic 5H and Epic ST)
 **When** each story's acceptance criteria are reviewed
 **Then** every story has at least one FR traceability link
 **And** stories without FR traceability are flagged — a story with no requirement justification may be unnecessary or may indicate a missing FR in the PRD
+**And** for completed epics (1-5, ST): summary-level confirmation is sufficient ("All N stories in Epic X have FR coverage — verified")
+**And** for upcoming epics (6-12, 5H): full per-story FR mapping is required since these stories have not been implemented yet and gaps would cause real implementation risk
 
 ### AC-3: Coverage Map Correction (Phase 3)
 
 **Given** the epics FR Coverage Map header says "96/96" but the actual count is 111
 **When** the coverage map is corrected
 **Then** the header accurately reflects the total FR count (111/111)
-**And** all FRs from FR74-FR97 are present in the coverage map table with their epic/story assignments
+**And** all 111 FRs are present in the coverage map table with their epic/story assignments (confirmed during story creation — validate, don't rebuild)
 **And** the coverage summary math is correct and verifiable (breakdown adds to 111)
 **And** the updated coverage map is saved to `_bmad-output/planning-artifacts/epics.md`
 
@@ -99,8 +101,8 @@ So that no requirement falls through the cracks as we move into Epic 6 and beyon
 
 - **Coverage Summary math is wrong:** Line 294 says "96/96 FRs mapped (73 original + 14 FR7a-FR7n + 10 FR74-FR83 engine extensions + 14 FR84-FR97)." The math: 73 + 14 + 10 + 14 = 111, NOT 96. The breakdown terms are correct but the summary count is stale (was 96 before the 2026-02-20 PRD edit added FR84-FR97). Fix: change "96/96" to "111/111".
 - **`editable-cell.tsx` is a false retired component:** The epics story AC says to mark it as retired, but check whether it actually exists in the component tree description. It does NOT exist in the codebase (confirmed via file search). It appears at architecture.md line 1561 without a `[DELETED]` marker. Mark it `[DELETED]` with a note that its functionality is superseded by `inline-editable-cell.tsx` (line 1574).
-- **Architecture line 188 — "three radically different interaction paradigms":** This is in the technology rationale section. Under the two-surface model, there are TWO primary paradigms: form-based guided input (My Plan) and spreadsheet-like interactive statements (Reports). The AI Planning Assistant is a slide-in panel within My Plan, not a separate paradigm. Update to "two interaction paradigms" or "two distinct interaction surfaces (guided forms and interactive financial statements)."
-- **Architecture lines 276, 282, 298 — "three experience tiers" and "three tiers":** These refer to the behavioral tier model (Story/Normal/Expert), which is STILL VALID. Do not change these. The behavioral tiers modulate AI guidance density and default landing surface but do not represent separate interaction modes. However, line 282 says "Story/Normal/Expert modes" — the word "modes" should be changed to "tiers" for consistency with the new terminology.
+- **Architecture line 188 — "three radically different interaction paradigms":** This is in the technology rationale section. Under the two-surface model, there are TWO primary paradigms: form-based guided input (My Plan) and spreadsheet-like interactive statements (Reports). The AI Planning Assistant is a slide-in panel within My Plan, not a separate paradigm. Replace the exact text `"three radically different interaction paradigms (conversation, forms, spreadsheet)"` with `"two distinct interaction surfaces (form-based guided input and interactive financial statements with inline editing)"`.
+- **Architecture lines 276, 282, 298 — "three experience tiers" and "three tiers":** These refer to the behavioral tier model (Story/Normal/Expert), which is STILL VALID. Do not change these. The behavioral tiers modulate AI guidance density and default landing surface but do not represent separate interaction modes. However, line 282 says `"Story/Normal/Expert modes share components vs. diverge"` — change `"modes"` to `"tiers"` for consistency with the new terminology. This is a specific fix: `"Story/Normal/Expert modes"` → `"Story/Normal/Expert tiers"`.
 - **FR ranges in the coverage map:** FR59-FR65, FR66-FR69, FR70-FR73 are listed as single rows covering ranges. For the Phase 1 cross-reference, these should be expanded into individual FR mappings (FR59, FR60, ... FR65) to provide true traceability.
 - **FR count discrepancy in architecture.md category table:** The table at lines 33-50 lists categories with FR counts that add up to 96 (check: 34+9+4+4+5+6+6+4+1+5+4+4+2+5+2+1 = 96). But the actual count is 111 because the "Admin Support Tools" FRs (FR59-FR73, 15 FRs) are missing from this category table. Add an "Admin Support Tools (FR59-FR73)" row with count 15, and update the header total to 111.
 - **Phase 2 (reverse trace) scope:** 14 epics with 57 stories. For efficiency, focus on stories that have been created (have story files) — backlog stories that exist only in the epics file need FR traceability too, but the audit should note which stories have implementation artifacts vs. which are epics-only definitions.
@@ -132,7 +134,7 @@ This is a documentation-only story. No application source code files are created
 - **No environment variables needed.**
 - **Depends on:**
   - Story 5H.1 (done) — engine validated, FR74-FR83 implementation confirmed
-  - Story 5H.2 (done) — UI audit complete, FR84-FR97 display standards confirmed in Reports
+  - Story 5H.2 (done per adversarial code review 2026-02-21) — UI audit complete, FR84-FR97 display standards confirmed in Reports
   - Story 5H.3 (review) — Epic 6 AC audit complete, FR24-FR27 traceability verified
   - PRD with 111 FRs (confirmed — edited 2026-02-20)
   - Epics file with FR Coverage Map (confirmed — lines 190-294)
