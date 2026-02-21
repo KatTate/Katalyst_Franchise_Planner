@@ -1,17 +1,21 @@
 import { Router, Request, Response } from "express";
 import multer from "multer";
+import { z } from "zod";
 import { storage } from "../storage";
 import { brandParameterSchema, startupCostTemplateSchema } from "@shared/schema";
-import type { BrandParameters } from "@shared/schema";
-import { requireAuth, requireRole } from "../middleware/auth";
-import { GeminiFddExtractor } from "../services/extractors/gemini-fdd-extractor";
-import { mergeExtractedParameters } from "../services/fdd-ingestion-service";
+import { requireAuth, requireRole, getEffectiveUser } from "../middleware/auth";
+import {
+  runFddExtraction,
+  retryFddExtraction,
+  mergeExtractedParameters,
+  validatePdfBuffer,
+} from "../services/fdd-ingestion-service";
 
 const router = Router();
 
 const upload = multer({
   storage: multer.memoryStorage(),
-  limits: { fileSize: 20 * 1024 * 1024 },
+  limits: { fileSize: 20 * 1024 * 1024, files: 1 },
   fileFilter: (_req, file, cb) => {
     if (file.mimetype !== "application/pdf") {
       cb(new Error("Only PDF files are allowed"));
@@ -20,6 +24,8 @@ const upload = multer({
     cb(null, true);
   },
 });
+
+// ─── GET ingestion run history ────────────────────────────────────────────
 
 router.get(
   "/:brandId/fdd-ingestion/runs",
@@ -35,6 +41,8 @@ router.get(
     return res.json(runs);
   }
 );
+
+// ─── POST upload & extract ────────────────────────────────────────────────
 
 router.post(
   "/:brandId/fdd-ingestion/extract",
@@ -62,46 +70,36 @@ router.post(
         return res.status(404).json({ message: "Brand not found" });
       }
 
-      const file = (req as any).file;
+      const file = req.file;
       if (!file) {
         return res.status(400).json({ message: "No file uploaded" });
       }
 
-      const run = await storage.createFddIngestionRun({
-        brandId,
-        filename: file.originalname,
-        status: "processing",
-        runBy: req.user!.id,
-        runAt: new Date(),
-      });
-
-      try {
-        const extractor = new GeminiFddExtractor();
-        const result = await extractor.extract(file.buffer, brand.name);
-
-        const updatedRun = await storage.updateFddIngestionRun(run.id, {
-          status: "completed",
-          extractedData: result,
-        });
-
-        return res.json(updatedRun);
-      } catch (extractionError: any) {
-        await storage.updateFddIngestionRun(run.id, {
-          status: "failed",
-          errorMessage: extractionError.message || "Extraction failed",
-        });
-
-        return res.status(500).json({
-          message: "AI extraction failed",
-          error: extractionError.message || "Unknown error",
-          runId: run.id,
-        });
+      const pdfValidation = validatePdfBuffer(file.buffer);
+      if (!pdfValidation.valid) {
+        return res.status(400).json({ message: pdfValidation.error });
       }
+
+      const effectiveUser = await getEffectiveUser(req);
+
+      const updatedRun = await runFddExtraction(
+        file.buffer,
+        brand,
+        effectiveUser.id,
+        file.originalname,
+      );
+
+      return res.json(updatedRun);
     } catch (error: any) {
-      return res.status(500).json({ message: error.message || "Internal server error" });
+      return res.status(500).json({
+        message: "AI extraction failed",
+        error: error.message || "Unknown error",
+      });
     }
   }
 );
+
+// ─── POST retry failed extraction ─────────────────────────────────────────
 
 router.post(
   "/:brandId/fdd-ingestion/:runId/retry",
@@ -124,14 +122,22 @@ router.post(
         return res.status(400).json({ message: "Can only retry failed extractions" });
       }
 
-      return res.status(400).json({
-        message: "Retry requires re-uploading the document. Please upload the file again.",
-      });
+      const updatedRun = await retryFddExtraction(run, brand.name);
+      return res.json(updatedRun);
     } catch (error: any) {
-      return res.status(500).json({ message: error.message || "Internal server error" });
+      return res.status(500).json({
+        message: "Retry failed",
+        error: error.message || "Unknown error",
+      });
     }
   }
 );
+
+// ─── POST apply extracted parameters ──────────────────────────────────────
+
+const applyParametersBodySchema = z.object({
+  parameters: z.record(z.any()).optional(),
+});
 
 router.post(
   "/:brandId/fdd-ingestion/:runId/apply-parameters",
@@ -154,7 +160,15 @@ router.post(
         return res.status(400).json({ message: "No extracted data available" });
       }
 
-      const editedParameters = req.body.parameters || run.extractedData.parameters;
+      const bodyParse = applyParametersBodySchema.safeParse(req.body);
+      if (!bodyParse.success) {
+        return res.status(400).json({
+          message: "Invalid request body",
+          errors: bodyParse.error.errors.map((e) => ({ path: e.path.map(String), message: e.message })),
+        });
+      }
+
+      const editedParameters = bodyParse.data.parameters || run.extractedData.parameters;
       const merged = mergeExtractedParameters(editedParameters, brand.brandParameters || null);
 
       const validation = brandParameterSchema.safeParse(merged);
@@ -180,6 +194,12 @@ router.post(
   }
 );
 
+// ─── POST apply extracted startup costs ───────────────────────────────────
+
+const applyStartupCostsBodySchema = z.object({
+  startupCosts: z.array(z.any()).optional(),
+});
+
 router.post(
   "/:brandId/fdd-ingestion/:runId/apply-startup-costs",
   requireAuth,
@@ -201,7 +221,15 @@ router.post(
         return res.status(400).json({ message: "No extracted data available" });
       }
 
-      const startupCosts = req.body.startupCosts || run.extractedData.startupCosts;
+      const bodyParse = applyStartupCostsBodySchema.safeParse(req.body);
+      if (!bodyParse.success) {
+        return res.status(400).json({
+          message: "Invalid request body",
+          errors: bodyParse.error.errors.map((e) => ({ path: e.path.map(String), message: e.message })),
+        });
+      }
+
+      const startupCosts = bodyParse.data.startupCosts || run.extractedData.startupCosts;
 
       const validation = startupCostTemplateSchema.safeParse(startupCosts);
       if (!validation.success) {

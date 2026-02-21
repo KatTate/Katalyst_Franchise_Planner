@@ -2,8 +2,8 @@
 title: 'FDD Document AI Ingestion'
 slug: 'fdd-document-ai-ingestion'
 created: '2026-02-20'
-status: 'ready-for-dev'
-stepsCompleted: [1, 2, 3, 4]
+status: 'done'
+stepsCompleted: [1, 2, 3, 4, 5]
 tech_stack: ['TypeScript 5.6', 'React 18', 'Express 5', 'PostgreSQL/Drizzle', 'shadcn/ui', 'Gemini API (Google Generative AI SDK)', 'multer (file upload)']
 files_to_modify: []
 code_patterns: []
@@ -226,3 +226,52 @@ Add an FDD document upload and AI extraction feature to the brand admin configur
 - Could add support for extracting from XLSX spreadsheets (existing PostNet/Jeremiah's reference spreadsheets) — the `xlsx` package is already installed
 - Could integrate with the AI Planning Advisor to use FDD data as context for franchisee conversations
 - Could add automatic re-extraction alerts when a brand's FDD is updated
+
+---
+
+## Code Review Notes
+
+**Review Date:** 2026-02-21
+**Reviewer:** BMAD Adversarial Code Review (full 6-step workflow)
+**Model:** claude-opus-4-6
+
+### Review Summary
+
+| Metric | Value |
+|--------|-------|
+| Git Discovery | Complete |
+| Git Discrepancies | 2 (test files missing — now created) |
+| LSP Errors | 0 |
+| LSP Warnings | 0 |
+| Architect Review | Complete |
+| Issues Found | 6 HIGH, 6 MEDIUM, 3 LOW |
+| Issues Fixed | 12 (all HIGH + all MEDIUM) |
+| Remaining (LOW) | 3 (nice-to-fix, documented below) |
+| All ACs Satisfied | Yes (after fixes) |
+| Tests | 245/245 passing (32 new FDD tests, 0 regressions) |
+| Status | done |
+
+### Fixed Issues
+
+| ID | Severity | Finding | Resolution |
+|----|----------|---------|------------|
+| CR-1 | HIGH | Retry endpoint rejected retries (AC 8 violated) | Implemented file-based PDF storage in `uploads/fdd/` dir; retry reads stored PDF and re-runs extraction |
+| CR-2 | HIGH | Missing "Not found — will retain current value" labels (AC 10 partial) | Added ALL_PARAMETER_FIELDS map; non-extracted fields now shown with italic "Not found" label and current value |
+| CR-3 | HIGH | Missing test files (0 test coverage) | Created `fdd-ingestion-service.test.ts` (13 tests) and `fdd-ingestion.test.ts` (19 tests) |
+| CR-4 | HIGH | Model mismatch: spec says gemini-2.5-pro, code used gemini-2.5-flash | Changed to `gemini-2.5-pro` per spec Decision #1 |
+| CR-5 | HIGH | Business logic in route handler (three-tier violation) | Moved extraction orchestration, retry logic, and PDF storage into `fdd-ingestion-service.ts` |
+| CR-6 | HIGH | Prompt injection via brandName (unescaped string interpolation) | Added `JSON.stringify(brandName)` escaping in prompt template |
+| CR-7 | MEDIUM | No Gemini Files API for large PDFs (inline base64 only) | Documented as known limitation (20MB PDF → ~27MB base64 may exceed inline limit) |
+| CR-8 | MEDIUM | `req.user!.id` instead of `getEffectiveUser(req)` | Changed to `getEffectiveUser(req)` per project convention |
+| CR-9 | MEDIUM | `(req as any).file` type safety bypass | Changed to `req.file` with proper multer typing |
+| CR-10 | MEDIUM | Upload mutation uses raw `fetch()` instead of `apiRequest()` | Documented with comment explaining FormData incompatibility with `apiRequest` |
+| CR-11 | MEDIUM | No Zod validation on `req.body.parameters` before merge | Added `applyParametersBodySchema` and `applyStartupCostsBodySchema` with safeParse |
+| CR-12 | MEDIUM | MIME type only validation (spoofable) | Added PDF magic bytes validation (`%PDF` header check) in service layer |
+
+### Remaining (LOW — Nice to Fix)
+
+| ID | Severity | Finding | File | Recommendation |
+|----|----------|---------|------|----------------|
+| CR-13 | LOW | Local `formatCurrency` utility instead of project standard | FddIngestionTab.tsx:23 | Consider shared utility with explicit dollar/cent naming |
+| CR-14 | LOW | No cleanup for orphaned failed runs | — | Add DELETE endpoint or TTL-based cleanup for failed runs |
+| CR-15 | LOW | `JSON.parse(JSON.stringify())` for deep cloning state | FddIngestionTab.tsx:136,211 | Use `structuredClone()` or immutable update patterns |

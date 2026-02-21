@@ -86,9 +86,9 @@ export class GeminiFddExtractor implements FddExtractor {
   }
 
   async extract(pdfBuffer: Buffer, brandName: string): Promise<FddExtractionResult> {
-    const model = this.genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
+    const model = this.genAI.getGenerativeModel({ model: "gemini-2.5-pro" });
 
-    const prompt = EXTRACTION_PROMPT.replace("{BRAND_NAME}", brandName);
+    const prompt = EXTRACTION_PROMPT.replace("{BRAND_NAME}", JSON.stringify(brandName));
 
     const pdfBase64 = pdfBuffer.toString("base64");
 

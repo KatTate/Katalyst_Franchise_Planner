@@ -1,8 +1,113 @@
-import type { BrandParameters, StartupCostTemplate, FddExtractionResult } from "@shared/schema";
+import fs from "fs";
+import path from "path";
+import type { BrandParameters, FddExtractionResult, FddIngestionRun, Brand } from "@shared/schema";
+import { storage } from "../storage";
+import { GeminiFddExtractor } from "./extractors/gemini-fdd-extractor";
+
+// ─── FDD Extractor Interface ──────────────────────────────────────────────
 
 export interface FddExtractor {
   extract(pdfBuffer: Buffer, brandName: string): Promise<FddExtractionResult>;
 }
+
+// ─── PDF File Storage ─────────────────────────────────────────────────────
+
+const FDD_UPLOAD_DIR = path.resolve("uploads", "fdd");
+
+function ensureUploadDir(): void {
+  if (!fs.existsSync(FDD_UPLOAD_DIR)) {
+    fs.mkdirSync(FDD_UPLOAD_DIR, { recursive: true });
+  }
+}
+
+function savePdfToDisk(runId: string, pdfBuffer: Buffer): string {
+  ensureUploadDir();
+  const filePath = path.join(FDD_UPLOAD_DIR, `${runId}.pdf`);
+  fs.writeFileSync(filePath, pdfBuffer);
+  return filePath;
+}
+
+function readPdfFromDisk(runId: string): Buffer | null {
+  const filePath = path.join(FDD_UPLOAD_DIR, `${runId}.pdf`);
+  if (!fs.existsSync(filePath)) {
+    return null;
+  }
+  return fs.readFileSync(filePath);
+}
+
+// ─── Extraction Orchestration ─────────────────────────────────────────────
+
+export async function runFddExtraction(
+  pdfBuffer: Buffer,
+  brand: Brand,
+  userId: string,
+  filename: string,
+): Promise<FddIngestionRun> {
+  const run = await storage.createFddIngestionRun({
+    brandId: brand.id,
+    filename,
+    status: "processing",
+    runBy: userId,
+    runAt: new Date(),
+  });
+
+  savePdfToDisk(run.id, pdfBuffer);
+
+  try {
+    const extractor = new GeminiFddExtractor();
+    const result = await extractor.extract(pdfBuffer, brand.name);
+
+    const updatedRun = await storage.updateFddIngestionRun(run.id, {
+      status: "completed",
+      extractedData: result,
+    });
+
+    return updatedRun;
+  } catch (error: any) {
+    await storage.updateFddIngestionRun(run.id, {
+      status: "failed",
+      errorMessage: error.message || "Extraction failed",
+    });
+
+    throw error;
+  }
+}
+
+export async function retryFddExtraction(
+  run: FddIngestionRun,
+  brandName: string,
+): Promise<FddIngestionRun> {
+  const pdfBuffer = readPdfFromDisk(run.id);
+  if (!pdfBuffer) {
+    throw new Error("Original PDF file not found on disk. Please re-upload the document.");
+  }
+
+  await storage.updateFddIngestionRun(run.id, {
+    status: "processing",
+    errorMessage: undefined,
+  });
+
+  try {
+    const extractor = new GeminiFddExtractor();
+    const result = await extractor.extract(pdfBuffer, brandName);
+
+    const updatedRun = await storage.updateFddIngestionRun(run.id, {
+      status: "completed",
+      extractedData: result,
+    });
+
+    return updatedRun;
+  } catch (error: any) {
+    await storage.updateFddIngestionRun(run.id, {
+      status: "failed",
+      errorMessage: error.message || "Extraction failed",
+    });
+
+    throw error;
+  }
+}
+
+// ─── Merge Logic ──────────────────────────────────────────────────────────
 
 export function getDefaultBrandParameters(): BrandParameters {
   return {
@@ -60,4 +165,18 @@ export function mergeExtractedParameters(
   }
 
   return merged;
+}
+
+// ─── PDF Validation ───────────────────────────────────────────────────────
+
+const PDF_MAGIC_BYTES = Buffer.from([0x25, 0x50, 0x44, 0x46]); // %PDF
+
+export function validatePdfBuffer(buffer: Buffer): { valid: boolean; error?: string } {
+  if (buffer.length === 0) {
+    return { valid: false, error: "File is empty" };
+  }
+  if (buffer.length < 4 || !buffer.subarray(0, 4).equals(PDF_MAGIC_BYTES)) {
+    return { valid: false, error: "File is not a valid PDF (invalid header)" };
+  }
+  return { valid: true };
 }
