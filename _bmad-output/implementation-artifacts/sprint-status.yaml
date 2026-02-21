@@ -35,6 +35,7 @@
 # - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
 
 generated: 2026-02-09
+updated: 2026-02-21  # Story 11.1 context document created (Create Story workflow)
 updated: 2026-02-21  # Story 5H.4 context document created (Create Story workflow)
 updated: 2026-02-21  # SCP-2026-02-21 approved: Epic 10 pivot to user-authored scenario modeling
 updated: 2026-02-21  # Story 5H.2 → done (adversarial code review completed, all findings fixed)
@@ -355,6 +356,23 @@ story_location: _bmad-output/implementation-artifacts
 #   - Edits epics.md (coverage map) and architecture.md (FR count, stale references)
 #   - Story status: ready-for-dev
 #   - Next action: Dev Story (DS) for 5H.4 audit execution
+# 2026-02-21: Story 11.1 context document created (Create Story workflow)
+#   - Full story file: 11-1-franchisee-data-sharing-controls.md (ready-for-dev)
+#   - 9 acceptance criteria covering: data sharing description with shared/never-shared
+#     field lists (AC-1), grant consent flow with confirmation dialog (AC-2/AC-3),
+#     revoke consent flow with immediate effect (AC-4), append-only audit trail
+#     enforcement at API level (AC-5), pipeline-only projection for non-opted-in
+#     franchisors (AC-6), full projection for opted-in franchisors (AC-7),
+#     Katalyst admin full visibility regardless of consent (AC-8),
+#     franchisor cannot modify consent (AC-9)
+#   - Dev notes include: new data_sharing_consents table (append-only), IStorage
+#     consent methods, consent router (3 endpoints), RBAC response projection in
+#     plans.ts, DataSharingSettings component replacing settings placeholder,
+#     brand name via useBrandTheme() hook, 7 anti-patterns, 7 gotchas,
+#     data-testid convention for consent UI elements
+#   - FRs covered: FR33, FR34, FR35, FR36, FR37, FR38
+#   - Epic 11 status: in-progress (first story ready-for-dev)
+#   - Next action: Dev Story (DS) for 11.1 implementation
 
 development_status:
   # Epic 1: Auth, Onboarding & User Management
@@ -505,8 +523,8 @@ development_status:
   epic-st-retrospective: optional
 
   # Epic 11: Data Sharing, Privacy & Pipeline Dashboards [was Epic 8]
-  epic-11: backlog
-  11-1-franchisee-data-sharing-controls: backlog
+  epic-11: in-progress
+  11-1-franchisee-data-sharing-controls: ready-for-dev
   11-2-franchisor-pipeline-dashboard: backlog
   11-3-katalyst-admin-cross-brand-dashboard: backlog
   epic-11-retrospective: optional
