@@ -19,9 +19,10 @@ Then the following per-year fields use 5-element `FinancialFieldValue[]` arrays,
 *Revenue (1 per-year field):*
 - `growthRates[5]` (replaces `year1GrowthRate` + `year2GrowthRate`)
 
-*Operating Costs (9 per-year fields):*
+*Operating Costs (9 per-year fields + 1 nested decomposition):*
 - `royaltyPct[5]`, `adFundPct[5]`, `cogsPct[5]`, `laborPct[5]`
 - `facilitiesAnnual[5]` (replaces `rentMonthly` + `utilitiesMonthly` + `insuranceMonthly`)
+- `facilitiesDecomposition`: `{ rent: FinancialFieldValue[], utilities: FinancialFieldValue[], telecomIt: FinancialFieldValue[], vehicleFleet: FinancialFieldValue[], insurance: FinancialFieldValue[] }` — each a 5-element per-year array. Stores the component breakdown behind `facilitiesAnnual`. Used by Forms mode (Story 7.1d) for guided editing; Reports mode edits `facilitiesAnnual` directly. See AC-2 for migration population from old fields.
 - `marketingPct[5]`, `managementSalariesAnnual[5]` (new), `payrollTaxPct[5]` (new), `otherOpexPct[5]` (replaces `otherMonthly` as dollar amount)
 
 *Profitability & Distributions (new category in `PlanFinancialInputs`):*
@@ -37,6 +38,10 @@ Then the following per-year fields use 5-element `FinancialFieldValue[]` arrays,
 - `taxPaymentDelayMonths` (single value, integer)
 - `ebitdaMultiple` (single value, decimal — see FormatType note below)
 
+*Unchanged categories:*
+- `financing` (loanAmount, interestRate, loanTermMonths, downPaymentPct) — remains single-value fields, no restructuring in this story.
+- `startupCapital` (workingCapitalMonths, depreciationYears) — remains single-value fields, no restructuring in this story.
+
 Note: `monthlyAuv` and `startingMonthAuvPct` intentionally remain single-value fields. Revenue variation across years is modeled via `growthRates`, not by changing the base AUV. This is consistent with the engine's design where `annualGrossSales` is derived from `monthlyAuv * 12` as a Year 1 base.
 
 **AC-2: Existing plan migration is lossless and transactionally safe**
@@ -47,7 +52,7 @@ Then current single values are broadcast into 5-element arrays (e.g., `cogsPct: 
 And the `growthRates` migration merges two separate fields: `year1GrowthRate` maps to index 0, `year2GrowthRate` maps to indices 1–4 (preserving the current `[year1Growth, year2Growth, year2Growth, year2Growth, year2Growth]` broadcast behavior)
 And the `facilitiesAnnual` migration bakes in the current 3% escalation: `facilitiesAnnual[0]` = `(rentMonthly + utilitiesMonthly + insuranceMonthly) * 12`, `facilitiesAnnual[1]` = `facilitiesAnnual[0] * 1.03`, ..., `facilitiesAnnual[4]` = `facilitiesAnnual[0] * 1.03^4` — reproducing the exact values that `unwrapForEngine` currently computes
 And the `facilitiesDecomposition` migration populates: `rent` from old `rentMonthly * 12` (broadcast to 5 years with 3% escalation baked in), `utilities` from old `utilitiesMonthly * 12` (same escalation), `insurance` from old `insuranceMonthly * 12` (same escalation), `telecomIt` and `vehicleFleet` default to `[0,0,0,0,0]` (new fields with no legacy data)
-And the `otherOpexPct` migration converts `otherMonthly` (cents) to a percentage using `(otherMonthly * 12) / (monthlyAuv * 12)` as the revenue basis (i.e., `monthlyAuv * 12` before any growth is applied — matching the current `unwrapForEngine` behavior at line 311-312), then broadcasts that percentage to all 5 years. If `monthlyAuv` is 0, use `DEFAULT_OTHER_OPEX_PCT` as the fallback. If `monthlyAuv` is very small (resulting in `otherOpexPct > 1.0`), cap at `1.0` (100%) to prevent nonsensical percentages.
+And the `otherOpexPct` migration converts `otherMonthly` (cents) to a percentage using `(otherMonthly * 12) / (monthlyAuv * 12)` as the revenue basis (i.e., `monthlyAuv * 12` before any growth is applied — matching the current `unwrapForEngine` behavior at line ~311-312), then broadcasts that percentage to all 5 years. If `monthlyAuv` is 0, use `DEFAULT_OTHER_OPEX_PCT` as the fallback. If `monthlyAuv` is very small (resulting in `otherOpexPct > 1.0`), cap at `1.0` (100%) to prevent nonsensical percentages. **Known limitation:** Capping at 1.0 is a one-way lossy conversion — the original dollar amount cannot be recovered from a capped percentage. This is acceptable because `otherOpexPct > 100%` of revenue is nonsensical and indicates bad input data.
 And new fields not present in old plans receive sensible defaults: `managementSalariesAnnual` = `[0,0,0,0,0]`, `payrollTaxPct` = `fill5(DEFAULT_PAYROLL_TAX_PCT)`, `targetPreTaxProfitPct` = `fill5(0)`, `shareholderSalaryAdj` = `[0,0,0,0,0]`, `distributions` = `[0,0,0,0,0]`, `nonCapexInvestment` = `[0,0,0,0,0]`, `arDays` = `DEFAULT_AR_DAYS`, `apDays` = `DEFAULT_AP_DAYS`, `inventoryDays` = `DEFAULT_INVENTORY_DAYS`, `taxPaymentDelayMonths` = `0`, `ebitdaMultiple` = `3.0`
 And the migration is semantically identical — no data loss, no behavioral change for existing plans
 And plans continue to produce identical engine output before and after migration (verified by unit tests comparing pre- and post-migration engine output)
@@ -69,7 +74,8 @@ And hardcoded defaults (e.g., `managementSalariesAnnual: [0,0,0,0,0]`, `payrollT
 Given `client/src/lib/scenario-engine.ts` and `client/src/lib/sensitivity-engine.ts` consume `PlanFinancialInputs`
 When the data model changes
 Then the sensitivity engine applies the same percentage multiplier to each of the 5 per-year base values independently (e.g., if `cogsPct` base is `[0.30, 0.28, 0.27, 0.26, 0.25]` and multiplier is 1.10, result is `[0.33, 0.308, 0.297, 0.286, 0.275]`). There are NOT 5 independent multiplier sliders per field — one multiplier applies across all years for a given field.
-And the scenario engine applies the migration function to any stored scenario snapshots in old single-value format before processing. **Resolution: Scenario snapshots reference the plan's `financial_inputs` JSONB — they do NOT store independent copies. Therefore, migrating the plan's `financial_inputs` automatically updates scenario baselines. If this assumption is incorrect (discovered during implementation), scenario snapshots must each be migrated individually using the same migration function.**
+And the scenario engine requires no separate migration. **Verified:** The scenario engine (`scenario-engine.ts`) computes scenarios on-the-fly from the plan's `PlanFinancialInputs` via `unwrapForEngine()` — it does NOT store independent scenario snapshots. Migrating `PlanFinancialInputs` (AC-2) automatically updates scenario computation. The `cloneFinancialInputs` helper in both `scenario-engine.ts` and `sensitivity-engine.ts` already handles the optional fields (`targetPreTaxProfitPct`, `shareholderSalaryAdj`, `nonCapexInvestment`, etc.) — verify these continue to compile after the `PlanFinancialInputs` changes.
+And the existing 5 sensitivity sliders (revenue, cogs, labor, marketing, facilities) remain unchanged. New fields (`managementSalariesAnnual`, `payrollTaxPct`, etc.) do not receive sensitivity sliders in this story.
 
 **AC-5: FIELD_METADATA and FormatType extended for new fields**
 
@@ -104,7 +110,9 @@ And new categories `profitabilityAndDistributions` and `workingCapitalAndValuati
 
 ### Gotchas & Integration Warnings
 
-- **`fill5()` usage audit**: `shared/plan-initialization.ts:413-414` defines `fill5()` which broadcasts a single value to 5 years. After this story, most calls to `fill5()` in `unwrapForEngine()` should be removed. Verify each one is replaced with the actual per-year array extraction.
+**Note:** Line numbers referenced below are approximate and may shift due to interim commits — use function names and surrounding comments to locate code sections.
+
+- **`fill5()` usage audit**: `shared/plan-initialization.ts:~413-414` defines `fill5()` which broadcasts a single value to 5 years. After this story, most calls to `fill5()` in `unwrapForEngine()` should be removed. Verify each one is replaced with the actual per-year array extraction.
 - **`otherMonthly` → `otherOpexPct` conversion**: Currently `unwrapForEngine` (line 305-314) converts `otherMonthly` (dollars) to `otherOpexPct` (percentage of revenue). After this story, `otherOpexPct` is stored directly as a per-year percentage, eliminating this conversion entirely. The KNOWN LIMITATION comment on line 306-308 becomes obsolete.
 - **Facilities field compound calculation**: Currently `unwrapForEngine` (line 291-303) sums `rentMonthly + utilitiesMonthly + insuranceMonthly` and applies 3% escalation via `RENT_ESCALATION_RATE`. After this story, `facilitiesAnnual` is stored directly as 5 per-year values. The escalation is no longer automatic — users set each year's value independently.
 - **`year1GrowthRate` / `year2GrowthRate` consolidation**: Currently `PlanFinancialInputs` has separate fields for year 1 and year 2 growth rates. In `unwrapForEngine` (line 336), year 2 growth is broadcast to years 2-5: `[year1Growth, year2Growth, year2Growth, year2Growth, year2Growth]`. After this story, a single `growthRates[5]` per-year array replaces both fields.
@@ -124,7 +132,7 @@ And new categories `profitabilityAndDistributions` and `workingCapitalAndValuati
 | `server/storage.ts` | MODIFY | Add migration-on-read with write-back in `getPlan()` — detect old format, migrate, persist migrated version. Wrap in transaction for safety. |
 | `client/src/lib/field-metadata.ts` | MODIFY | Add `FIELD_METADATA` entries for all new fields. Add `"decimal"` to `FormatType` union. Add new categories to `CATEGORY_LABELS` and `CATEGORY_ORDER`. Add `formatFieldValue`, `parseFieldInput`, `getInputPlaceholder` cases for `"decimal"`. |
 | `client/src/lib/sensitivity-engine.ts` | MODIFY | Update sensitivity multipliers to apply same multiplier across all 5 per-year base values independently. |
-| `client/src/lib/scenario-engine.ts` | MODIFY | Update for new `PlanFinancialInputs` structure. Apply migration to any stored scenario snapshots in old format if they exist independently. |
+| `client/src/lib/scenario-engine.ts` | MODIFY | Verify `cloneFinancialInputs` compiles with new `PlanFinancialInputs` structure. No migration needed — scenarios compute on-the-fly from plan inputs, no stored snapshots exist. |
 
 ### Testing Expectations
 
@@ -140,6 +148,7 @@ And new categories `profitabilityAndDistributions` and `workingCapitalAndValuati
 - **Reference validation tests**: `shared/financial-engine-reference.test.ts` — must continue passing unchanged.
 - **Engine tests**: `shared/financial-engine.test.ts` — should pass unchanged (engine interface is not changing).
 - **Sensitivity engine tests**: Verify multipliers apply correctly to per-year arrays (not just single values).
+- **Server storage migration tests**: `getPlan()` detects old-format plan, migrates, writes back migrated version, and returns it. Second `getPlan()` call returns already-migrated plan without re-running migration (idempotency at DB layer). Failed migration rolls back transactionally — plan remains in old format. Migration failures are logged with plan ID and error details.
 
 ### Dependencies
 
