@@ -26,6 +26,41 @@ function resolveField(categoryObj: Record<string, any>, fieldName: string): Fina
   return raw as FinancialFieldValue;
 }
 
+const DECOMP_KEYS = ["rent", "utilities", "telecomIt", "vehicleFleet", "insurance"] as const;
+
+function recomputeFacilitiesAnnual(
+  inputs: PlanFinancialInputs,
+  updatedDecomp: Record<string, any>,
+): FinancialFieldValue[] {
+  const now = new Date().toISOString();
+  return Array.from({ length: 5 }, (_, yi) => {
+    let total = 0;
+    for (const dk of DECOMP_KEYS) {
+      const arr = updatedDecomp[dk] as FinancialFieldValue[] | undefined;
+      if (arr && arr[yi]) total += arr[yi].currentValue;
+    }
+    const existing = inputs.operatingCosts.facilitiesAnnual?.[yi];
+    if (existing) {
+      return { ...existing, currentValue: total, source: "user_entry" as const, isCustom: true, lastModifiedAt: now };
+    }
+    return { currentValue: total, source: "user_entry" as const, brandDefault: null, item7Range: null, lastModifiedAt: now, isCustom: true };
+  });
+}
+
+function applyDecompUpdate(
+  inputs: PlanFinancialInputs,
+  updatedDecomp: Record<string, any>,
+): PlanFinancialInputs {
+  return {
+    ...inputs,
+    operatingCosts: {
+      ...inputs.operatingCosts,
+      facilitiesDecomposition: updatedDecomp,
+      facilitiesAnnual: recomputeFacilitiesAnnual(inputs, updatedDecomp),
+    },
+  } as PlanFinancialInputs;
+}
+
 function buildUpdatedInputs(
   inputs: PlanFinancialInputs,
   category: string,
@@ -60,31 +95,8 @@ function buildUpdatedInputs(
   }
 
   if (category === "facilitiesDecomposition") {
-    const updatedDecomp = {
-      ...categoryObj,
-      [fieldName]: newValue,
-    };
-    const decompKeys = ["rent", "utilities", "telecomIt", "vehicleFleet", "insurance"] as const;
-    const updatedFacilitiesAnnual = Array.from({ length: 5 }, (_, yi) => {
-      let total = 0;
-      for (const dk of decompKeys) {
-        const arr = updatedDecomp[dk] as FinancialFieldValue[] | undefined;
-        if (arr && arr[yi]) total += arr[yi].currentValue;
-      }
-      const existing = inputs.operatingCosts.facilitiesAnnual?.[yi];
-      if (existing) {
-        return { ...existing, currentValue: total, source: "user_entry" as const, isCustom: true, lastModifiedAt: new Date().toISOString() };
-      }
-      return { currentValue: total, source: "user_entry" as const, brandDefault: null, item7Range: null, lastModifiedAt: new Date().toISOString(), isCustom: true };
-    });
-    return {
-      ...inputs,
-      operatingCosts: {
-        ...inputs.operatingCosts,
-        facilitiesDecomposition: updatedDecomp,
-        facilitiesAnnual: updatedFacilitiesAnnual,
-      },
-    } as PlanFinancialInputs;
+    const updatedDecomp = { ...categoryObj, [fieldName]: newValue };
+    return applyDecompUpdate(inputs, updatedDecomp);
   }
   return {
     ...inputs,
@@ -197,41 +209,14 @@ export function useFieldEditing({ financialInputs, isSaving, onSave }: UseFieldE
         const resetArr = raw.map((item: FinancialFieldValue) =>
           resetFieldToDefault(item, new Date().toISOString())
         );
+        const updatedCategoryObj = { ...categoryObj, [fieldName]: resetArr };
         let updatedInputs: PlanFinancialInputs;
         if (category === "facilitiesDecomposition") {
-          const updatedDecomp = {
-            ...categoryObj,
-            [fieldName]: resetArr,
-          };
-          const decompKeys = ["rent", "utilities", "telecomIt", "vehicleFleet", "insurance"] as const;
-          const now = new Date().toISOString();
-          const updatedFacilitiesAnnual = Array.from({ length: 5 }, (_, yi) => {
-            let total = 0;
-            for (const dk of decompKeys) {
-              const arr = updatedDecomp[dk] as FinancialFieldValue[] | undefined;
-              if (arr && arr[yi]) total += arr[yi].currentValue;
-            }
-            const existing = financialInputs.operatingCosts.facilitiesAnnual?.[yi];
-            if (existing) {
-              return { ...existing, currentValue: total, source: "user_entry" as const, isCustom: true, lastModifiedAt: now };
-            }
-            return { currentValue: total, source: "user_entry" as const, brandDefault: null, item7Range: null, lastModifiedAt: now, isCustom: true };
-          });
-          updatedInputs = {
-            ...financialInputs,
-            operatingCosts: {
-              ...financialInputs.operatingCosts,
-              facilitiesDecomposition: updatedDecomp,
-              facilitiesAnnual: updatedFacilitiesAnnual,
-            },
-          } as PlanFinancialInputs;
+          updatedInputs = applyDecompUpdate(financialInputs, updatedCategoryObj);
         } else {
           updatedInputs = {
             ...financialInputs,
-            [category]: {
-              ...categoryObj,
-              [fieldName]: resetArr,
-            },
+            [category]: updatedCategoryObj,
           };
         }
         onSave(updatedInputs);

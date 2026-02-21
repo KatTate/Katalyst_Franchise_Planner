@@ -1,6 +1,6 @@
 # Story 7.1d: Facilities Guided Decomposition & Other OpEx Correction
 
-Status: review
+Status: done
 
 ## Story
 
@@ -116,14 +116,19 @@ And any remaining dollar-to-percentage conversion logic in `unwrapForEngine` is 
 - Other OpEx label corrected to "Other OpEx %" in P&L tab (pnl-tab.tsx)
 - No dollar-to-percentage conversion remnants found in unwrapForEngine (already cleaned up in 7.1a)
 - No new API endpoints, no new packages, no modifications to components/ui/*
+- **Code Review (adversarial):** 1 HIGH, 3 MEDIUM, 3 LOW findings — all resolved:
+  - H1: AC-4 P&L row displayed dollars with "%" label — changed field to `otherOpexPctInput` with `format: "pct"`, added to `EnrichedAnnual` and `INPUT_ONLY_FIELDS`
+  - M1: DRY violation — extracted `recomputeFacilitiesAnnual()` and `applyDecompUpdate()` helpers in use-field-editing.ts
+  - M2: Removed false File List claim (field-metadata.ts was not modified by this story)
+  - M3: Added undocumented 7-1c artifact change to File List
 
 ### File List
 
 - `client/src/components/planning/forms-mode.tsx` — MODIFIED: Added FacilitiesDecompositionSection component with 5 sub-fields, computed total, mismatch detection note
 - `client/src/hooks/use-field-editing.ts` — MODIFIED: Added facilitiesAnnual recomputation from decomposition sub-fields on edit/reset
-- `client/src/components/planning/statements/pnl-tab.tsx` — MODIFIED: Changed "Other OpEx" label to "Other OpEx %"
-- `client/src/lib/field-metadata.ts` — MODIFIED: Minor formatting fix (label already correct)
+- `client/src/components/planning/statements/pnl-tab.tsx` — MODIFIED: Changed "Other OpEx" to "Other OpEx %" with pct format and otherOpexPctInput field (code review fix: was currency format displaying dollars)
 - `_bmad-output/implementation-artifacts/sprint-status.yaml` — MODIFIED: Updated 7.1d status
+- `_bmad-output/implementation-artifacts/7-1c-forms-per-year-layout.md` — MODIFIED: Cross-story artifact updated during implementation
 
 ### Testing Summary
 
@@ -153,7 +158,7 @@ AC-3: SATISFIED
   Method: Code inspection + E2E test — verified mismatch detection logic compares facilitiesAnnual[yearIndex] against sum of decomposition sub-fields
   Observed: Mismatch note component renders conditionally when sum differs from facilitiesAnnual. Editing any sub-field triggers recomputation of facilitiesAnnual via use-field-editing.ts handleChange, making Forms authoritative again.
 
-AC-4: SATISFIED
-  Expected: "Other OpEx %" label in both Forms and Reports
-  Method: Playwright E2E test — verified label text in both surfaces
-  Observed: Forms shows "Other OpEx %" in Operating Costs section. Reports P&L tab shows "Other OpEx %" row label. No dollar-to-percentage conversion remnants in unwrapForEngine (otherOpexPct already stored as percentage since 7.1a).
+AC-4: SATISFIED (code review fix applied)
+  Expected: "Other OpEx %" with percentage input format in both Forms and Reports
+  Method: Code review — verified label, format, and field alignment in both surfaces
+  Observed: Forms shows "Other OpEx %" in Operating Costs section with percentage format (field-metadata.ts). Reports P&L row updated during code review: field changed from `otherOpex` (currency) to `otherOpexPctInput` (pct), matching COGS % pattern. `otherOpexPctInput` added to EnrichedAnnual type and INPUT_ONLY_FIELDS set. No dollar-to-percentage conversion remnants in unwrapForEngine (otherOpexPct already stored as percentage since 7.1a).

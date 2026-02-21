@@ -82,6 +82,7 @@ type EnrichedAnnual = AnnualSummary & {
   royaltyPctInput: number;
   adFundPctInput: number;
   payrollTaxPctInput: number;
+  otherOpexPctInput: number;
   targetPreTaxProfitPctInput: number;
   distributionsInput: number;
   shareholderSalaryAdjInput: number;
@@ -90,7 +91,7 @@ type EnrichedAnnual = AnnualSummary & {
 
 const INPUT_ONLY_FIELDS = new Set([
   "growthRateInput", "royaltyPctInput", "adFundPctInput",
-  "payrollTaxPctInput", "targetPreTaxProfitPctInput",
+  "payrollTaxPctInput", "otherOpexPctInput", "targetPreTaxProfitPctInput",
   "distributionsInput", "shareholderSalaryAdjInput", "nonCapexInvestmentInput",
 ]);
 
@@ -130,6 +131,7 @@ function computeEnrichedAnnuals(
       royaltyPctInput: fi?.operatingCosts?.royaltyPct?.[yi]?.currentValue ?? 0,
       adFundPctInput: fi?.operatingCosts?.adFundPct?.[yi]?.currentValue ?? 0,
       payrollTaxPctInput: fi?.operatingCosts?.payrollTaxPct?.[yi]?.currentValue ?? 0,
+      otherOpexPctInput: fi?.operatingCosts?.otherOpexPct?.[yi]?.currentValue ?? 0,
       targetPreTaxProfitPctInput: fi?.profitabilityAndDistributions?.targetPreTaxProfitPct?.[yi]?.currentValue ?? 0,
       distributionsInput: fi?.profitabilityAndDistributions?.distributions?.[yi]?.currentValue ?? 0,
       shareholderSalaryAdjInput: fi?.profitabilityAndDistributions?.shareholderSalaryAdj?.[yi]?.currentValue ?? 0,
@@ -226,7 +228,7 @@ const PNL_SECTIONS: PnlSectionDef[] = [
       { key: "facilities", label: "Facilities", field: "facilities", format: "currency", isInput: true, isExpense: true, indent: 1 },
       { key: "marketing", label: "Marketing / Advertising", field: "marketing", format: "currency", isInput: true, isExpense: true, indent: 1 },
       { key: "disc-marketing", label: "Discretionary Marketing", field: "discretionaryMarketing", format: "currency", indent: 1, isExpense: true, tooltip: { explanation: "Owner-directed marketing spend beyond required brand contributions", formula: "Same as Marketing in current model" } },
-      { key: "other-opex", label: "Other OpEx %", field: "otherOpex", format: "currency", isInput: true, isExpense: true, indent: 1 },
+      { key: "other-opex", label: "Other OpEx %", field: "otherOpexPctInput", format: "pct", isInput: true, indent: 1 },
       { key: "total-opex", label: "Total Operating Expenses", field: "totalOpex", format: "currency", isSubtotal: true, isExpense: true, tooltip: { explanation: "Total cost of running the business day-to-day", formula: "Sum of all operating expense line items" } },
     ],
   },
