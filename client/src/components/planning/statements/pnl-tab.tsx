@@ -495,7 +495,7 @@ export function PnlTab({ output, financialInputs, onCellEdit, onCopyYear1ToAll, 
 
     onCellEdit(mapping.category, mapping.fieldName, finalInput, mapping.inputFormat, yearIndex);
     setEditingCell(null);
-  }, [onCellEdit, financialInputs, editingCell, visibleCols]);
+  }, [onCellEdit, financialInputs, editingCell]);
 
   const handleTabNav = useCallback((rowKey: string, direction: "next" | "prev") => {
     const idx = EDITABLE_ROW_ORDER.indexOf(rowKey);
@@ -930,7 +930,7 @@ function getComparisonCellValue(
   enriched: EnrichedAnnual[],
   monthly: MonthlyProjection[],
   plAnalysis: PLAnalysisOutput[],
-  format: "currency" | "pct",
+  format: "currency" | "pct" | "ratio",
 ): number {
   if (INPUT_ONLY_FIELDS.has(field)) {
     const ea = enriched[col.year - 1];
@@ -1111,27 +1111,21 @@ function ComparisonPnlRow({
             ? (row.isExpense ? Math.abs(value) : value)
             : getRawValue(row.key, (col.year ?? 1) - 1);
           return (
-            <td
+            <InlineEditableCell
               key={col.key}
-              className={`py-1.5 px-1 text-right ${SCENARIO_COLORS[scenario].bg}${isYearBoundary ? " border-l-2 border-border/40" : ""}`}
-              role="gridcell"
-              data-testid={`pnl-value-${row.key}-${col.key}`}
-            >
-              <InlineEditableCell
-                displayValue={formatFieldValue(cellRawValue, mapping!.inputFormat)}
-                rawValue={cellRawValue}
-                inputFormat={mapping!.inputFormat}
-                isEditing={true}
-                onStartEdit={() => {}}
-                onCommit={(val) => onCommitEdit(row.key, val)}
-                onCancel={onCancelEdit}
-                onTabNext={() => onTabNav(row.key, "next")}
-                onTabPrev={() => onTabNav(row.key, "prev")}
-                testId={`pnl-value-${row.key}-${col.key}`}
-                ariaLabel={`${row.label}, ${col.label}`}
-                className={isNegative ? "text-amber-700 dark:text-amber-400" : ""}
-              />
-            </td>
+              displayValue={formatFieldValue(cellRawValue, mapping!.inputFormat)}
+              rawValue={cellRawValue}
+              inputFormat={mapping!.inputFormat}
+              isEditing={true}
+              onStartEdit={() => {}}
+              onCommit={(val) => onCommitEdit(row.key, val)}
+              onCancel={onCancelEdit}
+              onTabNext={() => onTabNav(row.key, "next")}
+              onTabPrev={() => onTabNav(row.key, "prev")}
+              testId={`pnl-value-${row.key}-${col.key}`}
+              ariaLabel={`${row.label}, ${col.label}`}
+              className={`${SCENARIO_COLORS[scenario].bg}${isYearBoundary ? " border-l-2 border-border/40" : ""}${isNegative ? " text-amber-700 dark:text-amber-400" : ""}`}
+            />
           );
         }
 
