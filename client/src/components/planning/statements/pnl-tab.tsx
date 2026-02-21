@@ -6,7 +6,7 @@ import { formatFinancialValue } from "@/components/shared/financial-value";
 import { useColumnManager, ColumnToolbar, GroupedTableHead } from "./column-manager";
 import { ComparisonTableHead, buildComparisonColumns, type ComparisonColumnDef } from "./comparison-table-head";
 import { InlineEditableCell } from "./inline-editable-cell";
-import { INPUT_FIELD_MAP, isEditableRow } from "./input-field-map";
+import { INPUT_FIELD_MAP, isEditableRow, getDrillLevelFromColKey, scaleForStorage } from "./input-field-map";
 import { SCENARIO_COLORS, type ScenarioId, type ScenarioOutputs } from "@/lib/scenario-engine";
 import type { EngineOutput, MonthlyProjection, AnnualSummary, PLAnalysisOutput, PlanFinancialInputs, FinancialFieldValue } from "@shared/financial-engine";
 import type { ColumnDef } from "./column-manager";
@@ -95,8 +95,7 @@ const PNL_SECTIONS: PnlSectionDef[] = [
     key: "revenue",
     title: "Revenue",
     rows: [
-      { key: "monthly-revenue", label: "Monthly Revenue", field: "monthlyRevenue", format: "currency", isInput: true },
-      { key: "annual-revenue", label: "Annual Revenue", field: "revenue", format: "currency", isSubtotal: true, tooltip: { explanation: "Total revenue earned during the year", formula: "Sum of monthly revenue" } },
+      { key: "monthly-revenue", label: "Revenue", field: "revenue", format: "currency", isInput: true, tooltip: { explanation: "Total revenue for the period", formula: "Monthly AUV × months, adjusted for ramp-up and growth" } },
     ],
   },
   {
@@ -416,7 +415,20 @@ export function PnlTab({ output, financialInputs, onCellEdit, isSaving, scenario
     const colKey = editingCell?.split(":")[1] ?? "y1";
     const yearMatch = colKey.match(/^y(\d)/);
     const yearIndex = yearMatch ? parseInt(yearMatch[1]) - 1 : 0;
-    onCellEdit(mapping.category, mapping.fieldName, rawInput, mapping.inputFormat, yearIndex);
+
+    let finalInput = rawInput;
+    if (mapping.storedGranularity) {
+      const drillLevel = getDrillLevelFromColKey(colKey);
+      const parsed = parseFieldInput(rawInput, mapping.inputFormat);
+      if (!isNaN(parsed)) {
+        const result = scaleForStorage(parsed, drillLevel, mapping.storedGranularity, mapping.inputFormat);
+        if (result) {
+          finalInput = result.inputStr;
+        }
+      }
+    }
+
+    onCellEdit(mapping.category, mapping.fieldName, finalInput, mapping.inputFormat, yearIndex);
     setEditingCell(null);
 
     const flashKeys = new Set<string>();
@@ -719,15 +731,23 @@ function PnlRow({
             const cellKey = `${row.key}:${col.key}`;
             const isEditingThis = editingCell === cellKey;
             const isFlashing = flashingRows.has(cellKey);
-            const rawValue = getRawValue(row.key, (col.year ?? 1) - 1);
 
-            const displayFormatted = formatFieldValue(rawValue, mapping.inputFormat);
+            let cellRawValue: number;
+            let displayFormatted: string;
+
+            if (mapping.storedGranularity) {
+              cellRawValue = value;
+              displayFormatted = formatFieldValue(cellRawValue, mapping.inputFormat);
+            } else {
+              cellRawValue = getRawValue(row.key, (col.year ?? 1) - 1);
+              displayFormatted = formatFieldValue(cellRawValue, mapping.inputFormat);
+            }
 
             return (
               <InlineEditableCell
                 key={col.key}
                 displayValue={displayFormatted}
-                rawValue={rawValue}
+                rawValue={cellRawValue}
                 inputFormat={mapping.inputFormat}
                 isEditing={isEditingThis}
                 onStartEdit={() => onStartEdit!(row.key, col.key)}
@@ -998,7 +1018,9 @@ function ComparisonPnlRow({
         const isYearBoundary = colIdx > 0 && col.year !== comparisonCols[colIdx - 1].year;
 
         if (isBase && editable && editingCell === `${row.key}:${col.key}`) {
-          const rawValue = getRawValue(row.key, (col.year ?? 1) - 1);
+          const cellRawValue = mapping!.storedGranularity
+            ? value
+            : getRawValue(row.key, (col.year ?? 1) - 1);
           return (
             <td
               key={col.key}
@@ -1007,8 +1029,8 @@ function ComparisonPnlRow({
               data-testid={`pnl-value-${row.key}-${col.key}`}
             >
               <InlineEditableCell
-                displayValue={formatFieldValue(rawValue, mapping!.inputFormat)}
-                rawValue={rawValue}
+                displayValue={formatFieldValue(cellRawValue, mapping!.inputFormat)}
+                rawValue={cellRawValue}
                 inputFormat={mapping!.inputFormat}
                 isEditing={true}
                 onStartEdit={() => {}}
