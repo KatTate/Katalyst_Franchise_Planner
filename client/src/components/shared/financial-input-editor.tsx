@@ -111,7 +111,7 @@ export function FinancialInputEditor({ planId }: FinancialInputEditorProps) {
       <CardContent className="space-y-4">
         {CATEGORY_ORDER.map((category) => {
           const fields = FIELD_METADATA[category];
-          const categoryData = financialInputs[category as keyof PlanFinancialInputs];
+          const categoryData = financialInputs[category as keyof PlanFinancialInputs] as Record<string, FinancialFieldValue | FinancialFieldValue[]>;
 
           return (
             <CategorySection
@@ -153,7 +153,7 @@ interface CategorySectionProps {
   category: string;
   label: string;
   fields: Record<string, FieldMeta>;
-  categoryData: Record<string, FinancialFieldValue>;
+  categoryData: Record<string, FinancialFieldValue | FinancialFieldValue[]>;
   editingField: string | null;
   editValue: string;
   focusedField: string | null;

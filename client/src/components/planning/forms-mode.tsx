@@ -143,7 +143,7 @@ export function FormsMode({ planId, planName, brandName, queueSave, onSectionCha
             category={category}
             label={CATEGORY_LABELS[category]}
             fields={FIELD_METADATA[category]}
-            categoryData={financialInputs[category as keyof PlanFinancialInputs]}
+            categoryData={financialInputs[category as keyof PlanFinancialInputs] as Record<string, FinancialFieldValue | FinancialFieldValue[]>}
             editingField={editingField}
             editValue={editValue}
             focusedField={focusedField}
@@ -181,7 +181,7 @@ interface FormSectionProps {
   category: string;
   label: string;
   fields: Record<string, FieldMeta>;
-  categoryData: Record<string, FinancialFieldValue>;
+  categoryData: Record<string, FinancialFieldValue | FinancialFieldValue[]>;
   editingField: string | null;
   editValue: string;
   focusedField: string | null;
