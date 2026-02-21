@@ -424,6 +424,8 @@ development_status:
   # Epic 10: What-If Playground [was Scenario Comparison, part of old Epic 7]
   # Rewritten per SCP-2026-02-20 D5/D6 — standalone sensitivity dashboard, not column-splitting
   # Stories (3): Sensitivity Controls, Multi-Chart Dashboard, Scenario Persistence (optional)
+  epic-10: backlog
+  10-1-sensitivity-controls-sandbox-engine: backlog
   epic-10: in-progress
   10-1-sensitivity-controls-sandbox-engine: ready-for-dev
   10-2-multi-chart-sensitivity-dashboard: ready-for-dev
