@@ -371,6 +371,29 @@ story_location: _bmad-output/implementation-artifacts
 #   - Deployment status: development only — not published
 #   - Epic 5H status: DONE (all 4 stories + retrospective complete)
 #   - See: epic-5h-retrospective.md
+# 2026-02-21: Epic 5H Retro Action Items — HIGH items executed, CRITICAL items deferred
+#   - AI-3 HIGH (ScenarioBar removal): DONE — ScenarioBar import and render removed from
+#     financial-statements.tsx. "Compare Scenarios" button no longer visible in Reports.
+#   - AI-4 HIGH (Labor Efficiency fix): DONE — tooltip formula corrected from "Total wages /
+#     Gross Profit" to "Total Wages / Revenue" (matches engine line 826). Interpretation text
+#     corrected from "of gross profit" to "of revenue". Adjusted Labor Efficiency tooltip
+#     corrected similarly. P&L Analysis section defaultExpanded changed from false to true.
+#     NOTE: Reference spreadsheets define LER as Revenue / Direct Labor (inverse of engine).
+#     Formula direction mismatch deferred to AI-1 display format validation.
+#   - AI-5 HIGH (5H.3 AC amendments): DONE — all 6 amendments applied to epics.md:
+#     Amendment 1: Three-tier completeness model (< 50% / 50-90% / > 90%) replaces single tier
+#     Amendment 2: Error state ACs added (failure toast, loading state, no partial PDFs)
+#     Amendment 3: Subjective "professional formatting" replaced with measurable criteria
+#     Amendment 4: Audit Summary added to PDF content list
+#     Amendment 5: Thumbnail + immutability dev notes added to Story 6.2
+#     Amendment 6: Document history journey sketch + empty state copy added to Story 6.2
+#   - AI-1 CRITICAL (Display format validation): DEFERRED — PO decision to address after
+#     progressing through several more epics. Known risk: displayed formats not validated
+#     against reference spreadsheets. LER formula direction mismatch identified (engine uses
+#     totalWages/revenue, reference uses Revenue/DirectLabor).
+#   - AI-2 CRITICAL (30-day month resolution): DEFERRED — PO decision to address after
+#     progressing through several more epics. Known risk: working capital calculations use
+#     30-day months while reference spreadsheets use actual calendar days (28/30/31).
 
 development_status:
   # Epic 1: Auth, Onboarding & User Management

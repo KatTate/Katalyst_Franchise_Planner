@@ -222,7 +222,7 @@ const PNL_SECTIONS: PnlSectionDef[] = [
   {
     key: "pl-analysis",
     title: "P&L Analysis",
-    defaultExpanded: false,
+    defaultExpanded: true,
     rows: [
       { key: "adj-pretax", label: "Adjusted Pre-Tax Profit", field: "adjustedPreTaxProfit", format: "currency", tooltip: { explanation: "Pre-tax income adjusted for owner compensation", formula: "Pre-Tax Income + Owner salary adjustment" } },
       { key: "target-pretax", label: "Target Pre-Tax Profit", field: "targetPreTaxProfit", format: "currency", tooltip: { explanation: "The profit level your plan should aim for", formula: "Revenue x Target Pre-Tax Profit %" } },
@@ -234,7 +234,7 @@ const PNL_SECTIONS: PnlSectionDef[] = [
         label: "Labor Efficiency",
         field: "laborEfficiency",
         format: "ratio",
-        tooltip: { explanation: "What portion of gross profit goes to all wages", formula: "Total wages / Gross Profit" },
+        tooltip: { explanation: "What portion of revenue goes to all wages", formula: "Total Wages / Revenue" },
         interpretationId: "interp-labor-eff",
         interpretation: (enriched, financialInputs, brandName) => {
           const y1 = enriched[0];
@@ -243,14 +243,14 @@ const PNL_SECTIONS: PnlSectionDef[] = [
           const laborBrand = financialInputs?.operatingCosts?.laborPct?.brandDefault;
           if (laborBrand != null) {
             const brandPct = (laborBrand * 100).toFixed(0);
-            return `${labPct.toFixed(0)}% of gross profit goes to wages (${brandName || "brand"} labor default: ${brandPct}% of revenue)`;
+            return `${labPct.toFixed(0)}% of revenue goes to wages (${brandName || "brand"} labor default: ${brandPct}% of revenue)`;
           }
-          if (labPct > 70) return `${labPct.toFixed(0)}% of gross profit goes to wages — labor-heavy, consider staffing mix`;
-          if (labPct > 50) return `${labPct.toFixed(0)}% of gross profit goes to wages — typical for service businesses`;
-          return `${labPct.toFixed(0)}% of gross profit goes to wages — efficient labor cost structure`;
+          if (labPct > 70) return `${labPct.toFixed(0)}% of revenue goes to wages — labor-heavy, consider staffing mix`;
+          if (labPct > 50) return `${labPct.toFixed(0)}% of revenue goes to wages — typical for service businesses`;
+          return `${labPct.toFixed(0)}% of revenue goes to wages — efficient labor cost structure`;
         },
       },
-      { key: "adj-labor-eff", label: "Adjusted Labor Efficiency", field: "adjustedLaborEfficiency", format: "ratio", tooltip: { explanation: "Labor efficiency excluding owner salary", formula: "Wages (excl. owner salary) / Gross Profit" } },
+      { key: "adj-labor-eff", label: "Adjusted Labor Efficiency", field: "adjustedLaborEfficiency", format: "ratio", tooltip: { explanation: "Labor efficiency excluding owner salary", formula: "Adjusted Wages / Revenue" } },
       { key: "disc-mktg-pct", label: "Discretionary Marketing %", field: "discretionaryMarketingPct", format: "pct", tooltip: { explanation: "Discretionary marketing as a share of revenue", formula: "Discretionary Marketing / Revenue" } },
       { key: "pr-tax-ben-pct", label: "PR Taxes & Benefits % of Wages", field: "prTaxBenefitsPctOfWages", format: "pct", tooltip: { explanation: "Payroll burden relative to total wages", formula: "Payroll Taxes & Benefits / Total Wages" } },
       { key: "other-opex-pct-rev", label: "Other OpEx % of Revenue", field: "otherOpexPctOfRevenue", format: "pct", tooltip: { explanation: "Miscellaneous operating costs as a share of revenue", formula: "Other Operating Expenses / Revenue" } },

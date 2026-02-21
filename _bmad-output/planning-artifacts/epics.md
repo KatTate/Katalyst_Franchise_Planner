@@ -1824,21 +1824,51 @@ So that I can walk into a bank meeting feeling confident and prepared (FR24, FR2
 - Valuation Analysis (annual)
 - Break-Even Analysis with cumulative cash flow chart
 - Startup Capital Summary
+- Audit Summary (pass/fail status of all 15 audit checks with plain-language explanations for any failures)
 
 **And** the document header reads "[Franchisee Name]'s [Brand] Business Plan" — franchisee name before brand name
-**And** professional formatting with brand identity (logo, colors) and Katalyst design — consistent typography, proper page breaks, branded headers/footers, and financial tables with formatting that matches or exceeds what a financial consultant would produce
+**And** the PDF uses the following formatting standards:
+- Brand logo in the header of every page (except cover page, which has a larger centered logo)
+- Brand primary color used for section headers and table header backgrounds
+- Financial tables use alternating row shading for readability, right-aligned numeric columns, and left-aligned label columns
+- No table is split across a page break mid-row — tables that don't fit on the current page start on the next page
+- Page margins: 1 inch on all sides (standard business document)
+- Headers: page number, brand name, and "Confidential" indicator
+- Footers: FTC disclaimer text (FR25) and generation date
+- Font: system professional font (e.g., Inter, Helvetica, or similar sans-serif) at 10-11pt for body, 14-16pt for section headers
 **And** FTC-compliant disclaimers state on every page: "These projections are franchisee-created estimates and do not constitute franchisor earnings claims or representations" (FR25)
 **And** financial values use consistent formatting throughout: currency as $X,XXX, percentages as X.X% (NFR27)
 
 **Given** the "Generate PDF" button label evolves with input completeness (Story 5.9)
-**When** the button is clicked at < 50% completeness
+
+**When** the button is clicked at < 50% completeness ("Generate Draft")
 **Then** the generated PDF includes a "DRAFT" watermark on every page
-**And** a brief note on the cover: "This plan contains brand default assumptions that have not been personalized. Review and update inputs for a complete projection."
+**And** a note on the cover: "This plan contains brand default assumptions that have not been personalized. Review and update inputs for a complete projection."
+
+**When** the button is clicked at 50-90% completeness ("Generate Package")
+**Then** the generated PDF does NOT include a DRAFT watermark
+**And** a note on the cover: "Some inputs in this plan use brand default values. Review remaining defaults in My Plan for fully personalized projections."
+
+**When** the button is clicked at > 90% completeness ("Generate Lender Package")
+**Then** the generated PDF does NOT include a DRAFT watermark and no default-values note appears
+
+**And** the "Generate PDF" button tooltip displays the current completeness percentage and indicates whether the generated document will include a DRAFT watermark or cover note
 
 ~~**Given** scenario comparison is active when PDF is generated~~
 ~~**When** the PDF renders~~
 ~~**Then** the PDF includes the comparison summary card text and scenario columns in the P&L and key metrics tables~~
 > **RETIRED (SCP-2026-02-20 D5/D6):** Scenario comparison was pulled out of Reports. Scenario PDF export deferred to Epic 10 (What-If Playground) if that feature supports export.
+
+**Given** PDF generation is initiated
+**When** generation fails (server error, timeout > 30 seconds per NFR3, or storage failure)
+**Then** a toast notification appears: "PDF generation failed. Please try again." with a "Retry" action button
+**And** no partial or corrupted PDF is rendered, presented to the user, or stored in document history
+**And** the "Generate PDF" button returns to its pre-generation state (not stuck in loading)
+
+**Given** PDF generation is initiated
+**When** the generation is in progress
+**Then** the "Generate PDF" button shows a loading state (spinner + "Generating...") and is disabled to prevent duplicate generation
+**And** a progress indicator is visible to the user
 
 **And** the PDF is available for immediate download upon generation
 **And** the generated PDF is stored for future access (Story 6.2)
@@ -1865,6 +1895,14 @@ So that I can access any version of my plan at any time (FR26, FR27).
 **And** documents are stored with metadata in PostgreSQL (generation date, plan snapshot ID, completeness level) and binary PDF in Replit Object Storage
 **And** each document entry shows a thumbnail preview of the first page
 **And** a "Generate New" button is prominently available to create an updated version reflecting current inputs
+
+**Dev Notes:**
+- Thumbnail generation: Generate a PNG thumbnail of the first PDF page at PDF creation time. Format: PNG, 300x400px, 72 DPI. Storage path convention: `documents/{planId}/{docId}/thumbnail.png` alongside `documents/{planId}/{docId}/document.pdf`. Failure isolation: Thumbnail generation failure must NOT block document creation. Log the error, store null reference, render generic document icon placeholder.
+- Architecture constraint (NON-NEGOTIABLE): The `IStorage` interface for documents exposes exactly three methods: `createDocument()`, `getDocument()`, `listDocuments()`. No update or delete methods. Immutability is enforced at the interface level, not just as policy.
+- API endpoints: POST /api/plans/:id/documents (generate), GET /api/plans/:id/documents (list), GET /api/plans/:id/documents/:docId (download). No PUT/PATCH/DELETE endpoints.
+- No user journey currently describes the document history experience. Lightweight journey sketch for dev agent guidance: Sam returns to his Dashboard a week after generating his lender package → clicks "Documents" in sidebar → sees his previously generated lender package with date and thumbnail → downloads it for his banker.
+- Empty state: Show a warm call-to-action: "Your lender packages will appear here after you generate them. Head to Reports or your Dashboard to create your first one."
+- Navigation: Add a "Documents" entry in the sidebar (below Reports) for direct access.
 
 ---
 
