@@ -26,7 +26,7 @@ _This document builds collaboratively through step-by-step discovery. Sections a
 
 ### Requirements Overview
 
-**Functional Requirements (96 FRs across 16 categories):**
+**Functional Requirements (111 FRs across 17 categories):**
 
 *Updated 2026-02-15 via Sprint Change Proposal — added FR7a-FR7n (financial statement views, per-year inputs, help content, PDF generation), FR74-FR83 (engine computation extensions). Updated 2026-02-20 via SCP-2026-02-20 — added FR84-FR87 (financial display standards), FR88-FR89 (advisory visual language), FR90-FR94 (Impact Strip), FR95-FR96 (plan completeness & document preview), FR97 (bidirectional sync).*
 
@@ -43,6 +43,7 @@ _This document builds collaboratively through step-by-step discovery. Sections a
 | Brand Identity & Experience (FR49) | 1 | Brand-specific theming and identity display throughout the experience. |
 | AI Planning Advisor (FR50-FR54) | 5 | LLM-powered AI Planning Assistant available as a slide-in panel within My Plan (Epic 9). NL-to-structured-input extraction. Per-field attribution tracking. |
 | Advisory Board Meeting (FR55-FR58) | 4 | Multi-persona AI stress-testing of plan assumptions. Persona manifest system, topic-based selection, cross-talk orchestration. Phase 2. |
+| Admin Support Tools (FR59-FR73) | 15 | Admin "View As" impersonation (FR59-FR65), per-brand Franchisee Demo Mode (FR66-FR69), Franchisor Demo Mode with fictitious brand (FR70-FR73). Session-scoped state, audit logging, RBAC enforcement during impersonation. |
 | Financial Display Standards (FR84-FR87) | 4 | Consistent formatting rules (currency, percentage, ratio, accounting-style negatives), monospace font for tabular alignment, source badges (BD/AI) for attribution. Implemented via shared `<FinancialValue>` component. |
 | Advisory Visual Language (FR88-FR89) | 2 | Guardian Bar uses advisory color tokens (healthy/concerning/critical) — never error-red. Distinct visual language separates advisory from error states across the application. |
 | Impact Strip (FR90-FR94) | 5 | Persistent context-sensitive metrics bar at bottom of My Plan. Section-aware metrics, delta indicators, Guardian status dots, deep-links to Reports tabs. |
@@ -185,7 +186,7 @@ Full-stack web application (B2B2C vertical SaaS) based on project requirements a
 
 **Rationale for Confirmation:**
 1. TypeScript end-to-end provides type safety for financial engine (critical for deterministic calculations)
-2. React 18 ecosystem depth supports the three radically different interaction paradigms (conversation, forms, spreadsheet)
+2. React 18 ecosystem depth supports the two distinct interaction surfaces (form-based guided input and interactive financial statements with inline editing)
 3. PostgreSQL with Drizzle ORM supports brand_id partitioning and complex relational queries for RBAC
 4. Express 5 provides straightforward API layer for financial engine endpoints and LLM proxy
 5. Vite provides fast development iteration on complex UI
@@ -279,7 +280,7 @@ The starter provides infrastructure but leaves these architectural decisions ope
 4. **RBAC enforcement pattern** — Middleware vs. query-level vs. both for three-tier authorization
 5. **Auto-save strategy** — Debounce timing, conflict detection, state diff approach
 6. **Data model design** — Tables, relationships, brand_id partitioning, per-field metadata storage
-7. **Component architecture** — How Story/Normal/Expert modes share components vs. diverge
+7. **Component architecture** — How Story/Normal/Expert tiers share components vs. diverge
 8. **API design** — RESTful resource design, endpoint structure, request/response schemas
 9. **Document generation pipeline** — Template system, data flow from engine to PDF
 10. **Immutable document storage & retention** — Where generated documents live, versioning strategy, audit trail, file retention policy
@@ -1558,7 +1559,7 @@ katalyst-growth-planner/
 │       │   │   ├── impact-strip.tsx       # Bottom strip — real-time impact + deep links to Reports
 │       │   │   ├── document-preview-widget.tsx  # Progressive document preview in dashboard
 │       │   │   ├── document-preview-modal.tsx   # Full-screen document preview modal
-│       │   │   ├── editable-cell.tsx      # Shared editable cell component
+│       │   │   ├── [DELETED] editable-cell.tsx      # Deleted — superseded by inline-editable-cell.tsx in statements/
 │       │   │   ├── financial-statements.tsx # Reports surface — tab container for all statement tabs
 │       │   │   │
 │       │   │   ├── statements/            # Reports tab components (Epic 5)

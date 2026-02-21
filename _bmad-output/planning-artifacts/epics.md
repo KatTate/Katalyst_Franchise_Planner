@@ -291,7 +291,7 @@ This document provides the complete epic and story breakdown for the Katalyst Gr
 | FR96 | Epic 5 | Dashboard Document Preview widget with completeness-aware labels |
 | FR97 | Epic 5 | Bidirectional sync — edits on either surface reflected immediately |
 
-**Coverage Summary:** 96/96 FRs mapped (73 original + 14 FR7a-FR7n + 10 FR74-FR83 engine extensions + 14 FR84-FR97 display standards, advisory language, Impact Strip, plan completeness, bidirectional sync — added per SCP-2026-02-20). All functional requirements covered. Stories across 11 MVP epics (+ 1 deferred Phase 2 epic + 1 admin support tools epic).
+**Coverage Summary:** 111/111 FRs mapped (58 original FR1-FR58 + 15 FR59-FR73 admin support tools + 14 FR7a-FR7n financial statement views + 10 FR74-FR83 engine extensions + 14 FR84-FR97 display standards, advisory language, Impact Strip, plan completeness, bidirectional sync — added per SCP-2026-02-20). All functional requirements covered. Stories across 11 MVP epics (+ 1 deferred Phase 2 epic + 1 admin support tools epic). *Corrected 2026-02-21 per Story 5H.4 audit — previous header said "96/96" but breakdown terms already summed to 111.*
 
 ## Epic List
 
