@@ -1914,59 +1914,80 @@ So that I can access any version of my plan at any time (FR26, FR27).
 
 ## Epic 7: Per-Year Inputs & Multi-Plan Management
 
-Enable Year 1-5 independent input values for all per-year financial assumptions, unlocking growth trajectory modeling. Add plan creation, naming, cloning, and navigation for multi-location planning.
+Enable Year 1-5 independent input values for all per-year financial assumptions, unlocking growth trajectory modeling. Per-month independence for qualifying fields (revenue, COGS%, labor%, marketing%) enables seasonality modeling. Add plan creation, naming, cloning, and navigation for multi-location planning.
+
+**Design Principle:** Forms (My Plan) = onboarding wizard for less experienced personas. Reports = power editing surface where all financial assumptions are editable inline. Expert users skip Forms entirely and build their plan directly in Reports. Forms does NOT replicate Reports' granular per-year or per-month editing.
 
 **FRs covered:** FR7i, FR7j, FR15, FR16
-**Dependencies:** Epic 5 (financial statement views with linked-column indicators provide the visual foundation that this epic unlocks)
+**Dependencies:** Epic 5 (financial statement views provide the visual foundation that this epic unlocks)
+**Dependency chain:** 7.1a (DONE) → 7.1b → 7.1c + 7.1d (parallel, depend on 7.1b) → 7.1e (parallel with 7.1c/d)
 
-### Story 7.1a: Data Model Restructuring & Migration
+### Story 7.1a: Data Model Restructuring & Migration — DONE
 
 As a franchisee,
 I want the system's data model to support different values for each year (Year 1 through Year 5) for my financial assumptions,
-So that per-year input editing (Stories 7.1b–7.1d) can be built on a stable foundation without data loss (FR7i).
+So that per-year input editing (Stories 7.1b–7.1e) can be built on a stable foundation without data loss (FR7i).
 
-**Acceptance Criteria:** PlanFinancialInputs restructured to per-year arrays (13 per-year fields + 5 single-value fields). Existing plan migration is lossless, transactionally safe, idempotent, and writes back on first load. unwrapForEngine updated to pass per-year arrays directly. Scenario/sensitivity engines updated. FIELD_METADATA and FormatType extended for new fields including "decimal" type.
+**Acceptance Criteria:** PlanFinancialInputs restructured to per-year arrays (13 per-year fields + 5 single-value fields). Existing plan migration is lossless, transactionally safe, idempotent, and writes back on first load. unwrapForEngine updated to pass per-year arrays directly. Scenario/sensitivity engines updated. FIELD_METADATA and FormatType extended for new fields including "decimal" type. Revenue drill-down display with storedGranularity and reverse-scaling infrastructure.
 
 **Dev Notes:**
 - Foundation story — all other 7.1x stories depend on this.
+- Completed with 686 unit tests passing. Revenue drill-down enhancement included as display infrastructure.
 - See full story: `_bmad-output/implementation-artifacts/7-1-per-year-input-columns.md`
-- See Sprint Change Proposal SCP-2026-02-15 CP-3 (Fix PlanFinancialInputs). See also UX spec Part 3 (Pre-Epic-7 / Post-Epic-7 behavior).
 
-### Story 7.1b: Reports Per-Year Inline Editing
+### Story 7.1b: Make All Financial Assumptions Editable in Reports
 
-As a franchisee,
-I want to edit each year's financial assumption independently in the Reports view,
-So that I can fine-tune my 5-year projections directly within the financial statements (FR7i).
+As a franchisee fine-tuning my 5-year plan,
+I want to click on any financial assumption in my Reports — revenue, COGS, rent, salaries, royalties, marketing, all of it — and change it for any year, quarter, or month,
+So that I can model exactly how my business will evolve over time, the way I would in a spreadsheet, but with the math handled for me.
 
-**Acceptance Criteria:** Independent per-year editing in Reports (no linked-column broadcast). Link icons and flash animations removed. "Copy Year 1 to all years" with confirmation dialog. INPUT_FIELD_MAP extended for new editable rows. PerYearEditableRow component created (composing InlineEditableCell).
+**Acceptance Criteria:** All 15+ financial assumption rows editable inline in P&L with per-year independence. Per-month independence (60-element arrays) for qualifying fields (revenue, COGS%, labor%, marketing%). "Copy Year 1 to all years" with confirmation dialog. Legacy linked-column code (flash animation, link icons) removed. Drill-down display with correct aggregation at all levels.
 
 **Dev Notes:**
-- Removes the "linked columns" behavior introduced in Story 5.2.
+- This is the centerpiece story. Reports is the power editing surface.
+- Existing PnlRow + InlineEditableCell + column manager handle per-year rendering natively — no separate PerYearEditableRow component needed.
+- Per-month independence scope risk note: can split into 7.1b.1 if timeline pressure emerges without blocking downstream stories.
 - See full story: `_bmad-output/implementation-artifacts/7-1b-reports-per-year-editing.md`
 
-### Story 7.1c: Forms Mode Per-Year Layout
+### Story 7.1c: Forms Onboarding — New Field Sections & Simple Inputs
 
-As a franchisee,
-I want to see and edit Year 1 through Year 5 values for each assumption in the My Plan forms,
-So that I can model growth trajectories through the guided planning experience (FR7i).
+As a first-time franchisee setting up my plan,
+I want the My Plan forms to walk me through all the financial assumptions I need to set — including new fields like management salaries, payroll taxes, and growth rates — with simple, approachable inputs,
+So that I can get from zero to a working 5-year projection without being overwhelmed.
 
-**Acceptance Criteria:** Per-year fields show 5 input columns (Year 1–5). Single-value fields show 1 column. All years are independent (no inheritance detection — simplified from original design). "Copy Year 1 to all years" with confirmation. New field sections rendered (Profitability & Distributions, Working Capital & Valuation).
+**Acceptance Criteria:** All financial assumption fields rendered in Forms with simple single-value inputs (not 5-column per-year editing). "Set for all years" checkbox for per-year fields. "Fine-tune per year in Reports" hints. Brand default indicators with reset action. New form sections for Profitability & Distributions, Working Capital & Valuation.
 
 **Dev Notes:**
-- Inheritance model simplified: all 5 years always independent with "Copy Year 1 to all" for convenience. No fragile value-equality heuristic.
+- Forms = onboarding only. No per-year columns, no drill-down, no per-month editing.
 - See full story: `_bmad-output/implementation-artifacts/7-1c-forms-per-year-layout.md`
 
-### Story 7.1d: New Field Surfaces — Facilities, Other OpEx, Balance Sheet & Valuation
+### Story 7.1d: Facilities Guided Decomposition & Other OpEx Correction
 
-As a franchisee,
-I want to edit Facilities costs as a guided decomposition, see Other OpEx as a percentage, and edit working capital and valuation assumptions inline,
-So that my financial model matches the reference spreadsheet's full input set (FR7i, FR7j).
+As a franchisee planning my operating costs,
+I want to break down my Facilities costs into Rent, Utilities, Telecom/IT, Vehicle/Fleet, and Insurance in the My Plan forms,
+So that I can think through each component while still editing the total directly in Reports for quick adjustments.
 
-**Acceptance Criteria:** Facilities exposed as per-year in Reports, guided decomposition in Forms (Rent, Utilities, Telecom/IT, Vehicle Fleet, Insurance) with rollup. Decomposition is authoritative source; mismatch warning with re-sync options when Reports direct edit diverges. Other OpEx displays as percentage. Balance Sheet tab: arDays, apDays, inventoryDays, taxPaymentDelayMonths inline-editable with validation. Valuation tab: ebitdaMultiple inline-editable with decimal format and validation.
+**Acceptance Criteria:** Facilities guided decomposition in Forms (sub-fields with rollup total). Direct facilitiesAnnual editing in Reports (handled by 7.1b). Simplified mismatch handling — informational note only, no action buttons or proportional redistribution. Other OpEx displays as percentage in both surfaces.
 
 **Dev Notes:**
-- Facilities dual-source-of-truth resolved: decomposition is authoritative in Forms; Reports allows direct total editing with mismatch detection and re-sync.
+- Forms provides guided breakdown; Reports provides direct total editing. Persistent mismatch is an accepted tradeoff, not a bug.
 - See full story: `_bmad-output/implementation-artifacts/7-1d-new-field-surfaces.md`
+
+### Story 7.1e: Balance Sheet & Valuation Inline Editing
+
+As a franchisee reviewing my financial projections,
+I want to adjust working capital assumptions and EBITDA multiple directly in the Balance Sheet and Valuation tabs,
+So that I can see how these assumptions affect my projected balance sheet and business valuation without leaving Reports.
+
+**Acceptance Criteria:** Balance Sheet tab: arDays, apDays, inventoryDays, taxPaymentDelayMonths inline-editable with validation (integer, range constraints). Valuation tab: ebitdaMultiple inline-editable with decimal format and "x" suffix display. All single-value fields (not per-year).
+
+**Dev Notes:**
+- Simple extension of Reports editing to two more tabs.
+- See full story: `_bmad-output/implementation-artifacts/7-1e-balance-sheet-valuation-editing.md`
+
+### Future: Labor Cost Guided Decomposition
+
+**Earmarked for future development (Party Mode 2026-02-21).** Break "Direct Labor %" into staffing assumptions (headcount, hourly rate, hours/week) so beginners can arrive at the percentage from concrete questions. Same pattern as Facilities decomposition — Forms provides the guided breakdown, engine still consumes laborPct. Not scheduled for current sprint.
 
 ### Story 7.2: Plan CRUD & Navigation
 

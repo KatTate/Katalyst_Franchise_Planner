@@ -576,10 +576,6 @@ development_status:
   7-1e-balance-sheet-valuation-editing: ready-for-dev          # NEW: Balance Sheet (AR/AP/Inventory Days, Tax Delay) + Valuation (EBITDA Multiple) inline editing in Reports.
   7-2-plan-crud-navigation: backlog
   epic-7-retrospective: optional
-  # FUTURE: Labor Cost Guided Decomposition in Forms — break "Direct Labor %" into staffing
-  #   assumptions (headcount, hourly rate, hours/week) so beginners can arrive at the percentage
-  #   from concrete questions. Engine still consumes laborPct; decomposition is UI-only rollup.
-  #   Same pattern as Facilities decomposition (7.1d). Earmarked per Party Mode 2026-02-21.
 
   # ==========================================================================
   # RENUMBERED EPICS (from Sprint Change Proposal 2026-02-15)
