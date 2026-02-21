@@ -1,6 +1,6 @@
 # Story 7.1a: Data Model Restructuring & Migration
 
-Status: ready-for-dev
+Status: in-progress
 
 ## Story
 

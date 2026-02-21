@@ -363,20 +363,17 @@ const validationRequestSchema = z.object({
   inputs: z.object({
     revenue: z.object({
       monthlyAuv: z.number().optional(),
-      year1GrowthRate: z.number().optional(),
-      year2GrowthRate: z.number().optional(),
+      growthRates: z.array(z.number()).optional(),
       startingMonthAuvPct: z.number().optional(),
     }).optional(),
     operatingCosts: z.object({
       cogsPct: z.number().optional(),
       laborPct: z.number().optional(),
-      rentMonthly: z.number().optional(),
-      utilitiesMonthly: z.number().optional(),
-      insuranceMonthly: z.number().optional(),
+      facilitiesAnnual: z.number().optional(),
       marketingPct: z.number().optional(),
       royaltyPct: z.number().optional(),
       adFundPct: z.number().optional(),
-      otherMonthly: z.number().optional(),
+      otherOpexPct: z.number().optional(),
     }).optional(),
     financing: z.object({
       loanAmount: z.number().optional(),

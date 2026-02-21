@@ -31,7 +31,7 @@ import {
   fddIngestionRuns,
 } from "@shared/schema";
 import type { StartupCostLineItem } from "@shared/financial-engine";
-import { buildPlanFinancialInputs, buildPlanStartupCosts, migrateStartupCosts } from "@shared/plan-initialization";
+import { buildPlanFinancialInputs, buildPlanStartupCosts, migrateStartupCosts, migratePlanFinancialInputs } from "@shared/plan-initialization";
 
 export interface IStorage {
   getUser(id: string): Promise<User | undefined>;
@@ -323,15 +323,20 @@ export class DatabaseStorage implements IStorage {
 
   async getPlan(id: string): Promise<Plan | undefined> {
     const [plan] = await db.select().from(plans).where(eq(plans.id, id)).limit(1);
+    if (plan) migratePlanInPlace(plan);
     return plan;
   }
 
   async getPlansByUser(userId: string): Promise<Plan[]> {
-    return db.select().from(plans).where(eq(plans.userId, userId));
+    const result = await db.select().from(plans).where(eq(plans.userId, userId));
+    result.forEach(migratePlanInPlace);
+    return result;
   }
 
   async getPlansByBrand(brandId: string): Promise<Plan[]> {
-    return db.select().from(plans).where(eq(plans.brandId, brandId));
+    const result = await db.select().from(plans).where(eq(plans.brandId, brandId));
+    result.forEach(migratePlanInPlace);
+    return result;
   }
 
   async updatePlan(id: string, data: UpdatePlan): Promise<Plan> {
@@ -611,6 +616,12 @@ export class DatabaseStorage implements IStorage {
     if (data.appliedAt !== undefined) updateData.appliedAt = data.appliedAt;
     const [updated] = await db.update(fddIngestionRuns).set(updateData).where(eq(fddIngestionRuns.id, runId)).returning();
     return updated;
+  }
+}
+
+function migratePlanInPlace(plan: Plan): void {
+  if (plan.financialInputs) {
+    plan.financialInputs = migratePlanFinancialInputs(plan.financialInputs as any) as any;
   }
 }
 

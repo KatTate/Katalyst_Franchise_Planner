@@ -120,7 +120,7 @@ const PNL_SECTIONS: PnlSectionDef[] = [
           const y1 = enriched[0];
           if (!y1 || y1.revenue === 0) return null;
           const cogsPct = (y1.cogsPct * 100).toFixed(1);
-          const brandDefault = financialInputs?.operatingCosts?.cogsPct?.brandDefault;
+          const brandDefault = financialInputs?.operatingCosts?.cogsPct?.[0]?.brandDefault;
           if (brandDefault != null) {
             const brandPct = (brandDefault * 100).toFixed(1);
             const diff = y1.cogsPct * 100 - brandDefault * 100;
@@ -150,7 +150,7 @@ const PNL_SECTIONS: PnlSectionDef[] = [
           if (!y1 || y1.revenue === 0) return null;
           const pct = (y1.grossProfitPct * 100).toFixed(1);
           const pctNum = y1.grossProfitPct * 100;
-          const cogsBrandDefault = financialInputs?.operatingCosts?.cogsPct?.brandDefault;
+          const cogsBrandDefault = financialInputs?.operatingCosts?.cogsPct?.[0]?.brandDefault;
           if (cogsBrandDefault != null) {
             const expectedMargin = ((1 - cogsBrandDefault) * 100).toFixed(1);
             if (pctNum >= Number(expectedMargin) - 2) return `${pct}% gross margin in Year 1 — in line with ${brandName || "brand"} expectations`;

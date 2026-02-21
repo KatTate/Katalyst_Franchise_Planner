@@ -219,23 +219,44 @@ export const financialFieldValueSchema = z.object({
   isCustom: z.boolean(),
 });
 
+const financialFieldValueArraySchema = z.array(financialFieldValueSchema);
+
 export const planFinancialInputsSchema = z.object({
   revenue: z.object({
     monthlyAuv: financialFieldValueSchema,
-    year1GrowthRate: financialFieldValueSchema,
-    year2GrowthRate: financialFieldValueSchema,
+    growthRates: financialFieldValueArraySchema,
     startingMonthAuvPct: financialFieldValueSchema,
   }),
   operatingCosts: z.object({
-    cogsPct: financialFieldValueSchema,
-    laborPct: financialFieldValueSchema,
-    rentMonthly: financialFieldValueSchema,
-    utilitiesMonthly: financialFieldValueSchema,
-    insuranceMonthly: financialFieldValueSchema,
-    marketingPct: financialFieldValueSchema,
-    royaltyPct: financialFieldValueSchema,
-    adFundPct: financialFieldValueSchema,
-    otherMonthly: financialFieldValueSchema,
+    royaltyPct: financialFieldValueArraySchema,
+    adFundPct: financialFieldValueArraySchema,
+    cogsPct: financialFieldValueArraySchema,
+    laborPct: financialFieldValueArraySchema,
+    facilitiesAnnual: financialFieldValueArraySchema,
+    facilitiesDecomposition: z.object({
+      rent: financialFieldValueArraySchema,
+      utilities: financialFieldValueArraySchema,
+      telecomIt: financialFieldValueArraySchema,
+      vehicleFleet: financialFieldValueArraySchema,
+      insurance: financialFieldValueArraySchema,
+    }),
+    marketingPct: financialFieldValueArraySchema,
+    managementSalariesAnnual: financialFieldValueArraySchema,
+    payrollTaxPct: financialFieldValueArraySchema,
+    otherOpexPct: financialFieldValueArraySchema,
+  }),
+  profitabilityAndDistributions: z.object({
+    targetPreTaxProfitPct: financialFieldValueArraySchema,
+    shareholderSalaryAdj: financialFieldValueArraySchema,
+    distributions: financialFieldValueArraySchema,
+    nonCapexInvestment: financialFieldValueArraySchema,
+  }),
+  workingCapitalAndValuation: z.object({
+    arDays: financialFieldValueSchema,
+    apDays: financialFieldValueSchema,
+    inventoryDays: financialFieldValueSchema,
+    taxPaymentDelayMonths: financialFieldValueSchema,
+    ebitdaMultiple: financialFieldValueSchema,
   }),
   financing: z.object({
     loanAmount: financialFieldValueSchema,

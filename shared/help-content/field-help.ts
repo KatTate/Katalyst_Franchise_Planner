@@ -37,18 +37,9 @@ export const FIELD_HELP_CONTENT: FieldHelpContent[] = [
     source: "spreadsheet_comment",
   },
   {
-    fieldId: "year1GrowthRate",
+    fieldId: "growthRates",
     tooltip: "Please be aware that the Time to Reach AUV (months) takes precedence over the annual growth rate. After AUV is reached, this growth rate drives year-over-year revenue increases.",
     expandedGuidance: "TODO: Extract from Loom video content — Annual Growth Rate video explains the interaction between AUV ramp and growth rate.",
-    glossaryTermSlug: null,
-    parentFieldId: null,
-    isDecomposedField: false,
-    source: "spreadsheet_comment",
-  },
-  {
-    fieldId: "year2GrowthRate",
-    tooltip: "Annual revenue growth rate applied after AUV is reached. The Time to Reach AUV setting takes precedence until AUV is achieved.",
-    expandedGuidance: "TODO: Extract from Loom video content — Annual Growth Rate video explains post-AUV growth assumptions.",
     glossaryTermSlug: null,
     parentFieldId: null,
     isDecomposedField: false,
@@ -118,7 +109,7 @@ export const FIELD_HELP_CONTENT: FieldHelpContent[] = [
     source: "spreadsheet_comment",
   },
   {
-    fieldId: "rentMonthly",
+    fieldId: "facilitiesAnnual",
     tooltip: "Your monthly lease payment for the franchise location. Check your lease agreement or get an estimate from your broker.",
     expandedGuidance: "Rent is typically the largest single facilities cost. Consider negotiating favorable lease terms, especially for the first year. Some landlords offer rent abatement or graduated increases.",
     glossaryTermSlug: "facilities",
@@ -127,7 +118,7 @@ export const FIELD_HELP_CONTENT: FieldHelpContent[] = [
     source: "authored",
   },
   {
-    fieldId: "utilitiesMonthly",
+    fieldId: "utilities",
     tooltip: "Electric, gas, water, and sewer costs. Ask the landlord or previous tenant for typical monthly costs at this location.",
     expandedGuidance: "Utility costs vary significantly by location, climate, and business type. Restaurants and food service businesses typically have higher utility costs than service businesses.",
     glossaryTermSlug: "facilities",
@@ -136,7 +127,7 @@ export const FIELD_HELP_CONTENT: FieldHelpContent[] = [
     source: "authored",
   },
   {
-    fieldId: "insuranceMonthly",
+    fieldId: "insurance",
     tooltip: "Property insurance, general liability, and workers' compensation. Your franchisor may have recommended carriers with estimated costs.",
     expandedGuidance: "Insurance requirements vary by franchise brand and location. Contact your franchisor for recommended coverage levels and carrier options. Workers' comp rates depend on your state and industry classification.",
     glossaryTermSlug: null,
@@ -181,7 +172,7 @@ export const FIELD_HELP_CONTENT: FieldHelpContent[] = [
     source: "spreadsheet_comment",
   },
   {
-    fieldId: "otherMonthly",
+    fieldId: "otherOpexPct",
     tooltip: "Other operating expenses — a catchall bucket for everything else not categorized above, such as office supplies, professional services, and miscellaneous costs.",
     expandedGuidance: "TODO: Extract from Loom video content — Other Operating Expenses video covers what typically falls into this category and how to estimate it.",
     glossaryTermSlug: null,

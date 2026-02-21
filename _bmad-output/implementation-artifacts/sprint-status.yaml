@@ -568,7 +568,7 @@ development_status:
   # Story 7.1 split into 7.1a–7.1d per Party Mode review (2026-02-21)
   # Dependency chain: 7.1a → 7.1b + 7.1c (parallel) → 7.1d
   epic-7: in-progress
-  7-1a-data-model-restructuring-migration: ready-for-dev      # Foundation: PlanFinancialInputs per-year arrays, migration, unwrapForEngine, field metadata, sensitivity/scenario engines
+  7-1a-data-model-restructuring-migration: in-progress      # Foundation: PlanFinancialInputs per-year arrays, migration, unwrapForEngine, field metadata, sensitivity/scenario engines
   7-1b-reports-per-year-inline-editing: backlog                # Depends on 7.1a. Reports independent editing, linked-column removal, Copy Year 1, PerYearEditableRow
   7-1c-forms-per-year-layout: backlog                          # Depends on 7.1a. Can parallel with 7.1b. Forms 5-column layout, new field sections
   7-1d-new-field-surfaces: backlog                             # Depends on 7.1a + 7.1b + 7.1c. Facilities decomposition, Other OpEx %, Balance Sheet/Valuation editing

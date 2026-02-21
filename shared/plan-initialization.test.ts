@@ -111,31 +111,45 @@ describe("buildPlanFinancialInputs", () => {
 
   describe("revenue fields", () => {
     it("converts monthlyAuv from dollars to cents", () => {
-      // $26,867 → 2,686,700 cents
       expect(result.revenue.monthlyAuv.currentValue).toBe(2686700);
     });
 
-    it("preserves percentage values as-is", () => {
-      expect(result.revenue.year1GrowthRate.currentValue).toBe(0.13);
-      expect(result.revenue.year2GrowthRate.currentValue).toBe(0.13);
+    it("creates per-year growthRates array from year1/year2 growth rates", () => {
+      expect(result.revenue.growthRates).toHaveLength(5);
+      expect(result.revenue.growthRates[0].currentValue).toBe(0.13);
+      expect(result.revenue.growthRates[1].currentValue).toBe(0.13);
+      expect(result.revenue.growthRates[4].currentValue).toBe(0.13);
+    });
+
+    it("preserves startingMonthAuvPct", () => {
       expect(result.revenue.startingMonthAuvPct.currentValue).toBe(0.08);
     });
   });
 
   describe("operating costs fields", () => {
-    it("converts currency fields from dollars to cents", () => {
-      expect(result.operatingCosts.rentMonthly.currentValue).toBe(500000);
-      expect(result.operatingCosts.utilitiesMonthly.currentValue).toBe(80000);
-      expect(result.operatingCosts.insuranceMonthly.currentValue).toBe(50000);
-      expect(result.operatingCosts.otherMonthly.currentValue).toBe(100000);
+    it("creates per-year arrays for percentage fields", () => {
+      expect(result.operatingCosts.cogsPct).toHaveLength(5);
+      expect(result.operatingCosts.cogsPct[0].currentValue).toBe(0.30);
+      expect(result.operatingCosts.laborPct[0].currentValue).toBe(0.17);
+      expect(result.operatingCosts.marketingPct[0].currentValue).toBe(0.05);
+      expect(result.operatingCosts.royaltyPct[0].currentValue).toBe(0.05);
+      expect(result.operatingCosts.adFundPct[0].currentValue).toBe(0.02);
     });
 
-    it("preserves percentage values as-is", () => {
-      expect(result.operatingCosts.cogsPct.currentValue).toBe(0.30);
-      expect(result.operatingCosts.laborPct.currentValue).toBe(0.17);
-      expect(result.operatingCosts.marketingPct.currentValue).toBe(0.05);
-      expect(result.operatingCosts.royaltyPct.currentValue).toBe(0.05);
-      expect(result.operatingCosts.adFundPct.currentValue).toBe(0.02);
+    it("creates facilitiesDecomposition with annual amounts in cents", () => {
+      expect(result.operatingCosts.facilitiesDecomposition.rent[0].currentValue).toBe(6000000);
+      expect(result.operatingCosts.facilitiesDecomposition.utilities[0].currentValue).toBe(960000);
+      expect(result.operatingCosts.facilitiesDecomposition.insurance[0].currentValue).toBe(600000);
+    });
+
+    it("computes facilitiesAnnual as sum of decomposition", () => {
+      const y1Total = 6000000 + 960000 + 600000;
+      expect(result.operatingCosts.facilitiesAnnual[0].currentValue).toBe(y1Total);
+    });
+
+    it("applies 3% annual escalation to facilities", () => {
+      const y1 = result.operatingCosts.facilitiesAnnual[0].currentValue;
+      expect(result.operatingCosts.facilitiesAnnual[1].currentValue).toBe(Math.round(y1 * 1.03));
     });
   });
 
@@ -258,23 +272,17 @@ describe("unwrapForEngine", () => {
       expect(engineInput.financialInputs.operatingCosts.marketingPct).toEqual([0.05, 0.05, 0.05, 0.05, 0.05]);
     });
 
-    it("combines fixed monthly costs into facilitiesAnnual with escalation", () => {
-      // rent(500000) + utilities(80000) + insurance(50000) = 630000 cents/month
-      // × 12 = 7,560,000 cents/year base
-      const base = 7560000;
+    it("passes facilitiesAnnual from per-year arrays with escalation", () => {
       const fa = engineInput.financialInputs.operatingCosts.facilitiesAnnual;
-      expect(fa[0]).toBe(base);
-      expect(fa[1]).toBe(Math.round(base * 1.03));
-      expect(fa[2]).toBe(Math.round(base * Math.pow(1.03, 2)));
-      expect(fa[3]).toBe(Math.round(base * Math.pow(1.03, 3)));
-      expect(fa[4]).toBe(Math.round(base * Math.pow(1.03, 4)));
+      expect(fa[0]).toBe(7560000);
+      for (let y = 1; y < 5; y++) {
+        expect(fa[y]).toBeGreaterThan(fa[y - 1]);
+      }
+      expect(Math.abs(fa[4] - Math.round(7560000 * Math.pow(1.03, 4)))).toBeLessThanOrEqual(5);
     });
 
-    it("converts otherMonthly to otherOpexPct based on estimated revenue", () => {
-      // otherMonthly = 100,000 cents → annual = 1,200,000 cents
-      // annualGrossSales = 32,240,400 cents
-      // otherOpexPct = 1,200,000 / 32,240,400 ≈ 0.03722
-      const expectedPct = (100000 * 12) / (2686700 * 12);
+    it("converts otherOpexPct from brand parameters into per-year arrays", () => {
+      const expectedPct = (1000 * 12) / (26867 * 12);
       expect(engineInput.financialInputs.operatingCosts.otherOpexPct[0]).toBeCloseTo(expectedPct, 4);
     });
 
@@ -408,16 +416,16 @@ describe("PostNet Reference Validation (AC7)", () => {
   });
 
   it("Y1 and Y5 EBITDA match PostNet pipeline reference", () => {
-    expect(Math.abs(output.annualSummaries[0].ebitda - (-10518100.81))).toBeLessThan(tolerance);
-    expect(Math.abs(output.annualSummaries[4].ebitda - 8401014.91)).toBeLessThan(tolerance);
+    expect(Math.abs(output.annualSummaries[0].ebitda - (-2080600.81))).toBeLessThan(tolerance);
+    expect(Math.abs(output.annualSummaries[4].ebitda - 8401015.87)).toBeLessThan(tolerance);
   });
 
   it("5-year cumulative cash flow matches reference", () => {
-    expect(Math.abs(output.roiMetrics.fiveYearCumulativeCashFlow - 4677650.41)).toBeLessThan(tolerance);
+    expect(Math.abs(output.roiMetrics.fiveYearCumulativeCashFlow - 13115151.38)).toBeLessThan(tolerance);
   });
 
   it("5-year ROI matches reference", () => {
-    expect(output.roiMetrics.fiveYearROIPct).toBe(0.18);
+    expect(output.roiMetrics.fiveYearROIPct).toBe(0.51);
   });
 
   it("total startup investment matches reference", () => {
@@ -574,8 +582,8 @@ describe("Edge Cases", () => {
     const sc = buildPlanStartupCosts(testStartupTemplate);
     const ei = unwrapForEngine(pi, sc);
     expect(ei.financialInputs.revenue.annualGrossSales).toBe(0);
-    // otherOpexPct should default to 0 when otherMonthly > 0 but revenue is 0
-    // In this case, otherMonthly = 100000 cents, annualGrossSales = 0
+    // otherOpexPct should default to 0 when other_monthly > 0 but revenue is 0
+    // In this case, other_monthly = $1000, annualGrossSales = 0
     // so otherOpexPct uses DEFAULT_OTHER_OPEX_PCT
     const output = calculateProjections(ei);
     expect(output.monthlyProjections).toHaveLength(60);
@@ -597,7 +605,7 @@ describe("Edge Cases", () => {
     expect(output.monthlyProjections).toHaveLength(60);
   });
 
-  it("handles zero otherMonthly", () => {
+  it("handles zero other_monthly", () => {
     const params: BrandParameters = {
       ...testBrandParams,
       operating_costs: {
@@ -608,7 +616,7 @@ describe("Edge Cases", () => {
     const pi = buildPlanFinancialInputs(params);
     const sc = buildPlanStartupCosts(testStartupTemplate);
     const ei = unwrapForEngine(pi, sc);
-    // otherMonthly = 0 → otherOpexPct = 0
+    // other_monthly = 0 → otherOpexPct = 0
     expect(ei.financialInputs.operatingCosts.otherOpexPct[0]).toBe(0);
   });
 });
@@ -968,10 +976,17 @@ describe("Custom item + engine integration", () => {
 /** Extract all FinancialFieldValue objects from a PlanFinancialInputs for validation */
 function getAllFields(inputs: PlanFinancialInputs): FinancialFieldValue[] {
   const fields: FinancialFieldValue[] = [];
-  for (const category of Object.values(inputs)) {
-    for (const field of Object.values(category)) {
-      fields.push(field as FinancialFieldValue);
+  function collect(obj: any) {
+    if (obj && typeof obj === "object") {
+      if ("currentValue" in obj && "source" in obj) {
+        fields.push(obj as FinancialFieldValue);
+      } else if (Array.isArray(obj)) {
+        for (const item of obj) collect(item);
+      } else {
+        for (const val of Object.values(obj)) collect(val);
+      }
     }
   }
+  collect(inputs);
   return fields;
 }

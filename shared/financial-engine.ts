@@ -33,24 +33,46 @@ export interface FinancialFieldValue {
 
 /** Wrapped financial inputs for plan JSONB persistence. Each user-editable field
  *  carries metadata (source, brand default, reset capability). The structure
- *  mirrors BrandParameters categories with camelCase keys. */
+ *  mirrors BrandParameters categories with camelCase keys.
+ *
+ *  Per-year fields use 5-element FinancialFieldValue[] arrays (Year 1 through Year 5).
+ *  Single-value fields remain as plain FinancialFieldValue. */
 export interface PlanFinancialInputs {
   revenue: {
     monthlyAuv: FinancialFieldValue;
-    year1GrowthRate: FinancialFieldValue;
-    year2GrowthRate: FinancialFieldValue;
+    growthRates: FinancialFieldValue[];
     startingMonthAuvPct: FinancialFieldValue;
   };
   operatingCosts: {
-    cogsPct: FinancialFieldValue;
-    laborPct: FinancialFieldValue;
-    rentMonthly: FinancialFieldValue;
-    utilitiesMonthly: FinancialFieldValue;
-    insuranceMonthly: FinancialFieldValue;
-    marketingPct: FinancialFieldValue;
-    royaltyPct: FinancialFieldValue;
-    adFundPct: FinancialFieldValue;
-    otherMonthly: FinancialFieldValue;
+    royaltyPct: FinancialFieldValue[];
+    adFundPct: FinancialFieldValue[];
+    cogsPct: FinancialFieldValue[];
+    laborPct: FinancialFieldValue[];
+    facilitiesAnnual: FinancialFieldValue[];
+    facilitiesDecomposition: {
+      rent: FinancialFieldValue[];
+      utilities: FinancialFieldValue[];
+      telecomIt: FinancialFieldValue[];
+      vehicleFleet: FinancialFieldValue[];
+      insurance: FinancialFieldValue[];
+    };
+    marketingPct: FinancialFieldValue[];
+    managementSalariesAnnual: FinancialFieldValue[];
+    payrollTaxPct: FinancialFieldValue[];
+    otherOpexPct: FinancialFieldValue[];
+  };
+  profitabilityAndDistributions: {
+    targetPreTaxProfitPct: FinancialFieldValue[];
+    shareholderSalaryAdj: FinancialFieldValue[];
+    distributions: FinancialFieldValue[];
+    nonCapexInvestment: FinancialFieldValue[];
+  };
+  workingCapitalAndValuation: {
+    arDays: FinancialFieldValue;
+    apDays: FinancialFieldValue;
+    inventoryDays: FinancialFieldValue;
+    taxPaymentDelayMonths: FinancialFieldValue;
+    ebitdaMultiple: FinancialFieldValue;
   };
   financing: {
     loanAmount: FinancialFieldValue;

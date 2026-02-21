@@ -29,8 +29,8 @@ export const INPUT_FIELD_MAP: Record<string, InputFieldMapping> = {
   },
   "other-opex": {
     category: "operatingCosts",
-    fieldName: "otherMonthly",
-    inputFormat: "currency",
+    fieldName: "otherOpexPct",
+    inputFormat: "percentage",
   },
 };
 
