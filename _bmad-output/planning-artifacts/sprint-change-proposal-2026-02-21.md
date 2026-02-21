@@ -1,7 +1,7 @@
 # Sprint Change Proposal: Epic 10 Pivot — User-Authored Scenario Modeling
 
 **Date:** 2026-02-21
-**Status:** APPROVED (2026-02-21) — All 8 CPs applied, code + artifacts updated
+**Status:** PENDING APPROVAL (Revision 2 — added D6 uncapped slider ranges, CP-8)
 **Author:** Correct Course workflow (Batch mode)
 **Triggered by:** UX review of Story 10-1 implementation — Product Owner identified that fixed Conservative/Optimistic columns answer a system-invented question, not a real user question. Follow-up PO feedback: slider ranges (±15%/±5%/±10%) are arbitrary holdovers from retired feature — should be uncapped.
 **Scope:** Epic 10 (What-If Playground) — Stories 10.1, 10.2a, 10.2b, 10.3

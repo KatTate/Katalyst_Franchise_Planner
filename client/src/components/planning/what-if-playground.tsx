@@ -2,23 +2,21 @@ import { useState, useMemo, useEffect, useCallback } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Slider } from "@/components/ui/slider";
 import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { AlertCircle, TrendingUp, TrendingDown, Minus, RotateCcw } from "lucide-react";
+import { AlertCircle, TrendingUp, TrendingDown, Minus } from "lucide-react";
 import { usePlan } from "@/hooks/use-plan";
 import { formatCents } from "@/lib/format-currency";
 import {
   computeSensitivityOutputs,
-  clampToMathLimits,
   SLIDER_CONFIGS,
   DEFAULT_SLIDER_VALUES,
   type SliderValues,
   type SliderConfig,
   type SensitivityOutputs,
 } from "@/lib/sensitivity-engine";
+import type { ScenarioOutputs } from "@/lib/scenario-engine";
 import type { PlanFinancialInputs } from "@shared/financial-engine";
 import type { StartupCostLineItem } from "@shared/financial-engine";
-import type { EngineOutput } from "@shared/financial-engine";
 
 interface WhatIfPlaygroundProps {
   planId: string;
@@ -27,7 +25,7 @@ interface WhatIfPlaygroundProps {
 interface MetricDefinition {
   key: string;
   label: string;
-  getValue: (output: EngineOutput) => number | null;
+  getValue: (output: ScenarioOutputs["base"]) => number | null;
   format: "currency" | "pct" | "months";
 }
 
@@ -57,9 +55,9 @@ const METRICS: MetricDefinition[] = [
     format: "currency",
   },
   {
-    key: "y5-cash",
-    label: "Year-5 Cash",
-    getValue: (o) => o.annualSummaries[4]?.endingCash ?? null,
+    key: "y1-pretax",
+    label: "Year-1 Pre-Tax Income",
+    getValue: (o) => o.annualSummaries[0]?.preTaxIncome ?? null,
     format: "currency",
   },
 ];
@@ -95,7 +93,7 @@ function formatDelta(
   }
 }
 
-function sumY1Monthly(baseOutput: EngineOutput, field: "marketing" | "facilities"): number {
+function sumY1Monthly(baseOutput: ScenarioOutputs["base"], field: "marketing" | "facilities"): number {
   let total = 0;
   for (const mp of baseOutput.monthlyProjections) {
     if (mp.year === 1) total += mp[field];
@@ -106,7 +104,7 @@ function sumY1Monthly(baseOutput: EngineOutput, field: "marketing" | "facilities
 function computeSliderDollarImpact(
   key: keyof SliderValues,
   pct: number,
-  baseOutput: EngineOutput
+  baseOutput: ScenarioOutputs["base"]
 ): number {
   const y1 = baseOutput.annualSummaries[0];
   if (!y1) return 0;
@@ -124,16 +122,16 @@ function computeSliderDollarImpact(
   }
 }
 
-function formatSliderImpact(key: keyof SliderValues, pct: number, baseOutput: EngineOutput): string {
+function formatSliderImpact(key: keyof SliderValues, pct: number, baseOutput: ScenarioOutputs["base"]): string {
   const impact = computeSliderDollarImpact(key, pct, baseOutput);
   if (impact === 0 && pct === 0) return "$0/yr";
   const sign = impact >= 0 ? "+" : "";
   return `${sign}${formatCents(impact)}/yr`;
 }
 
-function formatSliderPct(pct: number, unit: string): string {
+function formatSliderPct(pct: number): string {
   const sign = pct > 0 ? "+" : "";
-  return `${sign}${pct}${unit}`;
+  return `${sign}${pct}%`;
 }
 
 function SensitivitySliderRow({
@@ -146,7 +144,7 @@ function SensitivitySliderRow({
   config: SliderConfig;
   value: number;
   onChange: (key: keyof SliderValues, val: number) => void;
-  baseOutput: EngineOutput | null;
+  baseOutput: ScenarioOutputs["base"] | null;
   disabled: boolean;
 }) {
   const [inputValue, setInputValue] = useState(String(value));
@@ -168,7 +166,7 @@ function SensitivitySliderRow({
       setInputValue(String(value));
       return;
     }
-    const clamped = clampToMathLimits(config.key, parsed);
+    const clamped = Math.max(config.min, Math.min(config.max, parsed));
     onChange(config.key, clamped);
     setInputValue(String(clamped));
   }, [inputValue, value, config, onChange]);
@@ -182,24 +180,22 @@ function SensitivitySliderRow({
     []
   );
 
-  const sliderDisplayValue = Math.max(config.min, Math.min(config.max, value));
   const impactDisplay = baseOutput ? formatSliderImpact(config.key, value, baseOutput) : "—";
-  const pctDisplay = formatSliderPct(value, config.unit);
-  const isOverflow = value < config.min || value > config.max;
+  const pctDisplay = formatSliderPct(value);
 
   return (
-    <div className="grid grid-cols-[140px_1fr_70px_120px_80px] gap-3 items-center" data-testid={`slider-row-${config.key}`}>
+    <div className="grid grid-cols-[140px_1fr_60px_120px_80px] gap-3 items-center" data-testid={`slider-row-${config.key}`}>
       <label className="text-sm font-medium text-foreground truncate">{config.label}</label>
       <Slider
         min={config.min}
         max={config.max}
         step={config.step}
-        value={[sliderDisplayValue]}
+        value={[value]}
         onValueChange={handleSliderChange}
         disabled={disabled}
         data-testid={`slider-${config.key}`}
       />
-      <span className={`text-sm font-mono tabular-nums text-center font-semibold ${isOverflow ? "text-orange-600 dark:text-orange-400" : ""}`} data-testid={`slider-pct-${config.key}`}>
+      <span className="text-sm font-mono tabular-nums text-center font-semibold" data-testid={`slider-pct-${config.key}`}>
         {pctDisplay}
       </span>
       <span className="text-xs font-mono tabular-nums text-muted-foreground text-right" data-testid={`slider-impact-${config.key}`}>
@@ -207,6 +203,8 @@ function SensitivitySliderRow({
       </span>
       <Input
         type="number"
+        min={config.min}
+        max={config.max}
         step={config.step}
         value={inputValue}
         onChange={(e) => setInputValue(e.target.value)}
@@ -220,37 +218,66 @@ function SensitivitySliderRow({
   );
 }
 
-function desirabilityColor(metricKey: string, current: number | null, base: number | null): string {
-  if (current === null || base === null) return "text-muted-foreground";
-  const diff = current - base;
-  if (diff === 0) return "text-muted-foreground";
-  const higherIsBetter = metricKey !== "break-even";
-  const isDesirable = higherIsBetter ? diff > 0 : diff < 0;
-  return isDesirable
-    ? "text-green-600 dark:text-green-400"
-    : "text-orange-600 dark:text-orange-400";
+function isBetter(metricKey: string, val: number | null, baseVal: number | null): boolean {
+  if (val === null || baseVal === null) return false;
+  return metricKey === "break-even" ? val < baseVal : val > baseVal;
 }
 
-function desirabilityIcon(metricKey: string, current: number | null, base: number | null) {
-  if (current === null || base === null) return <Minus className="h-3 w-3" />;
-  const diff = current - base;
-  if (diff === 0) return <Minus className="h-3 w-3" />;
-  const higherIsBetter = metricKey !== "break-even";
-  const isDesirable = higherIsBetter ? diff > 0 : diff < 0;
-  return isDesirable ? <TrendingUp className="h-3 w-3" /> : <TrendingDown className="h-3 w-3" />;
+function isWorse(metricKey: string, val: number | null, baseVal: number | null): boolean {
+  if (val === null || baseVal === null) return false;
+  return metricKey === "break-even" ? val > baseVal : val < baseVal;
+}
+
+function ScenarioColumn({
+  label,
+  value,
+  baseVal,
+  metricKey,
+  format,
+  testId,
+  highlight,
+}: {
+  label: string;
+  value: number | null;
+  baseVal: number | null;
+  metricKey: string;
+  format: "currency" | "pct" | "months";
+  testId: string;
+  highlight?: boolean;
+}) {
+  const delta = formatDelta(baseVal, value, format);
+  const worse = isWorse(metricKey, value, baseVal);
+  const better = isBetter(metricKey, value, baseVal);
+
+  return (
+    <div data-testid={testId} className={highlight ? "bg-primary/5 rounded-md p-1.5 -m-1.5" : ""}>
+      <div className="text-[10px] text-muted-foreground mb-0.5">{label}</div>
+      <div className={`text-sm font-semibold font-mono tabular-nums ${highlight ? "text-primary" : ""}`}>
+        {value === null && metricKey === "break-even" ? "60+ mo" : formatMetricValue(value, format)}
+      </div>
+      {delta && (
+        <div className={`flex items-center gap-0.5 text-[10px] font-mono ${worse ? "text-orange-600 dark:text-orange-400" : better ? "text-blue-600 dark:text-blue-400" : "text-muted-foreground"}`}>
+          {worse ? <TrendingDown className="h-3 w-3" /> : better ? <TrendingUp className="h-3 w-3" /> : <Minus className="h-3 w-3" />}
+          {delta}
+        </div>
+      )}
+    </div>
+  );
 }
 
 function MetricCard({
   metric,
-  outputs,
+  scenarioOutputs,
+  hasCustom,
 }: {
   metric: MetricDefinition;
-  outputs: SensitivityOutputs;
+  scenarioOutputs: SensitivityOutputs;
+  hasCustom: boolean;
 }) {
-  const baseVal = metric.getValue(outputs.base);
-  const currentVal = metric.getValue(outputs.current);
-  const delta = formatDelta(baseVal, currentVal, metric.format);
-  const colorClass = desirabilityColor(metric.key, currentVal, baseVal);
+  const baseVal = metric.getValue(scenarioOutputs.base);
+  const conservativeVal = metric.getValue(scenarioOutputs.conservative);
+  const optimisticVal = metric.getValue(scenarioOutputs.optimistic);
+  const customVal = metric.getValue(scenarioOutputs.custom);
 
   return (
     <Card data-testid={`metric-card-${metric.key}`}>
@@ -260,25 +287,13 @@ function MetricCard({
         </CardTitle>
       </CardHeader>
       <CardContent className="px-4 pb-4">
-        <div className="grid grid-cols-2 gap-3">
-          <div data-testid={`metric-base-${metric.key}`}>
-            <div className="text-[10px] text-muted-foreground mb-0.5">Base Case</div>
-            <div className="text-sm font-semibold font-mono tabular-nums">
-              {baseVal === null && metric.key === "break-even" ? "60+ mo" : formatMetricValue(baseVal, metric.format)}
-            </div>
-          </div>
-          <div data-testid={`metric-current-${metric.key}`} className="bg-primary/5 rounded-md p-1.5 -m-1.5">
-            <div className="text-[10px] text-muted-foreground mb-0.5">Your Scenario</div>
-            <div className="text-sm font-semibold font-mono tabular-nums text-primary">
-              {currentVal === null && metric.key === "break-even" ? "60+ mo" : formatMetricValue(currentVal, metric.format)}
-            </div>
-            {delta && (
-              <div className={`flex items-center gap-0.5 text-[10px] font-mono ${colorClass}`}>
-                {desirabilityIcon(metric.key, currentVal, baseVal)}
-                {delta}
-              </div>
-            )}
-          </div>
+        <div className={`grid gap-2 ${hasCustom ? "grid-cols-4" : "grid-cols-3"}`}>
+          <ScenarioColumn label="Base Case" value={baseVal} baseVal={baseVal} metricKey={metric.key} format={metric.format} testId={`metric-base-${metric.key}`} />
+          <ScenarioColumn label="Conservative" value={conservativeVal} baseVal={baseVal} metricKey={metric.key} format={metric.format} testId={`metric-conservative-${metric.key}`} />
+          <ScenarioColumn label="Optimistic" value={optimisticVal} baseVal={baseVal} metricKey={metric.key} format={metric.format} testId={`metric-optimistic-${metric.key}`} />
+          {hasCustom && (
+            <ScenarioColumn label="Your Scenario" value={customVal} baseVal={baseVal} metricKey={metric.key} format={metric.format} testId={`metric-custom-${metric.key}`} highlight />
+          )}
         </div>
       </CardContent>
     </Card>
@@ -301,16 +316,12 @@ export function WhatIfPlayground({ planId }: WhatIfPlaygroundProps) {
     setSliderValues((prev) => ({ ...prev, [key]: val }));
   }, []);
 
-  const handleReset = useCallback(() => {
-    setSliderValues({ ...DEFAULT_SLIDER_VALUES });
-  }, []);
-
   const financialInputs = plan?.financialInputs as PlanFinancialInputs | null | undefined;
   const startupCostsData = (plan?.startupCosts ?? []) as StartupCostLineItem[];
 
-  const hasAdjustment = Object.values(sliderValues).some((v) => v !== 0);
+  const hasCustom = Object.values(sliderValues).some((v) => v !== 0);
 
-  const outputs = useMemo<SensitivityOutputs | null>(() => {
+  const scenarioOutputs = useMemo<SensitivityOutputs | null>(() => {
     if (!financialInputs) return null;
     return computeSensitivityOutputs(financialInputs, startupCostsData, debouncedSliders);
   }, [financialInputs, startupCostsData, debouncedSliders]);
@@ -379,24 +390,10 @@ export function WhatIfPlayground({ planId }: WhatIfPlaygroundProps) {
 
         <Card data-testid="sensitivity-controls-panel">
           <CardHeader className="pb-3">
-            <div className="flex items-center justify-between">
-              <CardTitle className="text-base">Sensitivity Controls</CardTitle>
-              {hasAdjustment && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={handleReset}
-                  className="text-xs h-7 gap-1"
-                  data-testid="reset-sliders-button"
-                >
-                  <RotateCcw className="h-3.5 w-3.5" />
-                  Reset Sliders
-                </Button>
-              )}
-            </div>
+            <CardTitle className="text-base">Sensitivity Controls</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="grid grid-cols-[140px_1fr_70px_120px_80px] gap-3 items-center text-[10px] text-muted-foreground uppercase tracking-wider mb-1">
+            <div className="grid grid-cols-[140px_1fr_60px_120px_80px] gap-3 items-center text-[10px] text-muted-foreground uppercase tracking-wider mb-1">
               <span>Assumption</span>
               <span className="text-center">Adjustment</span>
               <span className="text-center">Value</span>
@@ -409,29 +406,23 @@ export function WhatIfPlayground({ planId }: WhatIfPlaygroundProps) {
                 config={config}
                 value={sliderValues[config.key]}
                 onChange={handleSliderChange}
-                baseOutput={outputs?.base ?? null}
-                disabled={!outputs}
+                baseOutput={scenarioOutputs?.base ?? null}
+                disabled={!scenarioOutputs}
               />
             ))}
           </CardContent>
         </Card>
 
         <div>
-          <h2 className="text-base font-semibold mb-3" data-testid="metrics-heading">
-            {hasAdjustment ? "Base Case vs Your Scenario" : "Key Metrics"}
-          </h2>
-          {!hasAdjustment && (
-            <p className="text-sm text-muted-foreground mb-3" data-testid="sensitivity-delta-helper-text">
-              Try moving a slider above to see how it changes your break-even and cash flow.
-            </p>
-          )}
+          <h2 className="text-base font-semibold mb-3" data-testid="metrics-heading">Key Metrics by Scenario</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4" data-testid="metric-cards-grid">
-            {outputs &&
+            {scenarioOutputs &&
               METRICS.map((metric) => (
                 <MetricCard
                   key={metric.key}
                   metric={metric}
-                  outputs={outputs}
+                  scenarioOutputs={scenarioOutputs}
+                  hasCustom={hasCustom}
                 />
               ))}
           </div>

@@ -2081,100 +2081,89 @@ So that my work is never blocked by a technical issue (FR54).
 
 ---
 
-## Epic 10: What-If Playground — User-Authored Scenario Modeling
+## Epic 10: What-If Playground (formerly "Scenario Comparison")
 
-Standalone sidebar destination for interactive scenario modeling. Franchisees adjust assumption sliders to author their own "what-if" scenarios, save them with names, and compare saved scenarios against their base plan. Charts and metric cards update live as sliders move, always showing Base Case vs "Your Scenario" (current slider state). Users can save slider configurations as named scenarios, reload them, and overlay saved scenarios for comparison. This is a planning sandbox — slider adjustments do NOT change the user's actual plan. Replaces the retired Story 5.7 column-splitting approach and the system-defined Conservative/Optimistic columns (retired per SCP-2026-02-21 D1). Slider ranges are uncapped per SCP-2026-02-21 D6 — numeric input fields accept any value within mathematical limits.
+Standalone sidebar destination providing interactive graphical sensitivity analysis. Franchisees adjust assumption sliders and see all charts (Profitability, Cash Flow, Break-Even, ROI, Balance Sheet, Debt & Working Capital) update simultaneously across Base, Conservative, and Optimistic scenarios. This is a planning sandbox — slider adjustments do NOT change the user's actual plan. Replaces the retired Story 5.7 column-splitting approach. Per SCP-2026-02-20 Decision D5/D6 and Section 3.
 
 **FRs covered:** (To be assigned when FRs for What-If Playground are formalized — extends scenario-related FRs from Epic 5's retired Story 5.7)
-**Stories (4):** 10.1 Sensitivity Controls & Sandbox Engine, 10.2a Sensitivity Chart Dashboard, 10.2b Metric Delta Cards & Dashboard Polish, 10.3 Scenario Persistence & Comparison
+**Stories (3):** 10.1 Sensitivity Controls & Sandbox Engine, 10.2 Multi-Chart Dashboard, 10.3 Scenario Persistence & Sharing
 
 ### Story 10.1: Sensitivity Controls & Sandbox Engine
 
 As a franchisee,
 I want to navigate to a standalone What-If Playground and adjust assumption sliders to see how my plan responds to changing conditions,
-So that I can explore different scenarios and build conviction about my plan — without modifying my actual plan.
+So that I can build conviction that my plan works even in conservative cases — without modifying my actual plan.
 
 **Acceptance Criteria:**
 
-**Given** I have a plan with financial inputs and am on the planning workspace
-**When** I click the "Scenarios" sidebar navigation item
-**Then** I see the What-If Playground view replace the main content area
+**Given** I have a plan with financial inputs and am on the dashboard or any planning surface
+**When** I click the "What-If" sidebar navigation item
+**Then** I see a standalone What-If Playground page (route: `/plans/:planId/what-if`)
 **And** the page header explains the purpose: "What happens to my WHOLE business if things change?"
-**And** a Sensitivity Controls panel is displayed with sliders for key assumptions:
-  - Revenue adjustment (slider visual range: -50% to +100%, step 5%)
-  - COGS adjustment (slider visual range: -20pp to +20pp, step 1pp)
-  - Payroll/Labor adjustment (slider visual range: -50% to +100%, step 5%)
-  - Marketing adjustment (slider visual range: -50% to +100%, step 5%)
-  - Facilities adjustment (slider visual range: -50% to +100%, step 5%)
-**And** each slider shows its current percentage adjustment and the resulting annual dollar impact (e.g., "Revenue: +8% → +$24,000/yr")
-**And** editable numeric input fields accompany each slider for precise entry — numeric fields accept any value within mathematical limits (revenue ≥ -100%, percentage inputs clamped 0–100% by the engine's `clamp01()`)
-**And** when a numeric field value exceeds the slider's visual range, the slider thumb clamps to its edge but the engine respects the actual numeric value
+**And** a sticky/collapsible Sensitivity Controls panel is displayed at the top with sliders for key assumptions:
+  - Revenue adjustment: -15% ←——●——→ +15%
+  - COGS adjustment: -5% ←——●——→ +5%
+  - Payroll/Labor adjustment: -10% ←——●——→ +10%
+  - Marketing adjustment: -10% ←——●——→ +10%
+  - Facilities adjustment: -10% ←——●——→ +10%
+**And** each slider shows its current percentage adjustment and the resulting dollar impact (e.g., "Revenue: +8% → +$24,000/yr")
+**And** sliders can be supplemented by editable numeric fields for precise input
 **And** slider adjustments do NOT modify the user's actual plan — this is a sandbox (base case always reflects saved plan inputs)
-**And** the financial engine computes two scenarios client-side: Base Case (saved plan inputs, unmodified) and Your Scenario (base inputs with current slider adjustments applied)
-**And** key metric cards are displayed showing Base Case vs Your Scenario with delta indicators (e.g., "Break-Even: 14 mo → 18 mo (+4 mo)")
-**And** a "Reset Sliders" button returns all sliders to 0% (Your Scenario = Base Case)
+**And** the financial engine computes three scenarios client-side: Base Case (saved plan), Conservative (negative slider extremes), and Optimistic (positive slider extremes)
 **And** each computation completes in < 2 seconds (NFR1)
 **And** slider input is debounced for an instant, responsive feel
 
 **Dev Notes:**
 - Financial engine already supports this — pass modified inputs, get full projection
-- Engine runs twice: base (no adjustments) and current (slider adjustments applied). If all sliders are at zero, skip the second run — Your Scenario equals Base Case.
+- Engine runs once per scenario (3 runs total). Client-side computation with debounced slider input.
 - Base case always reflects the user's actual saved plan inputs — not slider-modified values
-- Slider visual ranges are generous defaults for drag interaction; numeric input fields are the uncapped input mechanism for extreme scenarios (per SCP-2026-02-21 D6)
-- The ±15%/±5%/±10% ranges from the retired Quick Scenario Sensitivity Model (UX Spec Part 11) are replaced — those were designed as fixed multipliers, not slider limits
+- Conservative/Optimistic are computed by applying slider percentage multipliers to base case inputs
 
-### Story 10.2: Multi-Chart Sensitivity Dashboard — SUPERSEDED
-
-> **Status:** SUPERSEDED per Party Mode team review (2026-02-21). Split into Story 10.2a (Sensitivity Chart Dashboard) and Story 10.2b (Metric Delta Cards & Dashboard Polish). See `10-2a-sensitivity-chart-dashboard.md` and `10-2b-metric-delta-cards.md` for current ACs. Charts and delta cards show Base Case vs Your Scenario (per SCP-2026-02-21 D1/D2), not the retired Conservative/Optimistic system columns. If a saved scenario is loaded for comparison (Story 10.3), a third curve/column is shown.
-
-### Story 10.3: Scenario Persistence & Comparison
+### Story 10.2: Multi-Chart Sensitivity Dashboard
 
 As a franchisee,
-I want to save my slider configurations as named scenarios and compare them against my base plan,
-So that I can explore multiple "what-if" variations and build conviction about which assumptions matter most.
+I want to see 6 simultaneous charts in the What-If Playground that all react to my slider adjustments,
+So that I can understand the full impact of changing assumptions across every dimension of my business.
 
 **Acceptance Criteria:**
 
-**Given** I have adjusted sliders in the What-If Playground to a non-zero configuration
-**When** I click "Save as Scenario"
-**Then** a dialog prompts me to name the scenario (e.g., "Low Revenue + Lean Marketing")
-**And** the current slider positions are saved as a named scenario associated with my plan
-**And** the scenario selector dropdown updates to include the new scenario
-
-**Given** I have one or more saved scenarios
-**When** I view the scenario selector dropdown
-**Then** I see all my saved scenarios listed by name
-**And** I can select a saved scenario to load its slider positions into the controls
-**And** the metric cards and charts update to reflect the loaded scenario
-
-**Given** I have loaded a saved scenario
-**When** I view the Sensitivity Controls
-**Then** the currently loaded scenario's name is displayed in the controls header
-**And** modifying any slider creates an "unsaved changes" indicator
-**And** I can save the modified positions as a new scenario or overwrite the current one
-
-**Given** I have saved scenarios
-**When** I want to delete one
-**Then** I can delete any saved scenario from the dropdown with a confirmation
-
-**Given** I have at least one saved scenario
-**When** I want to compare scenarios
-**Then** I can select a saved scenario as a "comparison overlay" from the dropdown
-**And** charts show a third dotted line for the comparison scenario alongside Base (solid) and Your Scenario (dashed)
-**And** metric cards show a third column for the comparison scenario
-
-**Given** I adjust sliders or load scenarios
-**When** I observe the plan data
-**Then** no saved plan data is modified — all scenarios are sandbox-only
-**And** saved scenario data is stored per plan in a `what_if_scenarios` JSONB column or related table
+**Given** I am on the What-If Playground with sensitivity sliders
+**When** I adjust any slider
+**Then** all 6 charts update simultaneously with three scenario curves: Base Case (solid line), Conservative (dashed), Optimistic (light dashed)
+**And** Chart 1 — **Profitability (P&L Summary)**: 5-year line/area chart showing Annual Revenue, COGS, Gross Profit, EBITDA, Pre-Tax Income
+**And** Chart 2 — **Cash Flow**: 5-year line chart showing Net Operating Cash Flow, Net Cash Flow, Ending Cash Balance. Months where any scenario goes cash-negative are highlighted with an amber advisory zone
+**And** Chart 3 — **Break-Even Analysis**: Visual showing months to break-even for each scenario (horizontal bar, timeline, or annotated point)
+**And** Chart 4 — **ROI & Returns**: 5-year cumulative ROIC chart with three scenario curves. Callout card with plain-language interpretation (e.g., "Your conservative case still shows positive ROI by month 18")
+**And** Chart 5 — **Balance Sheet Health**: Total Assets vs Total Liabilities over 5 years. Equity growth visible as the gap between the lines
+**And** Chart 6 — **Debt & Working Capital**: Outstanding debt paydown trajectory, working capital position
+**And** key metric cards with delta indicators are displayed showing the impact of slider changes vs. base case (e.g., "Break-Even: 14 mo → 18 mo (+4 mo)")
+**And** charts use the application's chart color tokens (chart-1 through chart-5) and advisory color language (FR88-FR89)
 
 **Dev Notes:**
-- This story is essential — promoted from optional per SCP-2026-02-21 D3
-- Scenario data shape: `{ name: string, sliderValues: SliderValues, createdAt: string }`
-- Stored as JSON array per plan — either `what_if_scenarios` column on plans table or a separate `scenarios` table with plan_id FK
-- Comparison overlay is optional UX — the playground is fully functional without it (Base + Your Scenario is the default)
-- Engine runs: 2 (base + current) when no comparison loaded; 3 (base + current + comparison) when comparison is active
-- Limit saved scenarios per plan to a reasonable cap (e.g., 10) to prevent unbounded growth
+- Charting via Recharts (already in the project dependencies via shadcn/ui charts)
+- All charts share the same 3 engine output sets (Base/Conservative/Optimistic)
+- Chart data transforms should be memoized for performance
+
+### Story 10.3: Scenario Persistence & Sharing (Optional Enhancement)
+
+As a franchisee,
+I want to optionally save a set of slider positions as a named scenario for future reference,
+So that I can return to a previous What-If exploration or share it with my advisor.
+
+**Acceptance Criteria:**
+
+**Given** I have adjusted sliders in the What-If Playground
+**When** I click "Lock this scenario"
+**Then** I can name the scenario (e.g., "Conservative Revenue + Low Marketing")
+**And** the slider positions are saved with the plan
+**And** I can later reload saved scenarios from a scenario selector dropdown
+**And** saved scenario data is stored per plan — each plan supports multiple saved scenarios
+**And** the currently selected scenario's name is displayed in the header when a saved scenario is loaded
+**And** I can delete saved scenarios I no longer need
+
+**Dev Notes:**
+- This story is an optional enhancement — the What-If Playground is fully functional without scenario persistence (Stories 10.1 and 10.2 are complete without this)
+- Scenario data stored as JSON in a `what_if_scenarios` column on the plan record or in a related table
 
 ---
 
