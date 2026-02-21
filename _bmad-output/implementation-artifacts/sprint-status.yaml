@@ -35,6 +35,7 @@
 # - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
 
 generated: 2026-02-09
+updated: 2026-02-21  # Story 8.1 context document created (Create Story workflow)
 updated: 2026-02-21  # Story 5H.4 context document created (Create Story workflow)
 updated: 2026-02-21  # SCP-2026-02-21 approved: Epic 10 pivot to user-authored scenario modeling
 updated: 2026-02-21  # Story 5H.2 → done (adversarial code review completed, all findings fixed)
@@ -355,6 +356,21 @@ story_location: _bmad-output/implementation-artifacts
 #   - Edits epics.md (coverage map) and architecture.md (FR count, stale references)
 #   - Story status: ready-for-dev
 #   - Next action: Dev Story (DS) for 5H.4 audit execution
+# 2026-02-21: Story 8.1 context document created (Create Story workflow)
+#   - Full story file: 8-1-input-range-validation-advisory-nudges.md (ready-for-dev)
+#   - 8 acceptance criteria covering: My Plan forms advisory nudge (AC-1), Reports inline
+#     editing advisory tint + tooltip (AC-2), nudge clearing on value correction (AC-3),
+#     null range graceful skip (AC-4), configurable per-brand threshold (AC-5), brand name
+#     in message text (AC-6), accessibility (role=status, aria-live, icon+text) (AC-7),
+#     no regressions to existing form/Reports behavior (AC-8)
+#   - Dev notes include: FinancialFieldValue.item7Range metadata (already exists), guardian-
+#     concerning color token (Gurple, already in CSS), callout-bar COGS range pattern reuse,
+#     advisory-range.ts utility creation, advisory-nudge.tsx component, InlineEditableCell
+#     advisory props, anti-patterns (no red, no modals, no API, no schema changes, no engine
+#     modification), gotchas (cents vs dollars, decimal percentages, null ranges, startup
+#     cost range shape, dark mode), 8 file changes (2 create, 5 modify, 1 test)
+#   - Epic 8 status: in-progress (first story ready-for-dev)
+#   - Next action: Dev Story (DS) for 8.1 implementation
 
 development_status:
   # Epic 1: Auth, Onboarding & User Management
@@ -471,8 +487,8 @@ development_status:
   # ==========================================================================
 
   # Epic 8: Advisory Guardrails & Smart Guidance [was Epic 5]
-  epic-8: backlog
-  8-1-input-range-validation-advisory-nudges: backlog
+  epic-8: in-progress
+  8-1-input-range-validation-advisory-nudges: ready-for-dev
   8-2-weak-business-case-detection-actionable-guidance: backlog
   epic-8-retrospective: optional
 
