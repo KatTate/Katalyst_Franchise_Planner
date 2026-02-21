@@ -7,7 +7,6 @@ import { RefreshCw, FileText } from "lucide-react";
 import { usePlanOutputs } from "@/hooks/use-plan-outputs";
 import { CalloutBar } from "./statements/callout-bar";
 import { GuardianBar } from "./statements/guardian-bar";
-import { ScenarioBar } from "./statements/scenario-bar";
 import { ScenarioSummaryCard } from "./statements/scenario-summary-card";
 import { computeGuardianState } from "@/lib/guardian-engine";
 import { computeCompleteness, getGenerateButtonLabel } from "@/lib/plan-completeness";
@@ -274,12 +273,6 @@ export function FinancialStatements({ planId, defaultTab = "summary", plan, queu
             {pdfButtonLabel}
           </Button>
         </div>
-
-        <ScenarioBar
-          comparisonActive={comparisonActive}
-          onActivateComparison={handleActivateComparison}
-          onDeactivateComparison={handleDeactivateComparison}
-        />
 
         <CalloutBar
           annualSummaries={output.annualSummaries}

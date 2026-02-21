@@ -1,12 +1,14 @@
 # Story 10.1: Sensitivity Controls & Sandbox Engine
 
-Status: review
+Status: needs-revision
+
+> **Revised per SCP-2026-02-21:** Conservative/Optimistic system-defined columns removed. Now shows Base Case vs Your Scenario (user's live slider state). Slider ranges widened (±50%/±100% visual, uncapped numeric). Reset button added.
 
 ## Story
 
 As a franchisee,
 I want to navigate to a standalone What-If Playground and adjust assumption sliders to see how my plan responds to changing conditions,
-So that I can build conviction that my plan works even in conservative cases — without modifying my actual plan.
+So that I can explore "what-if" scenarios of my own design — without modifying my actual plan.
 
 ## Acceptance Criteria
 
@@ -18,25 +20,29 @@ So that I can build conviction that my plan works even in conservative cases —
 **When** the page renders
 **Then** a page header is visible with the text: "What happens to my WHOLE business if things change?"
 **And** a Sensitivity Controls panel is displayed with sliders for five assumptions:
-  - Revenue adjustment: range -15% to +15%, default center (0%)
-  - COGS adjustment: range -5% to +5%, default center (0%)
-  - Payroll/Labor adjustment: range -10% to +10%, default center (0%)
-  - Marketing adjustment: range -10% to +10%, default center (0%)
-  - Facilities adjustment: range -10% to +10%, default center (0%)
+  - Revenue adjustment: visual range -50% to +100%, step 5%
+  - COGS adjustment: visual range -20pp to +20pp, step 1pp
+  - Payroll/Labor adjustment: visual range -50% to +100%, step 5%
+  - Marketing adjustment: visual range -50% to +100%, step 5%
+  - Facilities adjustment: visual range -50% to +100%, step 5%
+**And** sliders have practical visual ranges (above) but numeric input fields accept any value within mathematical limits (revenue ≥ -100%, percentages clamped by engine's clamp01())
 **And** each slider shows its current percentage adjustment (e.g., "+8%" or "-5%")
 **And** each slider shows the resulting annual dollar impact (e.g., "Revenue: +8% → +$24,000/yr")
 **And** numeric input fields accompany each slider for precise entry
 
-**Given** I am viewing the What-If Playground with sliders at default positions
+**Given** I am viewing the What-If Playground with sliders at default positions (all zero)
 **When** the engine computes scenarios
-**Then** three scenarios are computed client-side: Base Case (saved plan inputs), Conservative (all sliders at their maximum negative values), and Optimistic (all sliders at their maximum positive values)
-**And** key metric cards are displayed showing each scenario's values for: Break-Even Month, 5-Year ROI %, Year-1 Revenue, Year-1 EBITDA, and Year-1 Pre-Tax Income
-**And** each metric card shows all three scenario values side-by-side with delta indicators vs. Base Case (e.g., "Break-Even: 14 mo → 18 mo (+4 mo)")
+**Then** two scenarios are computed client-side: Base Case (saved plan inputs, unmodified) and Your Scenario (base inputs with current slider adjustments applied). When sliders are at zero, Your Scenario = Base Case (engine skips the second run).
+**And** key metric cards are displayed showing Base Case vs Your Scenario values for: Break-Even Month, 5-Year ROI %, Year-1 Revenue, Year-1 EBITDA, and Year-1 Pre-Tax Income
+**And** each metric card shows two columns (Base Case + Your Scenario) with delta indicators vs. Base Case
+**And** a "Reset Sliders" button is visible when any slider is non-zero, returning all sliders to 0%
+**And** helper text reads: "Move a slider to see how it changes your metrics" (when sliders are at zero)
 
 **Given** I adjust any slider value
 **When** the slider moves
 **Then** the dollar impact label for that slider updates immediately
-**And** no PATCH or engine-recompute is triggered — Conservative and Optimistic are always the hardcoded slider extremes, so metric cards remain unchanged
+**And** the engine recomputes Your Scenario with the current slider positions (debounced 350ms)
+**And** metric cards update to reflect the new Base vs Your Scenario comparison
 
 **Given** I adjust sliders to any position
 **When** I observe the plan data
@@ -50,8 +56,8 @@ So that I can build conviction that my plan works even in conservative cases —
 - **Context-based navigation, not a new URL route:** The workspace uses `WorkspaceViewContext` (client/src/contexts/WorkspaceViewContext.tsx) to switch between views: `"my-plan"`, `"reports"`, `"scenarios"`, `"settings"`. The What-If Playground is rendered as the `"scenarios"` view. Do NOT add a new URL route (`/plans/:planId/what-if`). The sidebar "Scenarios" button (`data-testid="nav-scenarios"`) already calls `navigateToScenarios()` which sets `workspaceView = "scenarios"`.
   - Source: `client/src/contexts/WorkspaceViewContext.tsx`, `client/src/components/app-sidebar.tsx:161-170`
 
-- **Follow the scenario-engine.ts pattern exactly:** `client/src/lib/scenario-engine.ts` already demonstrates the correct pattern: (1) call `unwrapForEngine(planInputs, startupCosts)` to get raw `EngineInput`, (2) clone `EngineInput.financialInputs` with `cloneFinancialInputs()`, (3) apply adjustments to the clone, (4) call `calculateProjections()` three times. Replicate this pattern in the new sensitivity engine.
-  - Source: `client/src/lib/scenario-engine.ts:75-105`
+- **Follow the scenario-engine.ts pattern (adapted for 2-scenario model):** `client/src/lib/scenario-engine.ts` demonstrates the pattern: (1) call `unwrapForEngine(planInputs, startupCosts)` to get raw `EngineInput`, (2) clone `EngineInput.financialInputs` with `cloneFinancialInputs()`, (3) apply adjustments to the clone, (4) call `calculateProjections()`. The sensitivity engine runs twice: base (unmodified) and current (slider adjustments applied). If all sliders are at zero, skip the second run.
+  - Source: `client/src/lib/sensitivity-engine.ts` (already implemented)
 
 - **Engine inputs are in cents and decimals:** All monetary amounts in `EngineInput` are in integer cents. All percentages are decimals (0.08 = 8%). The sensitivity engine must apply adjustments in the same units:
   - Revenue slider `+8%` → multiply `fi.revenue.annualGrossSales` by `1.08`
@@ -61,8 +67,8 @@ So that I can build conviction that my plan works even in conservative cases —
   - Facilities slider `+5%` → multiply each element of `fi.operatingCosts.facilitiesAnnual[0..4]` by `1.05` (round to integer cents)
   - Source: `client/src/lib/scenario-engine.ts:52-73`, `shared/financial-engine.ts` interfaces
 
-- **Three scenarios are always base / conservative-extreme / optimistic-extreme:** Base Case = unmodified plan. Conservative = all sliders at their maximum negative values (hardcoded per slider: revenue at -15%, COGS at +5pp, labor at +10%, marketing at +10%, facilities at +10%). Optimistic = all sliders at their maximum positive values (revenue at +15%, COGS at -5pp, labor at -10%, marketing at -10%, facilities at -10%). The slider's current position determines the dollar-impact label shown per slider but does NOT create a fourth "current" scenario in Story 10-1.
-  - Source: `_bmad-output/planning-artifacts/epics.md` → Story 10.1 AC
+- **Two scenarios: Base Case + Your Scenario (SCP-2026-02-21 D1/D2/D3):** Base Case = unmodified plan. Your Scenario = base inputs with current slider adjustments applied. When all sliders are at zero, Your Scenario = Base Case (engine skips the second run). Conservative/Optimistic system-defined scenarios are RETIRED.
+  - Source: `_bmad-output/planning-artifacts/sprint-change-proposal-2026-02-21.md` → D1, D2, D3
 
 - **Dollar impact calculation per slider:** The per-slider impact label (e.g., "Revenue: +8% → +$24,000/yr") uses the BASE case Y1 annual revenue as the reference. Impact = `(sliderPct / 100) * baseOutput.annualSummaries[0].revenue`. Format as dollars (divide by 100 from cents). Show sign (+ or −) always. For COGS/labor/marketing/facilities sliders, the reference is the relevant Y1 cost from `baseOutput.annualSummaries[0]`.
 
@@ -88,18 +94,20 @@ So that I can build conviction that my plan works even in conservative cases —
   - Current adjustment display (e.g., "+8%" or "0%")
   - Dollar impact display (e.g., "+$24,000/yr")
   - Numeric input for precise entry (optional, synced with slider)
-- **Slider ranges (must match exactly):**
-  - Revenue: min=-15, max=+15, step=1 (percentage points)
-  - COGS: min=-5, max=+5, step=0.5 (percentage points)
-  - Payroll/Labor: min=-10, max=+10, step=1 (percentage points)
-  - Marketing: min=-10, max=+10, step=1 (percentage points)
-  - Facilities: min=-10, max=+10, step=1 (percentage points)
-- **Key metric cards below the sliders:** One card per metric. Each card shows three columns (Base, Conservative, Optimistic) with delta indicators for Conservative and Optimistic vs. Base.
+- **Slider ranges (SCP-2026-02-21 D6 — uncapped numeric):**
+  - Revenue: visual min=-50, max=+100, step=5 (%). Numeric input accepts any value ≥ -100%.
+  - COGS: visual min=-20, max=+20, step=1 (pp). Numeric input uncapped; engine clamp01() enforces [0,1].
+  - Payroll/Labor: visual min=-50, max=+100, step=5 (%). Numeric input uncapped; engine clamp01() enforces [0,1].
+  - Marketing: visual min=-50, max=+100, step=5 (%). Numeric input uncapped; engine clamp01() enforces [0,1].
+  - Facilities: visual min=-50, max=+100, step=5 (%). Numeric input uncapped.
+- **Key metric cards below the sliders:** One card per metric. Each card shows two columns (Base Case, Your Scenario) with delta indicators for Your Scenario vs. Base.
   - Metrics: Break-Even Month, 5-Year ROI %, Year-1 Revenue, Year-1 EBITDA, Year-1 Pre-Tax Income
   - Source field mappings: `roiMetrics.breakEvenMonth`, `roiMetrics.fiveYearROIPct`, `annualSummaries[0].revenue`, `annualSummaries[0].ebitda`, `annualSummaries[0].preTaxIncome`
+- **Reset Sliders button:** Visible when any slider is non-zero. Resets all sliders to 0% (Your Scenario = Base Case).
 - **UI states:**
   - Loading: Show skeleton cards while `usePlan` resolves; disable sliders until data is available
-  - Computed: Show metric cards with values for all 3 scenarios
+  - Computed: Show metric cards with Base Case vs Your Scenario
+  - Zero state: All sliders at 0%, helper text visible, Your Scenario = Base Case
   - Error: If plan data is unavailable, show an error message consistent with the planning-workspace error pattern
 
 ### Anti-Patterns & Hard Constraints
@@ -108,9 +116,9 @@ So that I can build conviction that my plan works even in conservative cases —
 
 - **NEVER add a new URL route for the What-If Playground.** The app uses `WorkspaceViewContext` for in-workspace navigation. Adding a route (`/plans/:planId/what-if`) would break the sidebar navigation pattern and require changes to `App.tsx`, `app-sidebar.tsx`, and `WorkspaceViewContext.tsx` beyond this story's scope.
 
-- **Do NOT call `computeScenarioOutputs()` from `scenario-engine.ts` in the What-If Playground.** That function uses hardcoded conservative/optimistic factors (`CONSERVATIVE_REVENUE_FACTOR = -0.15`, etc.). The sensitivity engine needs dynamic slider-defined extremes. Create a new `computeSensitivityOutputs(planInputs, startupCosts, sliderValues)` function in a new file.
+- **Do NOT call `computeScenarioOutputs()` from `scenario-engine.ts` in the What-If Playground.** That function uses hardcoded conservative/optimistic factors. The sensitivity engine uses `computeSensitivityOutputs()` from `sensitivity-engine.ts` with dynamic slider values.
 
-- **Do NOT run more than 3 `calculateProjections()` calls per render cycle.** One for base, one for conservative extremes, one for optimistic extremes. No fourth "current slider position" run in Story 10-1 (that is Story 10-2 territory for the chart updates).
+- **Do NOT run more than 2 `calculateProjections()` calls per render cycle.** One for base, one for current (slider adjustments applied). If all sliders are at zero, skip the second run — Your Scenario equals Base Case.
 
 - **Do NOT modify `shared/financial-engine.ts` or `shared/plan-initialization.ts`.** The engine and `unwrapForEngine()` are authoritative and stable. They have 173 passing tests that must not be broken.
 
@@ -161,8 +169,8 @@ So that I can build conviction that my plan works even in conservative cases —
 
 ### Testing Expectations
 
-- **Unit tests for sensitivity-engine.ts:** Test `computeSensitivityOutputs()` with a mock `PlanFinancialInputs`. Assert that the base output equals `calculateProjections(unwrapForEngine(planInputs, []))`. Assert that conservative output has lower Y1 revenue than base output (`conservative.annualSummaries[0].revenue < base.annualSummaries[0].revenue`). Assert that optimistic output has higher Y1 revenue than base output (`optimistic.annualSummaries[0].revenue > base.annualSummaries[0].revenue`). Assert that conservative and optimistic outputs are not equal to each other (they are opposite extremes by definition).
-- **Component tests for WhatIfPlayground:** Render with a mock plan (via query mock or test plan fixture). Assert that `data-testid="nav-scenarios"` click shows the playground. Assert that 5 slider controls render. Assert that metric cards show "Base Case", "Conservative", "Optimistic" columns.
+- **Unit tests for sensitivity-engine.ts:** Test `computeSensitivityOutputs()` with a mock `PlanFinancialInputs`. Assert that the base output equals `calculateProjections(unwrapForEngine(planInputs, []))`. Assert that with revenue slider at +10%, current output has higher Y1 revenue than base output. Assert that with all sliders at zero, current output equals base output.
+- **Component tests for WhatIfPlayground:** Render with a mock plan (via query mock or test plan fixture). Assert that `data-testid="nav-scenarios"` click shows the playground. Assert that 5 slider controls render. Assert that metric cards show "Base Case" and "Your Scenario" columns. Assert that "Reset Sliders" button appears when slider is non-zero.
 - **Critical ACs to cover in tests:** Sandbox invariant (no PATCH calls emitted), break-even null handling, slider range boundaries.
 - **Test framework:** Vitest + React Testing Library (consistent with existing test setup).
 

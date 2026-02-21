@@ -291,7 +291,7 @@ This document provides the complete epic and story breakdown for the Katalyst Gr
 | FR96 | Epic 5 | Dashboard Document Preview widget with completeness-aware labels |
 | FR97 | Epic 5 | Bidirectional sync — edits on either surface reflected immediately |
 
-**Coverage Summary:** 96/96 FRs mapped (73 original + 14 FR7a-FR7n + 10 FR74-FR83 engine extensions + 14 FR84-FR97 display standards, advisory language, Impact Strip, plan completeness, bidirectional sync — added per SCP-2026-02-20). All functional requirements covered. Stories across 11 MVP epics (+ 1 deferred Phase 2 epic + 1 admin support tools epic).
+**Coverage Summary:** 111/111 FRs mapped (58 original FR1-FR58 + 15 FR59-FR73 admin support tools + 14 FR7a-FR7n financial statement views + 10 FR74-FR83 engine extensions + 14 FR84-FR97 display standards, advisory language, Impact Strip, plan completeness, bidirectional sync — added per SCP-2026-02-20). All functional requirements covered. Stories across 11 MVP epics (+ 1 deferred Phase 2 epic + 1 admin support tools epic). *Corrected 2026-02-21 per Story 5H.4 audit — previous header said "96/96" but breakdown terms already summed to 111.*
 
 ## Epic List
 
@@ -1824,21 +1824,51 @@ So that I can walk into a bank meeting feeling confident and prepared (FR24, FR2
 - Valuation Analysis (annual)
 - Break-Even Analysis with cumulative cash flow chart
 - Startup Capital Summary
+- Audit Summary (pass/fail status of all 15 audit checks with plain-language explanations for any failures)
 
 **And** the document header reads "[Franchisee Name]'s [Brand] Business Plan" — franchisee name before brand name
-**And** professional formatting with brand identity (logo, colors) and Katalyst design — consistent typography, proper page breaks, branded headers/footers, and financial tables with formatting that matches or exceeds what a financial consultant would produce
+**And** the PDF uses the following formatting standards:
+- Brand logo in the header of every page (except cover page, which has a larger centered logo)
+- Brand primary color used for section headers and table header backgrounds
+- Financial tables use alternating row shading for readability, right-aligned numeric columns, and left-aligned label columns
+- No table is split across a page break mid-row — tables that don't fit on the current page start on the next page
+- Page margins: 1 inch on all sides (standard business document)
+- Headers: page number, brand name, and "Confidential" indicator
+- Footers: FTC disclaimer text (FR25) and generation date
+- Font: system professional font (e.g., Inter, Helvetica, or similar sans-serif) at 10-11pt for body, 14-16pt for section headers
 **And** FTC-compliant disclaimers state on every page: "These projections are franchisee-created estimates and do not constitute franchisor earnings claims or representations" (FR25)
 **And** financial values use consistent formatting throughout: currency as $X,XXX, percentages as X.X% (NFR27)
 
 **Given** the "Generate PDF" button label evolves with input completeness (Story 5.9)
-**When** the button is clicked at < 50% completeness
+
+**When** the button is clicked at < 50% completeness ("Generate Draft")
 **Then** the generated PDF includes a "DRAFT" watermark on every page
-**And** a brief note on the cover: "This plan contains brand default assumptions that have not been personalized. Review and update inputs for a complete projection."
+**And** a note on the cover: "This plan contains brand default assumptions that have not been personalized. Review and update inputs for a complete projection."
+
+**When** the button is clicked at 50-90% completeness ("Generate Package")
+**Then** the generated PDF does NOT include a DRAFT watermark
+**And** a note on the cover: "Some inputs in this plan use brand default values. Review remaining defaults in My Plan for fully personalized projections."
+
+**When** the button is clicked at > 90% completeness ("Generate Lender Package")
+**Then** the generated PDF does NOT include a DRAFT watermark and no default-values note appears
+
+**And** the "Generate PDF" button tooltip displays the current completeness percentage and indicates whether the generated document will include a DRAFT watermark or cover note
 
 ~~**Given** scenario comparison is active when PDF is generated~~
 ~~**When** the PDF renders~~
 ~~**Then** the PDF includes the comparison summary card text and scenario columns in the P&L and key metrics tables~~
 > **RETIRED (SCP-2026-02-20 D5/D6):** Scenario comparison was pulled out of Reports. Scenario PDF export deferred to Epic 10 (What-If Playground) if that feature supports export.
+
+**Given** PDF generation is initiated
+**When** generation fails (server error, timeout > 30 seconds per NFR3, or storage failure)
+**Then** a toast notification appears: "PDF generation failed. Please try again." with a "Retry" action button
+**And** no partial or corrupted PDF is rendered, presented to the user, or stored in document history
+**And** the "Generate PDF" button returns to its pre-generation state (not stuck in loading)
+
+**Given** PDF generation is initiated
+**When** the generation is in progress
+**Then** the "Generate PDF" button shows a loading state (spinner + "Generating...") and is disabled to prevent duplicate generation
+**And** a progress indicator is visible to the user
 
 **And** the PDF is available for immediate download upon generation
 **And** the generated PDF is stored for future access (Story 6.2)
@@ -1865,6 +1895,14 @@ So that I can access any version of my plan at any time (FR26, FR27).
 **And** documents are stored with metadata in PostgreSQL (generation date, plan snapshot ID, completeness level) and binary PDF in Replit Object Storage
 **And** each document entry shows a thumbnail preview of the first page
 **And** a "Generate New" button is prominently available to create an updated version reflecting current inputs
+
+**Dev Notes:**
+- Thumbnail generation: Generate a PNG thumbnail of the first PDF page at PDF creation time. Format: PNG, 300x400px, 72 DPI. Storage path convention: `documents/{planId}/{docId}/thumbnail.png` alongside `documents/{planId}/{docId}/document.pdf`. Failure isolation: Thumbnail generation failure must NOT block document creation. Log the error, store null reference, render generic document icon placeholder.
+- Architecture constraint (NON-NEGOTIABLE): The `IStorage` interface for documents exposes exactly three methods: `createDocument()`, `getDocument()`, `listDocuments()`. No update or delete methods. Immutability is enforced at the interface level, not just as policy.
+- API endpoints: POST /api/plans/:id/documents (generate), GET /api/plans/:id/documents (list), GET /api/plans/:id/documents/:docId (download). No PUT/PATCH/DELETE endpoints.
+- No user journey currently describes the document history experience. Lightweight journey sketch for dev agent guidance: Sam returns to his Dashboard a week after generating his lender package → clicks "Documents" in sidebar → sees his previously generated lender package with date and thumbnail → downloads it for his banker.
+- Empty state: Show a warm call-to-action: "Your lender packages will appear here after you generate them. Head to Reports or your Dashboard to create your first one."
+- Navigation: Add a "Documents" entry in the sidebar (below Reports) for direct access.
 
 ---
 
@@ -2081,18 +2119,18 @@ So that my work is never blocked by a technical issue (FR54).
 
 ---
 
-## Epic 10: What-If Playground (formerly "Scenario Comparison")
+## Epic 10: What-If Playground — User-Authored Scenario Modeling
 
-Standalone sidebar destination providing interactive graphical sensitivity analysis. Franchisees adjust assumption sliders and see all charts (Profitability, Cash Flow, Break-Even, ROI, Balance Sheet, Debt & Working Capital) update simultaneously across Base, Conservative, and Optimistic scenarios. This is a planning sandbox — slider adjustments do NOT change the user's actual plan. Replaces the retired Story 5.7 column-splitting approach. Per SCP-2026-02-20 Decision D5/D6 and Section 3.
+Standalone sidebar destination for interactive scenario modeling. Franchisees adjust assumption sliders to author their own "what-if" scenarios, save them with names, and compare saved scenarios against their base plan. Charts and metric cards update live as sliders move, always showing Base Case vs "Your Scenario" (current slider state). Users can save slider configurations as named scenarios, reload them, and overlay saved scenarios for comparison. This is a planning sandbox — slider adjustments do NOT change the user's actual plan. Replaces the retired Story 5.7 column-splitting approach and the system-defined Conservative/Optimistic columns (retired per SCP-2026-02-21 D1).
 
 **FRs covered:** (To be assigned when FRs for What-If Playground are formalized — extends scenario-related FRs from Epic 5's retired Story 5.7)
-**Stories (3):** 10.1 Sensitivity Controls & Sandbox Engine, 10.2 Multi-Chart Dashboard, 10.3 Scenario Persistence & Sharing
+**Stories (4):** 10.1 Sensitivity Controls & Sandbox Engine, 10.2a Sensitivity Chart Dashboard, 10.2b Metric Delta Cards & Dashboard Polish, 10.3 Scenario Persistence & Comparison
 
 ### Story 10.1: Sensitivity Controls & Sandbox Engine
 
 As a franchisee,
 I want to navigate to a standalone What-If Playground and adjust assumption sliders to see how my plan responds to changing conditions,
-So that I can build conviction that my plan works even in conservative cases — without modifying my actual plan.
+So that I can explore "what-if" scenarios of my own design — without modifying my actual plan.
 
 **Acceptance Criteria:**
 
@@ -2101,25 +2139,27 @@ So that I can build conviction that my plan works even in conservative cases —
 **Then** I see a standalone What-If Playground page (route: `/plans/:planId/what-if`)
 **And** the page header explains the purpose: "What happens to my WHOLE business if things change?"
 **And** a sticky/collapsible Sensitivity Controls panel is displayed at the top with sliders for key assumptions:
-  - Revenue adjustment: -15% ←——●——→ +15%
-  - COGS adjustment: -5% ←——●——→ +5%
-  - Payroll/Labor adjustment: -10% ←——●——→ +10%
-  - Marketing adjustment: -10% ←——●——→ +10%
-  - Facilities adjustment: -10% ←——●——→ +10%
+  - Revenue adjustment: -50% ←——●——→ +100%
+  - COGS adjustment: -20pp ←——●——→ +20pp
+  - Payroll/Labor adjustment: -50% ←——●——→ +100%
+  - Marketing adjustment: -50% ←——●——→ +100%
+  - Facilities adjustment: -50% ←——●——→ +100%
+**And** sliders have a practical visual range (above) but numeric input fields accept any value within mathematical limits. Revenue adjustment cannot go below -100%. Percentage-based inputs (COGS, labor, marketing) are clamped to valid ranges by the engine's existing `clamp01()` function.
 **And** each slider shows its current percentage adjustment and the resulting dollar impact (e.g., "Revenue: +8% → +$24,000/yr")
 **And** sliders can be supplemented by editable numeric fields for precise input
 **And** slider adjustments do NOT modify the user's actual plan — this is a sandbox (base case always reflects saved plan inputs)
-**And** the financial engine computes three scenarios client-side: Base Case (saved plan), Conservative (negative slider extremes), and Optimistic (positive slider extremes)
+**And** the financial engine computes two scenarios client-side: Base Case (saved plan inputs, unmodified) and Your Scenario (base inputs with current slider adjustments applied)
+**And** metric cards show Base Case vs Your Scenario with delta indicators
+**And** a "Reset Sliders" button returns all sliders to 0% (Your Scenario = Base Case)
 **And** each computation completes in < 2 seconds (NFR1)
 **And** slider input is debounced for an instant, responsive feel
 
 **Dev Notes:**
 - Financial engine already supports this — pass modified inputs, get full projection
-- Engine runs once per scenario (3 runs total). Client-side computation with debounced slider input.
+- Engine runs twice: base (no adjustments) and current (slider adjustments applied). If sliders are all at zero, skip the second run — Your Scenario equals Base Case. Client-side computation with debounced slider input.
 - Base case always reflects the user's actual saved plan inputs — not slider-modified values
-- Conservative/Optimistic are computed by applying slider percentage multipliers to base case inputs
 
-### Story 10.2: Multi-Chart Sensitivity Dashboard
+### Story 10.2a: Sensitivity Chart Dashboard
 
 As a franchisee,
 I want to see 6 simultaneous charts in the What-If Playground that all react to my slider adjustments,
@@ -2129,41 +2169,86 @@ So that I can understand the full impact of changing assumptions across every di
 
 **Given** I am on the What-If Playground with sensitivity sliders
 **When** I adjust any slider
-**Then** all 6 charts update simultaneously with three scenario curves: Base Case (solid line), Conservative (dashed), Optimistic (light dashed)
+**Then** all 6 charts update simultaneously with two scenario curves: Base Case (solid line) and Your Scenario (dashed line). If a saved scenario is loaded for comparison (Story 10.3), a third curve (dotted line) shows the saved scenario.
 **And** Chart 1 — **Profitability (P&L Summary)**: 5-year line/area chart showing Annual Revenue, COGS, Gross Profit, EBITDA, Pre-Tax Income
 **And** Chart 2 — **Cash Flow**: 5-year line chart showing Net Operating Cash Flow, Net Cash Flow, Ending Cash Balance. Months where any scenario goes cash-negative are highlighted with an amber advisory zone
-**And** Chart 3 — **Break-Even Analysis**: Visual showing months to break-even for each scenario (horizontal bar, timeline, or annotated point)
-**And** Chart 4 — **ROI & Returns**: 5-year cumulative ROIC chart with three scenario curves. Callout card with plain-language interpretation (e.g., "Your conservative case still shows positive ROI by month 18")
+**And** Chart 3 — **Break-Even Analysis**: Visual showing months to break-even for Base Case + Your Scenario (+ optional saved scenario) as horizontal bars
+**And** Chart 4 — **ROI & Returns**: 5-year cumulative ROIC chart with Base + Your Scenario curves. Callout card: "Your scenario: [X]% ROIC at Year 5"
 **And** Chart 5 — **Balance Sheet Health**: Total Assets vs Total Liabilities over 5 years. Equity growth visible as the gap between the lines
 **And** Chart 6 — **Debt & Working Capital**: Outstanding debt paydown trajectory, working capital position
-**And** key metric cards with delta indicators are displayed showing the impact of slider changes vs. base case (e.g., "Break-Even: 14 mo → 18 mo (+4 mo)")
 **And** charts use the application's chart color tokens (chart-1 through chart-5) and advisory color language (FR88-FR89)
 
 **Dev Notes:**
 - Charting via Recharts (already in the project dependencies via shadcn/ui charts)
-- All charts share the same 3 engine output sets (Base/Conservative/Optimistic)
+- Charts show Base + Your Scenario (2 engine output sets). Third curve only when comparison scenario loaded (Story 10.3).
 - Chart data transforms should be memoized for performance
 
-### Story 10.3: Scenario Persistence & Sharing (Optional Enhancement)
+### Story 10.2b: Metric Delta Cards & Dashboard Polish
 
 As a franchisee,
-I want to optionally save a set of slider positions as a named scenario for future reference,
-So that I can return to a previous What-If exploration or share it with my advisor.
+I want to see key metric cards that instantly summarize how my slider adjustments change my break-even, revenue, ROI, and cash position,
+So that I can quickly grasp the impact without reading every chart in detail.
 
 **Acceptance Criteria:**
 
-**Given** I have adjusted sliders in the What-If Playground
-**When** I click "Lock this scenario"
-**Then** I can name the scenario (e.g., "Conservative Revenue + Low Marketing")
-**And** the slider positions are saved with the plan
-**And** I can later reload saved scenarios from a scenario selector dropdown
-**And** saved scenario data is stored per plan — each plan supports multiple saved scenarios
-**And** the currently selected scenario's name is displayed in the header when a saved scenario is loaded
-**And** I can delete saved scenarios I no longer need
+**Given** I am on the What-If Playground with sensitivity sliders
+**When** I adjust any slider
+**Then** metric delta cards show Base Case vs Your Scenario with delta indicators (e.g., "Break-Even: 14 mo → 18 mo (+4 mo)")
+**And** delta color rules use desirability-based coloring: positive desirable deltas in green, negative desirable deltas in amber
+**And** when all sliders are at zero, Your Scenario = Base Case and deltas show zero/no change
+**And** an initial helper text reads: "Move a slider to see how it changes your metrics"
 
 **Dev Notes:**
-- This story is an optional enhancement — the What-If Playground is fully functional without scenario persistence (Stories 10.1 and 10.2 are complete without this)
-- Scenario data stored as JSON in a `what_if_scenarios` column on the plan record or in a related table
+- Delta cards compare Base vs Your Scenario (current slider state), not system-defined scenarios
+- Delta coloring is desirability-based (same rules as before, just comparing different targets)
+
+### Story 10.3: Scenario Persistence & Comparison
+
+As a franchisee,
+I want to save my slider configurations as named scenarios and compare them against my base plan,
+So that I can explore multiple "what-if" variations and build conviction about which assumptions matter most.
+
+**Acceptance Criteria:**
+
+**Given** I have adjusted sliders in the What-If Playground to a non-zero configuration
+**When** I click "Save as Scenario"
+**Then** a dialog prompts me to name the scenario (e.g., "Low Revenue + Lean Marketing")
+**And** the current slider positions are saved as a named scenario associated with my plan
+**And** the scenario selector dropdown updates to include the new scenario
+
+**Given** I have one or more saved scenarios
+**When** I view the scenario selector dropdown
+**Then** I see all my saved scenarios listed by name
+**And** I can select a saved scenario to load its slider positions into the controls
+**And** the metric cards and charts update to reflect the loaded scenario
+
+**Given** I have loaded a saved scenario
+**When** I view the Sensitivity Controls
+**Then** the currently loaded scenario's name is displayed in the controls header
+**And** modifying any slider creates an "unsaved changes" indicator
+**And** I can save the modified positions as a new scenario or overwrite the current one
+
+**Given** I have saved scenarios
+**When** I want to delete one
+**Then** I can delete any saved scenario from the dropdown with a confirmation
+
+**Given** I have at least one saved scenario
+**When** I want to compare scenarios
+**Then** I can select a saved scenario as a "comparison overlay" from the dropdown
+**And** charts show a third dotted line for the comparison scenario alongside Base (solid) and Your Scenario (dashed)
+**And** metric cards show a third column for the comparison scenario
+
+**Given** I adjust sliders or load scenarios
+**When** I observe the plan data
+**Then** no saved plan data is modified — all scenarios are sandbox-only
+**And** saved scenario data is stored per plan in a `what_if_scenarios` JSONB column or related table
+
+**Dev Notes:**
+- Scenario data shape: `{ name: string, sliderValues: SliderValues, createdAt: string }`
+- Stored as JSON array per plan — either `what_if_scenarios` column on plans table or a separate `scenarios` table with plan_id FK
+- Comparison overlay is optional — the playground is fully functional without it (Base + Your Scenario is the default)
+- Engine runs: 2 (base + current) when no comparison loaded; 3 (base + current + comparison) when comparison is active
+- Limit saved scenarios per plan to a reasonable cap (e.g., 10) to prevent unbounded growth
 
 ---
 

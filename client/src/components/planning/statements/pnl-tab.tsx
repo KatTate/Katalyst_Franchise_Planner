@@ -40,7 +40,7 @@ interface PnlRowDef {
   isExpense?: boolean;
   indent?: number;
   interpretationId?: string;
-  interpretation?: (enriched: EnrichedAnnual[], financialInputs?: PlanFinancialInputs | null, brandName?: string) => string | null;
+  interpretation?: (enriched: EnrichedAnnual[], financialInputs?: PlanFinancialInputs | null, brandName?: string, plAnalysis?: PLAnalysisOutput[]) => string | null;
   tooltip?: CellTooltip;
 }
 
@@ -222,9 +222,9 @@ const PNL_SECTIONS: PnlSectionDef[] = [
   {
     key: "pl-analysis",
     title: "P&L Analysis",
-    defaultExpanded: false,
+    defaultExpanded: true,
     rows: [
-      { key: "adj-pretax", label: "Adjusted Pre-Tax Profit", field: "adjustedPreTaxProfit", format: "currency", tooltip: { explanation: "Pre-tax income adjusted for owner compensation", formula: "Pre-Tax Income + Owner salary adjustment" } },
+      { key: "adj-pretax", label: "Adjusted Pre-Tax Profit", field: "adjustedPreTaxProfit", format: "currency", tooltip: { explanation: "Pre-tax income adjusted for owner compensation (subtracts unpaid owner salary as an expense)", formula: "Pre-Tax Income - Shareholder Salary Adjustment" } },
       { key: "target-pretax", label: "Target Pre-Tax Profit", field: "targetPreTaxProfit", format: "currency", tooltip: { explanation: "The profit level your plan should aim for", formula: "Revenue x Target Pre-Tax Profit %" } },
       { key: "above-below-target", label: "Above / Below Target", field: "aboveBelowTarget", format: "currency", tooltip: { explanation: "How far your adjusted profit is from the target", formula: "Adjusted Pre-Tax - Target Pre-Tax" } },
       { key: "salary-cap", label: "Salary Cap at Target", field: "salaryCapAtTarget", format: "currency", tooltip: { explanation: "Maximum owner salary to still hit the target profit", formula: "Derived from target profit and operating expenses" } },
@@ -234,23 +234,19 @@ const PNL_SECTIONS: PnlSectionDef[] = [
         label: "Labor Efficiency",
         field: "laborEfficiency",
         format: "ratio",
-        tooltip: { explanation: "What portion of gross profit goes to all wages", formula: "Total wages / Gross Profit" },
+        tooltip: { explanation: "How much gross margin each dollar of wages generates", formula: "Non-Labor Gross Margin / Total Wages" },
         interpretationId: "interp-labor-eff",
-        interpretation: (enriched, financialInputs, brandName) => {
-          const y1 = enriched[0];
-          if (!y1 || y1.revenue === 0) return null;
-          const labPct = y1.laborEfficiency * 100;
-          const laborBrand = financialInputs?.operatingCosts?.laborPct?.brandDefault;
-          if (laborBrand != null) {
-            const brandPct = (laborBrand * 100).toFixed(0);
-            return `${labPct.toFixed(0)}% of gross profit goes to wages (${brandName || "brand"} labor default: ${brandPct}% of revenue)`;
-          }
-          if (labPct > 70) return `${labPct.toFixed(0)}% of gross profit goes to wages — labor-heavy, consider staffing mix`;
-          if (labPct > 50) return `${labPct.toFixed(0)}% of gross profit goes to wages — typical for service businesses`;
-          return `${labPct.toFixed(0)}% of gross profit goes to wages — efficient labor cost structure`;
+        interpretation: (_enriched, _fi, _bn, plAnalysis) => {
+          const y1 = plAnalysis?.[0];
+          if (!y1) return null;
+          const ler = y1.laborEfficiency;
+          if (ler == null || ler === 0) return "No wages recorded";
+          if (ler >= 3.0) return `${ler.toFixed(1)}x — each dollar of wages generates $${ler.toFixed(2)} of gross margin (strong)`;
+          if (ler >= 2.0) return `${ler.toFixed(1)}x — each dollar of wages generates $${ler.toFixed(2)} of gross margin (moderate)`;
+          return `${ler.toFixed(1)}x — each dollar of wages generates $${ler.toFixed(2)} of gross margin (tight, review staffing)`;
         },
       },
-      { key: "adj-labor-eff", label: "Adjusted Labor Efficiency", field: "adjustedLaborEfficiency", format: "ratio", tooltip: { explanation: "Labor efficiency excluding owner salary", formula: "Wages (excl. owner salary) / Gross Profit" } },
+      { key: "adj-labor-eff", label: "Adjusted Labor Efficiency", field: "adjustedLaborEfficiency", format: "ratio", tooltip: { explanation: "Gross margin per dollar of wages, excluding owner salary adjustment", formula: "Non-Labor Gross Margin / Adjusted Total Wages" } },
       { key: "disc-mktg-pct", label: "Discretionary Marketing %", field: "discretionaryMarketingPct", format: "pct", tooltip: { explanation: "Discretionary marketing as a share of revenue", formula: "Discretionary Marketing / Revenue" } },
       { key: "pr-tax-ben-pct", label: "PR Taxes & Benefits % of Wages", field: "prTaxBenefitsPctOfWages", format: "pct", tooltip: { explanation: "Payroll burden relative to total wages", formula: "Payroll Taxes & Benefits / Total Wages" } },
       { key: "other-opex-pct-rev", label: "Other OpEx % of Revenue", field: "otherOpexPctOfRevenue", format: "pct", tooltip: { explanation: "Miscellaneous operating costs as a share of revenue", formula: "Other Operating Expenses / Revenue" } },
@@ -683,7 +679,7 @@ function PnlRow({
   const canEditThisRow = row.isInput && isEditableRow(row.key) && !!onStartEdit;
   const mapping = canEditThisRow ? INPUT_FIELD_MAP[row.key] : null;
 
-  const interpText = showInterpretation && row.interpretation ? row.interpretation(enriched, financialInputs, brandName) : null;
+  const interpText = showInterpretation && row.interpretation ? row.interpretation(enriched, financialInputs, brandName, plAnalysis) : null;
   const interpId = row.interpretationId;
 
   return (

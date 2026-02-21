@@ -765,10 +765,10 @@ export function calculateProjections(input: EngineInput): EngineOutput {
     const totalInvestedCapital = round2(totalCashInvested + cumulativeSweatEquity + retainedEarningsLessDistributions);
     const preTaxNetIncome = round2(annual.preTaxIncome);
     const annualSalaryAdj = shareholderSalaryAdj[y];
-    const preTaxNetIncomeIncSweatEquity = round2(preTaxNetIncome + annualSalaryAdj);
+    const preTaxNetIncomeIncSweatEquity = round2(preTaxNetIncome - annualSalaryAdj);
     const taxesDue = round2(Math.max(0, preTaxNetIncomeIncSweatEquity * fi.taxRate));
     const afterTaxNetIncome = round2(preTaxNetIncomeIncSweatEquity - taxesDue);
-    const roicPct = totalInvestedCapital > 0 ? round2(afterTaxNetIncome / totalInvestedCapital) : 0;
+    const roicPct = totalInvestedCapital > 0 ? round2(preTaxNetIncomeIncSweatEquity / totalInvestedCapital) : 0;
 
     const yearMonths = monthly.filter((mp) => mp.year === y + 1);
     const totalOpexAbs = yearMonths.reduce((s, mp) => s + Math.abs(mp.totalOpex), 0);
@@ -804,7 +804,7 @@ export function calculateProjections(input: EngineInput): EngineOutput {
     const yearMonths = monthly.filter((mp) => mp.year === y + 1);
     const revenue = round2(annual.revenue);
     const annualSalaryAdj = shareholderSalaryAdj[y];
-    const adjustedPreTaxProfit = round2(annual.preTaxIncome + annualSalaryAdj);
+    const adjustedPreTaxProfit = round2(annual.preTaxIncome - annualSalaryAdj);
     const targetPreTaxProfit = round2(revenue * targetPreTaxProfitPct[y]);
     const aboveBelowTarget = round2(adjustedPreTaxProfit - targetPreTaxProfit);
     const nonLaborGrossMargin = round2(annual.grossProfit);
@@ -823,8 +823,8 @@ export function calculateProjections(input: EngineInput): EngineOutput {
     const nonWageOpex = round2(annualFacilities + annualPayrollTax + annualMarketing + annualOtherOpex + annualNonCapex);
     const salaryCapAtTarget = round2(nonLaborGrossMargin - targetPreTaxProfit - nonWageOpex);
     const overUnderCap = round2(salaryCapAtTarget - adjustedTotalWages);
-    const laborEfficiency = revenue !== 0 ? round2(totalWages / revenue) : 0;
-    const adjustedLaborEfficiency = revenue !== 0 ? round2(adjustedTotalWages / revenue) : 0;
+    const laborEfficiency = totalWages !== 0 ? round2(nonLaborGrossMargin / totalWages) : 0;
+    const adjustedLaborEfficiency = adjustedTotalWages !== 0 ? round2(nonLaborGrossMargin / adjustedTotalWages) : 0;
     const discretionaryMarketingPct = revenue !== 0 ? round2(annualMarketing / revenue) : 0;
     const prTaxBenefitsPctOfWages = totalWages !== 0 ? round2(annualPayrollTax / totalWages) : 0;
     const otherOpexPctOfRevenue = revenue !== 0 ? round2(annualOtherOpex / revenue) : 0;
@@ -1080,6 +1080,10 @@ export function calculateProjections(input: EngineInput): EngineOutput {
       actual: v.estimatedValue,
       tolerance,
     });
+  }
+
+  for (let y = 0; y < 5; y++) {
+    valuation[y].businessAnnualROIC = roicExtended[y].roicPct;
   }
 
   return {

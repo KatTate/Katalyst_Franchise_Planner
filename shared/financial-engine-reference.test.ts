@@ -532,6 +532,16 @@ describe("PostNet Reference Validation", () => {
       });
     }
 
+    // ROIC percentage — reference uses pre-tax: preTaxNetIncomeIncSweat / totalInvestedCapital
+    // Source: ROIC tab row 19: (67.0%), (0.4%), 5.2%, 9.2%, 24.8%
+    test("ROIC percentage is pre-tax (matches reference spreadsheet)", () => {
+      const refRoicPct = [-0.67, -0.004, 0.052, 0.092, 0.248];
+      for (let y = 0; y < 5; y++) {
+        const r = result.roicExtended[y];
+        expect(r.roicPct).toBeCloseTo(refRoicPct[y], 1);
+      }
+    });
+
     // DISCREPANCY: ROIC retained earnings diverge due to tax accrual on BS (KNOWN DIVERGENCE #2)
     test("KNOWN DIVERGENCE: retained earnings diverge Y2+ due to tax accrual on BS", () => {
       const r1 = result.roicExtended[0];
@@ -849,5 +859,50 @@ describe("Cross-Brand Structural Validation", () => {
     const jiGPPct = 1 - 0.22 - 0.06 - 0.045;
     const jiM12 = jiResult.monthlyProjections[11];
     expect(jiM12.grossProfit / jiM12.revenue).toBeCloseTo(jiGPPct, 2);
+  });
+
+  // ═══════════════════════════════════════════════════════════════════════
+  // P&L ANALYSIS — Labor Efficiency (NLGM / Wages)
+  // Source: P&L Statement tab, rows 59-60
+  // Formula: Non-Labor Gross Margin / Total Wages (NOT wages/revenue)
+  // Reference Y1: LER = 3.7, Adj LER = 1.2 (Y1 has $0 mgmt salary, $55k shareholder adj)
+  // Reference Y2-5: LER ≈ 1.9, Adj LER ≈ 1.9 (mgmt salary kicks in, no shareholder adj)
+  // ═══════════════════════════════════════════════════════════════════════
+  test("P&L Analysis: labor efficiency uses NLGM/Wages formula (PostNet)", () => {
+    expect(pnResult.plAnalysis).toHaveLength(5);
+    const y1 = pnResult.plAnalysis[0];
+    expect(y1.laborEfficiency).toBeGreaterThan(1.0);
+    const manualLER = y1.nonLaborGrossMargin / y1.totalWages;
+    expect(y1.laborEfficiency).toBeCloseTo(manualLER, 1);
+  });
+
+  test("P&L Analysis: adjusted labor efficiency uses NLGM/AdjWages (PostNet)", () => {
+    const y1 = pnResult.plAnalysis[0];
+    if (y1.adjustedTotalWages > 0) {
+      const manualAdjLER = y1.nonLaborGrossMargin / y1.adjustedTotalWages;
+      expect(y1.adjustedLaborEfficiency).toBeCloseTo(manualAdjLER, 1);
+    } else {
+      expect(y1.adjustedLaborEfficiency).toBe(0);
+    }
+    const y2 = pnResult.plAnalysis[1];
+    expect(y2.adjustedTotalWages).toBeGreaterThan(0);
+    const manualY2 = y2.nonLaborGrossMargin / y2.adjustedTotalWages;
+    expect(y2.adjustedLaborEfficiency).toBeCloseTo(manualY2, 1);
+    expect(y2.adjustedLaborEfficiency).toBeGreaterThan(1.0);
+  });
+
+  test("P&L Analysis: LER matches reference range (PostNet Y1 ≈ 3.7x)", () => {
+    const y1 = pnResult.plAnalysis[0];
+    expect(y1.laborEfficiency).toBeGreaterThanOrEqual(3.0);
+    expect(y1.laborEfficiency).toBeLessThanOrEqual(4.5);
+  });
+
+  test("P&L Analysis: percentage metrics computed correctly (PostNet)", () => {
+    for (const pla of pnResult.plAnalysis) {
+      expect(pla.discretionaryMarketingPct).toBeGreaterThanOrEqual(0);
+      expect(pla.discretionaryMarketingPct).toBeLessThanOrEqual(0.10);
+      expect(pla.prTaxBenefitsPctOfWages).toBeCloseTo(0.20, 1);
+      expect(pla.otherOpexPctOfRevenue).toBeCloseTo(0.03, 1);
+    }
   });
 });

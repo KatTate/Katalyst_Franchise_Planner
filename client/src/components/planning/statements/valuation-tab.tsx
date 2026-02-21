@@ -130,7 +130,7 @@ const VAL_SECTIONS: ValSectionDef[] = [
       { key: "net-return", label: "Net Return", getValue: (_i, e) => e[_i].netReturn, format: "currency", isSubtotal: true, tooltip: { explanation: "Profit from the investment after all costs", formula: "Total Cash Extracted - Total Invested" } },
       { key: "return-multiple", label: "Return Multiple", getValue: (_i, e) => e[_i].returnMultiple, format: "multiple", indent: 1, tooltip: { explanation: "How many times the original investment was returned", formula: "Total Cash Extracted / Total Invested" } },
       { key: "replacement-return", label: "Replacement Return Required", getValue: (_i, e) => e[_i].val.replacementReturnRequired, format: "pct", indent: 1, tooltip: { explanation: "Return required from an alternative investment to match sale proceeds", formula: "Net After-Tax Proceeds / Total Cash Invested" } },
-      { key: "business-annual-roic", label: "Business Annual ROIC", getValue: (_i, e) => e[_i].val.businessAnnualROIC, format: "pct", indent: 1, tooltip: { explanation: "Annual return on invested capital from business operations", formula: "Adjusted Net Operating Income / Total Cash Invested" } },
+      { key: "business-annual-roic", label: "Business Annual ROIC", getValue: (_i, e) => e[_i].val.businessAnnualROIC, format: "pct", indent: 1, tooltip: { explanation: "Annual return on invested capital from business operations", formula: "Pre-Tax Net Income (inc Sweat Equity) / Total Invested Capital" } },
     ],
   },
 ];

@@ -36,6 +36,8 @@
 
 generated: 2026-02-09
 updated: 2026-02-21  # Story 7.1 context document created (Create Story workflow)
+updated: 2026-02-21  # Story 5H.4 context document created (Create Story workflow)
+updated: 2026-02-21  # SCP-2026-02-21 approved: Epic 10 pivot to user-authored scenario modeling
 updated: 2026-02-21  # Story 5H.2 → done (adversarial code review completed, all findings fixed)
 updated: 2026-02-20  # Story 10.2 context document created (Create Story workflow)
 updated: 2026-02-20  # Story 5H.2 → review (dev-story workflow complete, pending code review)
@@ -47,6 +49,16 @@ story_location: _bmad-output/implementation-artifacts
 
 # CHANGE LOG:
 # ===========
+# 2026-02-21: SCP-2026-02-21 approved — Epic 10 pivot to user-authored scenario modeling
+#   - Conservative/Optimistic system-defined columns KILLED (D1)
+#   - Replaced with Base Case vs Your Scenario (user's live slider state) (D2/D3)
+#   - Slider ranges widened: ±50%/±100% visual range, uncapped numeric input (D6)
+#   - Story 10.2 split → 10-2a (Chart Dashboard) + 10-2b (Metric Delta Cards)
+#   - Story 10.3 promoted from optional to essential (Scenario Persistence & Comparison)
+#   - sensitivity-engine.ts simplified: 4→2 engine calls (CP-7)
+#   - what-if-playground.tsx updated: Reset button, 2-column metric layout (CP-8)
+#   - All 8 change proposals (CP-1 through CP-8) applied to artifacts and code
+#   - See: sprint-change-proposal-2026-02-21.md
 # 2026-02-15: Sprint Change Proposal approved — Financial Statement Output Layer
 #   - New Epic 5: Financial Statement Views & Output Layer (10 stories)
 #   - New Epic 6: Document Generation & Vault (2 stories, elevated from old Epic 7)
@@ -344,6 +356,92 @@ story_location: _bmad-output/implementation-artifacts
 #     for per-year fields, no duplicate InlineEditableCell
 #   - Epic 7 status: in-progress (first story ready-for-dev)
 #   - Next action: Dev Story (DS) for 7.1 implementation
+# 2026-02-21: Story 5H.4 context document created (Create Story workflow)
+#   - Full story file: 5h-4-planning-artifact-alignment.md (ready-for-dev)
+#   - 5 acceptance criteria across 5 phases: FR-to-Story Cross-Reference (111 FRs),
+#     Story-to-FR Reverse Trace (57 stories across 14 epics), Coverage Map Correction
+#     (96/96 → 111/111 header fix), Architecture Document Alignment (FR count, stale
+#     mode references, editable-cell.tsx [DELETED] marker), Deliverable Summary
+#   - Dev notes include: exact line numbers for all corrections, FR counting methodology,
+#     mode vs tier distinction (tiers VALID, modes STALE), architecture category table
+#     gap (Admin Support Tools FR59-FR73 missing), agent session control rules (carried
+#     from 5H.1/5H.2/5H.3)
+#   - Documentation-only story — no application source code changes
+#   - Edits epics.md (coverage map) and architecture.md (FR count, stale references)
+#   - Story status: ready-for-dev
+#   - Next action: Dev Story (DS) for 5H.4 audit execution
+# 2026-02-21: Epic 5H Retrospective FINALIZED (full 15-step BMAD workflow)
+#   - All 15 retrospective steps executed in sequence
+#   - Visual verification performed: ScenarioBar CONFIRMED visible, labor efficiency rows
+#     NOT FOUND in DOM, callout bar remediation CONFIRMED working
+#   - PO feedback captured verbatim: NOT SATISFIED with Epic 5H
+#   - Key concerns: display format validation gap, 30-day month architecture decision
+#     unmade, Plan CRUD (Epic 7) and Brand CRUD (Epic 2) flows unresolved,
+#     forward momentum stalled by hardening work
+#   - 9 action items: 2 CRITICAL (display format validation, 30-day month resolution),
+#     3 HIGH (ScenarioBar removal, labor efficiency fix, 5H.3 AC amendments),
+#     2 MEDIUM (decision surfacing process, display-layer validation standard),
+#     2 LOW (content authoring, large file doc — carried from Epic 5)
+#   - Critical path: 5 items must complete before Epic 6 implementation
+#   - Deployment status: development only — not published
+#   - Epic 5H status: DONE (all 4 stories + retrospective complete)
+#   - See: epic-5h-retrospective.md
+# 2026-02-21: Epic 5H Retro Action Items — HIGH items executed, then CRITICAL ENGINE BUGS FOUND
+#   - AI-3 HIGH (ScenarioBar removal): DONE — ScenarioBar import and render removed from
+#     financial-statements.tsx. "Compare Scenarios" button no longer visible in Reports.
+#   - AI-4 HIGH (Labor Efficiency fix): ESCALATED TO CRITICAL — During AI-4 execution,
+#     discovered the engine formula was COMPLETELY INVERTED (totalWages/revenue instead of
+#     nonLaborGrossMargin/totalWages). This was NOT a tooltip issue — the engine computation
+#     itself was wrong. Produced 0.17x instead of correct 3.71x. Fixed in financial-engine.ts.
+#   - AI-5 HIGH (5H.3 AC amendments): DONE — all 6 amendments applied to epics.md.
+#   - AI-1 CRITICAL (Display format validation): DEFERRED — PO decision to address after
+#     progressing through several more epics.
+#   - AI-2 CRITICAL (30-day month resolution): DEFERRED — PO decision to address after
+#     progressing through several more epics.
+#
+# 2026-02-21: POST-RETROSPECTIVE ENGINE BUG DISCOVERY (PO-directed post-mortem)
+#   *** THIS ENTRY CORRECTS THE RECORD — Story 5H.1 was NOT complete at time of retrospective ***
+#   During AI-3/AI-4/AI-5 action item execution, 4 CRITICAL engine formula bugs were found
+#   that Story 5H.1 ("cell-by-cell validation") was specifically designed to catch:
+#
+#   BUG 1: Labor Efficiency formula INVERTED
+#     Engine had: totalWages / revenue (= 0.17x)
+#     Reference spreadsheet: nonLaborGrossMargin / totalWages (= 3.71x)
+#     The formula was computing the RECIPROCAL. Not a rounding error — completely backwards.
+#     Root cause: 5H.1 tests covered P&L dollar values but NEVER tested P&L Analysis ratios.
+#
+#   BUG 2: ROIC percentage using after-tax instead of pre-tax
+#     Engine had: afterTaxNetIncome / totalInvestedCapital
+#     Reference (ROIC tab row 19): preTaxNetIncomeIncSweatEquity / totalInvestedCapital
+#     Root cause: 5H.1 tests validated ROIC dollar components but NEVER validated roicPct itself.
+#
+#   BUG 3: Salary adjustment sign error (ROIC + P&L Analysis)
+#     Engine had: preTaxNetIncome + annualSalaryAdj (should be minus)
+#     Reference: Pre-Tax NI (-$92k) - Salary Adj ($55k) = -$147k
+#     Root cause: Valuation section already had correct sign (subtraction). Nobody cross-checked.
+#
+#   BUG 4: businessAnnualROIC not synced from ROIC tab
+#     Engine had: independent computation (adjNetOperatingIncome / equityAmount)
+#     Reference: copies value directly from ROIC tab
+#     Root cause: No cross-section consistency test existed.
+#
+#   BONUS: Runtime crash in pnl-tab.tsx interpretation function
+#     Accessed enriched[0].laborEfficiency but field only exists on PLAnalysisOutput.
+#     Crashed every time P&L Analysis section was expanded. Went undetected because section
+#     was collapsed by default and nobody expanded it during testing or retrospective.
+#
+#   ALL FIXES APPLIED 2026-02-21:
+#     - financial-engine.ts: 4 formula corrections
+#     - pnl-tab.tsx: interpretation function data source fix
+#     - financial-engine-reference.test.ts: 5 new tests (104 total, all passing)
+#     - E2E verified: ROIC, Labor Efficiency, Business Annual ROIC all rendering correctly
+#
+#   PROCESS FAILURE ANALYSIS:
+#     - Dev agent wrote tests covering dollar values, skipped ratios/percentages/cross-sections
+#     - Code reviewer accepted "99 tests" without checking coverage against AC scope
+#     - SM (Bob) accepted story as "done" without verifying test matrix against ACs
+#     - Retrospective characterized engine bugs as "display issues" (understated severity)
+#     - See: epic-5h-retrospective.md POST-RETROSPECTIVE ADDENDUM for full accountability
 
 development_status:
   # Epic 1: Auth, Onboarding & User Management
@@ -432,12 +530,12 @@ development_status:
   # AI-8 (dead code cleanup) → pre-Epic-6 checklist item
   # AI-9 (large file decision) → architecture note during Epic 6 planning
   # AI-10 (taxRate TODO) → absorbed into 5H.1 engine validation
-  epic-5h: in-progress
-  5h-1-financial-engine-reference-validation: done  # AI-1: cell-by-cell vs reference spreadsheets. 99 tests, 2 brands (PostNet + Jeremiah's), 1 BUG fixed (ramp-up M1), 2 KNOWN DIVERGENCES documented, taxRate TODO resolved, adversarial code review completed
-  5h-2-report-tab-ui-audit-remediation: review    # AI-2: Implementation complete. 5 per-tab callout bars removed, parent CalloutBar enriched (BS identity check + Valuation net proceeds), comparison mode visibility fixed, column width reduced. Playwright e2e PASS, LSP clean. Pending adversarial code review.
-  5h-3-epic-6-ac-audit-user-journeys: review              # AI-3: Audit executed. 8 gaps found (3 Blocker, 3 Quality Risk, 2 Enhancement). 6 AC amendment proposals. Completeness threshold 2-surface model recommended. Pending PO review.
-  5h-4-planning-artifact-alignment: backlog              # AI-5: 111 FR traceability, fix stale coverage map
-  epic-5h-retrospective: optional
+  epic-5h: done
+  5h-1-financial-engine-reference-validation: done  # AI-1: cell-by-cell vs reference spreadsheets. CORRECTED RECORD: Initially closed with 99 tests covering dollar values only. Post-retro audit found 4 CRITICAL engine bugs (inverted labor efficiency, after-tax ROIC, salary adj sign, ROIC sync) because tests skipped ratios/percentages/cross-sections. Fixed 2026-02-21, now 104 tests including ratio/pct coverage. See retrospective addendum.
+  5h-2-report-tab-ui-audit-remediation: done    # AI-2: Implementation complete. 5 per-tab callout bars removed, parent CalloutBar enriched (BS identity check + Valuation net proceeds), comparison mode visibility fixed, column width reduced. Adversarial code review completed 2026-02-21 (H1 BS identity fix, all findings resolved).
+  5h-3-epic-6-ac-audit-user-journeys: done              # AI-3: Audit executed. 8 gaps found (3 Blocker, 3 Quality Risk, 2 Enhancement). 6 AC amendment proposals. Completeness threshold 2-surface model recommended. PO review completed 2026-02-21.
+  5h-4-planning-artifact-alignment: done                  # AI-5: 111 FR traceability, fix stale coverage map. Audit complete: 111/111 FRs mapped, 54 stories traced, 6 artifact corrections applied. PO review completed 2026-02-21.
+  epic-5h-retrospective: done  # FINALIZED 2026-02-21 — 15-step workflow completed. 9 action items (2 CRITICAL, 3 HIGH, 2 MEDIUM, 2 LOW). 5 critical path blockers before Epic 6. PO NOT SATISFIED. See: epic-5h-retrospective.md
 
   # Epic 6: Document Generation & Vault [ELEVATED from old Epic 7]
   # PDF export + document history
@@ -473,15 +571,15 @@ development_status:
   9-4-graceful-degradation-mode-continuity: backlog
   epic-9-retrospective: optional
 
-  # Epic 10: What-If Playground [was Scenario Comparison, part of old Epic 7]
+  # Epic 10: What-If Playground — User-Authored Scenario Modeling [was Scenario Comparison, part of old Epic 7]
   # Rewritten per SCP-2026-02-20 D5/D6 — standalone sensitivity dashboard, not column-splitting
-  # Stories (3): Sensitivity Controls, Multi-Chart Dashboard, Scenario Persistence (optional)
-  epic-10: backlog
-  10-1-sensitivity-controls-sandbox-engine: backlog
+  # Pivoted per SCP-2026-02-21 — user-authored scenarios replace system-defined Conservative/Optimistic
+  # Stories (4): Sensitivity Controls, Chart Dashboard, Metric Delta Cards, Scenario Persistence & Comparison
   epic-10: in-progress
-  10-1-sensitivity-controls-sandbox-engine: ready-for-dev
-  10-2-multi-chart-sensitivity-dashboard: ready-for-dev
-  10-3-scenario-persistence-sharing: backlog  # optional enhancement
+  10-1-sensitivity-controls-sandbox-engine: needs-revision  # AC rewrite + code modification per SCP-2026-02-21 CP-2/CP-7/CP-8
+  10-2a-sensitivity-chart-dashboard: needs-revision  # AC rewrite per SCP-2026-02-21 CP-3 (split from 10-2)
+  10-2b-metric-delta-cards: needs-revision  # AC rewrite per SCP-2026-02-21 CP-4 (split from 10-2)
+  10-3-scenario-persistence-comparison: ready-for-dev  # Promoted from optional to essential per SCP-2026-02-21 CP-5
   epic-10-retrospective: optional
 
   # Epic ST: Admin Support Tools — Impersonation & Demo Modes
