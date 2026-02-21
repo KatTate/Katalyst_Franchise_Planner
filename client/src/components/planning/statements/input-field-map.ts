@@ -6,6 +6,9 @@ export interface InputFieldMapping {
   fieldName: string;
   inputFormat: FormatType;
   storedGranularity?: "monthly" | "annual";
+  min?: number;
+  max?: number;
+  singleValue?: boolean;
 }
 
 export const INPUT_FIELD_MAP: Record<string, InputFieldMapping> = {
@@ -90,12 +93,51 @@ export const INPUT_FIELD_MAP: Record<string, InputFieldMapping> = {
     inputFormat: "currency",
     storedGranularity: "annual",
   },
+  "ar-days": {
+    category: "workingCapitalAndValuation",
+    fieldName: "arDays",
+    inputFormat: "integer",
+    singleValue: true,
+    min: 0,
+    max: 365,
+  },
+  "ap-days": {
+    category: "workingCapitalAndValuation",
+    fieldName: "apDays",
+    inputFormat: "integer",
+    singleValue: true,
+    min: 0,
+    max: 365,
+  },
+  "inventory-days": {
+    category: "workingCapitalAndValuation",
+    fieldName: "inventoryDays",
+    inputFormat: "integer",
+    singleValue: true,
+    min: 0,
+    max: 365,
+  },
+  "tax-payment-delay": {
+    category: "workingCapitalAndValuation",
+    fieldName: "taxPaymentDelayMonths",
+    inputFormat: "integer",
+    singleValue: true,
+    min: 0,
+    max: 24,
+  },
+  "ebitda-multiple": {
+    category: "workingCapitalAndValuation",
+    fieldName: "ebitdaMultiple",
+    inputFormat: "decimal",
+    singleValue: true,
+    min: 0.1,
+  },
 };
 
 export const EBITDA_MULTIPLE_KEY = "ebitda-multiple";
 
 export function isEditableRow(rowKey: string): boolean {
-  return rowKey in INPUT_FIELD_MAP || rowKey === EBITDA_MULTIPLE_KEY;
+  return rowKey in INPUT_FIELD_MAP;
 }
 
 export function getDrillLevelFromColKey(colKey: string): DrillLevel {

@@ -3,13 +3,20 @@ import { ChevronDown, ChevronRight, Pencil } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { formatFinancialValue } from "@/components/shared/financial-value";
 import { Link } from "wouter";
-import type { EngineOutput, ValuationOutput, ROICExtendedOutput, MonthlyProjection } from "@shared/financial-engine";
+import type { EngineOutput, ValuationOutput, ROICExtendedOutput, MonthlyProjection, PlanFinancialInputs, FinancialFieldValue } from "@shared/financial-engine";
+import { InlineEditableCell } from "./inline-editable-cell";
+import { INPUT_FIELD_MAP, isEditableRow } from "./input-field-map";
+import { parseFieldInput } from "@/lib/field-metadata";
+import type { FormatType } from "@/lib/field-metadata";
 
 import { SCENARIO_COLORS, type ScenarioId, type ScenarioOutputs } from "@/lib/scenario-engine";
 
 interface ValuationTabProps {
   output: EngineOutput;
   scenarioOutputs?: ScenarioOutputs | null;
+  financialInputs?: PlanFinancialInputs | null;
+  onCellEdit?: (category: string, fieldName: string, rawInput: string, inputFormat: FormatType, yearIndex: number) => void;
+  isSaving?: boolean;
 }
 
 interface CellTooltip {
@@ -140,7 +147,7 @@ function formatValValue(value: number, format: "currency" | "pct" | "multiple"):
   return formatFinancialValue(value, mappedFormat);
 }
 
-export function ValuationTab({ output, scenarioOutputs }: ValuationTabProps) {
+export function ValuationTab({ output, scenarioOutputs, financialInputs, onCellEdit, isSaving }: ValuationTabProps) {
   const { valuation, roicExtended, monthlyProjections } = output;
   const comparisonActive = !!scenarioOutputs;
 
@@ -169,6 +176,38 @@ export function ValuationTab({ output, scenarioOutputs }: ValuationTabProps) {
   const toggleSection = useCallback((key: string) => {
     setExpandedSections((prev) => ({ ...prev, [key]: !prev[key] }));
   }, []);
+
+  const [editingEbitdaMultiple, setEditingEbitdaMultiple] = useState(false);
+
+  const ebitdaMultipleRawValue = useMemo(() => {
+    if (!financialInputs) return 0;
+    const field = financialInputs.workingCapitalAndValuation["ebitdaMultiple" as keyof typeof financialInputs.workingCapitalAndValuation] as FinancialFieldValue;
+    return field?.currentValue ?? 0;
+  }, [financialInputs]);
+
+  const canEdit = !!financialInputs && !!onCellEdit;
+
+  const handleEbitdaStartEdit = useCallback(() => {
+    if (isSaving || !canEdit) return;
+    if (!isEditableRow("ebitda-multiple")) return;
+    setEditingEbitdaMultiple(true);
+  }, [isSaving, canEdit]);
+
+  const handleEbitdaCancelEdit = useCallback(() => {
+    setEditingEbitdaMultiple(false);
+  }, []);
+
+  const handleEbitdaCommitEdit = useCallback((rawInput: string) => {
+    if (!onCellEdit || !financialInputs) return;
+    const mapping = INPUT_FIELD_MAP["ebitda-multiple"];
+    if (!mapping) return;
+    const parsedValue = parseFieldInput(rawInput, mapping.inputFormat);
+    if (isNaN(parsedValue)) { setEditingEbitdaMultiple(false); return; }
+    if (mapping.min !== undefined && parsedValue < mapping.min) { setEditingEbitdaMultiple(false); return; }
+    if (mapping.max !== undefined && parsedValue > mapping.max) { setEditingEbitdaMultiple(false); return; }
+    onCellEdit(mapping.category, mapping.fieldName, rawInput, mapping.inputFormat, 0);
+    setEditingEbitdaMultiple(false);
+  }, [onCellEdit, financialInputs]);
 
   const SCENARIOS: ScenarioId[] = ["base", "conservative", "optimistic"];
 
@@ -254,6 +293,12 @@ export function ValuationTab({ output, scenarioOutputs }: ValuationTabProps) {
                 enriched={enriched}
                 isExpanded={expandedSections[section.key] ?? true}
                 onToggle={() => toggleSection(section.key)}
+                canEdit={canEdit}
+                editingEbitdaMultiple={editingEbitdaMultiple}
+                ebitdaMultipleRawValue={ebitdaMultipleRawValue}
+                onEbitdaStartEdit={handleEbitdaStartEdit}
+                onEbitdaCancelEdit={handleEbitdaCancelEdit}
+                onEbitdaCommitEdit={handleEbitdaCommitEdit}
               />
             ))}
           </tbody>
@@ -268,9 +313,15 @@ interface ValSectionProps {
   enriched: EnrichedValYear[];
   isExpanded: boolean;
   onToggle: () => void;
+  canEdit: boolean;
+  editingEbitdaMultiple: boolean;
+  ebitdaMultipleRawValue: number;
+  onEbitdaStartEdit: () => void;
+  onEbitdaCancelEdit: () => void;
+  onEbitdaCommitEdit: (rawInput: string) => void;
 }
 
-function ValSection({ section, enriched, isExpanded, onToggle }: ValSectionProps) {
+function ValSection({ section, enriched, isExpanded, onToggle, canEdit, editingEbitdaMultiple, ebitdaMultipleRawValue, onEbitdaStartEdit, onEbitdaCancelEdit, onEbitdaCommitEdit }: ValSectionProps) {
   return (
     <>
       <tr
@@ -307,6 +358,12 @@ function ValSection({ section, enriched, isExpanded, onToggle }: ValSectionProps
             key={row.key}
             row={row}
             enriched={enriched}
+            canEdit={canEdit}
+            editingEbitdaMultiple={editingEbitdaMultiple}
+            ebitdaMultipleRawValue={ebitdaMultipleRawValue}
+            onEbitdaStartEdit={onEbitdaStartEdit}
+            onEbitdaCancelEdit={onEbitdaCancelEdit}
+            onEbitdaCommitEdit={onEbitdaCommitEdit}
           />
         ))}
     </>
@@ -396,7 +453,16 @@ function ComparisonValSection({
   );
 }
 
-function ValRow({ row, enriched }: { row: ValRowDef; enriched: EnrichedValYear[] }) {
+function ValRow({ row, enriched, canEdit, editingEbitdaMultiple, ebitdaMultipleRawValue, onEbitdaStartEdit, onEbitdaCancelEdit, onEbitdaCommitEdit }: {
+  row: ValRowDef;
+  enriched: EnrichedValYear[];
+  canEdit: boolean;
+  editingEbitdaMultiple: boolean;
+  ebitdaMultipleRawValue: number;
+  onEbitdaStartEdit: () => void;
+  onEbitdaCancelEdit: () => void;
+  onEbitdaCommitEdit: (rawInput: string) => void;
+}) {
   const rowClass = row.isTotal
     ? "font-semibold border-t-[3px] border-double border-b"
     : row.isSubtotal
@@ -408,6 +474,9 @@ function ValRow({ row, enriched }: { row: ValRowDef; enriched: EnrichedValYear[]
   const inputCellClass = row.isInput
     ? "bg-primary/5 border-l-2 border-dashed border-primary/20"
     : "";
+
+  const isEbitdaMultipleRow = row.key === "ebitda-multiple";
+  const showEditableEbitda = isEbitdaMultipleRow && canEdit;
 
   return (
     <tr
@@ -425,19 +494,77 @@ function ValRow({ row, enriched }: { row: ValRowDef; enriched: EnrichedValYear[]
           {row.isInput && (
             <Pencil
               className="h-3 w-3 text-primary/40 invisible group-hover:visible shrink-0"
-              aria-label="Editable field (coming soon)"
+              aria-label={showEditableEbitda ? "Editable field" : "Editable field (coming soon)"}
             />
           )}
         </span>
       </td>
-      {enriched.map((yearData, idx) => {
-        const value = row.getValue(idx, enriched);
-        const isNegative = value < 0;
-        const cellContent = formatValValue(value, row.format);
+      {showEditableEbitda ? (
+        <>
+          <InlineEditableCell
+            displayValue={`${ebitdaMultipleRawValue.toFixed(1)}x`}
+            rawValue={ebitdaMultipleRawValue}
+            inputFormat="decimal"
+            onCommit={onEbitdaCommitEdit}
+            isEditing={editingEbitdaMultiple}
+            onStartEdit={onEbitdaStartEdit}
+            onCancel={onEbitdaCancelEdit}
+            testId="val-edit-ebitda-multiple"
+            ariaLabel="Edit EBITDA Multiple"
+            className={inputCellClass}
+          />
+          {enriched.slice(1).map((yearData, idx) => {
+            const value = row.getValue(idx + 1, enriched);
+            const cellContent = formatValValue(value, row.format);
+            return (
+              <td
+                key={yearData.year}
+                className={`py-1.5 px-3 text-right font-mono tabular-nums text-sm whitespace-nowrap ${inputCellClass}`}
+                data-testid={`val-value-${row.key}-y${yearData.year}`}
+                role="gridcell"
+                aria-readonly="true"
+              >
+                {cellContent}
+              </td>
+            );
+          })}
+        </>
+      ) : (
+        enriched.map((yearData, idx) => {
+          const value = row.getValue(idx, enriched);
+          const isNegative = value < 0;
+          const cellContent = formatValValue(value, row.format);
+          const isNa = row.format === "multiple" && enriched[idx].totalInvested <= 0 && row.key === "return-multiple";
 
-        const isNa = row.format === "multiple" && enriched[idx].totalInvested <= 0 && row.key === "return-multiple";
+          if (row.tooltip) {
+            return (
+              <td
+                key={yearData.year}
+                className={`py-1.5 px-3 text-right font-mono tabular-nums text-sm whitespace-nowrap${isNegative ? " text-amber-700 dark:text-amber-400" : ""}${row.isInput ? ` ${inputCellClass}` : ""}`}
+                data-testid={`val-value-${row.key}-y${yearData.year}`}
+                role="gridcell"
+                aria-readonly={row.isInput ? "false" : "true"}
+              >
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <span className="cursor-help">{isNa ? "N/A" : cellContent}</span>
+                  </TooltipTrigger>
+                  <TooltipContent side="top" className="max-w-[260px]">
+                    <p className="text-xs font-medium">{row.tooltip.explanation}</p>
+                    <p className="text-xs text-muted-foreground mt-0.5">{row.tooltip.formula}</p>
+                    <Link
+                      href={row.tooltip.glossarySlug ? `/glossary/${row.tooltip.glossarySlug}` : "/glossary"}
+                      className="text-xs text-primary mt-1 inline-block cursor-pointer"
+                      data-testid={`glossary-link-${row.key}`}
+                    >
+                      View in glossary
+                    </Link>
+                  </TooltipContent>
+                </Tooltip>
+              </td>
+            );
+          }
 
-        if (row.tooltip) {
           return (
             <td
               key={yearData.year}
@@ -446,38 +573,11 @@ function ValRow({ row, enriched }: { row: ValRowDef; enriched: EnrichedValYear[]
               role="gridcell"
               aria-readonly={row.isInput ? "false" : "true"}
             >
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <span className="cursor-help">{isNa ? "N/A" : cellContent}</span>
-                </TooltipTrigger>
-                <TooltipContent side="top" className="max-w-[260px]">
-                  <p className="text-xs font-medium">{row.tooltip.explanation}</p>
-                  <p className="text-xs text-muted-foreground mt-0.5">{row.tooltip.formula}</p>
-                  <Link
-                    href={row.tooltip.glossarySlug ? `/glossary/${row.tooltip.glossarySlug}` : "/glossary"}
-                    className="text-xs text-primary mt-1 inline-block cursor-pointer"
-                    data-testid={`glossary-link-${row.key}`}
-                  >
-                    View in glossary
-                  </Link>
-                </TooltipContent>
-              </Tooltip>
+              {isNa ? "N/A" : cellContent}
             </td>
           );
-        }
-
-        return (
-          <td
-            key={yearData.year}
-            className={`py-1.5 px-3 text-right font-mono tabular-nums text-sm whitespace-nowrap${isNegative ? " text-amber-700 dark:text-amber-400" : ""}${row.isInput ? ` ${inputCellClass}` : ""}`}
-            data-testid={`val-value-${row.key}-y${yearData.year}`}
-            role="gridcell"
-            aria-readonly={row.isInput ? "false" : "true"}
-          >
-            {isNa ? "N/A" : cellContent}
-          </td>
-        );
-      })}
+        })
+      )}
     </tr>
   );
 }

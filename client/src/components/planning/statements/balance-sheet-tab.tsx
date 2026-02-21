@@ -4,9 +4,13 @@ import { Link } from "wouter";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { formatFinancialValue } from "@/components/shared/financial-value";
 import { useColumnManager, ColumnToolbar, GroupedTableHead } from "./column-manager";
-import type { EngineOutput, MonthlyProjection, AnnualSummary, ROICExtendedOutput } from "@shared/financial-engine";
+import type { EngineOutput, MonthlyProjection, AnnualSummary, ROICExtendedOutput, PlanFinancialInputs, FinancialFieldValue } from "@shared/financial-engine";
 import type { ColumnDef } from "./column-manager";
 import { getAnnualValue, getQuarterlyValue, getMonthlyValue } from "./column-manager";
+import { InlineEditableCell } from "./inline-editable-cell";
+import { INPUT_FIELD_MAP, isEditableRow } from "./input-field-map";
+import { parseFieldInput, formatFieldValue } from "@/lib/field-metadata";
+import type { FormatType } from "@/lib/field-metadata";
 
 import { SCENARIO_COLORS, type ScenarioId, type ScenarioOutputs } from "@/lib/scenario-engine";
 import { ComparisonTableHead, buildComparisonColumns, type ComparisonColumnDef } from "./comparison-table-head";
@@ -14,6 +18,9 @@ import { ComparisonTableHead, buildComparisonColumns, type ComparisonColumnDef }
 interface BalanceSheetTabProps {
   output: EngineOutput;
   scenarioOutputs?: ScenarioOutputs | null;
+  financialInputs?: PlanFinancialInputs | null;
+  onCellEdit?: (category: string, fieldName: string, rawInput: string, inputFormat: FormatType, yearIndex: number) => void;
+  isSaving?: boolean;
 }
 
 interface CellTooltip {
@@ -251,6 +258,21 @@ const BS_SECTIONS: BsSectionDef[] = [
   },
 ];
 
+interface WcAssumptionRowDef {
+  key: string;
+  label: string;
+  fieldName: string;
+  suffix?: string;
+  tooltip?: CellTooltip;
+}
+
+const WC_ASSUMPTION_ROWS: WcAssumptionRowDef[] = [
+  { key: "ar-days", label: "AR Days", fieldName: "arDays", suffix: " days", tooltip: { explanation: "Accounts Receivable collection period", formula: "Applied uniformly across all years" } },
+  { key: "ap-days", label: "AP Days", fieldName: "apDays", suffix: " days", tooltip: { explanation: "Accounts Payable payment period", formula: "Applied uniformly across all years" } },
+  { key: "inventory-days", label: "Inventory Days", fieldName: "inventoryDays", suffix: " days", tooltip: { explanation: "Inventory turnover period", formula: "Applied uniformly across all years" } },
+  { key: "tax-payment-delay", label: "Tax Payment Delay (Months)", fieldName: "taxPaymentDelayMonths", suffix: " mo", tooltip: { explanation: "Delay between tax accrual and payment", formula: "Applied uniformly across all years" } },
+];
+
 const BS_POINT_IN_TIME_FIELDS = new Set([
   "endingCash", "accountsReceivable", "inventory", "totalCurrentAssets",
   "netFixedAssets", "accountsPayable", "taxPayable", "lineOfCredit",
@@ -383,7 +405,7 @@ function getBsAnnualValue(
   return 0;
 }
 
-export function BalanceSheetTab({ output, scenarioOutputs }: BalanceSheetTabProps) {
+export function BalanceSheetTab({ output, scenarioOutputs, financialInputs, onCellEdit, isSaving }: BalanceSheetTabProps) {
   const { annualSummaries, monthlyProjections, identityChecks, roicExtended } = output;
   const enriched = useMemo(
     () => computeEnrichedBsAnnuals(monthlyProjections, annualSummaries),
@@ -391,6 +413,38 @@ export function BalanceSheetTab({ output, scenarioOutputs }: BalanceSheetTabProp
   );
 
   const comparisonActive = !!scenarioOutputs;
+
+  const [editingWcField, setEditingWcField] = useState<string | null>(null);
+
+  const getWcRawValue = useCallback((fieldName: string): number => {
+    if (!financialInputs) return 0;
+    const field = financialInputs.workingCapitalAndValuation[fieldName as keyof typeof financialInputs.workingCapitalAndValuation] as FinancialFieldValue;
+    return field?.currentValue ?? 0;
+  }, [financialInputs]);
+
+  const handleWcStartEdit = useCallback((rowKey: string) => {
+    if (isSaving || !onCellEdit || !financialInputs) return;
+    if (!isEditableRow(rowKey)) return;
+    setEditingWcField(rowKey);
+  }, [isSaving, onCellEdit, financialInputs]);
+
+  const handleWcCancelEdit = useCallback(() => {
+    setEditingWcField(null);
+  }, []);
+
+  const handleWcCommitEdit = useCallback((rowKey: string, rawInput: string) => {
+    if (!onCellEdit || !financialInputs) return;
+    const mapping = INPUT_FIELD_MAP[rowKey];
+    if (!mapping) return;
+    const parsedValue = parseFieldInput(rawInput, mapping.inputFormat);
+    if (isNaN(parsedValue)) { setEditingWcField(null); return; }
+    if (mapping.min !== undefined && parsedValue < mapping.min) { setEditingWcField(null); return; }
+    if (mapping.max !== undefined && parsedValue > mapping.max) { setEditingWcField(null); return; }
+    onCellEdit(mapping.category, mapping.fieldName, rawInput, mapping.inputFormat, 0);
+    setEditingWcField(null);
+  }, [onCellEdit, financialInputs]);
+
+  const canEdit = !!financialInputs && !!onCellEdit;
 
   const scenarioEnriched = useMemo(() => {
     if (!scenarioOutputs) return null;
@@ -434,6 +488,7 @@ export function BalanceSheetTab({ output, scenarioOutputs }: BalanceSheetTabProp
     BS_SECTIONS.forEach((s) => {
       initial[s.key] = s.defaultExpanded ?? true;
     });
+    initial["wc-assumptions"] = true;
     return initial;
   });
 
@@ -516,6 +571,17 @@ export function BalanceSheetTab({ output, scenarioOutputs }: BalanceSheetTabProp
               columns={visibleCols}
               enriched={enriched}
               monthly={monthlyProjections}
+            />
+            <WcAssumptionsSection
+              columns={visibleCols}
+              isExpanded={expandedSections["wc-assumptions"] ?? true}
+              onToggle={() => toggleSection("wc-assumptions")}
+              canEdit={canEdit}
+              editingField={editingWcField}
+              onStartEdit={handleWcStartEdit}
+              onCancelEdit={handleWcCancelEdit}
+              onCommitEdit={handleWcCommitEdit}
+              getRawValue={getWcRawValue}
             />
           </tbody>
         </table>
@@ -790,6 +856,135 @@ function ComparisonBsSection({
                   </td>
                 );
               })}
+            </tr>
+          );
+        })}
+    </>
+  );
+}
+
+function WcAssumptionsSection({
+  columns,
+  isExpanded,
+  onToggle,
+  canEdit,
+  editingField,
+  onStartEdit,
+  onCancelEdit,
+  onCommitEdit,
+  getRawValue,
+}: {
+  columns: ColumnDef[];
+  isExpanded: boolean;
+  onToggle: () => void;
+  canEdit: boolean;
+  editingField: string | null;
+  onStartEdit: (rowKey: string) => void;
+  onCancelEdit: () => void;
+  onCommitEdit: (rowKey: string, rawInput: string) => void;
+  getRawValue: (fieldName: string) => number;
+}) {
+  const wcRowOrder = WC_ASSUMPTION_ROWS.map((r) => r.key);
+
+  const handleTabNav = useCallback((rowKey: string, direction: "next" | "prev") => {
+    const idx = wcRowOrder.indexOf(rowKey);
+    if (idx === -1) return;
+    const nextIdx = direction === "next" ? idx + 1 : idx - 1;
+    if (nextIdx >= 0 && nextIdx < wcRowOrder.length) {
+      onStartEdit(wcRowOrder[nextIdx]);
+    }
+  }, [wcRowOrder, onStartEdit]);
+
+  return (
+    <>
+      <tr
+        className="bg-muted/40 cursor-pointer hover-elevate"
+        data-testid="bs-section-wc-assumptions"
+        onClick={onToggle}
+        onKeyDown={(e) => {
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            onToggle();
+          }
+        }}
+        tabIndex={0}
+        role="row"
+        aria-expanded={isExpanded}
+      >
+        <td
+          className="py-2 px-3 font-semibold text-xs uppercase tracking-wide text-muted-foreground sticky left-0 bg-muted/40 z-20"
+          colSpan={columns.length + 1}
+        >
+          <span className="flex items-center gap-1">
+            {isExpanded ? (
+              <ChevronDown className="h-3.5 w-3.5 shrink-0" />
+            ) : (
+              <ChevronRight className="h-3.5 w-3.5 shrink-0" />
+            )}
+            Working Capital Assumptions
+          </span>
+        </td>
+      </tr>
+      {isExpanded &&
+        WC_ASSUMPTION_ROWS.map((row) => {
+          const mapping = INPUT_FIELD_MAP[row.key];
+          if (!mapping) return null;
+          const rawValue = getRawValue(row.fieldName);
+          const isEditing = editingField === row.key;
+          const displayValue = mapping.inputFormat === "integer"
+            ? `${rawValue}${row.suffix || ""}`
+            : `${rawValue.toFixed(1)}${row.suffix || ""}`;
+
+          return (
+            <tr
+              key={row.key}
+              className="hover-elevate group"
+              data-testid={`bs-row-${row.key}`}
+              role="row"
+            >
+              <td
+                className="py-1.5 px-3 text-sm sticky left-0 bg-background z-10 min-w-[200px] shadow-[2px_0_4px_-2px_rgba(0,0,0,0.06)] bg-primary/5 border-l-2 border-dashed border-primary/20"
+                style={{ paddingLeft: `${12 + 1 * 16}px` }}
+                role="rowheader"
+              >
+                <span className="flex items-center gap-1.5">
+                  {row.label}
+                  {canEdit && (
+                    <Pencil
+                      className="h-3 w-3 text-primary/40 invisible group-hover:visible shrink-0"
+                      aria-label="Editable field"
+                    />
+                  )}
+                </span>
+              </td>
+              {canEdit ? (
+                <InlineEditableCell
+                  displayValue={displayValue}
+                  rawValue={rawValue}
+                  inputFormat={mapping.inputFormat}
+                  onCommit={(rawInput) => onCommitEdit(row.key, rawInput)}
+                  isEditing={isEditing}
+                  onStartEdit={() => onStartEdit(row.key)}
+                  onCancel={onCancelEdit}
+                  onTabNext={() => handleTabNav(row.key, "next")}
+                  onTabPrev={() => handleTabNav(row.key, "prev")}
+                  testId={`bs-edit-${row.key}`}
+                  ariaLabel={`Edit ${row.label}`}
+                  className="bg-primary/5 border-l-2 border-dashed border-primary/20"
+                />
+              ) : (
+                <td
+                  className="py-1.5 px-3 text-right font-mono tabular-nums text-sm whitespace-nowrap bg-primary/5 border-l-2 border-dashed border-primary/20"
+                  data-testid={`bs-edit-${row.key}`}
+                  role="gridcell"
+                  aria-readonly="true"
+                >
+                  {displayValue}
+                </td>
+              )}
+              {columns.length > 1 && (
+                <td colSpan={columns.length - 1} className="py-1.5 px-3" role="gridcell" />
+              )}
             </tr>
           );
         })}

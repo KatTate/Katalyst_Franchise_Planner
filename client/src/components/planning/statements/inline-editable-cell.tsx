@@ -25,6 +25,8 @@ function formatRawForInput(rawValue: number, inputFormat: FormatType | "multiple
       return (rawValue * 100).toFixed(1);
     case "integer":
       return String(rawValue);
+    case "decimal":
+      return rawValue.toFixed(1);
     case "multiple":
       return rawValue.toFixed(1);
   }

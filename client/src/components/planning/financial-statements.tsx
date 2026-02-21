@@ -370,7 +370,13 @@ export function FinancialStatements({ planId, defaultTab = "summary", plan, queu
             </TabsContent>
 
             <TabsContent value="balance-sheet" className="mt-0">
-              <BalanceSheetTab output={output} scenarioOutputs={scenarioOutputs} />
+              <BalanceSheetTab
+                output={output}
+                scenarioOutputs={scenarioOutputs}
+                financialInputs={financialInputs}
+                onCellEdit={queueSave ? handleCellEdit : undefined}
+                isSaving={isSaving}
+              />
             </TabsContent>
 
             <TabsContent value="cash-flow" className="mt-0">
@@ -382,7 +388,13 @@ export function FinancialStatements({ planId, defaultTab = "summary", plan, queu
             </TabsContent>
 
             <TabsContent value="valuation" className="mt-0">
-              <ValuationTab output={output} scenarioOutputs={scenarioOutputs} />
+              <ValuationTab
+                output={output}
+                scenarioOutputs={scenarioOutputs}
+                financialInputs={financialInputs}
+                onCellEdit={queueSave ? handleCellEdit : undefined}
+                isSaving={isSaving}
+              />
             </TabsContent>
 
             <TabsContent value="audit" className="mt-0">
