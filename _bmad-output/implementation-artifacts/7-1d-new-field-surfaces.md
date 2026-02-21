@@ -143,22 +143,37 @@ And any remaining dollar-to-percentage conversion logic in `unwrapForEngine` is 
 
 ### AC Verification Record
 
-AC-1: SATISFIED
+AC-1: SATISFIED — Evidence: CONFIRMED (UI-based E2E + visual verification)
   Expected: Facilities Breakdown section shows 5 sub-fields (Rent, Utilities, Telecom/IT, Vehicle/Fleet, Insurance), a computed Facilities Total, and "Set for all years" checkboxes
   Method: Playwright E2E test — navigated to My Plan → Facilities Breakdown section
   Observed: All 5 sub-fields rendered with currency inputs, Facilities Total displayed $128,400 (sum of defaults), "Set for all years" checkbox visible for Rent field. Editing Rent from $120,000 to $24,000 updated total to $32,400. Save wrote both decomposition and facilitiesAnnual in single PATCH.
+  Visual Verification: Screenshot confirmed Facilities Breakdown section rendered with sub-fields and total in Forms view.
 
-AC-2: SATISFIED
+AC-2: SATISFIED — Evidence: CONFIRMED (UI-based E2E + visual verification)
   Expected: P&L tab shows single "Facilities" row (editable), no separate Rent/Utilities/Insurance rows
   Method: Playwright E2E test — navigated to Reports → P&L tab, DOM query for row content
   Observed: Single "Facilities" row present and editable. No "Rent", "Utilities Monthly", or "Insurance Monthly" rows found in DOM. Confirmed Reports editing writes to facilitiesAnnual only (via INPUT_FIELD_MAP).
+  Visual Verification: Screenshot confirmed P&L table shows "Facilities" row, no separate decomposition rows.
 
-AC-3: SATISFIED
+AC-3: SATISFIED — Evidence: CONFIRMED (code inspection + E2E)
   Expected: When facilitiesAnnual is edited in Reports, Forms shows informational note about mismatch; editing sub-field recalculates total
   Method: Code inspection + E2E test — verified mismatch detection logic compares facilitiesAnnual[yearIndex] against sum of decomposition sub-fields
   Observed: Mismatch note component renders conditionally when sum differs from facilitiesAnnual. Editing any sub-field triggers recomputation of facilitiesAnnual via use-field-editing.ts handleChange, making Forms authoritative again.
+  Note: Mismatch detection is UI-conditional — only appears when values diverge, which is expected behavior.
 
-AC-4: SATISFIED (code review fix applied)
+AC-4: SATISFIED — Evidence: CONFIRMED (code review fix + visual verification)
   Expected: "Other OpEx %" with percentage input format in both Forms and Reports
-  Method: Code review — verified label, format, and field alignment in both surfaces
+  Method: Code review + Playwright visual verification — verified label, format, and field alignment in both surfaces
   Observed: Forms shows "Other OpEx %" in Operating Costs section with percentage format (field-metadata.ts). Reports P&L row updated during code review: field changed from `otherOpex` (currency) to `otherOpexPctInput` (pct), matching COGS % pattern. `otherOpexPctInput` added to EnrichedAnnual type and INPUT_ONLY_FIELDS set. No dollar-to-percentage conversion remnants in unwrapForEngine (otherOpexPct already stored as percentage since 7.1a).
+  Visual Verification: Screenshot confirmed P&L "Other OpEx %" row displays percentage values (contains "%", not "$").
+
+### Completion Gate Variables
+
+- `git_discovery_done` = "yes"
+- `git_discrepancy_count` = 2
+- `lsp_error_count` = 0
+- `lsp_warning_count` = 0
+- `architect_review_done` = "yes"
+- `new_status` = "done"
+- `fixed_count` = 4 (H1 pnl format fix, M1 DRY extraction, M2 false file list entry removed, M3 undocumented file added)
+- `action_count` = 7 (1 HIGH, 3 MEDIUM, 3 LOW findings identified and resolved)
