@@ -1,11 +1,14 @@
 import { useState } from "react";
 import { useLocation } from "wouter";
+import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/use-auth";
 import { useBrandTheme } from "@/hooks/use-brand-theme";
 import { useImpersonation } from "@/contexts/ImpersonationContext";
 import { useDemoMode } from "@/contexts/DemoModeContext";
 import { useWorkspaceView } from "@/contexts/WorkspaceViewContext";
-import { Home, Mail, Building2, LogOut, CalendarCheck, ClipboardList, BarChart3, FlaskConical, Settings, BookOpen } from "lucide-react";
+import { Home, Mail, Building2, LogOut, CalendarCheck, ClipboardList, BarChart3, FlaskConical, Settings, BookOpen, Plus, FileText } from "lucide-react";
+import { CreatePlanDialog } from "@/components/plan/create-plan-dialog";
+import { PlanContextMenu } from "@/components/plan/plan-context-menu";
 import {
   Sidebar,
   SidebarContent,
@@ -51,8 +54,23 @@ export function AppSidebar() {
   const [location, setLocation] = useLocation();
   const [showLogoutDialog, setShowLogoutDialog] = useState(false);
   const [logoError, setLogoError] = useState(false);
+  const [showCreatePlanDialog, setShowCreatePlanDialog] = useState(false);
+
+  interface PlanListItem {
+    id: string;
+    name: string;
+    brandId: string;
+  }
+
+  const showPlansSection = user?.role === "franchisee" || user?.role === "franchisor";
+  const { data: plans } = useQuery<PlanListItem[]>({
+    queryKey: ["/api/plans"],
+    enabled: !!user && showPlansSection,
+  });
 
   if (!user) return null;
+
+  const activePlanId = location.match(/^\/plans\/([^/]+)/)?.[1] ?? null;
 
   const realRole = user._realUser?.role ?? user.role;
   const isRealAdmin = realRole === "katalyst_admin" || realRole === "franchisor";
@@ -123,6 +141,54 @@ export function AppSidebar() {
               </SidebarMenu>
             </SidebarGroupContent>
           </SidebarGroup>
+
+          {showPlansSection && plans && plans.length > 0 && (
+            <SidebarGroup>
+              <SidebarGroupLabel className="flex items-center justify-between" data-testid="text-sidebar-my-plans">
+                <span>MY PLANS</span>
+                {sidebarState === "expanded" && (
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-5 w-5"
+                    onClick={() => setShowCreatePlanDialog(true)}
+                    data-testid="button-sidebar-create-plan"
+                  >
+                    <Plus className="h-3 w-3" />
+                  </Button>
+                )}
+              </SidebarGroupLabel>
+              <SidebarGroupContent>
+                <SidebarMenu>
+                  {plans.map((plan) => (
+                    <SidebarMenuItem key={plan.id}>
+                      <SidebarMenuButton
+                        isActive={activePlanId === plan.id}
+                        onClick={() => setLocation(`/plans/${plan.id}`)}
+                        data-testid={`nav-plan-${plan.id}`}
+                        tooltip={plan.name}
+                        className="group/plan"
+                      >
+                        <FileText className="shrink-0" />
+                        <span className="truncate flex-1">{plan.name}</span>
+                        {sidebarState === "expanded" && (
+                          <span className="opacity-0 group-hover/plan:opacity-100 transition-opacity" onClick={(e) => e.stopPropagation()}>
+                            <PlanContextMenu
+                              planId={plan.id}
+                              planName={plan.name}
+                              isActivePlan={activePlanId === plan.id}
+                              isLastPlan={plans.length <= 1}
+                              nextPlanId={plans.find((p) => p.id !== plan.id)?.id ?? null}
+                            />
+                          </span>
+                        )}
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
+                  ))}
+                </SidebarMenu>
+              </SidebarGroupContent>
+            </SidebarGroup>
+          )}
 
           {showPlanSection && (
             <SidebarGroup>
@@ -289,6 +355,11 @@ export function AppSidebar() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <CreatePlanDialog
+        open={showCreatePlanDialog}
+        onOpenChange={setShowCreatePlanDialog}
+      />
     </>
   );
 }

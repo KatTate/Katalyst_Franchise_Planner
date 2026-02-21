@@ -9,6 +9,7 @@ import { useToast } from "@/hooks/use-toast";
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
   DialogFooter,
@@ -70,6 +71,7 @@ export function CreatePlanDialog({ open, onOpenChange }: CreatePlanDialogProps) 
       <DialogContent data-testid="dialog-create-plan">
         <DialogHeader>
           <DialogTitle data-testid="text-create-plan-title">Create New Plan</DialogTitle>
+          <DialogDescription>Give your plan a name, like a location or scenario.</DialogDescription>
         </DialogHeader>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">

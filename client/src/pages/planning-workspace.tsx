@@ -162,9 +162,11 @@ export default function PlanningWorkspace() {
   return (
     <div data-testid="planning-workspace" className="flex flex-col h-full">
       <PlanningHeader
+        planId={planId}
         planName={plan.name || "My Plan"}
         saveStatus={saveStatus}
         onRetrySave={retrySave}
+        onNameChange={(newName) => setActivePlanName(newName)}
       />
       <div className="flex-1 min-h-0 flex flex-col">
         {renderWorkspaceContent()}
