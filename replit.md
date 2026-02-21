@@ -10,6 +10,8 @@ When the user triggers an agent or workflow, the AI MUST load the referenced fil
 
 ## UI/UX Decisions
 - **Navigation:** A two-door sidebar model ("My Plan" and "Reports").
+- **Two-Surface Design Principle (Epic 7):** Forms (My Plan) = onboarding wizard for less experienced personas. Reports = power editing surface where all financial assumptions are editable inline. Expert users skip Forms entirely and build their plan directly in Reports. Forms does NOT replicate Reports' granular per-year or per-month editing.
+- **Per-Year & Per-Month Independence:** All financial assumptions support per-year independence (5 values). Qualifying fields (revenue, COGS%, labor%, marketing%) additionally support per-month independence (60 values) for seasonality modeling. Drill-down UI (annual → quarterly → monthly) provides progressive disclosure.
 - **AI Planning Assistant:** A slide-in panel within "My Plan," not a separate workspace mode.
 - **Color Scheme:** "Gurple" (#A9A2AA) for advisory panels; red reserved for errors.
 - **White-labeling:** Branded shell with Katalyst identity, overriding `--primary`, `--primary-foreground`, and `--ring` CSS variables. `--katalyst-brand` for specific Katalyst elements.

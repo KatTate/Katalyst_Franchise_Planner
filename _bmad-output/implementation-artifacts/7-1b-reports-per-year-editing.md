@@ -1,120 +1,180 @@
-# Story 7.1b: Reports Per-Year Inline Editing
+# Story 7.1b: Make All Financial Assumptions Editable in Reports
 
 Status: ready-for-dev
 
 ## Story
 
-As a franchisee,
-I want to edit each year's financial assumption independently in the Reports view,
-so that I can fine-tune my 5-year projections directly within the financial statements (FR7i).
+As a franchisee fine-tuning my 5-year plan,
+I want to click on any financial assumption in my Reports — revenue, COGS, rent, salaries, royalties, marketing, all of it — and change it for any year, quarter, or month,
+so that I can model exactly how my business will evolve over time, the way I would in a spreadsheet, but with the math handled for me.
+
+## Design Principle
+
+**Reports is the power editing surface.** Forms (My Plan) is the onboarding wizard for beginners. Reports is where all users — especially experienced operators — do their real work. Expert users skip Forms entirely and build their plan right in the financial statements. Every financial assumption must be editable inline in Reports, with per-year independence at minimum, and per-month independence for fields where it makes business sense (revenue, costs, growth rates). The drill-down UI (annual → quarterly → monthly) provides progressive disclosure so users aren't overwhelmed with 60 columns.
 
 ## Acceptance Criteria
 
-**AC-1: Reports inline editing supports independent per-year values**
+**AC-1: Every financial assumption is editable in Reports P&L**
 
-Given I am editing inputs via Reports inline editing (Financial Statement tabs)
-When I edit a value in a specific year column
-Then only that year's value changes — other years retain their independent values
-And the linked-column broadcast behavior from Story 5.2 is removed (editing one year no longer updates all years)
-And the link icons in column headers and the 200ms flash animation on non-edited columns are removed
+Given I am viewing the P&L tab in Reports
+When any financial assumption row is displayed
+Then ALL of the following rows are inline-editable with per-year independence:
 
-**AC-2: "Copy Year 1 to all years" action**
+| Row | Field Path | Format | Stored Granularity | Per-Month Capable |
+|-----|-----------|--------|-------------------|-------------------|
+| Revenue | `revenue.monthlyAuv` | currency | monthly | Yes |
+| Growth Rate | `revenue.growthRates` | percentage | — | No |
+| COGS % | `operatingCosts.cogsPct` | percentage | — | Yes |
+| Direct Labor % | `operatingCosts.laborPct` | percentage | — | Yes |
+| Royalty % | `operatingCosts.royaltyPct` | percentage | — | No |
+| Ad Fund % | `operatingCosts.adFundPct` | percentage | — | No |
+| Marketing % | `operatingCosts.marketingPct` | percentage | — | Yes |
+| Other OpEx % | `operatingCosts.otherOpexPct` | percentage | — | No |
+| Facilities ($) | `operatingCosts.facilitiesAnnual` | currency | annual | No |
+| Mgmt Salaries ($) | `operatingCosts.managementSalariesAnnual` | currency | annual | No |
+| Payroll Tax % | `operatingCosts.payrollTaxPct` | percentage | — | No |
+| Target Pre-Tax Profit % | `profitabilityAndDistributions.targetPreTaxProfitPct` | percentage | — | No |
+| Distributions ($) | `profitabilityAndDistributions.distributions` | currency | annual | No |
+| Shareholder Salary Adj ($) | `profitabilityAndDistributions.shareholderSalaryAdj` | currency | annual | No |
+| Non-CapEx Investment ($) | `profitabilityAndDistributions.nonCapexInvestment` | currency | annual | No |
 
-Given I am editing a per-year field in Reports inline editing
-When I want to broadcast Year 1's value to all years
-Then a "Copy Year 1 to all years" action is available (button or context menu near the input row, not a column header feature)
-And clicking "Copy Year 1 to all years" shows a confirmation prompt ("This will overwrite Years 2–5 with Year 1's value. Continue?") before executing, to prevent accidental data loss
-And clicking Cancel in the confirmation prompt makes no changes to any year's values
+And editing a value in Year 3 does NOT change Year 1, 2, 4, or 5
+And the drill-down display shows correct breakdowns at every level (annual → quarterly → monthly)
+And currency fields with `storedGranularity` apply correct reverse-scaling when edited at non-stored levels (e.g., editing annual revenue divides by 12 to store monthly AUV)
 
-**AC-3: INPUT_FIELD_MAP extended for new editable rows**
+**AC-2: Per-month independence for qualifying fields**
 
-Given the Reports P&L tab renders financial statement rows
-When per-year editable rows are displayed
-Then all existing P&L editable rows (`monthly-revenue`, `cogs-pct`, `dl-pct`, `marketing`, `other-opex`) are per-year editable
-And new editable rows are added: `facilities`, `management-salaries`, `payroll-tax-pct`, `royalty-pct`, `ad-fund-pct`
-And `other-opex` changes from currency input to percentage input (reflecting the unit correction in Story 7.1a)
+Given a field is marked as "Per-Month Capable" (revenue, COGS%, labor%, marketing%)
+When I drill down to monthly view and edit a specific month's value
+Then that month's value changes independently — other months within the same year retain their values
+And the quarterly and annual totals/averages recalculate to reflect the change
+And the data model stores 60 `FinancialFieldValue` elements (12 months × 5 years) for per-month fields
+And migration from the current 5-element per-year arrays expands losslessly by repeating each year's value 12 times
+
+**Implementation note — per-month field storage:**
+- Per-month fields: `FinancialFieldValue[60]` — index `(yearIndex * 12) + monthIndex`
+- Per-year fields: `FinancialFieldValue[5]` — index `yearIndex` (unchanged from 7.1a)
+- Single-value fields: `FinancialFieldValue` (unchanged)
+- The engine already iterates month-by-month (0..59). For per-month fields, the engine reads `field[monthIndex]` instead of `field[Math.floor(monthIndex / 12)]`. For per-year fields, no engine change needed.
+- `InputFieldMapping` gains a `granularity: "per-year" | "per-month" | "single"` property that replaces/extends `storedGranularity`
+
+**AC-3: "Copy Year 1 to all years" action**
+
+Given I am viewing a per-year or per-month editable row in Reports
+When I want to broadcast Year 1's values to all years
+Then a "Copy Year 1 to all years" action is available (button or context menu near the row)
+And clicking it shows a confirmation prompt ("This will overwrite Years 2–5 with Year 1's values. Continue?")
+And for per-month fields, this copies all 12 monthly values from Year 1 into Years 2–5 (preserving any monthly variation within Year 1)
+And clicking Cancel makes no changes
+
+**AC-4: Legacy linked-column cleanup**
+
+Given the per-year independent editing replaces the old linked-column behavior from Story 5.2
+When inline editing is active
+Then the link icons in column headers are removed
+And the `flashingRows` state and `animate-flash-linked` CSS class are removed
+And editing one year never triggers visual feedback on other years
 
 ## Dev Notes
 
 ### Navigation
 
-User reaches this feature via: **Sidebar → Reports → P&L tab**. All per-year inline editing in this story occurs within the P&L tab of the Reports view.
+User reaches this via: **Sidebar → Reports → P&L tab**. All inline editing occurs within the P&L tab. (Balance Sheet and Valuation editing are in Story 7.1e.)
 
-### Architecture Patterns to Follow
+### Architecture — What Already Works
 
-- **PerYearEditableRow composition pattern** _(Architecture §4.3 Component Hierarchy, §4.4 Two-Surface Principle)_: Create a new `PerYearEditableRow` component that *composes* `InlineEditableCell` five times (one per year). This respects the anti-pattern "DO NOT duplicate existing code" while providing the per-year editing semantics. `PerYearEditableRow` handles year index routing, "Copy Year 1 to all" context, and row-level concerns. Each cell delegates to `InlineEditableCell` for the actual edit UX.
-- **FIELD_METADATA registry** _(Architecture §3.2 Per-Field Metadata Pattern)_: `client/src/lib/field-metadata.ts` defines labels, format types for all fields. The new fields and categories from Story 7.1a will already be registered.
-- **INPUT_FIELD_MAP** _(Architecture §4.3 Component Hierarchy)_: `client/src/components/planning/statements/input-field-map.ts` maps P&L row keys to `PlanFinancialInputs` paths for inline editing. Must be extended for new editable rows.
-- **Auto-save pattern** _(Architecture §5.2 Auto-Save & Crash Recovery)_: Both surfaces write to the same `financial_inputs` JSONB column via `PATCH /api/plans/:id`. Debounced at 2s idle.
-- **data-testid convention** _(Architecture §4.5 Testing Conventions)_: Financial values use `value-{metric}-{period}` pattern. Interactive elements use `{action}-{target}`.
-- **Component file naming** _(Architecture §4.1 File Organization)_: kebab-case (`per-year-editable-row.tsx`). Component names PascalCase (`PerYearEditableRow`).
+The 7.1a foundation already provides:
+- Per-year `FinancialFieldValue[]` arrays in `PlanFinancialInputs`
+- `unwrapForEngine()` extracts per-year tuples for the engine
+- Column manager produces year-indexed columns; `PnlRow` renders `InlineEditableCell` per column
+- `handleCommitEdit` extracts year index from column key and writes to the correct array position
+- `storedGranularity` on `InputFieldMapping` with `scaleForStorage()` for reverse-scaling
+- Revenue drill-down already demonstrates the pattern: annual shows $331K, drill into Q1 shows correct breakdown, monthly shows individual AUV
+
+### What This Story Adds
+
+1. **Extend `INPUT_FIELD_MAP`** — add entries for all missing editable rows (facilities, management-salaries, payroll-tax-pct, royalty-pct, ad-fund-pct, growth-rates, distributions, etc.)
+2. **Per-month data model** — expand qualifying fields from `FinancialFieldValue[5]` to `FinancialFieldValue[60]`; add migration
+3. **Per-month engine consumption** — update `unwrapForEngine()` to produce 60-element tuples for per-month fields; update engine to consume them
+4. **Per-month editing** — at monthly drill level, edits write to the specific month index; at quarterly/annual level, edits distribute across constituent months
+5. **Copy Year 1 to all** — new UI action with confirmation dialog
+6. **Flash/link cleanup** — remove `flashingRows`, `animate-flash-linked`, `isFlashing` prop
 
 ### Anti-Patterns & Hard Constraints
 
-- **DO NOT modify `components/ui/*`** — these are shadcn/ui primitives and must never be manually edited.
-- **DO NOT modify `server/index.ts`, `server/vite.ts`, `server/static.ts`** — infrastructure files.
-- **DO NOT create new API endpoints** — the existing `PATCH /api/plans/:id` handles all input updates.
-- **DO NOT add `if (mode === 'quick-entry')` conditionals** — the two-surface architecture means Reports inline editing is always editable. No mode toggles.
-- **DO NOT use `fill5()` for fields that now have per-year input** — each year is independently editable.
-- **DO NOT introduce new npm packages** — all required UI components already exist in the project.
+- **DO NOT modify `components/ui/*`** — shadcn/ui primitives
+- **DO NOT create new API endpoints** — use existing `PATCH /api/plans/:id`
+- **DO NOT create a separate `PerYearEditableRow` component** — the existing `PnlRow` + `InlineEditableCell` + column manager already handle per-year rendering natively
+- **DO NOT introduce new npm packages**
+- **DO NOT modify `server/index.ts`, `server/vite.ts`, `server/static.ts`**
 
-### UI/UX Deliverables
+### Per-Month Engine Integration
 
-- **Target surface**: Reports view → P&L tab (`client/src/components/planning/statements/pnl-tab.tsx`)
-- **New component**: `PerYearEditableRow` — renders 5 inline-editable cells (one per year column) for each per-year financial field, with a "Copy Year 1 to all years" action
-- **Removed UI elements**: Link icons in year column headers, 200ms flash animation on non-edited columns
-- **Confirmation dialog**: Standard confirmation prompt for "Copy Year 1 to all years" action (use existing shadcn AlertDialog or equivalent pattern already in the project)
+The engine's `FinancialInputs` interface currently uses 5-element tuples: `cogsPct: [number, number, number, number, number]`. For per-month fields, this becomes a 60-element array. The engine loop already runs `for (let m = 0; m < 60; m++)`. The change is the lookup:
 
-### UI States
+```typescript
+// Current (per-year): same value for all months in a year
+const cogs = inputs.operatingCosts.cogsPct[Math.floor(m / 12)];
 
-- **Loading**: While auto-save is persisting a per-year edit, the cell should show the existing save indicator pattern (debounced 2s idle). No additional loading state needed for individual cell edits.
-- **Error / save failure**: If `PATCH /api/plans/:id` fails during save, show inline retry per the architecture's error handling pattern (Architecture §5.2) — never silently drop changes.
-- **Error / copy-all failure**: If save fails during "Copy Year 1 to all years", show an error toast and revert all year values to their pre-copy state.
-- **Success**: On successful "Copy Year 1 to all years", all 5 year cells update to reflect Year 1's value. No additional success toast needed — the visual update is sufficient confirmation.
-- **Empty state**: N/A — per-year fields always have a value (defaulted from brand parameters or migration).
+// Per-month: unique value per month
+const cogs = inputs.operatingCosts.cogsPct[m];
+```
 
-### Gotchas & Integration Warnings
+`unwrapForEngine()` handles the expansion — per-year fields repeat each value 12 times, per-month fields pass through directly.
 
-- **Inline editing cell targeting**: Currently `INPUT_FIELD_MAP` maps row keys to single `PlanFinancialInputs` paths. With per-year editing, the column index must also be passed to identify which year's value is being edited. The `onCellEdit` callback will need to accept a year index parameter.
-- **Flash animation removal**: `animate-flash-linked` CSS class in `inline-editable-cell.tsx:92` and the `flashingRows` state management in `pnl-tab.tsx:403-434` implement the linked-column broadcast animation. Remove this code entirely — it's obsolete when columns are independent.
-- **`use-field-editing.ts` hook update**: The field editing hook must be updated to handle per-year array updates (year index parameter).
+### Migration Strategy
+
+Same lossless pattern as 7.1a:
+1. Detect 5-element arrays for per-month-capable fields
+2. Expand to 60 elements: `year[i]` → `months[i*12 .. i*12+11]` (repeat value 12 times)
+3. Preserve all `FinancialFieldValue` metadata (source, brandDefault, etc.)
+4. Migration runs on plan load, not as a batch job
 
 ### File Change Summary
 
 | File | Action | Notes |
 |------|--------|-------|
-| `client/src/components/planning/statements/per-year-editable-row.tsx` | CREATE | New component composing 5 `InlineEditableCell` instances with year-index routing and "Copy Year 1 to all" action. |
-| `client/src/components/planning/statements/input-field-map.ts` | MODIFY | Extend `INPUT_FIELD_MAP` with new editable rows (facilities, management-salaries, payroll-tax-pct, royalty-pct, ad-fund-pct). Update `other-opex` from currency to percentage format. |
-| `client/src/components/planning/statements/pnl-tab.tsx` | MODIFY | Remove linked-column flash behavior (`flashingRows`, `animate-flash-linked`). Update `handleCommitEdit` to pass year index. Integrate `PerYearEditableRow`. Add "Copy Year 1 to all" action. |
-| `client/src/components/planning/statements/inline-editable-cell.tsx` | MODIFY | Remove `isFlashing` prop and `animate-flash-linked` class (linked columns removed). |
-| `client/src/hooks/use-field-editing.ts` | MODIFY | Update field editing hook to handle per-year array updates (year index parameter). |
+| `shared/financial-engine.ts` | MODIFY | Expand per-month fields in `FinancialInputs` from 5-tuple to 60-element array. Update engine loop to use per-month lookup for qualifying fields. |
+| `shared/plan-initialization.ts` | MODIFY | Add migration for 5→60 element expansion. Update `unwrapForEngine()` for per-month fields. |
+| `client/src/components/planning/statements/input-field-map.ts` | MODIFY | Add all missing `INPUT_FIELD_MAP` entries. Add `granularity` property. |
+| `client/src/components/planning/statements/pnl-tab.tsx` | MODIFY | Remove `flashingRows` state, link icons, flash animation. Add "Copy Year 1 to all" action. Update `handleCommitEdit` for per-month writes. |
+| `client/src/components/planning/statements/inline-editable-cell.tsx` | MODIFY | Remove `isFlashing` prop and `animate-flash-linked` class. |
+| `client/src/hooks/use-field-editing.ts` | MODIFY | Support per-month array writes (month index parameter). |
+| `client/src/lib/field-metadata.ts` | MODIFY | Update labels/format for new editable fields if needed. |
+| `shared/financial-engine.test.ts` | MODIFY | Add tests for per-month input consumption. |
+| `shared/plan-initialization.test.ts` | MODIFY | Add tests for 5→60 migration. |
 
 ### Testing Expectations
 
-- **E2E tests (Playwright)**:
-  - Edit Year 3 of a per-year field in Reports → confirm Year 1, 2, 4, 5 unchanged
-  - "Copy Year 1 to all years" → confirm dialog appears → confirm all years updated
-  - "Copy Year 1 to all years" → Cancel → confirm no years changed
-  - Verify new editable rows (facilities, management-salaries, etc.) are editable in P&L tab
-  - Verify `other-opex` shows as percentage input (not currency)
-  - **Cross-surface consistency**: Edit a per-year value in Reports → switch to Forms mode → confirm value reflected correctly
+- **E2E (Playwright)**:
+  - Click on Facilities Year 3 in P&L → edit value → confirm Year 1, 2, 4, 5 unchanged, Year 3 total OpEx recalculated
+  - Click on Management Salaries Year 2 → edit → confirm saved and reflected in EBITDA
+  - Click on Royalty % Year 4 → edit → confirm only Year 4 royalty changes
+  - Drill into Year 1 quarterly → drill into Q2 monthly → edit Month 5 COGS% → confirm Month 4, 6 unchanged, Q2 average recalculated, Year 1 annual recalculated
+  - "Copy Year 1 to all" → confirm dialog → confirm all years updated → for per-month field, confirm all 12 monthly values copied
+  - "Copy Year 1 to all" → Cancel → confirm no changes
+  - Verify flash animation and link icons are gone
+  - Verify Other OpEx displays as percentage (not currency)
+
+- **Unit tests**:
+  - Migration: 5-element → 60-element expansion preserves values and metadata
+  - Engine: per-month inputs produce correct monthly output (Month 3 COGS ≠ Month 7 COGS when inputs differ)
+  - `scaleForStorage`: reverse-scaling for annual→monthly, quarterly→monthly for currency fields
 
 ### References
 
-- **PRD Requirement**: FR7i (per-year independent input editing)
-- **Architecture Document**: `_bmad-output/planning-artifacts/architecture.md`
-  - §3.2 Per-Field Metadata Pattern — field structure within `financial_inputs` JSONB
-  - §4.3 Component Hierarchy — `<PnlTab />` with inline-editable input cells
-  - §4.4 Two-Surface Principle — My Plan (forms) and Reports (inline editing) share the same `financial_inputs` state
-  - §5.2 Auto-Save & Crash Recovery — debounced save, inline retry on failure
-- **Epics Document**: `_bmad-output/planning-artifacts/epics.md` — Epic 7, Story 7.1b (line 1935)
-- **Predecessor Story**: Story 5.2 introduced linked-column broadcast behavior; this story removes it
+- **PRD Requirements**: FR7i (per-year independent editing), FR7j (full input assumption set)
+- **Predecessor**: Story 7.1a (data model foundation, per-year arrays, drill-down display infrastructure)
+- **Design Principle**: Reports = power editing surface; Forms = onboarding only
+
+### Scope Risk Note
+
+Per-month independence (AC-2) is a material data-model and engine expansion (5→60 element arrays, migration, engine lookup changes). If timeline risk emerges during implementation, per-month independence can be split into a follow-up story 7.1b.1 without blocking 7.1c/7.1d. The per-year editing (AC-1) and Copy Year 1 (AC-3) are the hard prerequisites for downstream stories.
 
 ### Dependencies
 
-- **Depends on**: Story 7.1a (Data Model Restructuring & Migration)
-- **Can parallel with**: Story 7.1c (Forms Per-Year Layout)
-- **Blocks**: Nothing directly (but Story 7.1d's Reports-side new field editing depends on the `PerYearEditableRow` component created here)
+- **Depends on**: Story 7.1a (DONE)
+- **Blocks**: Story 7.1c, 7.1d (both depend on "Fine-tune in Reports" being functional), 7.1e (can parallel once editing patterns are established)
 
 ### Completion Notes
 

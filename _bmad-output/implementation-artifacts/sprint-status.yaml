@@ -1,4 +1,5 @@
 # generated: 2026-02-09
+# updated: 2026-02-21 (Epic 7 Party Mode review: 7.1a→done, 7.1b-7.1d rewritten, 7.1e created)
 # updated: 2026-02-20 (Story 10.2 context document created: Multi-Chart Sensitivity Dashboard)
 # project: Katalyst Growth Planner
 # project_key: NOKEY
@@ -563,15 +564,16 @@ development_status:
   epic-6-retrospective: optional
 
   # Epic 7: Per-Year Inputs & Multi-Plan Management [NEW]
-  # Year 1-5 input columns + plan CRUD
-  # Dependencies: Epic 5 (linked-column indicators provide visual foundation)
-  # Story 7.1 split into 7.1a–7.1d per Party Mode review (2026-02-21)
-  # Dependency chain: 7.1a → 7.1b + 7.1c (parallel) → 7.1d
+  # Design Principle: Forms = onboarding wizard, Reports = power editing surface
+  # Expert users skip Forms entirely and edit directly in Reports
+  # Story 7.1 split into 7.1a–7.1e per Party Mode review (2026-02-21)
+  # Dependency chain: 7.1a (DONE) → 7.1b → 7.1c + 7.1d (parallel, depend on 7.1b) → 7.1e (parallel with 7.1c/d)
   epic-7: in-progress
-  7-1a-data-model-restructuring-migration: in-progress      # Foundation: PlanFinancialInputs per-year arrays, migration, unwrapForEngine, field metadata, sensitivity/scenario engines
-  7-1b-reports-per-year-inline-editing: backlog                # Depends on 7.1a. Reports independent editing, linked-column removal, Copy Year 1, PerYearEditableRow
-  7-1c-forms-per-year-layout: backlog                          # Depends on 7.1a. Can parallel with 7.1b. Forms 5-column layout, new field sections
-  7-1d-new-field-surfaces: backlog                             # Depends on 7.1a + 7.1b + 7.1c. Facilities decomposition, Other OpEx %, Balance Sheet/Valuation editing
+  7-1a-data-model-restructuring-migration: done                # Foundation: per-year arrays, migration, drill-down display, storedGranularity, revenue drill-down
+  7-1b-all-fields-editable-reports: ready-for-dev              # REWRITTEN: Make ALL financial assumptions editable in Reports. Per-year + per-month independence. Copy Year 1. Flash cleanup.
+  7-1c-forms-onboarding-new-fields: ready-for-dev              # REWRITTEN/DESCOPED: Forms = onboarding only. Simple single-value inputs. New field sections. No 5-column per-year editing.
+  7-1d-facilities-decomposition-opex: ready-for-dev            # REWRITTEN/SIMPLIFIED: Facilities guided decomposition in Forms + direct total edit in Reports. Other OpEx % correction. Simplified mismatch handling.
+  7-1e-balance-sheet-valuation-editing: ready-for-dev          # NEW: Balance Sheet (AR/AP/Inventory Days, Tax Delay) + Valuation (EBITDA Multiple) inline editing in Reports.
   7-2-plan-crud-navigation: backlog
   epic-7-retrospective: optional
 
