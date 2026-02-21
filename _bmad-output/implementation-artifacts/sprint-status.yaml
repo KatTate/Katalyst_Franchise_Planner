@@ -35,6 +35,7 @@
 # - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
 
 generated: 2026-02-09
+updated: 2026-02-21  # Story 7.1 split into 7.1a-7.1d per Party Mode review
 updated: 2026-02-21  # Story 7.1 context document created (Create Story workflow)
 updated: 2026-02-21  # Story 5H.4 context document created (Create Story workflow)
 updated: 2026-02-21  # SCP-2026-02-21 approved: Epic 10 pivot to user-authored scenario modeling
@@ -342,6 +343,22 @@ story_location: _bmad-output/implementation-artifacts
 #   - Step 5: All findings fixed. Story status → done, sprint-status.yaml synced.
 #   - All 7 ACs verified SATISFIED (AC-2 required H1 fix to become truly functional)
 #   - Next action: Story 5H.3 (Epic 6 AC Audit & User Journeys)
+# 2026-02-21: Story 7.1 split into 7.1a–7.1d (Party Mode review + story grooming)
+#   - Party Mode multi-agent review (Bob, Winston, Amelia, Quinn) identified 9 issues:
+#     Scope (INVEST violation — 8 deliverables), Facilities dual-source-of-truth,
+#     fragile inheritance heuristic, missing migration transactional safety,
+#     otherOpexPct sanity cap, unresolved scenario engine question,
+#     PerYearEditableRow composition pattern, 5 missing test scenarios
+#   - Story 7.1 → 7.1a: Data Model Restructuring & Migration (AC-1, AC-2, AC-7 + fixes)
+#   - New 7.1b: Reports Per-Year Inline Editing (AC-3)
+#   - New 7.1c: Forms Mode Per-Year Layout (AC-4, inheritance simplified to independent fields)
+#   - New 7.1d: New Field Surfaces (AC-5/6/8/9, Facilities source-of-truth resolved)
+#   - Dependency chain: 7.1a → 7.1b + 7.1c (parallel) → 7.1d
+#   - Epics.md updated: Epic 7 story count 2 → 5
+#   - No Course Correct needed — story-level grooming, not strategic pivot
+#   - See story files: 7-1-per-year-input-columns.md (now 7.1a),
+#     7-1b-reports-per-year-editing.md, 7-1c-forms-per-year-layout.md,
+#     7-1d-new-field-surfaces.md
 # 2026-02-21: Story 7.1 context document created (Create Story workflow)
 #   - Full story file: 7-1-per-year-input-columns.md (ready-for-dev)
 #   - 7 acceptance criteria covering: PlanFinancialInputs per-year restructuring (AC-1),
@@ -548,8 +565,13 @@ development_status:
   # Epic 7: Per-Year Inputs & Multi-Plan Management [NEW]
   # Year 1-5 input columns + plan CRUD
   # Dependencies: Epic 5 (linked-column indicators provide visual foundation)
+  # Story 7.1 split into 7.1a–7.1d per Party Mode review (2026-02-21)
+  # Dependency chain: 7.1a → 7.1b + 7.1c (parallel) → 7.1d
   epic-7: in-progress
-  7-1-per-year-input-columns: ready-for-dev
+  7-1a-data-model-restructuring-migration: ready-for-dev      # Foundation: PlanFinancialInputs per-year arrays, migration, unwrapForEngine, field metadata, sensitivity/scenario engines
+  7-1b-reports-per-year-inline-editing: backlog                # Depends on 7.1a. Reports independent editing, linked-column removal, Copy Year 1, PerYearEditableRow
+  7-1c-forms-per-year-layout: backlog                          # Depends on 7.1a. Can parallel with 7.1b. Forms 5-column layout, new field sections
+  7-1d-new-field-surfaces: backlog                             # Depends on 7.1a + 7.1b + 7.1c. Facilities decomposition, Other OpEx %, Balance Sheet/Valuation editing
   7-2-plan-crud-navigation: backlog
   epic-7-retrospective: optional
 
