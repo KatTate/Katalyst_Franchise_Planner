@@ -18,6 +18,9 @@ import {
   type InsertImpersonationAuditLog,
   type BrandValidationRun,
   type InsertBrandValidationRun,
+  type FddIngestionRun,
+  type InsertFddIngestionRun,
+  type FddExtractionResult,
   users,
   invitations,
   brands,
@@ -25,6 +28,7 @@ import {
   brandAccountManagers,
   impersonationAuditLogs,
   brandValidationRuns,
+  fddIngestionRuns,
 } from "@shared/schema";
 import type { StartupCostLineItem } from "@shared/financial-engine";
 import { buildPlanFinancialInputs, buildPlanStartupCosts, migrateStartupCosts } from "@shared/plan-initialization";
@@ -110,6 +114,11 @@ export interface IStorage {
   createBrandValidationRun(run: InsertBrandValidationRun): Promise<BrandValidationRun>;
   getBrandValidationRuns(brandId: string): Promise<BrandValidationRun[]>;
   getBrandValidationRun(runId: string): Promise<BrandValidationRun | undefined>;
+
+  createFddIngestionRun(run: InsertFddIngestionRun): Promise<FddIngestionRun>;
+  getFddIngestionRuns(brandId: string): Promise<FddIngestionRun[]>;
+  getFddIngestionRun(runId: string): Promise<FddIngestionRun | undefined>;
+  updateFddIngestionRun(runId: string, data: Partial<Pick<FddIngestionRun, "status" | "extractedData" | "errorMessage" | "appliedAt">>): Promise<FddIngestionRun>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -574,6 +583,34 @@ export class DatabaseStorage implements IStorage {
       })
       .returning();
     return created;
+  }
+
+  async createFddIngestionRun(run: InsertFddIngestionRun): Promise<FddIngestionRun> {
+    const [created] = await db.insert(fddIngestionRuns).values(run as any).returning();
+    return created;
+  }
+
+  async getFddIngestionRuns(brandId: string): Promise<FddIngestionRun[]> {
+    return db
+      .select()
+      .from(fddIngestionRuns)
+      .where(eq(fddIngestionRuns.brandId, brandId))
+      .orderBy(sql`run_at DESC`);
+  }
+
+  async getFddIngestionRun(runId: string): Promise<FddIngestionRun | undefined> {
+    const [run] = await db.select().from(fddIngestionRuns).where(eq(fddIngestionRuns.id, runId)).limit(1);
+    return run;
+  }
+
+  async updateFddIngestionRun(runId: string, data: Partial<Pick<FddIngestionRun, "status" | "extractedData" | "errorMessage" | "appliedAt">>): Promise<FddIngestionRun> {
+    const updateData: Record<string, any> = {};
+    if (data.status !== undefined) updateData.status = data.status;
+    if (data.extractedData !== undefined) updateData.extractedData = data.extractedData;
+    if (data.errorMessage !== undefined) updateData.errorMessage = data.errorMessage;
+    if (data.appliedAt !== undefined) updateData.appliedAt = data.appliedAt;
+    const [updated] = await db.update(fddIngestionRuns).set(updateData).where(eq(fddIngestionRuns.id, runId)).returning();
+    return updated;
   }
 }
 

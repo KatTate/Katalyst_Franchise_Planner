@@ -356,3 +356,32 @@ export const insertBrandValidationRunSchema = createInsertSchema(brandValidation
 });
 export type InsertBrandValidationRun = z.infer<typeof insertBrandValidationRunSchema>;
 export type BrandValidationRun = typeof brandValidationRuns.$inferSelect;
+
+// ─── FDD Ingestion Runs (FDD Document AI Ingestion) ──────────────────────
+
+export interface FddExtractionResult {
+  parameters: Partial<BrandParameters>;
+  startupCosts: StartupCostTemplate;
+  confidence: Record<string, "high" | "medium" | "low">;
+  extractionNotes: string[];
+}
+
+export const fddIngestionRuns = pgTable("fdd_ingestion_runs", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  brandId: varchar("brand_id").notNull().references(() => brands.id),
+  filename: text("filename").notNull(),
+  status: text("status").notNull().$type<"processing" | "completed" | "failed" | "applied_parameters" | "applied_startup_costs" | "applied_both">(),
+  extractedData: jsonb("extracted_data").$type<FddExtractionResult>(),
+  errorMessage: text("error_message"),
+  runBy: varchar("run_by").references(() => users.id),
+  runAt: timestamp("run_at").defaultNow().notNull(),
+  appliedAt: timestamp("applied_at"),
+}, (table) => [
+  index("idx_fdd_ingestion_runs_brand").on(table.brandId),
+]);
+
+export const insertFddIngestionRunSchema = createInsertSchema(fddIngestionRuns).omit({
+  id: true,
+});
+export type InsertFddIngestionRun = z.infer<typeof insertFddIngestionRunSchema>;
+export type FddIngestionRun = typeof fddIngestionRuns.$inferSelect;

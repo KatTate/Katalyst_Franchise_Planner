@@ -12,6 +12,7 @@ import usersRouter from "./routes/users";
 import financialEngineRouter from "./routes/financial-engine";
 import plansRouter from "./routes/plans";
 import helpRouter from "./routes/help";
+import fddIngestionRouter from "./routes/fdd-ingestion";
 
 export async function registerRoutes(
   httpServer: Server,
@@ -49,6 +50,7 @@ export async function registerRoutes(
   app.use("/api/financial-engine", financialEngineRouter);
   app.use("/api/plans", plansRouter);
   app.use("/api/help", helpRouter);
+  app.use("/api/brands", fddIngestionRouter);
 
   return httpServer;
 }
