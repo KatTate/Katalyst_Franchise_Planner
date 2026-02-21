@@ -248,17 +248,31 @@ All 9 acceptance criteria verified and passing. Implementation follows existing 
 | File | Action | Description |
 |------|--------|-------------|
 | `server/storage.ts` | MODIFY | Added `clonePlan()` and `getPlanCountByUser()` to IStorage interface and DatabaseStorage |
-| `server/routes/plans.ts` | MODIFY | Added `POST /api/plans/:planId/clone` and `DELETE /api/plans/:planId` endpoints; enhanced `POST /api/plans` to seed brand defaults |
-| `shared/plan-initialization.ts` | CREATE | `buildPlanFinancialInputs()` and `buildPlanStartupCosts()` for brand-default seeding |
+| `server/routes/plans.ts` | MODIFY | Added `POST /api/plans/:planId/clone` and `DELETE /api/plans/:planId` endpoints; enhanced `POST /api/plans` to seed brand defaults; added demo plan deletion guard and server-side name validation (max 100 chars) on PATCH |
 | `client/src/components/plan/create-plan-dialog.tsx` | CREATE | Dialog with name input, validation (non-empty, max 100 chars), mutation to POST /api/plans |
 | `client/src/components/plan/delete-plan-dialog.tsx` | CREATE | AlertDialog with type-to-confirm, last-plan disabled state |
-| `client/src/components/plan/plan-context-menu.tsx` | CREATE | DropdownMenu with Rename, Clone, Delete; isLastPlan tooltip for delete |
-| `client/src/components/app-sidebar.tsx` | MODIFY | Added MY PLANS section with plan list, "+" create button, context menus, active highlighting |
+| `client/src/components/plan/plan-context-menu.tsx` | CREATE | DropdownMenu with Rename, Clone, Delete; isLastPlan tooltip for delete; rename dialog for context-menu rename and post-clone rename prompt |
+| `client/src/components/plan/rename-plan-dialog.tsx` | CREATE | Reusable rename dialog with name input, validation, PATCH mutation; used by context menu rename and post-clone rename flow |
+| `client/src/components/app-sidebar.tsx` | MODIFY | Added MY PLANS section with plan list, "+" create button, context menus, active highlighting, plan status badges (Draft/Active/Done) |
 | `client/src/pages/dashboard.tsx` | MODIFY | Added "New Plan" button, context menus on plan cards |
-| `client/src/components/planning/planning-header.tsx` | MODIFY | Added inline plan name editing (pencil icon, input, Enter/Escape, confirm/cancel buttons) |
+| `client/src/pages/planning-workspace.tsx` | MODIFY | Updated PlanningHeader prop wiring for inline rename support |
+| `client/src/components/planning/planning-header.tsx` | MODIFY | Added inline plan name editing (click-to-edit on name text + pencil icon, input, Enter/Escape, confirm/cancel buttons); fixed double-save race condition with onMouseDown preventDefault on buttons |
+
+### Code Review Fixes Applied
+| Issue | Severity | Fix |
+|-------|----------|-----|
+| AC-5: Rename via context menu non-functional (onRename never passed) | HIGH | PlanContextMenu now always shows Rename and opens RenamePlanDialog internally when no onRename callback provided |
+| AC-3: No inline rename prompt after cloning | HIGH | After clone, PlanContextMenu opens RenamePlanDialog for the cloned plan before navigating |
+| AC-6: Missing plan status badges in sidebar | HIGH | Added status field to PlanListItem, rendered colored badges (Draft/Active/Done) |
+| Demo plan deletion guard missing | MEDIUM | Added isDemo check on plan owner in DELETE endpoint, returns 403 |
+| Double-save race condition on rename | MEDIUM | Added onMouseDown preventDefault on confirm/cancel buttons to prevent blur+click double-fire |
+| Server-side name validation gap (PATCH) | MEDIUM | Added explicit name length validation (1-100 chars) in PATCH handler |
+| Plan name not clickable for edit | LOW | Added onClick handler to h1 plan name text for click-to-edit |
+| File List: shared/plan-initialization.ts falsely listed as CREATE | LOW | Removed from File List (file existed from Story 3.2) |
+| File List: planning-workspace.tsx undocumented | LOW | Added to File List |
 
 ### Testing Summary
 - **E2E (Playwright)**: 2 test suites passed — full CRUD flow (create, clone, delete, rename via API and UI) and visual verification (dashboard, dialog, sidebar)
-- **LSP Diagnostics**: 0 errors, 0 warnings across all 10 changed files
+- **LSP Diagnostics**: 0 errors, 0 warnings across all changed files (post-review-fix scan)
 - **Git Status**: Clean (all changes committed)
 - **AC Coverage**: All 9 ACs verified (AC-1 through AC-9)
