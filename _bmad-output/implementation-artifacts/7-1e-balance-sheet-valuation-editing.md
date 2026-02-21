@@ -103,6 +103,31 @@ And each tab's rendering code checks `isEditableRow()` to determine whether to r
 
 ### Completion Notes
 
+- All 5 acceptance criteria met (AC-1 through AC-5)
+- Single-value fields work correctly — edits apply uniformly, no per-year editing
+- Reused existing InlineEditableCell component and handleCellEdit flow from Story 7.1b
+- Added "decimal" case to InlineEditableCell's formatRawForInput switch for EBITDA multiple
+- Working Capital Assumptions rendered as a new collapsible section in Balance Sheet tab (below Identity Check row)
+- EBITDA Multiple rendered inline in Valuation tab's EBITDA Basis section (Year 1 cell editable, other years display same value)
+- No new API endpoints, npm packages, or UI component modifications required
+
 ### File List
 
+| File | Action | Summary |
+|------|--------|---------|
+| `client/src/components/planning/statements/input-field-map.ts` | MODIFIED | Added 5 INPUT_FIELD_MAP entries: arDays, apDays, inventoryDays, taxPaymentDelayMonths, ebitdaMultiple with singleValue flag, validation constraints (min/max) |
+| `client/src/components/planning/statements/balance-sheet-tab.tsx` | MODIFIED | Added WcAssumptionsSection component, WC_ASSUMPTION_ROWS definition, editing state management (editingWcField), new props (financialInputs, onCellEdit, isSaving) |
+| `client/src/components/planning/statements/valuation-tab.tsx` | MODIFIED | Added EBITDA Multiple editing state, InlineEditableCell rendering for ebitda-multiple row, new props (financialInputs, onCellEdit, isSaving), updated ValSection/ValRow to pass editing props |
+| `client/src/components/planning/statements/inline-editable-cell.tsx` | MODIFIED | Added "decimal" case to formatRawForInput switch |
+| `client/src/components/planning/financial-statements.tsx` | PREVIOUSLY MODIFIED | Already passes financialInputs, onCellEdit, isSaving to BalanceSheetTab and ValuationTab (done in prior session) |
+
 ### Testing Summary
+
+- **E2E (Playwright)**: PASS — Full end-to-end test executed:
+  - Navigated to Reports → Balance Sheet → verified Working Capital Assumptions section visible
+  - All 4 WC fields displayed with correct defaults (AR Days: 30, AP Days: 60, Inventory Days: 60, Tax Delay: 0)
+  - Edited AR Days from 30 to 45 → verified display updated to "45 days"
+  - Navigated to Valuation tab → edited EBITDA Multiple to 3.5 → verified display updated to "3.5x"
+  - All edits persisted in UI
+- **LSP Diagnostics**: 0 errors, 0 warnings across all 5 changed files
+- **Architect Review**: PASS — implementation follows existing patterns, correct single-value semantics
