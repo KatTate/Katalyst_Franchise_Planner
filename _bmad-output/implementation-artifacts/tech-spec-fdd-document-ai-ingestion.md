@@ -89,11 +89,22 @@ Add an FDD document upload and AI extraction feature to the brand admin configur
      extract(pdfBuffer: Buffer, brandName: string): Promise<FddExtractionResult>;
    }
    ```
-3. **multer for file upload**: Standard Express middleware for multipart form data. Stores temporarily on disk, validates file type/size, then reads for API submission.
-4. **`fdd_ingestion_runs` database table**: Track extraction history with status, filename, extracted data snapshot, who ran it, and whether results were applied. Lightweight table — max 10 brands with a handful of runs each.
-5. **Review-before-apply pattern**: AI extraction produces a preview that the admin reviews and edits before committing to the brand configuration. This prevents bad AI output from silently corrupting brand parameters.
-6. **Confidence scoring**: The extraction prompt asks Gemini to rate confidence per field (high/medium/low). Low-confidence fields are highlighted in the review UI.
-7. **Gemini Files API for large PDFs**: For documents exceeding the inline data limit, use Gemini's File API to upload the PDF first, then reference it in the generation request. This handles arbitrarily large FDD documents.
+3. **Merge-before-apply for partial extraction results**: The AI extraction returns `Partial<BrandParameters>` because not all fields may be present in every FDD (e.g., per-year growth rates, working capital months). Before calling the existing `PUT /api/brands/:brandId/parameters` endpoint (which validates against the full `brandParameterSchema`), the apply service must **merge** extracted values into either (a) the brand's existing `brandParameters` if already configured, or (b) a complete default parameter template with sensible zero/default values. This merge happens server-side in the apply route handler or service — the client sends the full merged object. This ensures the existing Zod validation at the `PUT` endpoint always receives a complete `BrandParameters` object and never fails due to missing fields from partial extraction.
+   ```typescript
+   // Merge strategy (in fdd-ingestion service or route):
+   function mergeExtractedParameters(
+     extracted: Partial<BrandParameters>,
+     existing: BrandParameters | null
+   ): BrandParameters {
+     const base = existing ?? getDefaultBrandParameters();
+     return deepMerge(base, extracted);  // extracted values override base
+   }
+   ```
+4. **multer for file upload**: Standard Express middleware for multipart form data. Stores temporarily on disk, validates file type/size, then reads for API submission.
+5. **`fdd_ingestion_runs` database table**: Track extraction history with status, filename, extracted data snapshot, who ran it, and whether results were applied. Lightweight table — max 10 brands with a handful of runs each.
+6. **Review-before-apply pattern**: AI extraction produces a preview that the admin reviews and edits before committing to the brand configuration. This prevents bad AI output from silently corrupting brand parameters.
+7. **Confidence scoring**: The extraction prompt asks Gemini to rate confidence per field (high/medium/low). Low-confidence fields are highlighted in the review UI.
+8. **Gemini Files API for large PDFs**: For documents exceeding the inline data limit, use Gemini's File API to upload the PDF first, then reference it in the generation request. This handles arbitrarily large FDD documents.
 
 ## Acceptance Criteria
 
@@ -107,7 +118,7 @@ Add an FDD document upload and AI extraction feature to the brand admin configur
   - Confidence indicator (high/medium/low) per extracted field
   - Inline editing capability for any extracted value before applying
 
-- **AC 4**: Given the admin is reviewing extracted data, when they click "Apply Financial Parameters", then the extracted parameters are saved to the brand via the existing `PUT /api/brands/:brandId/parameters` endpoint and a success toast is shown.
+- **AC 4**: Given the admin is reviewing extracted data, when they click "Apply Financial Parameters", then the system merges extracted values into the brand's existing parameters (or a complete default template if the brand has no parameters yet) to produce a full `BrandParameters` object that passes `brandParameterSchema` validation, saves it via the existing `PUT /api/brands/:brandId/parameters` endpoint, and a success toast is shown. Fields not found in the FDD retain their existing or default values — partial extraction never produces an incomplete save.
 
 - **AC 5**: Given the admin is reviewing extracted data, when they click "Apply Startup Costs", then the extracted startup cost template is saved to the brand via the existing `PUT /api/brands/:brandId/startup-cost-template` endpoint and a success toast is shown.
 
@@ -119,7 +130,9 @@ Add an FDD document upload and AI extraction feature to the brand admin configur
 
 - **AC 9**: Given an uploaded file is not a PDF or exceeds 20MB, when the upload is attempted, then the system rejects it with a descriptive error message before sending to AI.
 
-- **AC 10**: Given a brand already has parameters configured, when AI extraction results are shown, then the current brand values are displayed alongside extracted values so the admin can compare before applying.
+- **AC 10**: Given a brand already has parameters configured, when AI extraction results are shown, then the current brand values are displayed alongside extracted values so the admin can compare before applying. Fields not found in the FDD are clearly labeled as "Not found — will retain current value" (or "will use default" if no existing parameters).
+
+- **AC 11**: Given the AI extracts only a subset of financial parameters (e.g., royalty fee found, but per-year growth rates not present in FDD), when the admin clicks "Apply Financial Parameters", then the apply action merges extracted values with the brand's existing parameters (or sensible defaults) and saves a complete `BrandParameters` object — the Zod validation at the PUT endpoint never fails due to missing extracted fields.
 
 ## Implementation Guidance
 
@@ -140,6 +153,7 @@ Add an FDD document upload and AI extraction feature to the brand admin configur
 5. **Do NOT use `require()` or CommonJS** — ESM only throughout.
 6. **Currency values must be in cents** when writing to brand parameters (the extraction prompt must instruct Gemini to convert dollar values to cents, or conversion is handled in the service layer post-extraction).
 7. **Percentage values must be decimals** (e.g., 5% → 0.05) when writing to brand parameters.
+8. **Do NOT send `Partial<BrandParameters>` to the existing PUT endpoint** — `brandParameterSchema.safeParse()` requires a complete object. Always merge extracted partial data with existing brand parameters (or defaults) to produce a full `BrandParameters` object before applying. See Technical Decision #3.
 
 ### File Change Summary
 
@@ -177,6 +191,8 @@ Add an FDD document upload and AI extraction feature to the brand admin configur
 - Test the provider-agnostic interface contract (FddExtractor interface)
 - Test schema validation of AI-extracted output against `brandParameterSchema` and `startupCostTemplateSchema`
 - Test currency/percentage conversion logic (dollars → cents, percent → decimal)
+- Test merge logic: partial extraction merged with existing parameters produces complete `BrandParameters` that passes `brandParameterSchema` validation
+- Test merge logic: partial extraction merged with default template (no existing parameters) produces complete `BrandParameters` that passes validation
 - Test error handling for malformed AI responses
 - Mock the Google Generative AI SDK client for deterministic testing
 
