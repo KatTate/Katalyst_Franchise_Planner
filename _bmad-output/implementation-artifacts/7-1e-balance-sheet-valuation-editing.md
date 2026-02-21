@@ -1,6 +1,6 @@
 # Story 7.1e: Balance Sheet & Valuation Inline Editing
 
-Status: in-progress
+Status: done
 
 ## Story
 
