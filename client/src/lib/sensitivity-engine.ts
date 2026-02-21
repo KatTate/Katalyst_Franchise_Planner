@@ -92,10 +92,15 @@ function applySensitivityFactors(
   return fi;
 }
 
+export interface SensitivityOutputs extends ScenarioOutputs {
+  custom: ScenarioOutputs["base"];
+}
+
 export function computeSensitivityOutputs(
   planInputs: PlanFinancialInputs,
   startupCosts: StartupCostLineItem[],
-): ScenarioOutputs {
+  currentSliders: SliderValues,
+): SensitivityOutputs {
   const baseEngineInput: EngineInput = unwrapForEngine(planInputs, startupCosts);
   const baseOutput = calculateProjections(baseEngineInput);
 
@@ -131,5 +136,18 @@ export function computeSensitivityOutputs(
     startupCosts: baseEngineInput.startupCosts,
   });
 
-  return { base: baseOutput, conservative: conservativeOutput, optimistic: optimisticOutput };
+  const hasCustomAdjustment = Object.values(currentSliders).some((v) => v !== 0);
+  let customOutput = baseOutput;
+  if (hasCustomAdjustment) {
+    const customInputs = applySensitivityFactors(
+      cloneFinancialInputs(baseEngineInput.financialInputs),
+      currentSliders,
+    );
+    customOutput = calculateProjections({
+      financialInputs: customInputs,
+      startupCosts: baseEngineInput.startupCosts,
+    });
+  }
+
+  return { base: baseOutput, conservative: conservativeOutput, optimistic: optimisticOutput, custom: customOutput };
 }

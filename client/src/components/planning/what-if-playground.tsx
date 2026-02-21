@@ -12,6 +12,7 @@ import {
   DEFAULT_SLIDER_VALUES,
   type SliderValues,
   type SliderConfig,
+  type SensitivityOutputs,
 } from "@/lib/sensitivity-engine";
 import type { ScenarioOutputs } from "@/lib/scenario-engine";
 import type { PlanFinancialInputs } from "@shared/financial-engine";
@@ -217,29 +218,66 @@ function SensitivitySliderRow({
   );
 }
 
+function isBetter(metricKey: string, val: number | null, baseVal: number | null): boolean {
+  if (val === null || baseVal === null) return false;
+  return metricKey === "break-even" ? val < baseVal : val > baseVal;
+}
+
+function isWorse(metricKey: string, val: number | null, baseVal: number | null): boolean {
+  if (val === null || baseVal === null) return false;
+  return metricKey === "break-even" ? val > baseVal : val < baseVal;
+}
+
+function ScenarioColumn({
+  label,
+  value,
+  baseVal,
+  metricKey,
+  format,
+  testId,
+  highlight,
+}: {
+  label: string;
+  value: number | null;
+  baseVal: number | null;
+  metricKey: string;
+  format: "currency" | "pct" | "months";
+  testId: string;
+  highlight?: boolean;
+}) {
+  const delta = formatDelta(baseVal, value, format);
+  const worse = isWorse(metricKey, value, baseVal);
+  const better = isBetter(metricKey, value, baseVal);
+
+  return (
+    <div data-testid={testId} className={highlight ? "bg-primary/5 rounded-md p-1.5 -m-1.5" : ""}>
+      <div className="text-[10px] text-muted-foreground mb-0.5">{label}</div>
+      <div className={`text-sm font-semibold font-mono tabular-nums ${highlight ? "text-primary" : ""}`}>
+        {value === null && metricKey === "break-even" ? "60+ mo" : formatMetricValue(value, format)}
+      </div>
+      {delta && (
+        <div className={`flex items-center gap-0.5 text-[10px] font-mono ${worse ? "text-orange-600 dark:text-orange-400" : better ? "text-blue-600 dark:text-blue-400" : "text-muted-foreground"}`}>
+          {worse ? <TrendingDown className="h-3 w-3" /> : better ? <TrendingUp className="h-3 w-3" /> : <Minus className="h-3 w-3" />}
+          {delta}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function MetricCard({
   metric,
   scenarioOutputs,
+  hasCustom,
 }: {
   metric: MetricDefinition;
-  scenarioOutputs: ScenarioOutputs;
+  scenarioOutputs: SensitivityOutputs;
+  hasCustom: boolean;
 }) {
   const baseVal = metric.getValue(scenarioOutputs.base);
   const conservativeVal = metric.getValue(scenarioOutputs.conservative);
   const optimisticVal = metric.getValue(scenarioOutputs.optimistic);
-
-  const conservativeDelta = formatDelta(baseVal, conservativeVal, metric.format);
-  const optimisticDelta = formatDelta(baseVal, optimisticVal, metric.format);
-
-  const isConservativeWorse =
-    metric.key === "break-even"
-      ? (conservativeVal ?? 0) > (baseVal ?? 0)
-      : (conservativeVal ?? 0) < (baseVal ?? 0);
-
-  const isOptimisticBetter =
-    metric.key === "break-even"
-      ? (optimisticVal ?? 0) < (baseVal ?? 0)
-      : (optimisticVal ?? 0) > (baseVal ?? 0);
+  const customVal = metric.getValue(scenarioOutputs.custom);
 
   return (
     <Card data-testid={`metric-card-${metric.key}`}>
@@ -249,39 +287,13 @@ function MetricCard({
         </CardTitle>
       </CardHeader>
       <CardContent className="px-4 pb-4">
-        <div className="grid grid-cols-3 gap-2">
-          <div data-testid={`metric-base-${metric.key}`}>
-            <div className="text-[10px] text-muted-foreground mb-0.5">Base Case</div>
-            <div className="text-sm font-semibold font-mono tabular-nums">
-              {baseVal === null && metric.key === "break-even" ? "60+ mo" : formatMetricValue(baseVal, metric.format)}
-            </div>
-          </div>
-
-          <div data-testid={`metric-conservative-${metric.key}`}>
-            <div className="text-[10px] text-muted-foreground mb-0.5">Conservative</div>
-            <div className="text-sm font-semibold font-mono tabular-nums">
-              {conservativeVal === null && metric.key === "break-even" ? "60+ mo" : formatMetricValue(conservativeVal, metric.format)}
-            </div>
-            {conservativeDelta && (
-              <div className={`flex items-center gap-0.5 text-[10px] font-mono ${isConservativeWorse ? "text-orange-600 dark:text-orange-400" : "text-blue-600 dark:text-blue-400"}`}>
-                {isConservativeWorse ? <TrendingDown className="h-3 w-3" /> : <TrendingUp className="h-3 w-3" />}
-                {conservativeDelta}
-              </div>
-            )}
-          </div>
-
-          <div data-testid={`metric-optimistic-${metric.key}`}>
-            <div className="text-[10px] text-muted-foreground mb-0.5">Optimistic</div>
-            <div className="text-sm font-semibold font-mono tabular-nums">
-              {optimisticVal === null && metric.key === "break-even" ? "60+ mo" : formatMetricValue(optimisticVal, metric.format)}
-            </div>
-            {optimisticDelta && (
-              <div className={`flex items-center gap-0.5 text-[10px] font-mono ${isOptimisticBetter ? "text-blue-600 dark:text-blue-400" : "text-orange-600 dark:text-orange-400"}`}>
-                {isOptimisticBetter ? <TrendingUp className="h-3 w-3" /> : <TrendingDown className="h-3 w-3" />}
-                {optimisticDelta}
-              </div>
-            )}
-          </div>
+        <div className={`grid gap-2 ${hasCustom ? "grid-cols-4" : "grid-cols-3"}`}>
+          <ScenarioColumn label="Base Case" value={baseVal} baseVal={baseVal} metricKey={metric.key} format={metric.format} testId={`metric-base-${metric.key}`} />
+          <ScenarioColumn label="Conservative" value={conservativeVal} baseVal={baseVal} metricKey={metric.key} format={metric.format} testId={`metric-conservative-${metric.key}`} />
+          <ScenarioColumn label="Optimistic" value={optimisticVal} baseVal={baseVal} metricKey={metric.key} format={metric.format} testId={`metric-optimistic-${metric.key}`} />
+          {hasCustom && (
+            <ScenarioColumn label="Your Scenario" value={customVal} baseVal={baseVal} metricKey={metric.key} format={metric.format} testId={`metric-custom-${metric.key}`} highlight />
+          )}
         </div>
       </CardContent>
     </Card>
@@ -291,6 +303,15 @@ function MetricCard({
 export function WhatIfPlayground({ planId }: WhatIfPlaygroundProps) {
   const { plan, isLoading, error } = usePlan(planId);
   const [sliderValues, setSliderValues] = useState<SliderValues>({ ...DEFAULT_SLIDER_VALUES });
+  const [debouncedSliders, setDebouncedSliders] = useState<SliderValues>({ ...DEFAULT_SLIDER_VALUES });
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSliders({ ...sliderValues });
+    }, 350);
+    return () => clearTimeout(timer);
+  }, [sliderValues]);
+
   const handleSliderChange = useCallback((key: keyof SliderValues, val: number) => {
     setSliderValues((prev) => ({ ...prev, [key]: val }));
   }, []);
@@ -298,10 +319,12 @@ export function WhatIfPlayground({ planId }: WhatIfPlaygroundProps) {
   const financialInputs = plan?.financialInputs as PlanFinancialInputs | null | undefined;
   const startupCostsData = (plan?.startupCosts ?? []) as StartupCostLineItem[];
 
-  const scenarioOutputs = useMemo<ScenarioOutputs | null>(() => {
+  const hasCustom = Object.values(sliderValues).some((v) => v !== 0);
+
+  const scenarioOutputs = useMemo<SensitivityOutputs | null>(() => {
     if (!financialInputs) return null;
-    return computeSensitivityOutputs(financialInputs, startupCostsData);
-  }, [financialInputs, startupCostsData]);
+    return computeSensitivityOutputs(financialInputs, startupCostsData, debouncedSliders);
+  }, [financialInputs, startupCostsData, debouncedSliders]);
 
   if (isLoading) {
     return (
@@ -399,6 +422,7 @@ export function WhatIfPlayground({ planId }: WhatIfPlaygroundProps) {
                   key={metric.key}
                   metric={metric}
                   scenarioOutputs={scenarioOutputs}
+                  hasCustom={hasCustom}
                 />
               ))}
           </div>
