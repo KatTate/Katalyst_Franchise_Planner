@@ -36,3 +36,15 @@ When the user triggers an agent or workflow, the AI MUST load the referenced fil
 - **Database:** PostgreSQL
 - **Authentication:** Google OAuth (via `passport-google-oauth20`), `bcrypt`, `connect-pg-simple`
 - **Frameworks/Libraries:** React, Express, Passport.js
+
+# Recent Changes
+
+## Story 7.2: Plan CRUD & Navigation (Feb 2026)
+- **Plan Lifecycle Management:** Full CRUD operations for financial plans — create, rename (inline & context menu), clone (deep copy), and delete (type-to-confirm) with last-plan protection.
+- **New Backend Endpoints:** `POST /api/plans/:planId/clone` (deep copies financialInputs/startupCosts), `DELETE /api/plans/:planId` (with last-plan protection via `getPlanCountByUser()`).
+- **Enhanced Plan Creation:** `POST /api/plans` now seeds brand default financial parameters and startup cost templates via `buildPlanFinancialInputs()` and `buildPlanStartupCosts()` from `@shared/plan-initialization`.
+- **Sidebar MY PLANS Section:** Lists all plans with navigation, active plan highlighting, status indicators, and hover-triggered context menus (Rename, Clone, Delete).
+- **Dashboard Context Menus:** Kebab menus on plan cards with Rename, Clone, Delete actions.
+- **Inline Plan Rename:** PlanningHeader shows pencil icon on hover; click to edit with Enter/Escape keyboard shortcuts. Only visible after quick start is completed.
+- **New Components:** `CreatePlanDialog`, `DeletePlanDialog` (type-to-confirm), `PlanContextMenu` in `client/src/components/plan/`.
+- **Storage Layer:** Added `clonePlan()` and `getPlanCountByUser()` to `IStorage` interface and `DatabaseStorage`.
