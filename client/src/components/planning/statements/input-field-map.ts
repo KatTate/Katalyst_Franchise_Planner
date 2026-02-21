@@ -131,6 +131,7 @@ export const INPUT_FIELD_MAP: Record<string, InputFieldMapping> = {
     inputFormat: "decimal",
     singleValue: true,
     min: 0.1,
+    max: 50,
   },
 };
 

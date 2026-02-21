@@ -8,6 +8,7 @@ import { InlineEditableCell } from "./inline-editable-cell";
 import { INPUT_FIELD_MAP, isEditableRow } from "./input-field-map";
 import { parseFieldInput } from "@/lib/field-metadata";
 import type { FormatType } from "@/lib/field-metadata";
+import { useToast } from "@/hooks/use-toast";
 
 import { SCENARIO_COLORS, type ScenarioId, type ScenarioOutputs } from "@/lib/scenario-engine";
 
@@ -177,11 +178,14 @@ export function ValuationTab({ output, scenarioOutputs, financialInputs, onCellE
     setExpandedSections((prev) => ({ ...prev, [key]: !prev[key] }));
   }, []);
 
+  const { toast } = useToast();
   const [editingEbitdaMultiple, setEditingEbitdaMultiple] = useState(false);
 
   const ebitdaMultipleRawValue = useMemo(() => {
     if (!financialInputs) return 0;
-    const field = financialInputs.workingCapitalAndValuation["ebitdaMultiple" as keyof typeof financialInputs.workingCapitalAndValuation] as FinancialFieldValue;
+    const wcObj = financialInputs.workingCapitalAndValuation;
+    if (!wcObj || !("ebitdaMultiple" in wcObj)) return 0;
+    const field = (wcObj as Record<string, FinancialFieldValue>)["ebitdaMultiple"];
     return field?.currentValue ?? 0;
   }, [financialInputs]);
 
@@ -202,12 +206,24 @@ export function ValuationTab({ output, scenarioOutputs, financialInputs, onCellE
     const mapping = INPUT_FIELD_MAP["ebitda-multiple"];
     if (!mapping) return;
     const parsedValue = parseFieldInput(rawInput, mapping.inputFormat);
-    if (isNaN(parsedValue)) { setEditingEbitdaMultiple(false); return; }
-    if (mapping.min !== undefined && parsedValue < mapping.min) { setEditingEbitdaMultiple(false); return; }
-    if (mapping.max !== undefined && parsedValue > mapping.max) { setEditingEbitdaMultiple(false); return; }
+    if (isNaN(parsedValue)) {
+      toast({ description: "Please enter a valid number", variant: "destructive", duration: 3000 });
+      setEditingEbitdaMultiple(false);
+      return;
+    }
+    if (mapping.min !== undefined && parsedValue < mapping.min) {
+      toast({ description: `Value must be at least ${mapping.min}`, variant: "destructive", duration: 3000 });
+      setEditingEbitdaMultiple(false);
+      return;
+    }
+    if (mapping.max !== undefined && parsedValue > mapping.max) {
+      toast({ description: `Value must be at most ${mapping.max}`, variant: "destructive", duration: 3000 });
+      setEditingEbitdaMultiple(false);
+      return;
+    }
     onCellEdit(mapping.category, mapping.fieldName, rawInput, mapping.inputFormat, 0);
     setEditingEbitdaMultiple(false);
-  }, [onCellEdit, financialInputs]);
+  }, [onCellEdit, financialInputs, toast]);
 
   const SCENARIOS: ScenarioId[] = ["base", "conservative", "optimistic"];
 

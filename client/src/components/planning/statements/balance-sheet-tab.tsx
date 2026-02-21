@@ -11,6 +11,7 @@ import { InlineEditableCell } from "./inline-editable-cell";
 import { INPUT_FIELD_MAP, isEditableRow } from "./input-field-map";
 import { parseFieldInput, formatFieldValue } from "@/lib/field-metadata";
 import type { FormatType } from "@/lib/field-metadata";
+import { useToast } from "@/hooks/use-toast";
 
 import { SCENARIO_COLORS, type ScenarioId, type ScenarioOutputs } from "@/lib/scenario-engine";
 import { ComparisonTableHead, buildComparisonColumns, type ComparisonColumnDef } from "./comparison-table-head";
@@ -414,11 +415,14 @@ export function BalanceSheetTab({ output, scenarioOutputs, financialInputs, onCe
 
   const comparisonActive = !!scenarioOutputs;
 
+  const { toast } = useToast();
   const [editingWcField, setEditingWcField] = useState<string | null>(null);
 
   const getWcRawValue = useCallback((fieldName: string): number => {
     if (!financialInputs) return 0;
-    const field = financialInputs.workingCapitalAndValuation[fieldName as keyof typeof financialInputs.workingCapitalAndValuation] as FinancialFieldValue;
+    const wcObj = financialInputs.workingCapitalAndValuation;
+    if (!wcObj || !(fieldName in wcObj)) return 0;
+    const field = (wcObj as Record<string, FinancialFieldValue>)[fieldName];
     return field?.currentValue ?? 0;
   }, [financialInputs]);
 
@@ -437,12 +441,24 @@ export function BalanceSheetTab({ output, scenarioOutputs, financialInputs, onCe
     const mapping = INPUT_FIELD_MAP[rowKey];
     if (!mapping) return;
     const parsedValue = parseFieldInput(rawInput, mapping.inputFormat);
-    if (isNaN(parsedValue)) { setEditingWcField(null); return; }
-    if (mapping.min !== undefined && parsedValue < mapping.min) { setEditingWcField(null); return; }
-    if (mapping.max !== undefined && parsedValue > mapping.max) { setEditingWcField(null); return; }
+    if (isNaN(parsedValue)) {
+      toast({ description: "Please enter a valid number", variant: "destructive", duration: 3000 });
+      setEditingWcField(null);
+      return;
+    }
+    if (mapping.min !== undefined && parsedValue < mapping.min) {
+      toast({ description: `Value must be at least ${mapping.min}`, variant: "destructive", duration: 3000 });
+      setEditingWcField(null);
+      return;
+    }
+    if (mapping.max !== undefined && parsedValue > mapping.max) {
+      toast({ description: `Value must be at most ${mapping.max}`, variant: "destructive", duration: 3000 });
+      setEditingWcField(null);
+      return;
+    }
     onCellEdit(mapping.category, mapping.fieldName, rawInput, mapping.inputFormat, 0);
     setEditingWcField(null);
-  }, [onCellEdit, financialInputs]);
+  }, [onCellEdit, financialInputs, toast]);
 
   const canEdit = !!financialInputs && !!onCellEdit;
 

@@ -103,7 +103,7 @@ And each tab's rendering code checks `isEditableRow()` to determine whether to r
 
 ### Completion Notes
 
-- All 5 acceptance criteria met (AC-1 through AC-5)
+- All 3 acceptance criteria met (AC-1 through AC-3)
 - Single-value fields work correctly — edits apply uniformly, no per-year editing
 - Reused existing InlineEditableCell component and handleCellEdit flow from Story 7.1b
 - Added "decimal" case to InlineEditableCell's formatRawForInput switch for EBITDA multiple
@@ -131,3 +131,18 @@ And each tab's rendering code checks `isEditableRow()` to determine whether to r
   - All edits persisted in UI
 - **LSP Diagnostics**: 0 errors, 0 warnings across all 5 changed files
 - **Architect Review**: PASS — implementation follows existing patterns, correct single-value semantics
+
+### Code Review (2026-02-21, Adversarial — Fresh Context)
+
+- **Git Discovery**: yes | **Discrepancies**: 0
+- **LSP Scan**: 0 errors, 0 warnings across all 5 files
+- **Architect Review**: completed with git diff
+- **Issues Found**: 0 HIGH, 3 MEDIUM, 3 LOW — all resolved
+- **Findings & Resolutions**:
+  - M1 (FIXED): Silent validation failure — no user feedback when validation rejects input. Added toast notifications with specific error messages (invalid number, below min, above max) in both handleWcCommitEdit and handleEbitdaCommitEdit.
+  - M2 (FIXED): Completion Notes claimed "AC-1 through AC-5" but only 3 ACs exist. Corrected to "AC-1 through AC-3".
+  - M3 (FIXED): Double type assertion (`as keyof typeof ... as FinancialFieldValue`) bypassed TypeScript safety. Replaced with `in` operator guard and single `Record<string, FinancialFieldValue>` cast.
+  - L1 (FIXED): Missing upper bound for EBITDA Multiple in INPUT_FIELD_MAP. Added `max: 50`.
+  - L2 (NOTED): WC Assumptions section hidden in comparison mode — intentional, no fix needed.
+  - L3 (NOTED): isSaving race condition in commit handlers — low risk, no fix needed.
+- **Story Status**: done (all ACs satisfied, all HIGH/MEDIUM issues resolved)

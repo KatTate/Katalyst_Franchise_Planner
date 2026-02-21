@@ -36,6 +36,7 @@
 # - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
 
 generated: 2026-02-09
+updated: 2026-02-21  # Story 7.1e adversarial code review completed — done (0H/3M/3L, all resolved)
 updated: 2026-02-21  # Story 7.1d adversarial code review completed — done
 updated: 2026-02-21  # Story 7.1 split into 7.1a-7.1d per Party Mode review
 updated: 2026-02-21  # Story 7.1 context document created (Create Story workflow)
@@ -589,7 +590,7 @@ development_status:
   7-1b-all-fields-editable-reports: done                        # DONE 2026-02-21: 15 editable fields, Copy Y1 to All, flash cleanup. AC-2 (per-month) deferred to 7.1b.1.
   7-1c-forms-onboarding-new-fields: done                 # DONE 2026-02-21: Adversarial code review completed. 8 findings (1H, 5M, 2L) all fixed. Per-month handling, safe defaults, hint text, naming, brand-default detection.
   7-1d-facilities-decomposition-opex: done                        # 2026-02-21: Adversarial code review completed. 1H/3M/3L findings all fixed. H1: AC-4 P&L Other OpEx % now displays percentage (was currency). M1: DRY extraction. M2/M3: File List corrected.
-  7-1e-balance-sheet-valuation-editing: done                  # DONE 2026-02-21: Balance Sheet Working Capital Assumptions (AR/AP/Inventory Days, Tax Delay) + Valuation (EBITDA Multiple) inline editing in Reports. E2E tested.
+  7-1e-balance-sheet-valuation-editing: done                  # DONE 2026-02-21: Balance Sheet Working Capital Assumptions (AR/AP/Inventory Days, Tax Delay) + Valuation (EBITDA Multiple) inline editing in Reports. E2E tested. Adversarial code review completed: 0H/3M/3L, all resolved.
   7-2-plan-crud-navigation: backlog
   epic-7-retrospective: optional
 
