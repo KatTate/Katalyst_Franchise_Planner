@@ -1,6 +1,6 @@
 # Story 5H.4: Planning Artifact Alignment Audit — FR-to-Story Traceability
 
-Status: ready-for-dev
+Status: in-progress
 
 ## Story
 
