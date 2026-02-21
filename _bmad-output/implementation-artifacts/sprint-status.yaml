@@ -36,6 +36,7 @@
 # - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
 
 generated: 2026-02-09
+updated: 2026-02-21  # Story 7.2 adversarial code review completed → done. 9 findings fixed (3H/4M/2L). E2E re-verified.
 updated: 2026-02-21  # Story 7.2 dev-story complete → review. All 9 ACs verified. E2E passing. LSP clean.
 updated: 2026-02-21  # Story 7.1e adversarial code review completed — done (0H/3M/3L, all resolved)
 updated: 2026-02-21  # Story 7.1d adversarial code review completed — done
@@ -592,7 +593,7 @@ development_status:
   7-1c-forms-onboarding-new-fields: done                 # DONE 2026-02-21: Adversarial code review completed. 8 findings (1H, 5M, 2L) all fixed. Per-month handling, safe defaults, hint text, naming, brand-default detection.
   7-1d-facilities-decomposition-opex: done                        # 2026-02-21: Adversarial code review completed. 1H/3M/3L findings all fixed. H1: AC-4 P&L Other OpEx % now displays percentage (was currency). M1: DRY extraction. M2/M3: File List corrected.
   7-1e-balance-sheet-valuation-editing: done                  # DONE 2026-02-21: Balance Sheet Working Capital Assumptions (AR/AP/Inventory Days, Tax Delay) + Valuation (EBITDA Multiple) inline editing in Reports. E2E tested. Adversarial code review completed: 0H/3M/3L, all resolved.
-  7-2-plan-crud-navigation: review                     # 2026-02-21: Dev story complete. All 9 ACs verified (create, clone, rename inline+context, delete type-to-confirm, sidebar MY PLANS, last-plan protection, dashboard context menus). E2E Playwright tests passing. LSP clean (0 errors, 0 warnings). Pending code review.
+  7-2-plan-crud-navigation: done                       # 2026-02-21: Adversarial code review completed. 9 findings (3H/4M/2L) all fixed: H1 context-menu rename, H2 clone rename prompt, H3 status badges, M1 demo guard, M2 double-save race, M3 undocumented file, M4 server-side name validation, L1 file list corrections, L2 click-to-edit. E2E re-verified. LSP clean.
   epic-7-retrospective: optional
 
   # ==========================================================================
