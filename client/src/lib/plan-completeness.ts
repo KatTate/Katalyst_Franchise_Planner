@@ -1,5 +1,5 @@
 import type { PlanFinancialInputs, FinancialFieldValue } from "@shared/financial-engine";
-import { FIELD_METADATA, CATEGORY_ORDER } from "@/lib/field-metadata";
+import { FIELD_METADATA, CATEGORY_ORDER, CATEGORY_LABELS } from "@/lib/field-metadata";
 
 export interface SectionProgress {
   category: string;
@@ -8,24 +8,35 @@ export interface SectionProgress {
   total: number;
 }
 
-export function computeSectionProgress(financialInputs: PlanFinancialInputs): SectionProgress[] {
-  const CATEGORY_LABELS: Record<string, string> = {
-    revenue: "Revenue",
-    operatingCosts: "Operating Costs",
-    financing: "Financing",
-    startupCapital: "Startup Capital",
-  };
+function resolveCategoryData(financialInputs: PlanFinancialInputs, category: string): Record<string, unknown> | undefined {
+  if (category === "facilitiesDecomposition") {
+    return financialInputs.operatingCosts?.facilitiesDecomposition as unknown as Record<string, unknown> | undefined;
+  }
+  const data = financialInputs[category as keyof PlanFinancialInputs];
+  return data as unknown as Record<string, unknown> | undefined;
+}
 
+function isEdited(field: unknown): boolean {
+  if (!field) return false;
+  if (Array.isArray(field)) {
+    const first = field[0] as FinancialFieldValue | undefined;
+    return first != null && first.source !== "brand_default";
+  }
+  const f = field as FinancialFieldValue;
+  return f.source !== "brand_default";
+}
+
+export function computeSectionProgress(financialInputs: PlanFinancialInputs): SectionProgress[] {
   return CATEGORY_ORDER.map((category) => {
     const fields = FIELD_METADATA[category];
-    const categoryData = financialInputs[category as keyof PlanFinancialInputs];
+    const categoryData = resolveCategoryData(financialInputs, category);
     const fieldNames = Object.keys(fields);
     const total = fieldNames.length;
     const edited = fieldNames.filter((name) => {
-      const field = categoryData[name as keyof typeof categoryData] as FinancialFieldValue | undefined;
-      return field && field.source !== "brand_default";
+      if (!categoryData) return false;
+      return isEdited(categoryData[name]);
     }).length;
-    return { category, label: CATEGORY_LABELS[category], edited, total };
+    return { category, label: CATEGORY_LABELS[category] || category, edited, total };
   });
 }
 
@@ -40,11 +51,9 @@ export function computeCompleteness(financialInputs: PlanFinancialInputs, startu
 export function hasAnyUserEdits(financialInputs: PlanFinancialInputs): boolean {
   return CATEGORY_ORDER.some((category) => {
     const fields = FIELD_METADATA[category];
-    const categoryData = financialInputs[category as keyof PlanFinancialInputs];
-    return Object.keys(fields).some((name) => {
-      const field = categoryData[name as keyof typeof categoryData] as FinancialFieldValue | undefined;
-      return field && field.source !== "brand_default";
-    });
+    const categoryData = resolveCategoryData(financialInputs, category);
+    if (!categoryData) return false;
+    return Object.keys(fields).some((name) => isEdited(categoryData[name]));
   });
 }
 

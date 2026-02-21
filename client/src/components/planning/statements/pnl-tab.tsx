@@ -451,9 +451,11 @@ export function PnlTab({ output, financialInputs, onCellEdit, isSaving, scenario
     if (!financialInputs) return 0;
     const mapping = INPUT_FIELD_MAP[rowKey];
     if (!mapping) return 0;
-    const categoryObj = financialInputs[mapping.category as keyof PlanFinancialInputs];
+    const categoryObj = mapping.category === "facilitiesDecomposition"
+      ? financialInputs.operatingCosts?.facilitiesDecomposition as any
+      : (financialInputs as any)[mapping.category];
     if (!categoryObj) return 0;
-    const field = categoryObj[mapping.fieldName as keyof typeof categoryObj] as FinancialFieldValue;
+    const field = categoryObj[mapping.fieldName] as FinancialFieldValue;
     return field?.currentValue ?? 0;
   }, [financialInputs]);
 

@@ -12,6 +12,41 @@ import {
   parseFieldInput,
 } from "@/lib/field-metadata";
 
+function resolveCategoryObj(inputs: PlanFinancialInputs, category: string): Record<string, any> | undefined {
+  if (category === "facilitiesDecomposition") {
+    return inputs.operatingCosts?.facilitiesDecomposition as any;
+  }
+  return (inputs as any)[category];
+}
+
+function buildUpdatedInputs(
+  inputs: PlanFinancialInputs,
+  category: string,
+  categoryObj: Record<string, any>,
+  fieldName: string,
+  updatedField: FinancialFieldValue,
+): PlanFinancialInputs {
+  if (category === "facilitiesDecomposition") {
+    return {
+      ...inputs,
+      operatingCosts: {
+        ...inputs.operatingCosts,
+        facilitiesDecomposition: {
+          ...categoryObj,
+          [fieldName]: updatedField,
+        },
+      },
+    } as PlanFinancialInputs;
+  }
+  return {
+    ...inputs,
+    [category]: {
+      ...categoryObj,
+      [fieldName]: updatedField,
+    },
+  };
+}
+
 interface UseFieldEditingOptions {
   financialInputs: PlanFinancialInputs | null | undefined;
   isSaving: boolean;
@@ -62,17 +97,12 @@ export function useFieldEditing({ financialInputs, isSaving, onSave }: UseFieldE
       setEditValue("");
       return;
     }
-    const categoryObj = financialInputs[category as keyof PlanFinancialInputs];
-    const field = categoryObj[fieldName as keyof typeof categoryObj] as FinancialFieldValue;
+    const categoryObj = resolveCategoryObj(financialInputs, category);
+    if (!categoryObj) return;
+    const field = categoryObj[fieldName] as FinancialFieldValue;
     if (parsedValue !== field.currentValue) {
       const updatedField = updateFieldValue(field, parsedValue, new Date().toISOString());
-      const updatedInputs: PlanFinancialInputs = {
-        ...financialInputs,
-        [category]: {
-          ...categoryObj,
-          [fieldName]: updatedField,
-        },
-      };
+      const updatedInputs = buildUpdatedInputs(financialInputs, category, categoryObj, fieldName, updatedField);
       onSave(updatedInputs);
     }
     setEditingField(null);
@@ -88,17 +118,12 @@ export function useFieldEditing({ financialInputs, isSaving, onSave }: UseFieldE
   const handleFieldUpdate = useCallback(
     (category: string, fieldName: string, parsedValue: number) => {
       if (!financialInputs || isSaving) return;
-      const categoryObj = financialInputs[category as keyof PlanFinancialInputs];
-      const field = categoryObj[fieldName as keyof typeof categoryObj] as FinancialFieldValue;
+      const categoryObj = resolveCategoryObj(financialInputs, category);
+      if (!categoryObj) return;
+      const field = categoryObj[fieldName] as FinancialFieldValue;
       if (parsedValue !== field.currentValue) {
         const updatedField = updateFieldValue(field, parsedValue, new Date().toISOString());
-        const updatedInputs: PlanFinancialInputs = {
-          ...financialInputs,
-          [category]: {
-            ...categoryObj,
-            [fieldName]: updatedField,
-          },
-        };
+        const updatedInputs = buildUpdatedInputs(financialInputs, category, categoryObj, fieldName, updatedField);
         onSave(updatedInputs);
       }
     },
@@ -108,16 +133,11 @@ export function useFieldEditing({ financialInputs, isSaving, onSave }: UseFieldE
   const handleReset = useCallback(
     (category: string, fieldName: string) => {
       if (!financialInputs || isSaving) return;
-      const categoryObj = financialInputs[category as keyof PlanFinancialInputs];
-      const field = categoryObj[fieldName as keyof typeof categoryObj] as FinancialFieldValue;
+      const categoryObj = resolveCategoryObj(financialInputs, category);
+      if (!categoryObj) return;
+      const field = categoryObj[fieldName] as FinancialFieldValue;
       const resetField = resetFieldToDefault(field, new Date().toISOString());
-      const updatedInputs: PlanFinancialInputs = {
-        ...financialInputs,
-        [category]: {
-          ...categoryObj,
-          [fieldName]: resetField,
-        },
-      };
+      const updatedInputs = buildUpdatedInputs(financialInputs, category, categoryObj, fieldName, resetField);
       onSave(updatedInputs);
     },
     [financialInputs, isSaving, onSave]

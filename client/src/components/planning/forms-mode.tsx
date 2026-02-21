@@ -29,6 +29,13 @@ import { StartupCostBuilder } from "@/components/shared/startup-cost-builder";
 import { hasAnyUserEdits } from "@/lib/plan-completeness";
 import type { FieldMeta } from "@/lib/field-metadata";
 
+function resolveCategoryData(inputs: PlanFinancialInputs, category: string): Record<string, FinancialFieldValue | FinancialFieldValue[]> {
+  if (category === "facilitiesDecomposition") {
+    return (inputs.operatingCosts?.facilitiesDecomposition ?? {}) as Record<string, FinancialFieldValue | FinancialFieldValue[]>;
+  }
+  return ((inputs as any)[category] ?? {}) as Record<string, FinancialFieldValue | FinancialFieldValue[]>;
+}
+
 type StartupCostCountCallback = (count: number) => void;
 
 interface FormsModeProps {
@@ -143,7 +150,7 @@ export function FormsMode({ planId, planName, brandName, queueSave, onSectionCha
             category={category}
             label={CATEGORY_LABELS[category]}
             fields={FIELD_METADATA[category]}
-            categoryData={financialInputs[category as keyof PlanFinancialInputs] as Record<string, FinancialFieldValue | FinancialFieldValue[]>}
+            categoryData={resolveCategoryData(financialInputs, category)}
             editingField={editingField}
             editValue={editValue}
             focusedField={focusedField}
@@ -241,7 +248,7 @@ function FormSection({
           </div>
           <div className="flex items-center gap-2 shrink-0">
             <span className="text-xs text-muted-foreground tabular-nums">
-              {Object.values(categoryData).filter((f: any) => f && f.source !== "brand_default").length}/{Object.keys(fields).length} edited
+              {Object.keys(fields).filter((k) => { const f: any = categoryData[k]; if (!f) return false; if (Array.isArray(f)) return f[0]?.source !== "brand_default"; return f.source !== "brand_default"; }).length}/{Object.keys(fields).length} edited
             </span>
             <ChevronDown
               className={`h-4 w-4 text-muted-foreground transition-transform duration-200 ${
@@ -253,7 +260,8 @@ function FormSection({
         <CollapsibleContent>
           <div className="px-4 pb-4 space-y-1">
             {Object.entries(fields).map(([fieldName, meta]) => {
-              const field = categoryData[fieldName] as FinancialFieldValue;
+              const raw = categoryData[fieldName];
+              const field = (Array.isArray(raw) ? raw[0] : raw) as FinancialFieldValue;
               const key = `${category}.${fieldName}`;
               const isEditing = editingField === key;
               const isFocused = focusedField === key;

@@ -25,6 +25,41 @@ import type { EngineOutput, PlanFinancialInputs, FinancialFieldValue } from "@sh
 import type { FormatType } from "@/lib/field-metadata";
 import type { Plan } from "@shared/schema";
 
+function resolveCategoryObj(inputs: PlanFinancialInputs, category: string): Record<string, any> | undefined {
+  if (category === "facilitiesDecomposition") {
+    return inputs.operatingCosts?.facilitiesDecomposition as any;
+  }
+  return (inputs as any)[category];
+}
+
+function buildUpdatedInputs(
+  inputs: PlanFinancialInputs,
+  category: string,
+  categoryObj: Record<string, any>,
+  fieldName: string,
+  updatedField: FinancialFieldValue,
+): PlanFinancialInputs {
+  if (category === "facilitiesDecomposition") {
+    return {
+      ...inputs,
+      operatingCosts: {
+        ...inputs.operatingCosts,
+        facilitiesDecomposition: {
+          ...categoryObj,
+          [fieldName]: updatedField,
+        },
+      },
+    } as PlanFinancialInputs;
+  }
+  return {
+    ...inputs,
+    [category]: {
+      ...categoryObj,
+      [fieldName]: updatedField,
+    },
+  };
+}
+
 export type StatementTabId = "summary" | "pnl" | "balance-sheet" | "cash-flow" | "roic" | "valuation" | "audit";
 
 interface FinancialStatementsProps {
@@ -115,18 +150,12 @@ export function FinancialStatements({ planId, defaultTab = "summary", plan, queu
       if (!financialInputs || !queueSave) return;
       const parsedValue = parseFieldInput(rawInput, inputFormat);
       if (isNaN(parsedValue)) return;
-      const categoryObj = financialInputs[category as keyof PlanFinancialInputs];
+      const categoryObj = resolveCategoryObj(financialInputs, category);
       if (!categoryObj) return;
-      const field = categoryObj[fieldName as keyof typeof categoryObj] as FinancialFieldValue;
+      const field = categoryObj[fieldName] as FinancialFieldValue;
       if (!field || parsedValue === field.currentValue) return;
       const updatedField = updateFieldValue(field, parsedValue, new Date().toISOString());
-      const updatedInputs: PlanFinancialInputs = {
-        ...financialInputs,
-        [category]: {
-          ...categoryObj,
-          [fieldName]: updatedField,
-        },
-      };
+      const updatedInputs = buildUpdatedInputs(financialInputs, category, categoryObj, fieldName, updatedField);
       queueSave({ financialInputs: updatedInputs });
     },
     [financialInputs, queueSave]

@@ -30,6 +30,13 @@ import {
 } from "@/lib/field-metadata";
 import type { FieldMeta } from "@/lib/field-metadata";
 
+function resolveCategoryData(inputs: PlanFinancialInputs, category: string): Record<string, FinancialFieldValue | FinancialFieldValue[]> {
+  if (category === "facilitiesDecomposition") {
+    return (inputs.operatingCosts?.facilitiesDecomposition ?? {}) as Record<string, FinancialFieldValue | FinancialFieldValue[]>;
+  }
+  return ((inputs as any)[category] ?? {}) as Record<string, FinancialFieldValue | FinancialFieldValue[]>;
+}
+
 interface FinancialInputEditorProps {
   planId: string;
 }
@@ -111,7 +118,7 @@ export function FinancialInputEditor({ planId }: FinancialInputEditorProps) {
       <CardContent className="space-y-4">
         {CATEGORY_ORDER.map((category) => {
           const fields = FIELD_METADATA[category];
-          const categoryData = financialInputs[category as keyof PlanFinancialInputs] as Record<string, FinancialFieldValue | FinancialFieldValue[]>;
+          const categoryData = resolveCategoryData(financialInputs, category);
 
           return (
             <CategorySection
@@ -203,7 +210,8 @@ function CategorySection({
             </div>
 
             {Object.entries(fields).map(([fieldName, meta]) => {
-              const field = categoryData[fieldName] as FinancialFieldValue;
+              const raw = categoryData[fieldName];
+              const field = (Array.isArray(raw) ? raw[0] : raw) as FinancialFieldValue;
               const key = `${category}.${fieldName}`;
               const isEditing = editingField === key;
               const isFocused = focusedField === key;
