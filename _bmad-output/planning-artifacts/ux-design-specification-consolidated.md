@@ -1094,27 +1094,29 @@ The Document Preview widget shows "DRAFT" watermark diagonally across the previe
 
 ### Journey 4: Franchisee Reviewing Scenarios — What-If Playground
 
-> **Persona:** Chris, scaling operator with 2 locations. She's completed her plan for Location #2 and wants to stress-test her assumptions before committing. Note: Full What-If Playground ships in Epic 10. This journey describes the target experience.
+> **Persona:** Chris, scaling operator with 2 locations. She's completed her plan for Location #2 and wants to stress-test her assumptions before committing. Note: Full What-If Playground ships in Epic 10. This journey describes the target experience. Per SCP-2026-02-21, the What-If Playground uses a 2-scenario model (Base Case + "Your Scenario") with user-authored named scenario saving and comparison, replacing the retired Conservative/Optimistic system columns.
 
 1. Chris logs in and lands on the Dashboard. She sees her two plans: Location #1 (operating, has actuals) and Location #2 (in planning, 92% complete).
 2. She opens Location #2's plan. She clicks "Scenarios" in the sidebar.
-3. The What-If Playground opens. At the top, she sees a row of sensitivity sliders — one for each key assumption:
-   - Revenue: -15% ←——●——→ +15%
-   - COGS: -5% ←——●——→ +5%
-   - Payroll/Labor: -10% ←——●——→ +10%
-   - Marketing: -10% ←——●——→ +10%
-   - Facilities: -10% ←——●——→ +10%
-4. Below the sliders, she sees a dashboard of charts — all showing her Base Case (solid line) alongside Conservative (dashed) and Optimistic (dashed, lighter) scenario curves:
+3. The What-If Playground opens. At the top, she sees a row of sensitivity sliders — one for each key assumption. Sliders have generous visual ranges for drag interaction, and each has a numeric input field that accepts any value within mathematical limits:
+   - Revenue: -50% ←——●——→ +100%
+   - COGS: -20pp ←——●——→ +20pp
+   - Payroll/Labor: -50% ←——●——→ +100%
+   - Marketing: -50% ←——●——→ +100%
+   - Facilities: -50% ←——●——→ +100%
+4. Below the sliders, she sees metric delta cards (Base vs "Your Scenario") and a dashboard of charts — all showing her Base Case (solid line) alongside "Your Scenario" (dashed line reflecting current slider positions):
    - Profitability chart: 5-year revenue, gross profit, EBITDA, pre-tax income
-   - Cash Flow chart: net operating cash flow, ending cash balance (amber zone highlights any months where cash goes negative)
+   - Cash Flow chart: ending cash balance (amber zone highlights any months where cash goes negative)
    - Break-Even Analysis: visual timeline showing months to break-even per scenario
    - ROI & Returns: cumulative ROIC curves with plain-language callout
    - Balance Sheet Health: assets vs liabilities, equity growth
    - Debt & Working Capital: loan paydown trajectory
-5. Chris drags the Revenue slider to -10%. All six charts update simultaneously. She watches her break-even month shift from Month 12 to Month 18. Cash flow dips into the amber zone in Months 8–11 in the conservative scenario. The ROI callout updates: "At -10% revenue, your 5-year return drops from 145% to 98%."
-6. Chris moves the Labor slider to +5% (she suspects hiring will be harder than expected). The charts update again. She sees the combined effect of lower revenue and higher labor — the conservative scenario now shows break-even at Month 24 and first-year cash needs an additional $12K.
-7. She resets the sliders to zero (base case) and tries the optimistic direction — Revenue +10%, COGS -2%. All charts brighten. Break-even drops to Month 9.
-8. Satisfied that her plan works in most scenarios, Chris returns to the Dashboard. The slider adjustments did NOT change her actual saved plan inputs — the What-If Playground is a sandbox.
+5. Chris drags the Revenue slider to -10%. All six charts update simultaneously. She watches her break-even month shift from Month 12 to Month 18. Cash flow dips into the amber zone in Months 8–11. The ROI callout updates: "Your scenario: 98% ROIC at Year 5."
+6. Chris moves the Labor slider to +5% (she suspects hiring will be harder than expected). The charts update again. She sees the combined effect of lower revenue and higher labor — break-even moves to Month 24 and first-year cash needs an additional $12K.
+7. She likes this "pessimistic hiring" scenario, so she clicks "Save as Scenario" and names it "Tough Hiring Market." The scenario is saved.
+8. She resets the sliders to zero and tries a different direction — Revenue +10%, COGS -2%. All charts update. Break-even drops to Month 9. She saves this as "Strong Launch."
+9. Chris loads "Tough Hiring Market" as a comparison overlay. Now she sees three lines on each chart: Base (solid), her current slider position (dashed), and the saved "Tough Hiring Market" scenario (dotted). The metric delta cards show all three columns.
+10. Satisfied that her plan works under her most important "what-if" questions, Chris returns to the Dashboard. The slider adjustments did NOT change her actual saved plan inputs — the What-If Playground is a sandbox.
 
 ---
 

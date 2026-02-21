@@ -16,19 +16,24 @@ so that I can quickly grasp the impact without reading every chart in detail.
 
 ### Key Metric Delta Cards
 
-1. Given `ScenarioOutputs` are available, when the metric delta card strip renders (above the chart grid), then 4 key metric cards are displayed showing the impact of current slider adjustments vs. the base case:
-    - **Break-Even**: "Mo 14 → Mo 18 (+4 mo)" — shows base case month vs. conservative case month. If either scenario's `breakEvenMonth` is `null` (break-even not reached in 60 months), display "—" for that value and "N/A" for the delta (e.g., "Mo 14 → —" or "— → —").
-    - **Year 1 Revenue**: "$142K → $121K (-$21K)" — base vs conservative
-    - **5-Year ROI**: "127% → 98% (-29%)" — base vs conservative `fiveYearROIPct` from `roiMetrics` (multiply by 100 to display as percentage)
-    - **Year 5 Cash**: "$68K → $32K (-$36K)" — base vs conservative `endingCash` at Year 5 (`annualSummaries[4].endingCash`)
+1. Given `SensitivityOutputs` are available, when the metric delta card strip renders (above the chart grid), then 4 key metric cards are displayed showing the impact of current slider adjustments (Your Scenario) vs. the base case:
+    - **Break-Even**: "Mo 14 → Mo 18 (+4 mo)" — shows base case month vs. Your Scenario month. If either scenario's `breakEvenMonth` is `null` (break-even not reached in 60 months), display "—" for that value and "N/A" for the delta (e.g., "Mo 14 → —" or "— → —").
+    - **Year 1 Revenue**: "$142K → $121K (-$21K)" — base vs Your Scenario
+    - **5-Year ROI**: "127% → 98% (-29%)" — base vs Your Scenario `fiveYearROIPct` from `roiMetrics` (multiply by 100 to display as percentage)
+    - **Year 5 Cash**: "$68K → $32K (-$36K)" — base vs Your Scenario `endingCash` at Year 5 (`annualSummaries[4].endingCash`)
+
+    When all sliders are at zero, Your Scenario = Base Case, so deltas show 0 / no change.
 
     Delta color rules — color by **desirability**, not raw sign:
     - **Revenue, ROI, Cash** (higher = better): positive delta → green; negative delta → amber
     - **Break-Even** (lower month = better, so a positive delta means worse): positive delta → amber; negative delta → green
     - Null Break-Even deltas ("N/A") are rendered in muted/neutral color — not amber or green
+    - Zero deltas (sliders at zero) use muted/neutral color
 
-2. Given the metric delta cards render on initial page load (before the user has interacted with any slider), then a contextual note reads: "Try moving a slider above to see how it changes your break-even and cash flow." This note is visible on initial load and disappears after the user's first slider interaction. The delta cards still display their non-zero base vs. conservative values — Conservative is always computed from the negative slider extremes (per epics Story 10.1 line 2116) and will never equal Base Case even before slider interaction. The note is an active encouragement to engage, not a condition that suppresses deltas.
-    - Source: `_bmad-output/planning-artifacts/epics.md` Story 10.1 line 2116 ("Conservative (negative slider extremes)")
+    If a comparison scenario is loaded (Story 10.3), a third column shows the comparison scenario's values alongside Base and Your Scenario.
+
+2. Given the metric delta cards render on initial page load (before the user has interacted with any slider), then all deltas show zero (Your Scenario = Base Case when sliders are at zero). A contextual note reads: "Try moving a slider above to see how it changes your break-even and cash flow." This note is visible on initial load and disappears after the user's first slider interaction.
+    - Source: SCP-2026-02-21 D1/D2 (2-scenario model: Base + Your Scenario)
 
 ### Visual Hierarchy
 
@@ -51,13 +56,13 @@ so that I can quickly grasp the impact without reading every chart in detail.
 
 ### Architecture Patterns to Follow
 
-- **Delta cards consume `ScenarioOutputs` as a prop — same as charts.** The delta card component is a pure presentational component. It receives `ScenarioOutputs` and derives its four metrics from `base` and `conservative` outputs. It does NOT call any engine functions.
+- **Delta cards consume `SensitivityOutputs` as a prop — same as charts.** The delta card component is a pure presentational component. It receives `SensitivityOutputs` and derives its four metrics from `base` and `current` (Your Scenario) outputs. It does NOT call any engine functions.
 
 - **Data sources for each delta metric:**
-  - Break-Even: `output.roiMetrics.breakEvenMonth` (base vs conservative) — can be `null`
-  - Year 1 Revenue: `output.annualSummaries[0].revenue` (base vs conservative) — in cents, divide by 100
-  - 5-Year ROI: `output.roiMetrics.fiveYearROIPct` (base vs conservative) — decimal fraction, multiply by 100 for percentage display. Same convention as `roicExtended[].roicPct` — confirmed by `callout-bar.tsx` line 105 and `roic-tab.tsx` line 212.
-  - Year 5 Cash: `output.annualSummaries[4].endingCash` (base vs conservative) — in cents, divide by 100
+  - Break-Even: `output.roiMetrics.breakEvenMonth` (base vs current) — can be `null`
+  - Year 1 Revenue: `output.annualSummaries[0].revenue` (base vs current) — in cents, divide by 100
+  - 5-Year ROI: `output.roiMetrics.fiveYearROIPct` (base vs current) — decimal fraction, multiply by 100 for percentage display. Same convention as `roicExtended[].roicPct` — confirmed by `callout-bar.tsx` line 105 and `roic-tab.tsx` line 212.
+  - Year 5 Cash: `output.annualSummaries[4].endingCash` (base vs current) — in cents, divide by 100
 
 - **Helper text lifecycle:** The contextual note ("Try moving a slider above...") should be controlled by a state variable (e.g., `hasInteractedWithSlider`). This state should be lifted to `WhatIfPlayground` (10.1's component) and passed down as a prop. When any slider fires its first `onChange`, set the flag to `true` and the note disappears. This requires a minor interface addition to what Story 10.1 provides — coordinate with 10.1's component contract.
 
@@ -107,7 +112,7 @@ so that I can quickly grasp the impact without reading every chart in detail.
 
 - **Currency values are in CENTS.** `annualSummaries[0].revenue` and `annualSummaries[4].endingCash` are in cents. Divide by 100 before formatting.
 
-- **Conservative is never equal to Base on initial load.** Conservative is computed from negative slider extremes (per 10.1), so the delta cards always show non-zero differences even before user interaction. The helper text is an encouragement to explore, not a "no data" state.
+- **Your Scenario equals Base on initial load (sliders at zero).** Per SCP-2026-02-21 D1/D2, the old Conservative/Optimistic system columns are retired. When all sliders are at zero, Your Scenario = Base Case, so deltas are zero. The helper text encourages users to explore by moving a slider.
 
 - **`annualSummaries` has exactly 5 entries (index 0-4).** Year 1 Revenue = index 0, Year 5 Cash = index 4.
 

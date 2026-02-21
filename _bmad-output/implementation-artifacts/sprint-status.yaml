@@ -306,6 +306,16 @@ story_location: _bmad-output/implementation-artifacts
 #   - Documentation-only story — no application source code changes
 #   - Story status: ready-for-dev
 #   - Next action: Dev Story (DS) for 5H.3 audit execution
+# 2026-02-21: SCP-2026-02-21 approved and applied — Epic 10 pivot
+#   - Epic 10 pivoted from 3-scenario (Base/Conservative/Optimistic) to 2-scenario (Base + Your Scenario)
+#   - 8 change proposals (CP-1 through CP-8) applied across epics.md, story context docs, UX spec, code
+#   - 6 key decisions (D1-D6): D1 retire Conservative/Optimistic, D2 two-column layout,
+#     D3 promote Story 10.3 to essential, D4 story 10.2 split preserved, D5 update code, D6 uncapped slider ranges
+#   - Code changes: sensitivity-engine.ts (conservative/optimistic computation removed, 2-scenario model),
+#     what-if-playground.tsx (2-column Base+YourScenario metric cards, uncapped numeric inputs, Reset Sliders button)
+#   - Artifacts updated: epics.md Epic 10 description + Stories 10.1/10.2/10.3, 10-2a-sensitivity-chart-dashboard.md,
+#     10-2b-metric-delta-cards.md, ux-design-specification-consolidated.md Journey 4, sprint-status.yaml
+#   - See: sprint-change-proposal-2026-02-21.md
 # 2026-02-21: Story 5H.3 audit executed (Dev Story workflow)
 #   - 9 journey steps mapped across Journeys 1, 2, 3, 5
 #   - 8 gaps identified: GAP-01 (DRAFT threshold mismatch), GAP-02 (missing middle
@@ -419,7 +429,7 @@ development_status:
   # AI-10 (taxRate TODO) → absorbed into 5H.1 engine validation
   epic-5h: in-progress
   5h-1-financial-engine-reference-validation: done  # AI-1: cell-by-cell vs reference spreadsheets. 99 tests, 2 brands (PostNet + Jeremiah's), 1 BUG fixed (ramp-up M1), 2 KNOWN DIVERGENCES documented, taxRate TODO resolved, adversarial code review completed
-  5h-2-report-tab-ui-audit-remediation: review    # AI-2: Implementation complete. 5 per-tab callout bars removed, parent CalloutBar enriched (BS identity check + Valuation net proceeds), comparison mode visibility fixed, column width reduced. Playwright e2e PASS, LSP clean. Pending adversarial code review.
+  5h-2-report-tab-ui-audit-remediation: done    # AI-2: Implementation + adversarial code review complete. 5 per-tab callout bars removed, parent CalloutBar enriched (BS identity check + Valuation net proceeds), comparison mode visibility fixed, column width reduced. H1 bug (BS identity check match predicate) fixed in code review.
   5h-3-epic-6-ac-audit-user-journeys: review              # AI-3: Audit executed. 8 gaps found (3 Blocker, 3 Quality Risk, 2 Enhancement). 6 AC amendment proposals. Completeness threshold 2-surface model recommended. Pending PO review.
   5h-4-planning-artifact-alignment: backlog              # AI-5: 111 FR traceability, fix stale coverage map
   epic-5h-retrospective: optional
@@ -458,15 +468,16 @@ development_status:
   9-4-graceful-degradation-mode-continuity: backlog
   epic-9-retrospective: optional
 
-  # Epic 10: What-If Playground [was Scenario Comparison, part of old Epic 7]
+  # Epic 10: What-If Playground — User-Authored Scenario Modeling [was Scenario Comparison, part of old Epic 7]
   # Rewritten per SCP-2026-02-20 D5/D6 — standalone sensitivity dashboard, not column-splitting
-  # Stories (3): Sensitivity Controls, Multi-Chart Dashboard, Scenario Persistence (optional)
-  epic-10: backlog
-  10-1-sensitivity-controls-sandbox-engine: backlog
+  # Pivoted per SCP-2026-02-21 — from 3-scenario (Base/Conservative/Optimistic) to 2-scenario (Base + Your Scenario)
+  # Conservative/Optimistic system columns retired (D1), slider ranges uncapped (D6), Story 10.3 promoted to essential (D3)
+  # Stories (4): 10.1 Sensitivity Controls, 10.2a Charts, 10.2b Delta Cards, 10.3 Scenario Persistence & Comparison
   epic-10: in-progress
-  10-1-sensitivity-controls-sandbox-engine: ready-for-dev
-  10-2-multi-chart-sensitivity-dashboard: ready-for-dev
-  10-3-scenario-persistence-sharing: backlog  # optional enhancement
+  10-1-sensitivity-controls-sandbox-engine: review  # Delivered, requires revision per SCP-2026-02-21. Code updated: sensitivity-engine.ts (conservative/optimistic removed, 2-scenario model), what-if-playground.tsx (Base+YourScenario 2-column layout, uncapped numeric inputs, reset button)
+  10-2a-sensitivity-chart-dashboard: ready-for-dev
+  10-2b-metric-delta-cards: ready-for-dev
+  10-3-scenario-persistence-comparison: backlog  # Promoted from optional to essential per SCP-2026-02-21 D3
   epic-10-retrospective: optional
 
   # Epic ST: Admin Support Tools — Impersonation & Demo Modes

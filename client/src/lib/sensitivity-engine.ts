@@ -1,7 +1,6 @@
-import { calculateProjections, type EngineInput, type FinancialInputs } from "@shared/financial-engine";
+import { calculateProjections, type EngineInput, type EngineOutput, type FinancialInputs } from "@shared/financial-engine";
 import { unwrapForEngine } from "@shared/plan-initialization";
 import type { PlanFinancialInputs, StartupCostLineItem } from "@shared/financial-engine";
-import type { ScenarioOutputs } from "./scenario-engine";
 
 export interface SliderValues {
   revenue: number;
@@ -18,14 +17,16 @@ export interface SliderConfig {
   max: number;
   step: number;
   unit: string;
+  mathMin?: number;
+  mathMax?: number;
 }
 
 export const SLIDER_CONFIGS: SliderConfig[] = [
-  { key: "revenue", label: "Revenue", min: -15, max: 15, step: 1, unit: "%" },
-  { key: "cogs", label: "COGS", min: -5, max: 5, step: 0.5, unit: "pp" },
-  { key: "labor", label: "Payroll / Labor", min: -10, max: 10, step: 1, unit: "%" },
-  { key: "marketing", label: "Marketing", min: -10, max: 10, step: 1, unit: "%" },
-  { key: "facilities", label: "Facilities", min: -10, max: 10, step: 1, unit: "%" },
+  { key: "revenue", label: "Revenue", min: -50, max: 100, step: 5, unit: "%", mathMin: -100 },
+  { key: "cogs", label: "COGS", min: -20, max: 20, step: 1, unit: "pp" },
+  { key: "labor", label: "Payroll / Labor", min: -50, max: 100, step: 5, unit: "%" },
+  { key: "marketing", label: "Marketing", min: -50, max: 100, step: 5, unit: "%" },
+  { key: "facilities", label: "Facilities", min: -50, max: 100, step: 5, unit: "%" },
 ];
 
 export const DEFAULT_SLIDER_VALUES: SliderValues = {
@@ -71,7 +72,8 @@ function applySensitivityFactors(
   fi: FinancialInputs,
   sliders: SliderValues,
 ): FinancialInputs {
-  fi.revenue.annualGrossSales = Math.round(fi.revenue.annualGrossSales * (1 + sliders.revenue / 100));
+  const revenueMultiplier = Math.max(0, 1 + sliders.revenue / 100);
+  fi.revenue.annualGrossSales = Math.round(fi.revenue.annualGrossSales * revenueMultiplier);
 
   for (let i = 0; i < 5; i++) {
     fi.operatingCosts.cogsPct[i] = clamp01(fi.operatingCosts.cogsPct[i] + sliders.cogs / 100);
@@ -86,14 +88,15 @@ function applySensitivityFactors(
   }
 
   for (let i = 0; i < 5; i++) {
-    fi.operatingCosts.facilitiesAnnual[i] = Math.round(fi.operatingCosts.facilitiesAnnual[i] * (1 + sliders.facilities / 100));
+    fi.operatingCosts.facilitiesAnnual[i] = Math.round(fi.operatingCosts.facilitiesAnnual[i] * Math.max(0, 1 + sliders.facilities / 100));
   }
 
   return fi;
 }
 
-export interface SensitivityOutputs extends ScenarioOutputs {
-  custom: ScenarioOutputs["base"];
+export interface SensitivityOutputs {
+  base: EngineOutput;
+  current: EngineOutput;
 }
 
 export function computeSensitivityOutputs(
@@ -104,50 +107,26 @@ export function computeSensitivityOutputs(
   const baseEngineInput: EngineInput = unwrapForEngine(planInputs, startupCosts);
   const baseOutput = calculateProjections(baseEngineInput);
 
-  const conservativeSliders: SliderValues = {
-    revenue: -15,
-    cogs: 5,
-    labor: 10,
-    marketing: 10,
-    facilities: 10,
-  };
-  const conservativeInputs = applySensitivityFactors(
-    cloneFinancialInputs(baseEngineInput.financialInputs),
-    conservativeSliders,
-  );
-  const conservativeOutput = calculateProjections({
-    financialInputs: conservativeInputs,
-    startupCosts: baseEngineInput.startupCosts,
-  });
-
-  const optimisticSliders: SliderValues = {
-    revenue: 15,
-    cogs: -5,
-    labor: -10,
-    marketing: -10,
-    facilities: -10,
-  };
-  const optimisticInputs = applySensitivityFactors(
-    cloneFinancialInputs(baseEngineInput.financialInputs),
-    optimisticSliders,
-  );
-  const optimisticOutput = calculateProjections({
-    financialInputs: optimisticInputs,
-    startupCosts: baseEngineInput.startupCosts,
-  });
-
-  const hasCustomAdjustment = Object.values(currentSliders).some((v) => v !== 0);
-  let customOutput = baseOutput;
-  if (hasCustomAdjustment) {
-    const customInputs = applySensitivityFactors(
+  const hasAdjustment = Object.values(currentSliders).some((v) => v !== 0);
+  let currentOutput = baseOutput;
+  if (hasAdjustment) {
+    const currentInputs = applySensitivityFactors(
       cloneFinancialInputs(baseEngineInput.financialInputs),
       currentSliders,
     );
-    customOutput = calculateProjections({
-      financialInputs: customInputs,
+    currentOutput = calculateProjections({
+      financialInputs: currentInputs,
       startupCosts: baseEngineInput.startupCosts,
     });
   }
 
-  return { base: baseOutput, conservative: conservativeOutput, optimistic: optimisticOutput, custom: customOutput };
+  return { base: baseOutput, current: currentOutput };
+}
+
+export function clampToMathLimits(key: keyof SliderValues, value: number): number {
+  const config = SLIDER_CONFIGS.find((c) => c.key === key);
+  if (!config) return value;
+  const min = config.mathMin ?? -Infinity;
+  const max = config.mathMax ?? Infinity;
+  return Math.max(min, Math.min(max, value));
 }
