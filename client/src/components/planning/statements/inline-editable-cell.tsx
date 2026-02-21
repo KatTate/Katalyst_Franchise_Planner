@@ -14,7 +14,7 @@ interface InlineEditableCellProps {
   testId: string;
   ariaLabel: string;
   className?: string;
-  isFlashing?: boolean;
+
 }
 
 function formatRawForInput(rawValue: number, inputFormat: FormatType | "multiple"): string {
@@ -43,7 +43,6 @@ export function InlineEditableCell({
   testId,
   ariaLabel,
   className = "",
-  isFlashing = false,
 }: InlineEditableCellProps) {
   const [editText, setEditText] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
@@ -88,10 +87,6 @@ export function InlineEditableCell({
     [commitValue, onCancel, onTabNext, onTabPrev]
   );
 
-  const flashClass = isFlashing
-    ? "animate-flash-linked"
-    : "";
-
   if (isEditing) {
     return (
       <td
@@ -118,7 +113,7 @@ export function InlineEditableCell({
 
   return (
     <td
-      className={`py-1.5 px-3 text-right font-mono tabular-nums text-sm whitespace-nowrap cursor-pointer select-none ${className} ${flashClass}`}
+      className={`py-1.5 px-3 text-right font-mono tabular-nums text-sm whitespace-nowrap cursor-pointer select-none ${className}`}
       data-testid={testId}
       role="gridcell"
       aria-readonly="false"

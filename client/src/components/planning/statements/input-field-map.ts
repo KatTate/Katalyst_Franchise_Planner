@@ -15,14 +15,46 @@ export const INPUT_FIELD_MAP: Record<string, InputFieldMapping> = {
     inputFormat: "currency",
     storedGranularity: "monthly",
   },
+  "growth-rate": {
+    category: "revenue",
+    fieldName: "growthRates",
+    inputFormat: "percentage",
+  },
   "cogs-pct": {
     category: "operatingCosts",
     fieldName: "cogsPct",
     inputFormat: "percentage",
   },
+  "royalty-pct": {
+    category: "operatingCosts",
+    fieldName: "royaltyPct",
+    inputFormat: "percentage",
+  },
+  "ad-fund-pct": {
+    category: "operatingCosts",
+    fieldName: "adFundPct",
+    inputFormat: "percentage",
+  },
   "dl-pct": {
     category: "operatingCosts",
     fieldName: "laborPct",
+    inputFormat: "percentage",
+  },
+  "facilities": {
+    category: "operatingCosts",
+    fieldName: "facilitiesAnnual",
+    inputFormat: "currency",
+    storedGranularity: "annual",
+  },
+  "mgmt-salaries": {
+    category: "operatingCosts",
+    fieldName: "managementSalariesAnnual",
+    inputFormat: "currency",
+    storedGranularity: "annual",
+  },
+  "payroll-tax-pct": {
+    category: "operatingCosts",
+    fieldName: "payrollTaxPct",
     inputFormat: "percentage",
   },
   "marketing": {
@@ -34,6 +66,29 @@ export const INPUT_FIELD_MAP: Record<string, InputFieldMapping> = {
     category: "operatingCosts",
     fieldName: "otherOpexPct",
     inputFormat: "percentage",
+  },
+  "target-pretax-profit-pct": {
+    category: "profitabilityAndDistributions",
+    fieldName: "targetPreTaxProfitPct",
+    inputFormat: "percentage",
+  },
+  "distributions": {
+    category: "profitabilityAndDistributions",
+    fieldName: "distributions",
+    inputFormat: "currency",
+    storedGranularity: "annual",
+  },
+  "shareholder-salary-adj": {
+    category: "profitabilityAndDistributions",
+    fieldName: "shareholderSalaryAdj",
+    inputFormat: "currency",
+    storedGranularity: "annual",
+  },
+  "non-capex-investment": {
+    category: "profitabilityAndDistributions",
+    fieldName: "nonCapexInvestment",
+    inputFormat: "currency",
+    storedGranularity: "annual",
   },
 };
 

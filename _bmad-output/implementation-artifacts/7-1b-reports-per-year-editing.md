@@ -1,6 +1,6 @@
 # Story 7.1b: Make All Financial Assumptions Editable in Reports
 
-Status: ready-for-dev
+Status: in-progress
 
 ## Story
 

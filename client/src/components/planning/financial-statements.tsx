@@ -18,6 +18,7 @@ import { RoicTab } from "./statements/roic-tab";
 import { ValuationTab } from "./statements/valuation-tab";
 import { AuditTab } from "./statements/audit-tab";
 import { parseFieldInput } from "@/lib/field-metadata";
+import { INPUT_FIELD_MAP } from "./statements/input-field-map";
 import { updateFieldValue } from "@shared/plan-initialization";
 import { computeScenarioOutputs, type ScenarioOutputs } from "@/lib/scenario-engine";
 import { useToast } from "@/hooks/use-toast";
@@ -164,6 +165,27 @@ export function FinancialStatements({ planId, defaultTab = "summary", plan, queu
       const updatedField = updateFieldValue(field, parsedValue, new Date().toISOString());
       const updatedInputs = buildUpdatedInputs(financialInputs, category, categoryObj, fieldName, updatedField, yearIndex);
       queueSave({ financialInputs: updatedInputs });
+    },
+    [financialInputs, queueSave]
+  );
+
+  const handleCopyYear1ToAll = useCallback(
+    (rowKey: string) => {
+      if (!financialInputs || !queueSave) return;
+      const mapping = INPUT_FIELD_MAP[rowKey];
+      if (!mapping) return;
+      const categoryObj = resolveCategoryObj(financialInputs, mapping.category);
+      if (!categoryObj) return;
+      const fieldArr = categoryObj[mapping.fieldName];
+      if (!Array.isArray(fieldArr) || fieldArr.length < 5) return;
+      const year1Value = (fieldArr[0] as FinancialFieldValue).currentValue;
+      const now = new Date().toISOString();
+      let result = financialInputs;
+      for (let i = 1; i < fieldArr.length; i++) {
+        const updated = updateFieldValue(fieldArr[i] as FinancialFieldValue, year1Value, now);
+        result = buildUpdatedInputs(result, mapping.category, resolveCategoryObj(result, mapping.category)!, mapping.fieldName, updated, i);
+      }
+      queueSave({ financialInputs: result });
     },
     [financialInputs, queueSave]
   );
@@ -340,6 +362,7 @@ export function FinancialStatements({ planId, defaultTab = "summary", plan, queu
                 output={output}
                 financialInputs={financialInputs}
                 onCellEdit={queueSave ? handleCellEdit : undefined}
+                onCopyYear1ToAll={queueSave ? handleCopyYear1ToAll : undefined}
                 isSaving={isSaving}
                 scenarioOutputs={scenarioOutputs}
                 brandName={brandName}
