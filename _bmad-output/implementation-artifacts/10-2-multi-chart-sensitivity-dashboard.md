@@ -14,18 +14,18 @@ so that I can understand the full impact of changing assumptions across every di
 
 1. Given I am on the What-If Playground (the "scenarios" workspace view) with sensitivity sliders visible, when the chart dashboard renders below the sliders panel, then 6 chart cards are displayed in a responsive 2-column grid (2×3 on desktop ≥1024px, 1-column stack on mobile <768px). The chart area is labeled "Your Business — Three Scenarios" or similar contextual heading.
 
-2. Given the What-If Playground has loaded and `ScenarioOutputs` (base, conservative, optimistic) are computed, when any slider value changes and new `ScenarioOutputs` are recomputed (debounced by Story 10.1), then all 6 charts update simultaneously — no chart may be stale relative to another.
+2. Given the What-If Playground has loaded and `ScenarioOutputs` (base, conservative, optimistic) are computed, when any slider value changes and new `ScenarioOutputs` are recomputed (debounced by Story 10.1), then all 6 charts update simultaneously with smooth animation (≤ 300ms transition) — no chart may be stale relative to another.
 
 ### Chart 1 — Profitability (P&L Summary)
 
-3. Given `ScenarioOutputs` are available, when Chart 1 renders, then it shows a 5-year line/area chart (one set of lines per scenario) for all five P&L metrics from `annualSummaries`: **Annual Revenue** (`revenue`, primary area), **COGS** (`totalCogs`), **Gross Profit** (`grossProfit`), **EBITDA** (`ebitda`), and **Pre-Tax Income** (`preTaxIncome`) — all rendered as overlaid lines. The chart X-axis shows Year 1 through Year 5; Y-axis shows dollar amounts. The three scenario curves use the application's CSS chart color tokens: Base Case uses `hsl(var(--chart-1))` as a solid line, Conservative uses `hsl(var(--chart-5))` as a dashed line, Optimistic uses `hsl(var(--chart-2))` as a lighter dashed line.
+3. Given `ScenarioOutputs` are available, when Chart 1 renders, then it shows a 5-year line/area chart (one set of lines per scenario) for all five P&L metrics from `annualSummaries`: **Annual Revenue** (`revenue`, primary area), **COGS** (`totalCogs`), **Gross Profit** (`grossProfit`), **EBITDA** (`ebitda`), and **Pre-Tax Income** (`preTaxIncome`) — all rendered as overlaid lines. The chart X-axis shows Year 1 through Year 5; Y-axis shows dollar amounts. The three scenario curves use the codebase `SCENARIO_COLORS` convention: Base Case uses green-family (`hsl(var(--primary))`) as a solid line, Conservative uses orange-family (`hsl(25, 95%, 53%)`) as a dashed line, Optimistic uses blue-family (`hsl(210, 85%, 55%)`) as a lighter dashed line. See "Scenario line colors" in Dev Notes for canonical values.
    - Source: `_bmad-output/planning-artifacts/epics.md` line 2137; `ux-design-specification-consolidated.md` Journey 4 line 1099
 
 4. Given Chart 1 renders, when I hover over any data point, then a tooltip displays the year, scenario name, and all five series values — Revenue, COGS, Gross Profit, EBITDA, and Pre-Tax Income — each formatted as a dollar value (e.g., "$142,000").
 
 ### Chart 2 — Cash Flow
 
-5. Given `ScenarioOutputs` are available, when Chart 2 renders, then it shows a 5-year line chart with three scenario curves for each of the following three series from `annualSummaries`: **Net Operating Cash Flow** (`operatingCashFlow`), **Net Cash Flow** (`netCashFlow`), and **Ending Cash Balance** (`endingCash`). The X-axis shows Year 1 through Year 5.
+5. Given `ScenarioOutputs` are available, when Chart 2 renders, then it shows a 60-month line chart (monthly granularity from `monthlyProjections`) with three scenario curves for **Ending Cash Balance** (`endingCash`). The X-axis shows months 1–60 (with year markers); the Y-axis shows dollar amounts. Monthly granularity is required so amber advisory zones can identify specific months where cash dips negative, not just year-end snapshots.
    - Source: `_bmad-output/planning-artifacts/epics.md` line 2138
 
 6. Given Chart 2 renders, when any scenario has at least one month where `monthlyProjections[m].endingCash < 0` (m = 0–59, checked across all 60 months — not just year-end values), then an amber advisory zone (`hsl(var(--chart-5))` at 15% opacity as a background band, or a `ReferenceLine y={0}` with amber fill below) highlights the cash-negative region. A scenario that dips negative mid-year but recovers by year-end must still trigger the advisory zone — checking `annualSummaries[].endingCash` alone is insufficient. This advisory coloring follows the UX spec's amber advisory language — it is not a red error state.
@@ -40,11 +40,11 @@ so that I can understand the full impact of changing assumptions across every di
 
    If `roiMetrics.breakEvenMonth` is `null` for a scenario (break-even not reached in 60 months), the bar displays "No break-even in 5 years" with a muted style.
 
-8. Given Chart 3 renders, when I view the chart, then each bar is labeled with its scenario name and the break-even month value (e.g., "Base: Month 14", "Conservative: Month 22", "Optimistic: Month 9"). The bars use the scenario color conventions (chart-1/chart-5/chart-2).
+8. Given Chart 3 renders, when I view the chart, then each bar is labeled with its scenario name and the break-even month value (e.g., "Base: Month 14", "Conservative: Month 22", "Optimistic: Month 9"). The bars use the scenario color conventions (green-family Base, orange-family Conservative, blue-family Optimistic per `SCENARIO_COLORS`).
 
 ### Chart 4 — ROI & Returns
 
-9. Given `ScenarioOutputs` are available, when Chart 4 renders, then it shows a 5-year cumulative ROIC line chart. The Y-axis shows ROIC percentage; the X-axis shows Year 1 through Year 5. Three scenario curves display `roicExtended[].roicPct` for years 1-5 using the standard scenario color tokens (chart-1/chart-5/chart-2 with solid/dashed/lighter-dashed strokes).
+9. Given `ScenarioOutputs` are available, when Chart 4 renders, then it shows a 5-year cumulative ROIC line chart. The Y-axis shows ROIC percentage; the X-axis shows Year 1 through Year 5. Three scenario curves display `roicExtended[].roicPct` for years 1-5 using the standard scenario color conventions (green-family solid / orange-family dashed / blue-family lighter-dashed per `SCENARIO_COLORS`).
 
 10. Given Chart 4 renders, then a plain-language callout card appears below or beside the chart summarizing the conservative case, e.g.: "Even in the conservative scenario, your 5-year cumulative return is X%." The specific phrasing is: "Conservative case: [X]% ROIC at Year 5." Do NOT say "Even in the conservative scenario..." (per UX spec advisory language constraint) — use "Conservative case: [X]% ROIC at Year 5."
 
@@ -79,81 +79,26 @@ so that I can understand the full impact of changing assumptions across every di
 ### data-testid Coverage
 
 15. Given the chart dashboard renders, then it includes:
-    - `data-testid="what-if-charts-container"` on the outer chart grid container
-    - `data-testid="chart-profitability"` on Chart 1 card
-    - `data-testid="chart-cash-flow"` on Chart 2 card
-    - `data-testid="chart-break-even"` on Chart 3 card
-    - `data-testid="chart-roi-returns"` on Chart 4 card
-    - `data-testid="chart-balance-sheet"` on Chart 5 card
-    - `data-testid="chart-debt-working-capital"` on Chart 6 card
-    - `data-testid="metric-card-break-even"` on the Break-Even metric delta card
-    - `data-testid="metric-card-revenue"` on the Revenue delta card
-    - `data-testid="metric-card-roi"` on the ROI delta card
-    - `data-testid="metric-card-cash"` on the Cash delta card
+    - `data-testid="sensitivity-charts-grid"` on the outer chart grid container
+    - `data-testid="sensitivity-chart-profitability"` on Chart 1 card
+    - `data-testid="sensitivity-chart-cash-flow"` on Chart 2 card
+    - `data-testid="sensitivity-chart-break-even"` on Chart 3 card
+    - `data-testid="sensitivity-chart-roi"` on Chart 4 card
+    - `data-testid="sensitivity-chart-balance-sheet"` on Chart 5 card
+    - `data-testid="sensitivity-chart-debt-working-capital"` on Chart 6 card
+    - `data-testid="sensitivity-metric-delta-break-even"` on the Break-Even metric delta card
+    - `data-testid="sensitivity-metric-delta-revenue"` on the Revenue delta card
+    - `data-testid="sensitivity-metric-delta-roi"` on the ROI delta card
+    - `data-testid="sensitivity-metric-delta-cash"` on the Cash delta card
     - `data-testid="roi-callout"` on the Chart 4 plain-language callout card
-So that I can understand the full impact of changing assumptions across every dimension of my business.
 
-## Acceptance Criteria
+### Chart Color Tokens & Advisory Colors
 
-**AC-1: Six charts render below the sensitivity controls**
-**Given** I am on the What-If Playground with sensitivity sliders (Story 10-1)
-**When** the page loads with plan data
-**Then** six chart cards are displayed below the Sensitivity Controls panel and key metric cards, arranged in a responsive 2-column grid on viewports ≥ 1024 px (stacked single-column below)
+16. Given the charts are rendered, then scenario curves use consistent colors matching the existing `SCENARIO_COLORS` from `scenario-engine.ts`: green-family for Base Case (solid line), orange-family for Conservative (dashed line), blue-family for Optimistic (light dashed line). Advisory zones (cash-negative amber on Chart 2) use amber advisory color (never error-red), consistent with the Guardian Bar visual language (FR88–FR89). Use CSS chart color tokens (`--chart-1` through `--chart-5`) for distinct data series within each chart.
 
-**AC-2: Charts react to slider adjustments**
-**Given** I am viewing the What-If Playground
-**When** I adjust any slider
-**Then** all 6 charts update simultaneously showing three scenario curves per chart:
-  - **Current** (solid line) — reflects the plan with my current slider positions applied
-  - **Conservative** (dashed line) — reflects the plan with all sliders at their negative extremes
-  - **Optimistic** (light dashed line) — reflects the plan with all sliders at their positive extremes
-**And** the charts animate smoothly on data change (≤ 300ms transition)
+### Sandbox Invariant
 
-**AC-3: Profitability (P&L Summary) chart**
-**Given** the charts are visible
-**Then** Chart 1 displays a 5-year line/area chart showing Annual Revenue, COGS, Gross Profit, EBITDA, and Pre-Tax Income for each scenario
-**And** the X-axis shows Year 1 through Year 5
-**And** the Y-axis shows dollar amounts formatted as `$XXK` or `$X.XM`
-
-**AC-4: Cash Flow chart**
-**Given** the charts are visible
-**Then** Chart 2 displays a line chart showing Ending Cash Balance over 60 months (monthly granularity from `monthlyProjections`) for each scenario
-**And** months where any scenario's ending cash balance goes negative are highlighted with an amber advisory zone (not error-red)
-**And** monthly granularity is required so amber zones can identify specific months, not just years
-
-**AC-5: Break-Even Analysis chart**
-**Given** the charts are visible
-**Then** Chart 3 displays a visual showing months to break-even for each of the 3 scenarios
-**And** if break-even is null for any scenario, the chart shows "60+ mo" or an indicator that break-even was not reached within 60 months
-
-**AC-6: ROI & Returns chart**
-**Given** the charts are visible
-**Then** Chart 4 displays a 5-year ROIC chart with three scenario curves
-**And** a callout card is displayed with a plain-language interpretation (e.g., "Your conservative case still shows positive ROI by month 18")
-
-**AC-7: Balance Sheet Health chart**
-**Given** the charts are visible
-**Then** Chart 5 displays Total Assets vs Total Liabilities over 5 years for each scenario
-**And** the equity growth is visible as the gap between the asset and liability lines
-
-**AC-8: Debt & Working Capital chart**
-**Given** the charts are visible
-**Then** Chart 6 displays the outstanding debt paydown trajectory and working capital position over 5 years for each scenario
-
-**AC-9: Key metric cards show delta indicators**
-**Given** I have adjusted sliders away from their default (0%) positions
-**When** the Current scenario differs from the saved plan
-**Then** all 5 key metric cards (Break-Even Month, 5-Year ROI %, Year-1 Revenue, Year-1 EBITDA, Year-1 Pre-Tax Income) display delta indicators showing the impact of slider changes vs. the base saved plan (e.g., "Break-Even: 14 mo → 18 mo (+4 mo)")
-
-**AC-10: Chart color tokens and advisory colors**
-**Given** the charts are rendered
-**Then** charts use the application's CSS chart color tokens (`--chart-1` through `--chart-5`) for distinct data series within each chart
-**And** scenario curves use consistent colors: green-family for Current/Base, orange-family for Conservative, blue-family for Optimistic (matching the existing `SCENARIO_COLORS` from `scenario-engine.ts`)
-**And** advisory zones (cash-negative) use amber advisory color (never error-red), consistent with the Guardian Bar visual language (FR88–FR89)
-
-**AC-11: Sandbox invariant preserved**
-**Given** I interact with the charts and sliders
-**Then** no `PATCH /api/plans/:planId` request is sent — all computation is client-side sandbox-only
+17. Given I interact with the charts and sliders, then no `PATCH /api/plans/:planId` request is sent — all computation is client-side sandbox-only.
 
 ## Dev Notes
 
@@ -171,12 +116,14 @@ So that I can understand the full impact of changing assumptions across every di
 - **Chart rendering pattern (FOLLOW dashboard-charts.tsx):** Use `recharts` components (`LineChart`, `AreaChart`, `BarChart`) wrapped with `ChartContainer` from `@/components/ui/chart`. `ChartContainer` handles responsive sizing; always pass a `ChartConfig` object. Use `ChartTooltip` + `ChartTooltipContent` for tooltips. All chart implementations in this project follow this pattern.
   - Source: `client/src/components/planning/dashboard-charts.tsx` → `BreakEvenChart`, `RevenueExpensesChart` (both show the exact pattern to follow)
 
-- **Chart color tokens (CSS variables — use these, do not hardcode hex):**
-  - Base Case (solid line): `hsl(var(--chart-1))` — Katalyst green
-  - Conservative (dashed line, `strokeDasharray="5 3"`): `hsl(var(--chart-5))` — amber
-  - Optimistic (lighter dashed, `strokeDasharray="2 4"`): `hsl(var(--chart-2))` — blue/cyan
-  - Amber advisory zone (cash-negative): `hsl(var(--chart-5))` at 15% opacity as reference area or gradient
-  - Source: `client/src/index.css` lines 48–52 (light) and 139–143 (dark)
+- **Scenario line colors (use codebase convention for consistency with existing Summary tab):**
+  - Base/Current (solid line): `hsl(var(--primary))` — Katalyst Green, matching `SCENARIO_COLORS.base` from `scenario-engine.ts`
+  - Conservative (dashed line, `strokeDasharray="5 5"`): `hsl(25, 95%, 53%)` — orange-family, matching `SCENARIO_COLORS.conservative.dot: bg-orange-500`
+  - Optimistic (lighter dashed, `strokeDasharray="3 3"`): `hsl(210, 85%, 55%)` — blue-family, matching `SCENARIO_COLORS.optimistic.dot: bg-blue-500`
+  - These must be consistent across ALL 6 charts.
+  - Use CSS chart color tokens (`--chart-1` through `--chart-5`) for distinct **data series within** each chart (e.g., Revenue vs COGS vs EBITDA in Chart 1), NOT for scenario differentiation.
+  - Amber advisory zone (cash-negative on Chart 2): `hsl(var(--chart-5))` at 15% opacity as reference area or gradient
+  - Source: `client/src/lib/scenario-engine.ts:113-117`, `client/src/index.css` lines 48–52 (light) and 139–143 (dark)
 
 - **Currency values are stored in CENTS:** All `EngineOutput` numeric values (revenue, cash, assets, liabilities) are in cents. Divide by 100 before displaying in charts. Use `$${(v / 1000).toFixed(0)}K` for Y-axis tick labels (see `dashboard-charts.tsx` line 70 for the pattern). Full tooltip values: `$${num.toLocaleString("en-US", { maximumFractionDigits: 0 })}`.
   - Source: `shared/financial-engine.ts`, `client/src/components/planning/dashboard-charts.tsx` lines 70, 79
@@ -186,7 +133,7 @@ So that I can understand the full impact of changing assumptions across every di
 
 - **EngineOutput data fields for each chart:**
   - Chart 1 (Profitability): `output.annualSummaries[y].revenue`, `.totalCogs`, `.grossProfit`, `.ebitda`, `.preTaxIncome` — 5 values per series (years 1–5); all are in cents
-  - Chart 2 (Cash Flow): `output.annualSummaries[y].operatingCashFlow`, `.netCashFlow`, `.endingCash` — 5 values per series (years 1–5); all are in cents
+  - Chart 2 (Cash Flow): `output.monthlyProjections[m].endingCash` — 60 values (months 0–59); all are in cents. Monthly granularity required for amber advisory zone precision.
   - Chart 3 (Break-Even): `output.roiMetrics.breakEvenMonth` — single number per scenario
   - Chart 4 (ROI): `output.roicExtended[y].roicPct` — 5 values (year 1-5)
   - Chart 5 (Balance Sheet): `output.annualSummaries[y].totalAssets`, `.totalLiabilities` — 5 values
@@ -232,8 +179,8 @@ So that I can understand the full impact of changing assumptions across every di
 
 ### Anti-Patterns & Hard Constraints
 
-- **DO NOT call `computeScenarioOutputs()` inside `SensitivityCharts`.** Scenario computation belongs in `WhatIfPlayground` (10.1's domain). `SensitivityCharts` is a pure presentational component — it receives `ScenarioOutputs` as a prop and renders charts. Calling the engine inside a chart component would re-compute on every render.
-  - Source: `client/src/lib/scenario-engine.ts` — `computeScenarioOutputs` is called once in WhatIfPlayground, not per-chart
+- **DO NOT call `calculateProjections()` or any engine function inside `SensitivityCharts`.** All engine computation belongs in `WhatIfPlayground` (10.1's domain). `SensitivityCharts` is a pure presentational component — it receives the 4 engine outputs (`base`, `current`, `conservative`, `optimistic`) as props and renders charts. Calling the engine inside a chart component would re-compute on every render.
+  - Source: `client/src/lib/scenario-engine.ts` — engine calls live in WhatIfPlayground, not per-chart
 
 - **DO NOT use red/destructive colors for the cash-negative advisory zone on Chart 2.** The cash-negative zone uses amber advisory coloring (`hsl(var(--chart-5))` at 15% opacity). Red is reserved for actual system errors. This is an advisory/warning, not a failure state.
   - Source: UX spec Part 12 (Guardian advisory language), `client/src/index.css` (guardian tokens)
@@ -241,8 +188,8 @@ So that I can understand the full impact of changing assumptions across every di
 - **DO NOT import or use `ScenarioBar` or `ScenarioSummaryCard` from Epic 5 statements.** Those components are officially marked `[DEAD CODE]` in `architecture.md` per SCP-2026-02-20 D5/D6 — they are the retired column-splitting comparison UI from Reports. The What-If Playground uses a fresh chart-based approach. Importing dead code would bring in column-switching logic that has no place here and is pending removal.
   - Source: `_bmad-output/planning-artifacts/architecture.md` lines 1577–1580 (`scenario-bar.tsx`, `scenario-summary-card.tsx`, `comparison-table-head.tsx` all tagged `[DEAD CODE — retired per SCP-2026-02-20 D5/D6]`)
 
-- **DO NOT hardcode hex color values for scenario lines.** Use CSS variables: `hsl(var(--chart-1))`, `hsl(var(--chart-2))`, `hsl(var(--chart-5))`. This ensures dark mode works correctly.
-  - Source: `client/src/index.css` lines 48–52 (light mode chart vars), 139–143 (dark mode chart vars)
+- **DO NOT hardcode arbitrary hex color values.** For scenario line colors, use the `SCENARIO_COLORS` convention defined in the "Scenario line colors" Architecture Patterns section. For data series colors within charts, use CSS chart tokens (`--chart-1` through `--chart-5`). This ensures dark mode works correctly.
+  - Source: `client/src/lib/scenario-engine.ts:113-117`, `client/src/index.css` lines 48–52 (light mode chart vars), 139–143 (dark mode chart vars)
 
 - **DO NOT add new API endpoints or server-side calls.** All scenario computation is client-side (`calculateProjections` imported from `shared/financial-engine.ts`). Chart data is derived from `ScenarioOutputs` in-memory. No server fetching for charts.
   - Source: Architecture Decision 8; `client/src/lib/scenario-engine.ts` imports `calculateProjections` directly
@@ -451,12 +398,7 @@ So that I can understand the full impact of changing assumptions across every di
 
 - **Recharts `ResponsiveContainer` requires a parent with defined height.** The `ChartContainer` wrapper handles this, but ensure each chart card has a fixed or min-height for the chart content area (e.g., `className="h-[220px] w-full"` matching existing dashboard charts).
 
-- **Scenario colors — UX spec vs codebase divergence:** The UX spec (Part 5, Data Visualization) specifies scenario overlay colors as green-family tones: **Edamame Sage `#96A487`** (conservative), **Katalyst Green `#78BF26`** (base/current), **Basque `#676F13`** (optimistic). However, the existing `SCENARIO_COLORS` in `scenario-engine.ts` uses orange for conservative and blue for optimistic. For the sensitivity charts, prefer the **codebase convention** (orange/blue) to maintain visual consistency with the existing Summary tab's scenario dots and backgrounds. If the UX spec colors are preferred, all scenario indicators across the app should be updated together in a separate pass. Recommended chart line colors:
-  - Base/Current: `hsl(var(--primary))` (Katalyst Green, solid line)
-  - Conservative: `hsl(25, 95%, 53%)` (orange-family, matching `SCENARIO_COLORS.conservative.dot: bg-orange-500`)
-  - Optimistic: `hsl(210, 85%, 55%)` (blue-family, matching `SCENARIO_COLORS.optimistic.dot: bg-blue-500`)
-  - These must be consistent across ALL 6 charts.
-  - Source: `client/src/lib/scenario-engine.ts:113-117`, `_bmad-output/planning-artifacts/ux-design-specification-consolidated.md` Part 5
+- **Scenario colors — UX spec vs codebase divergence:** The UX spec (Part 5, Data Visualization) specifies scenario overlay colors as green-family tones (Edamame/Katalyst Green/Basque). However, the existing `SCENARIO_COLORS` in `scenario-engine.ts` uses orange for conservative and blue for optimistic. **Use the codebase convention** (green/orange/blue) for consistency with the existing Summary tab. See "Scenario line colors" in the Architecture Patterns section above for the canonical color values. If the UX spec colors are preferred later, all scenario indicators across the app should be updated together in a separate pass.
 
 - **Existing `BreakEvenChart` in `dashboard-charts.tsx` is a DIFFERENT component.** That chart shows a single-scenario cumulative cash flow for the My Plan dashboard. The What-If Playground Break-Even chart (Chart 3) shows multi-scenario break-even comparison. Do NOT reuse the dashboard's `BreakEvenChart` — create a new component for the sensitivity dashboard.
 
@@ -474,55 +416,26 @@ So that I can understand the full impact of changing assumptions across every di
 
 | File | Action | Notes |
 |------|--------|-------|
-| `client/src/components/planning/what-if/sensitivity-charts.tsx` | CREATE | `<SensitivityCharts>` component. Props: `{ scenarios: ScenarioOutputs }`. Contains all 6 chart implementations and the metric delta card strip. Approximately 350-450 lines. |
-| `client/src/components/planning/what-if/what-if-playground.tsx` | MODIFY | Add `<SensitivityCharts scenarios={scenarioOutputs} />` below the slider controls panel. Created in Story 10.1. |
+| `client/src/lib/sensitivity-engine.ts` | MODIFY | Extend to support 4th "current" engine call. Add `computeSensitivityOutputsWithCurrent(planInputs, startupCosts, currentSliderValues, extremes)` or extend existing function signature. Return type must include `current: EngineOutput` alongside `base`, `conservative`, `optimistic`. |
+| `client/src/components/planning/what-if/sensitivity-charts.tsx` | CREATE | `<SensitivityCharts>` component containing all 6 chart implementations (`ProfitabilityChart`, `CashFlowChart`, `BreakEvenSensitivityChart`, `ROIChart`, `BalanceSheetChart`, `DebtWorkingCapitalChart`) and the metric delta card strip. Each chart accepts the 4 engine outputs and renders a Recharts chart inside a Card. Approximately 400-500 lines. |
+| `client/src/components/planning/what-if/what-if-playground.tsx` | MODIFY | Add `<SensitivityCharts>` below the slider controls panel. Wire debounced slider values to the extended engine function for the 4th "current" call. Add delta indicator logic to metric cards. Created in Story 10.1. |
 
 **Note on directory:** The `client/src/components/planning/what-if/` directory is created in Story 10.1. If 10.1 places `WhatIfPlayground` at a different path, adjust accordingly.
 
 ### Testing Expectations
 
-- **Playwright e2e (primary test framework):** No unit test framework is established for frontend components in this project. Testing is via Playwright.
+- **Playwright e2e (primary test framework):** No unit test framework (React Testing Library) is established for frontend components in this project. Testing is via Playwright e2e tests.
 - **Critical ACs for e2e coverage:**
-  - AC 1: Navigate to Scenarios view → verify `data-testid="what-if-charts-container"` is visible
+  - AC 1: Navigate to Scenarios view → verify `data-testid="sensitivity-charts-grid"` is visible
   - AC 2: Trigger slider change → verify all 6 chart `data-testid` containers update (check for re-render or data change)
-  - AC 3/5/7/9/11/12: Each chart card renders with its `data-testid`
+  - AC 3/5/7/9/11/12: Each chart card renders with its `data-testid="sensitivity-chart-*"`
   - AC 6: Verify amber advisory zone appears for Chart 2 when any scenario has a month where `monthlyProjections[m].endingCash < 0` — including mid-year dips that recover by year-end (year-end `endingCash` alone is insufficient)
-  - AC 13: Verify 4 metric delta cards render with `data-testid="metric-card-*"`
-  - AC 14: Verify neutral state message when sliders are at zero
+  - AC 13: Verify 4 metric delta cards render with `data-testid="sensitivity-metric-delta-*"`
+  - AC 14: Verify encouragement text on initial load before slider interaction
   - AC 15: Verify all `data-testid` attributes are present
-
-### Dependencies & Environment Variables
-
-- **No new packages required.** `recharts` and `@/components/ui/chart` (`ChartContainer`, `ChartTooltip`, `ChartTooltipContent`, `ChartConfig`) are already installed via shadcn/ui. Confirmed by `architecture.md` ("Recharts 2.15 for charting/visualization") and existing `dashboard-charts.tsx`.
-- **No new environment variables required.** All data is client-side from `ScenarioOutputs`.
-- **Story 10.1 prerequisite:** `what-if-playground.tsx` must exist with:
-  - Slider state management
-  - `computeScenarioOutputs()` called with plan inputs
-  - A mounting point for `<SensitivityCharts>` below sliders
-  - `ScenarioOutputs` result available as local state
-
-### References
-
-- `_bmad-output/planning-artifacts/epics.md` → Epic 10, Story 10.2 (lines 2126–2150) — user story, acceptance criteria, dev notes
-- `_bmad-output/planning-artifacts/epics.md` → Epic 10, Story 10.1 (lines 2095–2125) — prerequisite story context
-- `_bmad-output/planning-artifacts/ux-design-specification-consolidated.md` → Part 12 (Guardian Bar + Dynamic Interpretation) — advisory color language ("Guardian speaks in amber, not red"); amber is a caution, not an error state
-- `_bmad-output/planning-artifacts/ux-design-specification-consolidated.md` → Part 5 Color Palette — advisory color tokens (amber = caution, red = destructive error)
-- ~~Part 11 (Scenario Comparison)~~ **RETIRED (SCP-2026-02-20 D5/D6)** — no longer design authority; do not reference
-- `_bmad-output/planning-artifacts/ux-design-specification-consolidated.md` → Journey 4 (lines 1086–1108) — Chris's What-If Playground experience (target UX)
-- `_bmad-output/planning-artifacts/ux-design-specification-consolidated.md` → Part 5 Color Palette (lines 327–331) — advisory color language
-- `_bmad-output/planning-artifacts/ux-design-specification-consolidated.md` → Part 7 Charting (lines 440–447) — Recharts, chart type guidance, scenario overlay
-- `_bmad-output/planning-artifacts/architecture.md` → Financial Engine Architecture (lines 872–1055) — `EngineOutput`, `AnnualSummary`, `MonthlyProjection`, `ROICExtendedOutput` interfaces
-- `_bmad-output/planning-artifacts/architecture.md` → Naming Patterns (lines 1133–1136)
-- `_bmad-output/planning-artifacts/architecture.md` → Decision 8 (State Management — client-side computation pattern)
-- `client/src/lib/scenario-engine.ts` → `computeScenarioOutputs()`, `ScenarioOutputs`, `SCENARIO_LABELS`, `CONSERVATIVE_*` / `OPTIMISTIC_*` constants
-- `client/src/components/planning/dashboard-charts.tsx` → `BreakEvenChart`, `RevenueExpensesChart` (Recharts + ChartContainer pattern)
-- `shared/financial-engine.ts` → `EngineOutput`, `AnnualSummary` (line 243), `MonthlyProjection` (line 157), `ROIMetrics` (line 269), `ROICExtendedOutput` (line 302)
-- `client/src/index.css` → lines 48–52 (chart-1 through chart-5 light mode), lines 139–143 (dark mode)
-- `client/src/contexts/WorkspaceViewContext.tsx` → `WorkspaceView`, `navigateToScenarios()`
-- `client/src/pages/planning-workspace.tsx` → `case "scenarios"` placeholder (lines 127–142)
-| `client/src/lib/sensitivity-engine.ts` | MODIFY | Extend to support 4th "current" engine call. Add `computeSensitivityOutputsWithCurrent(planInputs, startupCosts, currentSliderValues, extremes)` or extend existing function signature. Return type must include `current: EngineOutput` alongside `base`, `conservative`, `optimistic`. |
-| `client/src/components/planning/sensitivity-charts.tsx` | CREATE | New file containing all 6 chart components: `ProfitabilityChart`, `CashFlowChart`, `BreakEvenSensitivityChart`, `ROIChart`, `BalanceSheetChart`, `DebtWorkingCapitalChart`. Each accepts the 4 engine outputs and renders a Recharts chart inside a Card. |
-| `client/src/components/planning/what-if-playground.tsx` | MODIFY | Add the sensitivity chart grid below the existing Sensitivity Controls panel and metric cards. Import and render the 6 chart components. Wire debounced slider values to the extended engine function. Add delta indicator logic to metric cards. |
+  - AC 16: Verify chart color tokens and advisory colors
+  - AC 17: Verify no `PATCH` calls are emitted (sandbox invariant)
+- **Break-even null handling:** Provide a scenario where `roiMetrics.breakEvenMonth` is null. Assert the chart displays "60+ mo" and metric cards display "N/A" for delta, not null/undefined.
 
 ### Dependencies & Environment Variables
 
@@ -530,44 +443,39 @@ So that I can understand the full impact of changing assumptions across every di
 - **No new environment variables.** All computation is client-side.
 - **No new API endpoints.** No server changes.
 - **No database schema changes.** No persisted state in Story 10-2 (scenario persistence is Story 10-3).
-
-### Testing Expectations
-
-- **Component tests for each chart:** Render each chart component with mock `EngineOutput` data. Assert that `data-testid` elements render. Assert that chart SVG elements appear within the container.
-- **Integration test for chart reactivity:** Render `WhatIfPlayground` with a mock plan. Adjust a slider value. Assert that chart containers re-render with updated data (verify via `data-testid` or snapshot).
-- **Delta indicator tests:** Assert that metric card delta indicators appear when slider values differ from 0%. Assert that deltas are hidden when all sliders are at 0%.
-- **Break-even null handling:** Provide a scenario where `roiMetrics.breakEvenMonth` is null. Assert the chart and metric cards display "60+ mo" or equivalent, not null/undefined.
-- **Sandbox invariant:** Assert that no `PATCH` calls are emitted during chart interaction (same as Story 10-1).
-- **Test framework:** Vitest + React Testing Library (consistent with existing project setup).
-- **Critical ACs to cover:** AC-2 (reactivity), AC-5 (null break-even), AC-9 (delta indicators), AC-11 (sandbox invariant).
+- **Story 10.1 prerequisite:** `what-if-playground.tsx` must exist with:
+  - Slider state management
+  - `computeSensitivityOutputs()` called with plan inputs
+  - A mounting point for `<SensitivityCharts>` below sliders
+  - `ScenarioOutputs` result available as local state
 
 ### References
 
-- [Source: `_bmad-output/planning-artifacts/epics.md` → Story 10.2] — User story, acceptance criteria, and Dev Notes for Multi-Chart Sensitivity Dashboard
-- [Source: `_bmad-output/implementation-artifacts/10-1-sensitivity-controls-sandbox-engine.md`] — Story 10-1 context document; 4th engine call hint at line 113; slider ranges, engine patterns, anti-patterns
-- [Source: `client/src/lib/scenario-engine.ts`] — ScenarioOutputs type, SCENARIO_COLORS, cloneFinancialInputs, applyScenarioFactors pattern
-- [Source: `client/src/components/planning/dashboard-charts.tsx`] — Existing Recharts chart pattern (BreakEvenChart, RevenueExpensesChart) using ChartContainer
-- [Source: `client/src/components/ui/chart.tsx`] — shadcn/ui chart primitives: ChartContainer, ChartConfig, ChartTooltip, ChartTooltipContent, ChartLegend, ChartLegendContent
-- [Source: `shared/financial-engine.ts:157-346`] — EngineOutput, MonthlyProjection, AnnualSummary, ROIMetrics, ROICExtendedOutput, ValuationOutput interfaces
-- [Source: `client/src/lib/format-currency.ts`] — formatCents utility for currency display
-- [Source: `client/src/pages/planning-workspace.tsx:127-142`] — "scenarios" view placeholder (replaced by Story 10-1)
-- [Source: `client/src/contexts/WorkspaceViewContext.tsx`] — WorkspaceView type and navigateToScenarios()
-- [Source: `_bmad-output/planning-artifacts/ux-design-specification-consolidated.md` → Journey 4] — Franchisee reviewing scenarios in What-If Playground; chart descriptions, slider behavior, amber zones
-- [Source: `_bmad-output/planning-artifacts/ux-design-specification-consolidated.md` → Part 5 Data Visualization] — Recharts as charting library; scenario overlay colors (Edamame/Green/Basque)
-- [Source: `_bmad-output/planning-artifacts/architecture.md`] — Recharts 2.15, performance < 2s recalc, data-testid convention, currency in cents
+- `_bmad-output/planning-artifacts/epics.md` → Epic 10, Story 10.2 (lines 2126–2150) — user story, acceptance criteria, dev notes
+- `_bmad-output/planning-artifacts/epics.md` → Epic 10, Story 10.1 (lines 2095–2125) — prerequisite story context
+- `_bmad-output/implementation-artifacts/10-1-sensitivity-controls-sandbox-engine.md` — Story 10-1 context document; 4th engine call hint at line 113; slider ranges, engine patterns, anti-patterns
+- `_bmad-output/planning-artifacts/ux-design-specification-consolidated.md` → Part 12 (Guardian Bar + Dynamic Interpretation) — advisory color language ("Guardian speaks in amber, not red"); amber is a caution, not an error state
+- `_bmad-output/planning-artifacts/ux-design-specification-consolidated.md` → Part 5 Color Palette (lines 327–331) — advisory color tokens (amber = caution, red = destructive error)
+- ~~Part 11 (Scenario Comparison)~~ **RETIRED (SCP-2026-02-20 D5/D6)** — no longer design authority; do not reference
+- `_bmad-output/planning-artifacts/ux-design-specification-consolidated.md` → Journey 4 (lines 1086–1108) — Chris's What-If Playground experience (target UX)
+- `_bmad-output/planning-artifacts/ux-design-specification-consolidated.md` → Part 7 Charting (lines 440–447) — Recharts, chart type guidance, scenario overlay
+- `_bmad-output/planning-artifacts/architecture.md` → Financial Engine Architecture (lines 872–1055) — `EngineOutput`, `AnnualSummary`, `MonthlyProjection`, `ROICExtendedOutput` interfaces
+- `_bmad-output/planning-artifacts/architecture.md` → Naming Patterns (lines 1133–1136)
+- `_bmad-output/planning-artifacts/architecture.md` → Decision 8 (State Management — client-side computation pattern)
+- `client/src/lib/scenario-engine.ts` → `computeScenarioOutputs()`, `ScenarioOutputs`, `SCENARIO_LABELS`, `SCENARIO_COLORS`, `CONSERVATIVE_*` / `OPTIMISTIC_*` constants
+- `client/src/components/planning/dashboard-charts.tsx` → `BreakEvenChart`, `RevenueExpensesChart` (Recharts + ChartContainer pattern)
+- `client/src/components/ui/chart.tsx` → `ChartContainer`, `ChartConfig`, `ChartTooltip`, `ChartTooltipContent`, `ChartLegend`, `ChartLegendContent`
+- `shared/financial-engine.ts` → `EngineOutput`, `AnnualSummary` (line 243), `MonthlyProjection` (line 157), `ROIMetrics` (line 269), `ROICExtendedOutput` (line 302)
+- `client/src/lib/format-currency.ts` → `formatCents` utility for currency display
+- `client/src/index.css` → lines 48–52 (chart-1 through chart-5 light mode), lines 139–143 (dark mode)
+- `client/src/contexts/WorkspaceViewContext.tsx` → `WorkspaceView`, `navigateToScenarios()`
+- `client/src/pages/planning-workspace.tsx` → `case "scenarios"` placeholder (lines 127–142)
 
 ## Dev Agent Record
 
 ### Agent Model Used
 
 claude-sonnet-4-6
-
-### Completion Notes
-
-### File List
-
-### Testing Summary
-_to be filled by dev agent_
 
 ### Completion Notes
 

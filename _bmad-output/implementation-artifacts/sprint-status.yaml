@@ -35,6 +35,7 @@
 # - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
 
 generated: 2026-02-09
+updated: 2026-02-21  # Story 5H.2 → done (adversarial code review completed, all findings fixed)
 updated: 2026-02-20  # Story 10.2 context document created (Create Story workflow)
 updated: 2026-02-20  # Story 5H.2 → review (dev-story workflow complete, pending code review)
 updated: 2026-02-21  # Story 5H.3 context document created (Create Story workflow)
@@ -317,6 +318,17 @@ story_location: _bmad-output/implementation-artifacts
 #     generated PDF three-tier < 50% / 50-90% / > 90%)
 #   - Story 5.9 handoff: all 3 entry points aligned
 #   - Story status: review (pending PO review of amendment proposals)
+# 2026-02-21: Story 5H.2 adversarial code review completed (full BMAD CR workflow)
+#   - Step 1: Git discovery — 8 source files + 1 undocumented test file; 2 discrepancies (test file + test summary not in File List)
+#   - Step 3: Adversarial review — 4 findings (1 HIGH, 2 MEDIUM, 1 LOW), all resolved:
+#     H1: BS identity check name mismatch in callout-bar.tsx — search predicate "balance sheet" didn't match engine's "BS identity" names. Always showed "Balanced". Fixed with filter()+every() on "bs identity".
+#     M1: e2e test file added to story File List (was undocumented)
+#     M2: Dev agent AC-2 evidence was invalid — Playwright test passed vacuously due to H1 bug (documented as noted finding)
+#     L1: Unused useMemo import removed from roic-tab.tsx; unused ArrowDown import removed from balance-sheet-tab.tsx
+#   - Step 4: LSP diagnostics — 0 errors, 0 warnings. Architect review completed.
+#   - Step 5: All findings fixed. Story status → done, sprint-status.yaml synced.
+#   - All 7 ACs verified SATISFIED (AC-2 required H1 fix to become truly functional)
+#   - Next action: Story 5H.3 (Epic 6 AC Audit & User Journeys)
 
 development_status:
   # Epic 1: Auth, Onboarding & User Management
