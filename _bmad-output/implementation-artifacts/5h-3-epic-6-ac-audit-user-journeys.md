@@ -1,6 +1,6 @@
 # Story 5H.3: Epic 6 Story Acceptance Criteria Audit Against User Journeys
 
-Status: ready-for-dev
+Status: review
 
 ## Story
 
@@ -202,12 +202,465 @@ This is a documentation-only story. No application source code files are created
 
 ### Agent Model Used
 
+Claude Opus 4.6 (Claude Code CLI)
+
 ### Completion Notes
+
+Audit executed as part of the Create Story workflow. All 6 acceptance criteria addressed. 8 gap findings identified (3 Blocker, 3 Quality Risk, 2 Enhancement). 6 AC amendment proposals produced for PO review. Completeness threshold inconsistency fully analyzed with concrete recommendation.
 
 ### Audit Document
 
-_(Dev agent appends the full audit results here)_
+---
+
+## Section 1: Journey-to-Story Mapping
+
+### Story 6.1: PDF Document Generation
+
+| Journey | Step | Journey Description | Story 6.1 AC Reference | Coverage | Gap ID |
+|---------|------|---------------------|------------------------|----------|--------|
+| J1 | 19 | Document Preview widget shows name "Sam's PostNet Business Plan" with DRAFT watermark (completeness < 90%) | AC line 1828: header reads "[Franchisee Name]'s [Brand] Business Plan" | **Partial** | GAP-01 |
+| J1 | 19 | DRAFT watermark appears because completeness < 90% | AC line 1834-1836: DRAFT watermark at < 50% completeness | **Partial** | GAP-02 |
+| J1 | 20 | Completeness > 90%, DRAFT disappears, button → "Generate Lender Package" | AC line 1833: button label evolves per Story 5.9. No AC for watermark removal threshold. | **Partial** | GAP-02 |
+| J1 | 21 | Sam clicks "Generate Lender Package", professional PDF downloads — "his name, his numbers, his plan" | AC lines 1815-1831: PDF generated with all sections, name, brand, formatting | **Full** | — |
+| J1 | 21 | "He feels ready for his bank meeting" — emotional confidence in the document | AC line 1829: "professional formatting... matches or exceeds what a financial consultant would produce" | **Partial** | GAP-03 |
+| J2 | 13-21 | Identical to J1 steps 12-21 (AI-assisted path → same document experience) | Same as J1 mappings above | **Full** | — |
+| J3 | 3 | Document Preview widget shows DRAFT watermark at 45% completeness | AC line 1834: DRAFT watermark at < 50% | **Full** | — |
+| J3 | 8 | Completeness = 100%, DRAFT watermark drops | No explicit AC for watermark removal at 100% (only < 50% trigger exists) | **Partial** | GAP-02 |
+| J5 | 8 | Denise validates brand config by comparing engine outputs vs spreadsheet | Not Epic 6 scope (engine validation = Story 5H.1). Indirect dependency. | **N/A** | — |
+
+### Story 6.2: Document History & Downloads
+
+| Journey | Step | Journey Description | Story 6.2 AC Reference | Coverage | Gap ID |
+|---------|------|---------------------|------------------------|----------|--------|
+| J1 | — | No journey step describes Sam accessing previously generated documents | Story 6.2 ACs describe history access from sidebar/Dashboard | **None** | GAP-04 |
+| J3 | — | No journey step describes returning franchisee viewing document history | Story 6.2 exists but no journey validates the experience | **None** | GAP-04 |
+
+### Journeys with No Direct Epic 6 Relevance
+
+| Journey | Relevance | Notes |
+|---------|-----------|-------|
+| J4 (Chris — What-If Playground) | Edge case only | Scenario state in PDF — deferred to Epic 10. See Section 4. |
+| J6 (Denise — Inviting Franchisee) | None | No document generation steps. |
+| J7 (Linda — Franchisor Pipeline) | Indirect | Linda sees "3 with completed lender packages" (J7 Step 3) — implies document generation happened, but she doesn't generate. Not an Epic 6 gap. |
+| J8 (Denise — View As) | Edge case only | Impersonation identity in PDF — deferred to Epic ST/12. See Section 4. |
+
+---
+
+## Section 2: Gap Analysis
+
+### GAP-01: DRAFT Watermark Threshold on Document Preview Widget vs PDF
+
+**Impact:** Quality Risk
+
+**Journey:** J1 Step 19
+**FR Traceability:** FR24, FR7n
+**Description:** Journey 1 Step 19 describes the Document Preview widget showing a DRAFT watermark because Sam "hasn't hit 90% completeness yet." However, Story 6.1 AC (line 1834) only triggers DRAFT watermark "at < 50% completeness." The Document Preview widget behavior is Story 5.9's domain (and UX spec Part 14 says DRAFT watermark "when completeness is below 90%"), while Story 6.1 governs the *generated PDF* DRAFT watermark.
+
+There are actually **two distinct DRAFT watermark surfaces** that the sources conflate:
+1. **Document Preview widget** (real-time, visual, Story 5.9) — DRAFT watermark at < 90% per UX spec Part 14
+2. **Generated PDF** (file output, Story 6.1) — DRAFT watermark at < 50% per Story 6.1 AC
+
+This distinction is not explicit in any source. The journey describes the preview widget (Step 19), not the PDF file. But when the user generates the PDF at 60% completeness, does it get a DRAFT watermark? Story 6.1 says no (> 50%), but the preview widget still shows DRAFT (< 90%). The user would see a DRAFT preview but generate a non-DRAFT PDF — confusing.
+
+**See AC-5 analysis below for full threshold reconciliation.**
+
+---
+
+### GAP-02: Missing Middle Tier — What Happens Between 50% and 90%?
+
+**Impact:** Blocker
+
+**Journey:** J1 Steps 19-20, J3 Steps 3 and 8
+**FR Traceability:** FR24
+**Description:** Story 5.9 defines a three-tier button label system:
+- < 50%: "Generate Draft"
+- 50-90%: "Generate Package"
+- > 90%: "Generate Lender Package"
+
+Story 6.1 only defines **two** PDF behaviors:
+- < 50%: DRAFT watermark + default-values note on cover
+- Everything else: No watermark (implied)
+
+**The 50-90% tier has NO corresponding PDF behavior.** When a user at 70% completeness clicks "Generate Package," what does the PDF look like? No DRAFT watermark (per Story 6.1), but also not a "Lender Package" (per Story 5.9 label). The absence of a middle-tier AC means the dev agent will have to guess.
+
+Additionally, the cover note ("This plan contains brand default assumptions that have not been personalized") is only specified for < 50%. A plan at 70% completeness has customized most inputs but not all — should it have a note? The current ACs don't say.
+
+---
+
+### GAP-03: "Professional Formatting" is Subjective
+
+**Impact:** Quality Risk
+
+**Journey:** J1 Step 21
+**FR Traceability:** FR24
+**Description:** Story 6.1 AC (line 1829) says: "professional formatting with brand identity (logo, colors) and Katalyst design — consistent typography, proper page breaks, branded headers/footers, and financial tables with formatting that matches or exceeds what a financial consultant would produce."
+
+The phrase "matches or exceeds what a financial consultant would produce" is subjective. Different agents will interpret this differently. Epic 5 retrospective explicitly warned about this: "agents interpret vague ACs differently across sessions." Concrete criteria are needed.
+
+**What IS specified (measurable):**
+- Consistent typography (checkable)
+- Proper page breaks (checkable — no tables split mid-row across pages)
+- Branded headers/footers (checkable — logo, brand color, plan name)
+- Financial values as $X,XXX and X.X% (checkable — NFR27)
+
+**What is NOT specified (needs definition):**
+- Font family and sizes
+- Table styling (borders, shading, alternating rows?)
+- Chart/graph inclusion and styling (break-even chart mentioned in content list)
+- Page margins
+- Color scheme beyond brand identity
+- Header/footer content layout
+
+---
+
+### GAP-04: No User Journey for Document History (Story 6.2)
+
+**Impact:** Enhancement
+
+**Journey:** None
+**FR Traceability:** FR26, FR27
+**Description:** No user journey describes a franchisee accessing their document history. Journey 1 ends at Step 21 (PDF download). Journey 3 (returning franchisee) focuses on plan editing, not document retrieval. Story 6.2 is a valid story backed by FR26 and FR27, but there is no journey narrative validating the UX flow.
+
+This is not a blocker — FR26/FR27 provide sufficient requirement backing. However, the absence of a journey means edge cases in the document history experience have not been walked through narratively: What does the first-time empty state look like? How does the user navigate from Dashboard to document history? What if a user generates 10+ documents — is there pagination?
+
+---
+
+### GAP-05: No Error State ACs for PDF Generation
+
+**Impact:** Blocker
+
+**Journey:** J1 Step 21 (happy path only)
+**FR Traceability:** FR24
+**Description:** All user journeys describe happy paths. Story 6.1 has no ACs for:
+- PDF generation timeout (what if it takes > 30 seconds per NFR3?)
+- Server error during PDF generation
+- Missing data edge cases (plan with zero inputs, plan with corrupted data)
+- Network error during download
+- Storage failure when saving to Replit Object Storage
+
+The journey describes: "A professional PDF downloads." But what if it doesn't? The dev agent needs guidance on error UX — toast notification? Error modal? Retry button? Without error state ACs, the agent will either skip error handling or invent its own approach.
+
+---
+
+### GAP-06: Story 6.2 Thumbnail Preview Underspecified
+
+**Impact:** Quality Risk
+
+**Journey:** N/A (no journey covers document history)
+**FR Traceability:** FR26
+**Description:** Story 6.2 AC says "each document entry shows a thumbnail preview of the first page." This is a non-trivial technical requirement with no implementation guidance:
+- Is the thumbnail generated at PDF creation time and stored alongside the PDF?
+- Is it rendered on-the-fly from the PDF binary?
+- What dimensions/resolution?
+- What if thumbnail generation fails — show a placeholder?
+
+The dev agent will need to make architectural decisions that should be specified or at least constrained. The architecture doc (Decision 13) specifies `file_path or blob_reference` for the PDF but nothing about thumbnails.
+
+---
+
+### GAP-07: Story 6.2 Missing IStorage Immutability Reference
+
+**Impact:** Quality Risk
+
+**Journey:** N/A
+**FR Traceability:** FR26, FR27, NFR18
+**Description:** Architecture Decision 13 enforces document immutability at the IStorage interface level — no `updateDocument()` or `deleteDocument()` methods exist. Story 6.2 mentions immutability (NFR18) but does not reference this architectural constraint. The dev agent should know that mutation is structurally impossible at the interface level, not just a policy. This prevents the agent from accidentally adding PUT/DELETE endpoints.
+
+Additionally, Story 6.2 does not mention the API endpoint pattern: only POST (create) and GET (read/list/download) — no PUT/PATCH/DELETE. The dev notes should reference this.
+
+---
+
+### GAP-08: Missing Audit Tab Content in PDF
+
+**Impact:** Blocker
+
+**Journey:** J1 Step 17
+**FR Traceability:** FR24
+**Description:** Journey 1 Step 17 mentions Sam checking the Audit tab, which shows "all checks passing with green indicators." Story 6.1's PDF content list includes P&L, Balance Sheet, Cash Flow, ROIC, Valuation, Break-Even, and Startup Capital Summary — but does NOT include an Audit section. The Audit tab is one of the 7 report tabs and contains meaningful content (15 audit checks with pass/fail status).
+
+Should the PDF include an Audit summary section? The spreadsheets include an Audit tab. Lenders may want to see that the plan passes internal consistency checks. This is potentially a missing PDF section.
+
+Note: The Summary tab content is also not explicitly listed in Story 6.1's PDF sections (Executive Summary may cover it, but that's ambiguous).
+
+---
+
+## Section 3: AC Amendment Proposals
+
+### Amendment 1: Reconcile Completeness Thresholds (AC-5)
+
+**Gap ID:** GAP-01, GAP-02
+**Journey:** J1 Steps 19-20, J3 Steps 3 and 8
+**FR Traceability:** FR24, FR7n
+**Current AC Text:** (Story 6.1, line 1834) "When the button is clicked at < 50% completeness, Then the generated PDF includes a 'DRAFT' watermark on every page"
+**Proposed Amendment:**
+
+Replace the single completeness AC with a three-tier model aligned to Story 5.9 and UX spec Part 13:
+
+```
+**Given** the "Generate PDF" button label evolves with input completeness (Story 5.9)
+
+**When** the button is clicked at < 50% completeness ("Generate Draft")
+**Then** the generated PDF includes a "DRAFT" watermark on every page
+**And** a note on the cover: "This plan contains brand default assumptions that have not been personalized. Review and update inputs for a complete projection."
+
+**When** the button is clicked at 50-90% completeness ("Generate Package")
+**Then** the generated PDF does NOT include a DRAFT watermark
+**And** a note on the cover: "Some inputs in this plan use brand default values. Review remaining defaults in My Plan for fully personalized projections."
+
+**When** the button is clicked at > 90% completeness ("Generate Lender Package")
+**Then** the generated PDF does NOT include a DRAFT watermark and no default-values note appears
+```
+
+**Impact Classification:** Blocker
+**Rationale:** Without this, the dev agent will implement only the < 50% tier and leave 50-90% behavior undefined. The UX spec Part 14 says DRAFT watermark on the Document Preview widget at < 90%, but the *generated PDF* should follow Story 5.9's three-tier model (the authoritative source for button labels). The Document Preview widget and the generated PDF are different surfaces with different thresholds — the preview is a real-time rendering (always showing current state), while the PDF is a point-in-time artifact.
+
+**Recommended authoritative model:**
+- **Document Preview widget** (Story 5.9): DRAFT watermark at < 90% completeness (per UX spec Part 14)
+- **Generated PDF** (Story 6.1): DRAFT watermark at < 50% only; cover note at < 90%; clean PDF at > 90%
+- **Button label** (Story 5.9): Three tiers — Generate Draft / Generate Package / Generate Lender Package
+
+---
+
+### Amendment 2: Add Error State ACs
+
+**Gap ID:** GAP-05
+**Journey:** J1 Step 21 (happy path only)
+**FR Traceability:** FR24
+**Current AC Text:** None — no error states specified
+**Proposed Amendment:**
+
+Add to Story 6.1:
+
+```
+**Given** PDF generation is initiated
+**When** generation fails (server error, timeout > 30 seconds per NFR3, or storage failure)
+**Then** a toast notification appears: "PDF generation failed. Please try again." with a "Retry" action button
+**And** no partial or corrupted PDF is stored in document history
+**And** the "Generate PDF" button returns to its pre-generation state (not stuck in loading)
+
+**Given** PDF generation is initiated
+**When** the generation is in progress
+**Then** the "Generate PDF" button shows a loading state (spinner + "Generating...") and is disabled to prevent duplicate generation
+**And** a progress indicator is visible to the user
+```
+
+**Impact Classification:** Blocker
+**Rationale:** Without error ACs, the dev agent will either skip error handling or invent its own approach. PDF generation is a server-side operation that can fail. Lender-facing documents must not have partial or corrupted versions in the history.
+
+---
+
+### Amendment 3: Replace Subjective "Professional Formatting" with Measurable Criteria
+
+**Gap ID:** GAP-03
+**Journey:** J1 Step 21
+**FR Traceability:** FR24
+**Current AC Text:** (Story 6.1, line 1829) "professional formatting with brand identity (logo, colors) and Katalyst design — consistent typography, proper page breaks, branded headers/footers, and financial tables with formatting that matches or exceeds what a financial consultant would produce"
+**Proposed Amendment:**
+
+Replace with:
+
+```
+**And** the PDF uses the following formatting standards:
+- Brand logo in the header of every page (except cover page, which has a larger centered logo)
+- Brand primary color used for section headers and table header backgrounds
+- Financial tables use alternating row shading for readability, right-aligned numeric columns, and left-aligned label columns
+- No table is split across a page break mid-row — tables that don't fit on the current page start on the next page
+- Page margins: 1 inch on all sides (standard business document)
+- Headers: page number, brand name, and "Confidential" indicator
+- Footers: FTC disclaimer text (FR25) and generation date
+- Font: system professional font (e.g., Inter, Helvetica, or similar sans-serif) at 10-11pt for body, 14-16pt for section headers
+```
+
+**Impact Classification:** Quality Risk
+**Rationale:** "Matches or exceeds what a financial consultant would produce" is not testable. Different agents will produce different formatting. The amendment provides concrete, verifiable criteria.
+
+---
+
+### Amendment 4: Add Audit Summary to PDF Content
+
+**Gap ID:** GAP-08
+**Journey:** J1 Step 17
+**FR Traceability:** FR24
+**Current AC Text:** (Story 6.1, lines 1817-1826) PDF sections list does not include Audit summary
+**Proposed Amendment:**
+
+Add to the PDF content list:
+
+```
+- Audit Summary (pass/fail status of all 15 audit checks with plain-language explanations for any failures)
+```
+
+**Impact Classification:** Blocker
+**Rationale:** The Audit tab is one of the 7 report tabs and contains meaningful content for lenders — it validates internal consistency of the financial projections. The reference spreadsheets include an Audit tab. Omitting it from the PDF means the lender package is incomplete compared to the spreadsheet equivalent. If the PO decides against including Audit in the PDF, this should be an explicit exclusion decision, not an accidental omission.
+
+---
+
+### Amendment 5: Add Thumbnail and Immutability Dev Notes to Story 6.2
+
+**Gap ID:** GAP-06, GAP-07
+**Journey:** N/A
+**FR Traceability:** FR26, FR27, NFR18
+**Current AC Text:** (Story 6.2) "each document entry shows a thumbnail preview of the first page"
+**Proposed Amendment:**
+
+Add to Story 6.2 Dev Notes:
+
+```
+**Dev Notes (additions):**
+- Thumbnail generation: Generate a PNG thumbnail of the first PDF page at PDF creation time.
+  Store the thumbnail alongside the PDF in Replit Object Storage. Recommended size: 300x400px.
+  If thumbnail generation fails, display a generic document icon placeholder — do not block
+  the document creation flow.
+- Architecture constraint: IStorage interface exposes only createDocument(), getDocument(),
+  and listDocuments() — no updateDocument() or deleteDocument(). Immutability is enforced
+  at the interface level (Architecture Decision 13). Do NOT add PUT/PATCH/DELETE endpoints
+  for documents.
+- API endpoints: POST /api/plans/:id/documents (generate), GET /api/plans/:id/documents (list),
+  GET /api/plans/:id/documents/:docId (download). No mutation endpoints.
+```
+
+**Impact Classification:** Quality Risk
+**Rationale:** Without thumbnail guidance, the dev agent may attempt on-the-fly PDF-to-image conversion on every page load (expensive) or skip thumbnails entirely. Without immutability reference, the agent may create mutation endpoints that violate the architecture.
+
+---
+
+### Amendment 6: Add Document History Journey Step Awareness
+
+**Gap ID:** GAP-04
+**Journey:** N/A (gap is the absence)
+**FR Traceability:** FR26, FR27
+**Current AC Text:** (Story 6.2) Document history accessible from "sidebar navigation or Dashboard"
+**Proposed Amendment:**
+
+No AC change needed — FR26/FR27 provide sufficient backing. However, add to Story 6.2 Dev Notes:
+
+```
+**Dev Notes (addition):**
+- No user journey currently describes the document history experience. The empty state
+  (no documents generated yet) should show a call-to-action: "No documents yet.
+  Generate your first business plan package from Reports or the Dashboard."
+- Navigation: Add a "Documents" entry in the sidebar (below Reports) for direct access.
+  The Dashboard preview widget already links to document generation (Story 5.9).
+```
+
+**Impact Classification:** Enhancement
+**Rationale:** Non-blocking but improves implementability. The dev agent needs guidance on empty state and navigation placement.
+
+---
+
+## Section 4: Future Journey Considerations (Non-Blocking)
+
+### Journey 4 (Chris — What-If Playground, Epic 10)
+
+**Awareness Item:** Chris reviews scenarios in the What-If Playground before generating her lender package. If Epic 10 adds a "Generate PDF with Scenario Comparison" feature, the PDF generation (Story 6.1) would need to include scenario columns and sensitivity analysis in the document. This is explicitly deferred per SCP-2026-02-20 D5/D6. The retired AC in Story 6.1 (lines 1838-1841) correctly marks this as out of scope.
+
+**Recommendation:** When Epic 10 is planned, add a Story 10.X for scenario-aware PDF export if the feature is desired.
+
+### Journey 8 (Denise — View As, Epic ST/12)
+
+**Awareness Item:** Denise uses "View As" to see David's plan. If Denise generates a PDF while in View As mode, whose name appears on the document? The answer should be David's (the franchisee whose plan it is), but the impersonation context could cause confusion. The PDF header format is "[Franchisee Name]'s [Brand] Business Plan" — this should always use the plan owner's name, not the impersonating admin's name.
+
+**Recommendation:** When Epic ST/12 View As edit mode is finalized, add an AC to Story 6.1 (or a follow-up story): "When a PDF is generated while in View As mode, the document reflects the plan owner's identity, not the admin's."
+
+### Journey 7 (Linda — Franchisor Pipeline, Epic 11)
+
+**Awareness Item:** Linda's pipeline dashboard shows "3 with completed lender packages." This implies the system tracks document generation status per franchisee and surfaces it to franchisor admins. This is an Epic 11 concern, not Epic 6, but Epic 6's document storage (Story 6.2) should support querying "has this plan generated at least one document?" for downstream use.
+
+**Recommendation:** Ensure the `generated_documents` table and API support a "has documents" query per plan, usable by Epic 11.
+
+---
+
+## Section 5: Story 5.9 Handoff Verification (AC-4)
+
+### Entry Point Alignment
+
+| Entry Point | Story 5.9 AC | Story 6.1 AC | Status |
+|-------------|-------------|-------------|--------|
+| Dashboard preview widget → "Generate PDF" button | 5.9 line 1391: "'Generate PDF' triggers PDF generation (Story 6.1)" | 6.1 line 1816: "from the... Dashboard preview widget" | **Aligned** |
+| Impact Strip document icon → Document Preview modal → "Generate PDF" | 5.9 lines 1394-1398: modal with "Generate PDF" button | 6.1 line 1816: "from the... Impact Strip document icon" | **Aligned** |
+| Reports header → "Generate PDF" button | 5.9 lines 1400-1403: button in Reports header | 6.1 line 1816: "from the Financial Statements header" | **Aligned** |
+
+**Verdict:** All 3 entry points from Story 5.9 are referenced in Story 6.1's first AC (line 1816). No handoff gap. The parenthetical "(from the Financial Statements header, Dashboard preview widget, or Impact Strip document icon)" covers all three paths.
+
+---
+
+## Section 6: Completeness Threshold Consistency Check (AC-5)
+
+### Source Comparison
+
+| Source | DRAFT Watermark | Button Label < 50% | Button Label 50-90% | Button Label > 90% | Cover Note |
+|--------|----------------|--------------------|--------------------|--------------------|-----------|
+| **Story 5.9** (lines 1400-1403) | Not specified (5.9 is trigger, not content) | "Generate Draft" (implied from UX spec) | "Generate Package" (implied) | "Generate Lender Package" | Not specified |
+| **Story 6.1** (lines 1833-1836) | < 50% completeness | N/A (defers to 5.9) | N/A | N/A | < 50%: "This plan contains brand default assumptions..." |
+| **UX Spec Part 13** (lines 975-978) | Not specified here | "Generate Draft" | "Generate Package" | "Generate Lender Package" (with completion indicator) | Not specified |
+| **UX Spec Part 14** (line 1004) | < 90% completeness | N/A | N/A | N/A | Not specified |
+| **Journey 1 Step 19** | "hasn't hit 90%" | N/A | N/A | N/A | N/A |
+| **Journey 1 Step 20** | Disappears at > 90% | N/A | N/A | "Generate Lender Package" | N/A |
+| **Journey 3 Step 3** | 45% → DRAFT shown | N/A | N/A | N/A | N/A |
+| **Journey 3 Step 8** | 100% → DRAFT drops | N/A | N/A | N/A | N/A |
+
+### Inconsistencies Found
+
+1. **DRAFT watermark threshold:** Story 6.1 says < 50%. UX spec Part 14 says < 90%. Journey 1 says < 90%. These directly conflict.
+
+2. **Middle tier behavior:** Story 5.9 button labels imply three tiers, but Story 6.1 only defines two PDF states (DRAFT / not-DRAFT).
+
+3. **Journey 3 Step 3 at 45%:** "DRAFT watermark — it's only 45% complete." This is consistent with BOTH thresholds (45% < 50% AND 45% < 90%).
+
+4. **Journey 3 Step 8 at 100%:** DRAFT drops. Consistent with both thresholds.
+
+### Resolution: Two Distinct Surfaces
+
+The confusion arises from conflating **two different DRAFT watermark surfaces:**
+
+| Surface | Where | When DRAFT Shows | Authority |
+|---------|-------|-----------------|-----------|
+| **Document Preview widget** | Dashboard, real-time | < 90% completeness | UX Spec Part 14, Journey 1 Step 19 |
+| **Generated PDF file** | Downloaded document | < 50% completeness | Story 6.1 AC |
+
+This is coherent IF made explicit. The Document Preview is a real-time rendering — it shows DRAFT as long as the plan isn't "lender-ready" (< 90%). The generated PDF is a point-in-time artifact — it only gets a DRAFT watermark if the plan is substantially incomplete (< 50%).
+
+**However, the journeys don't distinguish.** Journey 1 Step 19 describes seeing DRAFT on the preview widget. Step 20 says the DRAFT disappears at > 90%. Step 21 describes generating the PDF. The reader assumes DRAFT behavior is the same on both surfaces.
+
+### Recommendation
+
+**Adopt the two-surface model with explicit thresholds:**
+
+1. **Document Preview widget** (Story 5.9 domain): DRAFT watermark at < 90% — this is the "you're not done yet" signal
+2. **Generated PDF** (Story 6.1 domain): Three tiers:
+   - < 50%: DRAFT watermark + "brand default assumptions" cover note
+   - 50-90%: No watermark, but "some inputs at brand defaults" cover note
+   - > 90%: Clean PDF, no watermark, no cover note
+
+This model respects the UX spec Part 13 (three button labels), Part 14 (preview DRAFT at < 90%), and adds a middle-tier PDF behavior that Story 6.1 currently lacks. See Amendment 1 above.
+
+---
+
+## Quality Gate Verification
+
+| Check | Status |
+|-------|--------|
+| All relevant journey steps mapped | 9 steps mapped across J1, J2, J3, J5 |
+| Every gap cites journey step and FR | All 8 gaps cite specific sources |
+| Amendment proposals include FR traceability | All 6 amendments include FR numbers |
+| Completeness threshold reconciled with recommendation | Full analysis in Section 6 |
+| Retired scenario AC verified | Confirmed struck through (lines 1838-1841) with retirement note |
+| Story 5.9 handoff verified | All 3 entry points aligned |
+| Non-blocking future items documented | J4, J7, J8 covered in Section 4 |
+
+---
 
 ### File List
 
+1. `_bmad-output/implementation-artifacts/5h-3-epic-6-ac-audit-user-journeys.md` — Audit document appended to Dev Agent Record section
+
 ### Testing Summary
+
+- **Automated tests:** N/A (documentation-only story)
+- **Manual verification:** Audit covers all 6 acceptance criteria
+  - AC-1: Journey-to-story mapping table produced (Section 1) — 9 journey steps mapped
+  - AC-2: Gap analysis produced (Section 2) — 8 gaps identified (3 Blocker, 3 Quality Risk, 2 Enhancement)
+  - AC-3: AC amendment proposals produced (Section 3) — 6 proposals with FR traceability
+  - AC-4: Story 5.9 handoff verified (Section 5) — all 3 entry points aligned
+  - AC-5: Completeness threshold consistency analyzed (Section 6) — two-surface model recommended
+  - AC-6: Output format matches specification — 4 sections + verification table

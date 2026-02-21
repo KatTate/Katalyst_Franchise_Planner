@@ -305,6 +305,18 @@ story_location: _bmad-output/implementation-artifacts
 #   - Documentation-only story — no application source code changes
 #   - Story status: ready-for-dev
 #   - Next action: Dev Story (DS) for 5H.3 audit execution
+# 2026-02-21: Story 5H.3 audit executed (Dev Story workflow)
+#   - 9 journey steps mapped across Journeys 1, 2, 3, 5
+#   - 8 gaps identified: GAP-01 (DRAFT threshold mismatch), GAP-02 (missing middle
+#     tier), GAP-03 (subjective formatting), GAP-04 (no journey for doc history),
+#     GAP-05 (no error state ACs), GAP-06 (thumbnail underspecified), GAP-07 (missing
+#     IStorage immutability reference), GAP-08 (missing Audit section in PDF)
+#   - 6 AC amendment proposals: threshold reconciliation, error states, measurable
+#     formatting, audit section, thumbnail/immutability dev notes, doc history guidance
+#   - Completeness threshold: two-surface model recommended (preview widget < 90%,
+#     generated PDF three-tier < 50% / 50-90% / > 90%)
+#   - Story 5.9 handoff: all 3 entry points aligned
+#   - Story status: review (pending PO review of amendment proposals)
 
 development_status:
   # Epic 1: Auth, Onboarding & User Management
@@ -396,7 +408,7 @@ development_status:
   epic-5h: in-progress
   5h-1-financial-engine-reference-validation: done  # AI-1: cell-by-cell vs reference spreadsheets. 99 tests, 2 brands (PostNet + Jeremiah's), 1 BUG fixed (ramp-up M1), 2 KNOWN DIVERGENCES documented, taxRate TODO resolved, adversarial code review completed
   5h-2-report-tab-ui-audit-remediation: review    # AI-2: Implementation complete. 5 per-tab callout bars removed, parent CalloutBar enriched (BS identity check + Valuation net proceeds), comparison mode visibility fixed, column width reduced. Playwright e2e PASS, LSP clean. Pending adversarial code review.
-  5h-3-epic-6-ac-audit-user-journeys: ready-for-dev      # AI-3: Story context document created. 6 ACs covering journey-to-story mapping, gap analysis (11 specific checks), AC amendment proposals, Story 5.9 handoff verification, completeness threshold consistency, output format.
+  5h-3-epic-6-ac-audit-user-journeys: review              # AI-3: Audit executed. 8 gaps found (3 Blocker, 3 Quality Risk, 2 Enhancement). 6 AC amendment proposals. Completeness threshold 2-surface model recommended. Pending PO review.
   5h-4-planning-artifact-alignment: backlog              # AI-5: 111 FR traceability, fix stale coverage map
   epic-5h-retrospective: optional
 
