@@ -2036,6 +2036,7 @@ So that I can model different locations or scenarios as separate plans (FR15, FR
 - The "Create New Plan" button addresses Gap #1 and Gap #10 (blockers for multi-location planning).
 - Plan naming addresses Gap #3 and Gap #4 (no more "Demo Plan" default name).
 - See Brainstorming Session 2026-02-15, Layer 3 (Multi-Plan and Workflow Gaps).
+- **TODO (Epic 2 gap — add ACs to this story or a new story):** Brand Management is missing delete and full edit capabilities. Epic 2 Story 2.1 only covered brand creation and financial parameter editing, but never specified: (1) deleting a brand, (2) editing brand metadata (name, display name, slug) after creation. The Brand Settings tab needs proper edit functionality. These should be added as acceptance criteria — either here alongside Plan CRUD or as a separate Brand CRUD story.
 
 ---
 
