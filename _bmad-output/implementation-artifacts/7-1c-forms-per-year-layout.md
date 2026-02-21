@@ -49,12 +49,18 @@ Then the following new fields are rendered in their respective sections:
 
 ## Dev Notes
 
+### Navigation
+
+User reaches this feature via: **Sidebar → My Plan** → collapsible form sections (Revenue, Operating Costs, Profitability & Distributions, Working Capital & Valuation). All per-year editing in this story occurs within the My Plan forms view (`forms-mode.tsx`).
+
 ### Architecture Patterns to Follow
 
-- **FIELD_METADATA registry**: `client/src/lib/field-metadata.ts` — all new fields and categories already registered by Story 7.1a.
-- **Auto-save pattern**: Forms mode writes to the same `financial_inputs` JSONB column via `PATCH /api/plans/:id`. Debounced at 2s idle. Changes immediately reflect in Reports.
-- **data-testid convention**: Financial values use `value-{metric}-{period}` pattern. Interactive elements use `{action}-{target}`.
-- **Component file naming**: kebab-case. Component names PascalCase.
+- **FIELD_METADATA registry** _(Architecture §3.2 Per-Field Metadata Pattern)_: `client/src/lib/field-metadata.ts` — all new fields and categories already registered by Story 7.1a.
+- **Two-Surface Principle** _(Architecture §4.4)_: Forms mode (My Plan) and Reports (inline editing) share the same `financial_inputs` JSONB state. Edits on either surface immediately reflect on the other.
+- **Auto-save pattern** _(Architecture §5.2 Auto-Save & Crash Recovery)_: Forms mode writes to the same `financial_inputs` JSONB column via `PATCH /api/plans/:id`. Debounced at 2s idle. Changes immediately reflect in Reports.
+- **Component hierarchy** _(Architecture §4.3)_: `forms-mode.tsx` renders collapsible sections, each containing field rows with input controls.
+- **data-testid convention** _(Architecture §4.5 Testing Conventions)_: Financial values use `value-{metric}-{period}` pattern. Interactive elements use `{action}-{target}`.
+- **Component file naming** _(Architecture §4.1 File Organization)_: kebab-case. Component names PascalCase.
 
 ### Anti-Patterns & Hard Constraints
 
@@ -63,6 +69,22 @@ Then the following new fields are rendered in their respective sections:
 - **DO NOT create new API endpoints** — use existing `PATCH /api/plans/:id`.
 - **DO NOT introduce inheritance detection logic** — all 5 years are always independent (see AC-3 design decision).
 - **DO NOT introduce new npm packages**.
+
+### UI/UX Deliverables
+
+- **Target surface**: My Plan forms view (`client/src/components/planning/forms-mode.tsx`)
+- **Modified components**: `FormsMode` (per-year input rendering, new field sections), `InputPanel` (field pass-through)
+- **Per-year input layout**: Each per-year field row renders 5 inline input columns labeled Year 1–Year 5. Single-value fields render 1 input column.
+- **"Copy Year 1 to all years" action**: Button displayed per per-year field row. Uses existing shadcn AlertDialog or equivalent confirmation pattern already in the project.
+- **New form sections**: Profitability & Distributions, Working Capital & Valuation — rendered as collapsible sections matching existing section styling.
+
+### UI States
+
+- **Loading**: While auto-save is persisting a per-year edit, show the existing save indicator pattern (debounced 2s idle). No additional loading state needed for individual field edits.
+- **Error / save failure**: If `PATCH /api/plans/:id` fails during save, show inline retry per the architecture's error handling pattern (Architecture §5.2) — never silently drop changes.
+- **Error / copy-all failure**: If save fails during "Copy Year 1 to all years", show an error toast and revert all year values to their pre-copy state.
+- **Success**: On successful "Copy Year 1 to all years", all 5 year cells update to reflect Year 1's value. No additional success toast needed — the visual update is sufficient confirmation.
+- **Empty state**: N/A — per-year fields always have a value (defaulted from brand parameters or migration in Story 7.1a).
 
 ### File Change Summary
 
@@ -81,6 +103,19 @@ Then the following new fields are rendered in their respective sections:
   - "Copy Year 1 to all" → Cancel → confirm no changes
   - Verify new field sections rendered (Profitability & Distributions, Working Capital & Valuation)
   - **Cross-surface consistency**: Edit a per-year value in Forms → switch to Reports → confirm value reflected. Edit in Reports → switch to Forms → confirm value reflected.
+
+### References
+
+- **PRD Requirement**: FR7i (per-year independent input editing), FR7j (full input assumption set)
+- **Architecture Document**: `_bmad-output/planning-artifacts/architecture.md`
+  - §3.2 Per-Field Metadata Pattern — field structure within `financial_inputs` JSONB
+  - §4.1 File Organization — kebab-case files, PascalCase components
+  - §4.3 Component Hierarchy — `forms-mode.tsx` collapsible sections with field rows
+  - §4.4 Two-Surface Principle — My Plan (forms) and Reports (inline editing) share the same `financial_inputs` state
+  - §4.5 Testing Conventions — `data-testid` patterns for financial values and interactive elements
+  - §5.2 Auto-Save & Crash Recovery — debounced save, inline retry on failure
+- **Epics Document**: `_bmad-output/planning-artifacts/epics.md` — Epic 7, Story 7.1c (line 1947)
+- **Predecessor Stories**: Story 7.1a registered all new fields and FIELD_METADATA categories; this story renders them in the Forms surface
 
 ### Dependencies
 
