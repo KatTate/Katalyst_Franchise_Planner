@@ -38,7 +38,7 @@ So that Epic 6 implementation begins with verified, complete acceptance criteria
 **When** gaps are identified
 **Then** each gap is documented with: the journey step, what the journey describes that the story ACs don't cover, the impact (blocker, quality risk, or enhancement), and a proposed AC amendment.
 
-The following areas are specifically checked for gaps:
+**All** of the following areas must be verified and findings documented for each, even if no gap is found:
 
 1. **Pride moment:** Does Story 6.1 explicitly require the franchisee's name to appear prominently on the document? (Journey 1, Step 21: "his name, his numbers, his plan")
 2. **Completeness-aware behavior:** Do the ACs handle the full spectrum: <50% (DRAFT watermark + default-values note), 50-90% (partial, "Generate Package" label), >90% ("Generate Lender Package" label, no watermark)?
@@ -88,6 +88,15 @@ The following areas are specifically checked for gaps:
 - Section 3: AC amendment proposals in PO-reviewable format
 - Section 4: Future journey considerations (non-blocking awareness items)
 **And** the document is saved as an appendix or update to this story file in the Dev Agent Record section
+
+### Agent Session Control Rules (Mandatory — carried from 5H.1, 5H.2)
+
+1. **No self-approval:** Do NOT approve your own work product — story completion requires Product Owner confirmation of the audit document.
+2. **No code changes:** This story produces documentation only. If you find yourself writing application code, STOP. That is the wrong workflow.
+3. **No direct epics.md edits:** Amendment proposals go to the PO for review. Do NOT modify Stories 6.1 or 6.2 directly.
+4. **Exhaustive coverage:** Every relevant journey step must appear in the mapping table. Silently skipping a step because it seems "obvious" or "already covered" is not acceptable — make the mapping explicit.
+5. **Cite everything:** Every gap finding and amendment proposal must cite specific journey steps, FR numbers, and story AC references. Unsourced claims are rejected.
+6. **Threshold reconciliation is mandatory:** The completeness threshold inconsistency (AC-5) is a known issue. Do not skip it or hand-wave it. Produce a concrete recommendation.
 
 ## Dev Notes
 
@@ -189,15 +198,6 @@ This is a documentation-only story. No application source code files are created
 - [Source: `_bmad-output/implementation-artifacts/5h-2-report-tab-ui-audit-remediation.md`] — Previous story in epic (review)
 - [Source: `_bmad-output/implementation-artifacts/epic-5-retrospective.md` AI-3] — Origin action item for this story
 
-### Agent Session Control Rules (Mandatory — carried from 5H.1, 5H.2)
-
-1. **No self-approval:** Do NOT approve your own work product — story completion requires Product Owner confirmation of the audit document.
-2. **No code changes:** This story produces documentation only. If you find yourself writing application code, STOP. That is the wrong workflow.
-3. **No direct epics.md edits:** Amendment proposals go to the PO for review. Do NOT modify Stories 6.1 or 6.2 directly.
-4. **Exhaustive coverage:** Every relevant journey step must appear in the mapping table. Silently skipping a step because it seems "obvious" or "already covered" is not acceptable — make the mapping explicit.
-5. **Cite everything:** Every gap finding and amendment proposal must cite specific journey steps, FR numbers, and story AC references. Unsourced claims are rejected.
-6. **Threshold reconciliation is mandatory:** The completeness threshold inconsistency (AC-5) is a known issue. Do not skip it or hand-wave it. Produce a concrete recommendation.
-
 ## Dev Agent Record
 
 ### Agent Model Used
@@ -206,7 +206,7 @@ Claude Opus 4.6 (Claude Code CLI)
 
 ### Completion Notes
 
-Audit executed as part of the Create Story workflow. All 6 acceptance criteria addressed. 8 gap findings identified (3 Blocker, 3 Quality Risk, 2 Enhancement). 6 AC amendment proposals produced for PO review. Completeness threshold inconsistency fully analyzed with concrete recommendation.
+Audit executed as part of the Create Story workflow. All 6 acceptance criteria addressed. 8 gap findings identified (3 Blocker, 4 Quality Risk, 1 Enhancement). 6 AC amendment proposals produced for PO review. Completeness threshold inconsistency fully analyzed with concrete recommendation. Party Mode review (2026-02-21) applied structural, content, and classification improvements across all sections.
 
 ### Audit Document
 
@@ -315,13 +315,13 @@ The phrase "matches or exceeds what a financial consultant would produce" is sub
 
 ### GAP-04: No User Journey for Document History (Story 6.2)
 
-**Impact:** Enhancement
+**Impact:** Quality Risk
 
 **Journey:** None
 **FR Traceability:** FR26, FR27
 **Description:** No user journey describes a franchisee accessing their document history. Journey 1 ends at Step 21 (PDF download). Journey 3 (returning franchisee) focuses on plan editing, not document retrieval. Story 6.2 is a valid story backed by FR26 and FR27, but there is no journey narrative validating the UX flow.
 
-This is not a blocker — FR26/FR27 provide sufficient requirement backing. However, the absence of a journey means edge cases in the document history experience have not been walked through narratively: What does the first-time empty state look like? How does the user navigate from Dashboard to document history? What if a user generates 10+ documents — is there pagination?
+FR26/FR27 provide requirement backing for *what* to build, but without a journey the dev agent has no guidance on *how the experience should feel*. The absence of a journey means edge cases in the document history experience have not been walked through narratively: What does the first-time empty state look like? How does the user navigate from Dashboard to document history? What if a user generates 10+ documents — is there pagination? This is the same class of problem that caused agent divergence in Epic 5 — upgraded from Enhancement to Quality Risk.
 
 ---
 
@@ -409,10 +409,12 @@ Replace the single completeness AC with a three-tier model aligned to Story 5.9 
 
 **When** the button is clicked at > 90% completeness ("Generate Lender Package")
 **Then** the generated PDF does NOT include a DRAFT watermark and no default-values note appears
+
+**And** the "Generate PDF" button tooltip displays the current completeness percentage and indicates whether the generated document will include a DRAFT watermark or cover note. Example: "Your plan is 73% complete. The generated package will include a note about remaining default values."
 ```
 
 **Impact Classification:** Blocker
-**Rationale:** Without this, the dev agent will implement only the < 50% tier and leave 50-90% behavior undefined. The UX spec Part 14 says DRAFT watermark on the Document Preview widget at < 90%, but the *generated PDF* should follow Story 5.9's three-tier model (the authoritative source for button labels). The Document Preview widget and the generated PDF are different surfaces with different thresholds — the preview is a real-time rendering (always showing current state), while the PDF is a point-in-time artifact.
+**Rationale:** Without this, the dev agent will implement only the < 50% tier and leave 50-90% behavior undefined. The UX spec Part 14 says DRAFT watermark on the Document Preview widget at < 90%, but the *generated PDF* should follow Story 5.9's three-tier model (the authoritative source for button labels). The Document Preview widget and the generated PDF are different surfaces with different thresholds — the preview is a real-time rendering (always showing current state), while the PDF is a point-in-time artifact. The tooltip requirement ensures the user is never surprised by what they receive — if the preview shows DRAFT but the PDF won't include one, the tooltip explains why.
 
 **Recommended authoritative model:**
 - **Document Preview widget** (Story 5.9): DRAFT watermark at < 90% completeness (per UX spec Part 14)
@@ -435,7 +437,7 @@ Add to Story 6.1:
 **Given** PDF generation is initiated
 **When** generation fails (server error, timeout > 30 seconds per NFR3, or storage failure)
 **Then** a toast notification appears: "PDF generation failed. Please try again." with a "Retry" action button
-**And** no partial or corrupted PDF is stored in document history
+**And** no partial or corrupted PDF is rendered, presented to the user, or stored in document history — if generation fails at any stage, the user sees only the error toast and retry button, never a half-built document
 **And** the "Generate PDF" button returns to its pre-generation state (not stuck in loading)
 
 **Given** PDF generation is initiated
@@ -491,7 +493,7 @@ Add to the PDF content list:
 ```
 
 **Impact Classification:** Blocker
-**Rationale:** The Audit tab is one of the 7 report tabs and contains meaningful content for lenders — it validates internal consistency of the financial projections. The reference spreadsheets include an Audit tab. Omitting it from the PDF means the lender package is incomplete compared to the spreadsheet equivalent. If the PO decides against including Audit in the PDF, this should be an explicit exclusion decision, not an accidental omission.
+**PO Decision:** **APPROVED — Include Audit Summary in PDF.** The Audit tab validates financial consistency and lenders want to see that. The lender package must be complete relative to the spreadsheet equivalent. This is not a suggestion — it is an explicit inclusion decision. Add the Audit Summary section to Story 6.1's PDF content list.
 
 ---
 
@@ -508,19 +510,25 @@ Add to Story 6.2 Dev Notes:
 ```
 **Dev Notes (additions):**
 - Thumbnail generation: Generate a PNG thumbnail of the first PDF page at PDF creation time.
-  Store the thumbnail alongside the PDF in Replit Object Storage. Recommended size: 300x400px.
-  If thumbnail generation fails, display a generic document icon placeholder — do not block
-  the document creation flow.
-- Architecture constraint: IStorage interface exposes only createDocument(), getDocument(),
-  and listDocuments() — no updateDocument() or deleteDocument(). Immutability is enforced
-  at the interface level (Architecture Decision 13). Do NOT add PUT/PATCH/DELETE endpoints
-  for documents.
+  - Format: PNG, 300x400px, 72 DPI
+  - Storage path convention: Same Object Storage bucket, path:
+    `documents/{planId}/{docId}/thumbnail.png` alongside `documents/{planId}/{docId}/document.pdf`
+  - Failure isolation: Thumbnail generation failure must NOT block document creation. The
+    document is the primary artifact. Log the thumbnail error, store a null reference in the
+    thumbnail_path field, and render a generic document icon placeholder on the frontend.
+  - If thumbnail generation fails, the document entry in the history list shows the placeholder
+    icon — never a broken image.
+- Architecture constraint (NON-NEGOTIABLE): The `IStorage` interface for documents exposes
+  exactly three methods: `createDocument()`, `getDocument()`, `listDocuments()`. No update or
+  delete methods exist by architectural design (Architecture Decision 13). Any Pull Request
+  adding mutation endpoints for documents will be rejected at code review. This is
+  non-negotiable — immutability is enforced at the interface level, not just as policy.
 - API endpoints: POST /api/plans/:id/documents (generate), GET /api/plans/:id/documents (list),
-  GET /api/plans/:id/documents/:docId (download). No mutation endpoints.
+  GET /api/plans/:id/documents/:docId (download). No PUT/PATCH/DELETE endpoints. Period.
 ```
 
 **Impact Classification:** Quality Risk
-**Rationale:** Without thumbnail guidance, the dev agent may attempt on-the-fly PDF-to-image conversion on every page load (expensive) or skip thumbnails entirely. Without immutability reference, the agent may create mutation endpoints that violate the architecture.
+**Rationale:** Without thumbnail guidance, the dev agent may attempt on-the-fly PDF-to-image conversion on every page load (expensive) or skip thumbnails entirely. Without immutability reference, the agent may create mutation endpoints that violate the architecture. The expanded storage path convention and failure isolation details prevent the agent from making architectural decisions that should be constrained.
 
 ---
 
@@ -536,15 +544,19 @@ No AC change needed — FR26/FR27 provide sufficient backing. However, add to St
 
 ```
 **Dev Notes (addition):**
-- No user journey currently describes the document history experience. The empty state
-  (no documents generated yet) should show a call-to-action: "No documents yet.
-  Generate your first business plan package from Reports or the Dashboard."
+- No user journey currently describes the document history experience.
+- Lightweight journey sketch for dev agent guidance: Sam returns to his Dashboard a week
+  after generating his lender package → clicks "Documents" in sidebar → sees his previously
+  generated lender package with date and thumbnail → downloads it for his banker.
+- The empty state (no documents generated yet) should show a warm, inviting call-to-action:
+  "Your lender packages will appear here after you generate them. Head to Reports or your
+  Dashboard to create your first one." (Reframe as anticipation, not absence.)
 - Navigation: Add a "Documents" entry in the sidebar (below Reports) for direct access.
   The Dashboard preview widget already links to document generation (Story 5.9).
 ```
 
-**Impact Classification:** Enhancement
-**Rationale:** Non-blocking but improves implementability. The dev agent needs guidance on empty state and navigation placement.
+**Impact Classification:** Quality Risk
+**Rationale:** Upgraded from Enhancement. Without a journey sketch, the dev agent has no guidance on how the experience should feel — the same class of problem that caused agent divergence in Epic 5. The lightweight journey and warm empty state copy prevent guesswork.
 
 ---
 
@@ -567,6 +579,12 @@ No AC change needed — FR26/FR27 provide sufficient backing. However, add to St
 **Awareness Item:** Linda's pipeline dashboard shows "3 with completed lender packages." This implies the system tracks document generation status per franchisee and surfaces it to franchisor admins. This is an Epic 11 concern, not Epic 6, but Epic 6's document storage (Story 6.2) should support querying "has this plan generated at least one document?" for downstream use.
 
 **Recommendation:** Ensure the `generated_documents` table and API support a "has documents" query per plan, usable by Epic 11.
+
+### Cross-Cutting Concern: Two-Surface DRAFT Threshold
+
+**Awareness Item:** The Document Preview widget (Story 5.9) and the generated PDF (Story 6.1) use intentionally different DRAFT watermark thresholds: the preview shows DRAFT at < 90% completeness, while the generated PDF only shows DRAFT at < 50%. This is a deliberate design decision (see Section 6 analysis and Amendment 1). Any future story that modifies either the Document Preview widget or the PDF generation must be aware that these thresholds are decoupled. Changing one without updating the other — or without updating the button tooltip that bridges the gap — will break the user experience.
+
+**Recommendation:** Add this two-surface threshold model to the project-context.md as a cross-cutting architectural decision so future agents are aware of the intentional divergence.
 
 ---
 
@@ -647,6 +665,7 @@ This model respects the UX spec Part 13 (three button labels), Part 14 (preview 
 | Retired scenario AC verified | Confirmed struck through (lines 1838-1841) with retirement note |
 | Story 5.9 handoff verified | All 3 entry points aligned |
 | Non-blocking future items documented | J4, J7, J8 covered in Section 4 |
+| All amendment proposals PO-reviewed and approved before Epic 6 begins | **Required** — Epic 6 Stories 6.1 and 6.2 must not start until PO approves all amendments |
 
 ---
 
@@ -659,7 +678,7 @@ This model respects the UX spec Part 13 (three button labels), Part 14 (preview 
 - **Automated tests:** N/A (documentation-only story)
 - **Manual verification:** Audit covers all 6 acceptance criteria
   - AC-1: Journey-to-story mapping table produced (Section 1) — 9 journey steps mapped
-  - AC-2: Gap analysis produced (Section 2) — 8 gaps identified (3 Blocker, 3 Quality Risk, 2 Enhancement)
+  - AC-2: Gap analysis produced (Section 2) — 8 gaps identified (3 Blocker, 4 Quality Risk, 1 Enhancement)
   - AC-3: AC amendment proposals produced (Section 3) — 6 proposals with FR traceability
   - AC-4: Story 5.9 handoff verified (Section 5) — all 3 entry points aligned
   - AC-5: Completeness threshold consistency analyzed (Section 6) — two-surface model recommended
