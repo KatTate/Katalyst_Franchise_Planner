@@ -18,7 +18,39 @@ import {
   ChevronDown,
   ChevronUp,
   ArrowRight,
+  RotateCw,
 } from "lucide-react";
+
+// All fields expected in each BrandParameters category, for showing "Not found" labels
+const ALL_PARAMETER_FIELDS: Record<string, Array<{ field: string; label: string; isPercentage: boolean }>> = {
+  revenue: [
+    { field: "monthly_auv", label: "Monthly AUV", isPercentage: false },
+    { field: "year1_growth_rate", label: "Year 1 Growth Rate", isPercentage: true },
+    { field: "year2_growth_rate", label: "Year 2 Growth Rate", isPercentage: true },
+    { field: "starting_month_auv_pct", label: "Starting Month AUV %", isPercentage: true },
+  ],
+  operating_costs: [
+    { field: "cogs_pct", label: "COGS %", isPercentage: true },
+    { field: "labor_pct", label: "Labor %", isPercentage: true },
+    { field: "rent_monthly", label: "Monthly Rent", isPercentage: false },
+    { field: "utilities_monthly", label: "Monthly Utilities", isPercentage: false },
+    { field: "insurance_monthly", label: "Monthly Insurance", isPercentage: false },
+    { field: "marketing_pct", label: "Marketing %", isPercentage: true },
+    { field: "royalty_pct", label: "Royalty %", isPercentage: true },
+    { field: "ad_fund_pct", label: "Ad Fund %", isPercentage: true },
+    { field: "other_monthly", label: "Other Monthly", isPercentage: false },
+  ],
+  financing: [
+    { field: "loan_amount", label: "Loan Amount", isPercentage: false },
+    { field: "interest_rate", label: "Interest Rate", isPercentage: true },
+    { field: "loan_term_months", label: "Loan Term (months)", isPercentage: false },
+    { field: "down_payment_pct", label: "Down Payment %", isPercentage: true },
+  ],
+  startup_capital: [
+    { field: "working_capital_months", label: "Working Capital (months)", isPercentage: false },
+    { field: "depreciation_years", label: "Depreciation (years)", isPercentage: false },
+  ],
+};
 
 function formatCurrency(dollars: number): string {
   return `$${dollars.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
@@ -113,6 +145,8 @@ export function FddIngestionTab({ brand }: { brand: Brand }) {
     queryKey: ["/api/brands", brand.id, "fdd-ingestion", "runs"],
   });
 
+  // Note: Uses raw fetch instead of apiRequest because apiRequest sets Content-Type: application/json,
+  // which is incompatible with FormData uploads. The browser must set the multipart boundary automatically.
   const extractMutation = useMutation({
     mutationFn: async (file: File) => {
       const formData = new FormData();
@@ -140,6 +174,25 @@ export function FddIngestionTab({ brand }: { brand: Brand }) {
     onError: (error: Error) => {
       queryClient.invalidateQueries({ queryKey: ["/api/brands", brand.id, "fdd-ingestion", "runs"] });
       toast({ title: "Extraction failed", description: error.message, variant: "destructive" });
+    },
+  });
+
+  const retryMutation = useMutation({
+    mutationFn: async (runId: string) => {
+      const res = await apiRequest("POST", `/api/brands/${brand.id}/fdd-ingestion/${runId}/retry`);
+      return res.json();
+    },
+    onSuccess: (data: FddIngestionRun) => {
+      queryClient.invalidateQueries({ queryKey: ["/api/brands", brand.id, "fdd-ingestion", "runs"] });
+      setExpandedRunId(data.id);
+      if (data.extractedData) {
+        setEditedData(JSON.parse(JSON.stringify(data.extractedData)));
+      }
+      toast({ title: "Retry successful", description: "Extraction completed. Review the extracted data below." });
+    },
+    onError: (error: Error) => {
+      queryClient.invalidateQueries({ queryKey: ["/api/brands", brand.id, "fdd-ingestion", "runs"] });
+      toast({ title: "Retry failed", description: error.message, variant: "destructive" });
     },
   });
 
@@ -246,7 +299,7 @@ export function FddIngestionTab({ brand }: { brand: Brand }) {
       <div className="space-y-4">
         {categories.map(({ key, label }) => {
           const categoryData = (data.parameters as any)?.[key];
-          if (!categoryData || Object.keys(categoryData).length === 0) return null;
+          const allFields = ALL_PARAMETER_FIELDS[key] || [];
 
           return (
             <Card key={key}>
@@ -254,25 +307,50 @@ export function FddIngestionTab({ brand }: { brand: Brand }) {
                 <CardTitle className="text-sm">{label}</CardTitle>
               </CardHeader>
               <CardContent className="px-4 pb-3">
-                {Object.entries(categoryData).map(([field, fieldData]: [string, any]) => (
-                  <ParameterField
-                    key={field}
-                    category={key}
-                    field={field}
-                    extracted={fieldData}
-                    existing={existingParams ? (existingParams[key] as any)?.[field] || null : null}
-                    confidence={data.confidence[`${key}.${field}`]}
-                    onValueChange={handleParameterValueChange}
-                  />
-                ))}
+                {allFields.map(({ field, label: fieldLabel, isPercentage }) => {
+                  const fieldData = categoryData?.[field];
+                  const existingField = existingParams ? (existingParams[key] as any)?.[field] || null : null;
+
+                  if (fieldData) {
+                    return (
+                      <ParameterField
+                        key={field}
+                        category={key}
+                        field={field}
+                        extracted={fieldData}
+                        existing={existingField}
+                        confidence={data.confidence[`${key}.${field}`]}
+                        onValueChange={handleParameterValueChange}
+                      />
+                    );
+                  }
+
+                  const existingDisplay = existingField
+                    ? (isPercentage ? `${(existingField.value * 100).toFixed(2)}%` : formatCurrency(existingField.value))
+                    : null;
+                  const retainLabel = existingField
+                    ? "Not found — will retain current value"
+                    : "Not found — will use default";
+
+                  return (
+                    <div key={field} className="flex items-center gap-3 py-2 border-b last:border-0 opacity-60" data-testid={`field-${key}-${field}-not-found`}>
+                      <div className="flex-1 min-w-0">
+                        <span className="text-sm font-medium">{fieldLabel}</span>
+                        <p className="text-xs text-muted-foreground mt-0.5 italic">{retainLabel}</p>
+                      </div>
+                      {existingDisplay && (
+                        <div className="text-right shrink-0">
+                          <span className="text-xs text-muted-foreground">Current</span>
+                          <p className="text-sm">{existingDisplay}</p>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
               </CardContent>
             </Card>
           );
         })}
-
-        {categories.every(({ key }) => !((data.parameters as any)?.[key]) || Object.keys((data.parameters as any)?.[key] || {}).length === 0) && (
-          <p className="text-sm text-muted-foreground text-center py-4">No financial parameters were extracted from this document.</p>
-        )}
       </div>
     );
   };
@@ -554,9 +632,19 @@ export function FddIngestionTab({ brand }: { brand: Brand }) {
                       {run.errorMessage && (
                         <p className="text-sm text-muted-foreground mt-1">{run.errorMessage}</p>
                       )}
-                      <p className="text-sm text-muted-foreground mt-2">
-                        Please re-upload the document to try again.
-                      </p>
+                      <Button
+                        variant="outline"
+                        className="mt-3"
+                        onClick={() => retryMutation.mutate(run.id)}
+                        disabled={retryMutation.isPending}
+                        data-testid={`button-retry-${run.id}`}
+                      >
+                        {retryMutation.isPending ? (
+                          <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Retrying...</>
+                        ) : (
+                          <><RotateCw className="h-4 w-4 mr-2" /> Retry Extraction</>
+                        )}
+                      </Button>
                     </div>
                   )}
                 </div>
