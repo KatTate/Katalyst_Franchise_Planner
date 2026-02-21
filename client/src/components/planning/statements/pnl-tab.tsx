@@ -17,7 +17,7 @@ import type { FormatType } from "@/lib/field-metadata";
 interface PnlTabProps {
   output: EngineOutput;
   financialInputs?: PlanFinancialInputs | null;
-  onCellEdit?: (category: string, fieldName: string, rawInput: string, inputFormat: FormatType) => void;
+  onCellEdit?: (category: string, fieldName: string, rawInput: string, inputFormat: FormatType, yearIndex: number) => void;
   isSaving?: boolean;
   scenarioOutputs?: ScenarioOutputs | null;
   brandName?: string;
@@ -413,7 +413,10 @@ export function PnlTab({ output, financialInputs, onCellEdit, isSaving, scenario
     if (!onCellEdit || !financialInputs) return;
     const mapping = INPUT_FIELD_MAP[rowKey];
     if (!mapping) return;
-    onCellEdit(mapping.category, mapping.fieldName, rawInput, mapping.inputFormat);
+    const colKey = editingCell?.split(":")[1] ?? "y1";
+    const yearMatch = colKey.match(/^y(\d)/);
+    const yearIndex = yearMatch ? parseInt(yearMatch[1]) - 1 : 0;
+    onCellEdit(mapping.category, mapping.fieldName, rawInput, mapping.inputFormat, yearIndex);
     setEditingCell(null);
 
     const flashKeys = new Set<string>();
@@ -447,7 +450,7 @@ export function PnlTab({ output, financialInputs, onCellEdit, isSaving, scenario
     }
   }, [visibleCols, expandedSections]);
 
-  const getRawValue = useCallback((rowKey: string): number => {
+  const getRawValue = useCallback((rowKey: string, yearIndex: number = 0): number => {
     if (!financialInputs) return 0;
     const mapping = INPUT_FIELD_MAP[rowKey];
     if (!mapping) return 0;
@@ -455,7 +458,8 @@ export function PnlTab({ output, financialInputs, onCellEdit, isSaving, scenario
       ? financialInputs.operatingCosts?.facilitiesDecomposition as any
       : (financialInputs as any)[mapping.category];
     if (!categoryObj) return 0;
-    const field = categoryObj[mapping.fieldName] as FinancialFieldValue;
+    const fieldArr = categoryObj[mapping.fieldName];
+    const field = Array.isArray(fieldArr) ? fieldArr[yearIndex] as FinancialFieldValue : fieldArr as FinancialFieldValue;
     return field?.currentValue ?? 0;
   }, [financialInputs]);
 
@@ -577,7 +581,7 @@ interface PnlSectionProps {
   onCancelEdit: () => void;
   onCommitEdit: (rowKey: string, rawInput: string) => void;
   onTabNav: (rowKey: string, direction: "next" | "prev") => void;
-  getRawValue: (rowKey: string) => number;
+  getRawValue: (rowKey: string, yearIndex: number) => number;
   showInterpretation?: boolean;
   financialInputs?: PlanFinancialInputs | null;
   brandName?: string;
@@ -655,7 +659,7 @@ interface PnlRowProps {
   onCancelEdit: () => void;
   onCommitEdit: (rowKey: string, rawInput: string) => void;
   onTabNav: (rowKey: string, direction: "next" | "prev") => void;
-  getRawValue: (rowKey: string) => number;
+  getRawValue: (rowKey: string, yearIndex: number) => number;
   showInterpretation?: boolean;
   financialInputs?: PlanFinancialInputs | null;
   brandName?: string;
@@ -715,7 +719,7 @@ function PnlRow({
             const cellKey = `${row.key}:${col.key}`;
             const isEditingThis = editingCell === cellKey;
             const isFlashing = flashingRows.has(cellKey);
-            const rawValue = getRawValue(row.key);
+            const rawValue = getRawValue(row.key, (col.year ?? 1) - 1);
 
             const displayFormatted = formatFieldValue(rawValue, mapping.inputFormat);
 
@@ -863,9 +867,9 @@ interface ComparisonPnlSectionProps {
   onCancelEdit: () => void;
   onCommitEdit: (rowKey: string, rawInput: string) => void;
   onTabNav: (rowKey: string, direction: "next" | "prev") => void;
-  getRawValue: (rowKey: string) => number;
+  getRawValue: (rowKey: string, yearIndex: number) => number;
   financialInputs?: PlanFinancialInputs | null;
-  onCellEdit?: (category: string, fieldName: string, rawInput: string, inputFormat: FormatType) => void;
+  onCellEdit?: (category: string, fieldName: string, rawInput: string, inputFormat: FormatType, yearIndex: number) => void;
 }
 
 function ComparisonPnlSection({
@@ -939,9 +943,9 @@ interface ComparisonPnlRowProps {
   onCancelEdit: () => void;
   onCommitEdit: (rowKey: string, rawInput: string) => void;
   onTabNav: (rowKey: string, direction: "next" | "prev") => void;
-  getRawValue: (rowKey: string) => number;
+  getRawValue: (rowKey: string, yearIndex: number) => number;
   financialInputs?: PlanFinancialInputs | null;
-  onCellEdit?: (category: string, fieldName: string, rawInput: string, inputFormat: FormatType) => void;
+  onCellEdit?: (category: string, fieldName: string, rawInput: string, inputFormat: FormatType, yearIndex: number) => void;
 }
 
 function ComparisonPnlRow({
@@ -994,7 +998,7 @@ function ComparisonPnlRow({
         const isYearBoundary = colIdx > 0 && col.year !== comparisonCols[colIdx - 1].year;
 
         if (isBase && editable && editingCell === `${row.key}:${col.key}`) {
-          const rawValue = getRawValue(row.key);
+          const rawValue = getRawValue(row.key, (col.year ?? 1) - 1);
           return (
             <td
               key={col.key}
@@ -1003,8 +1007,11 @@ function ComparisonPnlRow({
               data-testid={`pnl-value-${row.key}-${col.key}`}
             >
               <InlineEditableCell
-                value={formatFieldValue(rawValue, mapping!.inputFormat)}
+                displayValue={formatFieldValue(rawValue, mapping!.inputFormat)}
+                rawValue={rawValue}
                 inputFormat={mapping!.inputFormat}
+                isEditing={true}
+                onStartEdit={() => {}}
                 onCommit={(val) => onCommitEdit(row.key, val)}
                 onCancel={onCancelEdit}
                 onTabNext={() => onTabNav(row.key, "next")}

@@ -38,7 +38,13 @@ function buildUpdatedInputs(
   categoryObj: Record<string, any>,
   fieldName: string,
   updatedField: FinancialFieldValue,
+  yearIndex: number,
 ): PlanFinancialInputs {
+  const existingField = categoryObj[fieldName];
+  const updatedValue = Array.isArray(existingField)
+    ? existingField.map((f: FinancialFieldValue, i: number) => i === yearIndex ? updatedField : f)
+    : updatedField;
+
   if (category === "facilitiesDecomposition") {
     return {
       ...inputs,
@@ -46,7 +52,7 @@ function buildUpdatedInputs(
         ...inputs.operatingCosts,
         facilitiesDecomposition: {
           ...categoryObj,
-          [fieldName]: updatedField,
+          [fieldName]: updatedValue,
         },
       },
     } as PlanFinancialInputs;
@@ -55,7 +61,7 @@ function buildUpdatedInputs(
     ...inputs,
     [category]: {
       ...categoryObj,
-      [fieldName]: updatedField,
+      [fieldName]: updatedValue,
     },
   };
 }
@@ -146,16 +152,17 @@ export function FinancialStatements({ planId, defaultTab = "summary", plan, queu
   }, []);
 
   const handleCellEdit = useCallback(
-    (category: string, fieldName: string, rawInput: string, inputFormat: FormatType) => {
+    (category: string, fieldName: string, rawInput: string, inputFormat: FormatType, yearIndex: number) => {
       if (!financialInputs || !queueSave) return;
       const parsedValue = parseFieldInput(rawInput, inputFormat);
       if (isNaN(parsedValue)) return;
       const categoryObj = resolveCategoryObj(financialInputs, category);
       if (!categoryObj) return;
-      const field = categoryObj[fieldName] as FinancialFieldValue;
+      const fieldArr = categoryObj[fieldName];
+      const field = Array.isArray(fieldArr) ? fieldArr[yearIndex] as FinancialFieldValue : fieldArr as FinancialFieldValue;
       if (!field || parsedValue === field.currentValue) return;
       const updatedField = updateFieldValue(field, parsedValue, new Date().toISOString());
-      const updatedInputs = buildUpdatedInputs(financialInputs, category, categoryObj, fieldName, updatedField);
+      const updatedInputs = buildUpdatedInputs(financialInputs, category, categoryObj, fieldName, updatedField, yearIndex);
       queueSave({ financialInputs: updatedInputs });
     },
     [financialInputs, queueSave]
