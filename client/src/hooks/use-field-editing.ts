@@ -37,13 +37,22 @@ function buildUpdatedInputs(
   const raw = categoryObj[fieldName];
   let newValue: FinancialFieldValue | FinancialFieldValue[];
   if (Array.isArray(raw)) {
+    const now = new Date().toISOString();
+    const isReset = updatedField.source === "brand_default";
     if (allYears) {
       newValue = raw.map((item: FinancialFieldValue) =>
-        updateFieldValue(item, updatedField.currentValue, new Date().toISOString())
+        isReset
+          ? { ...updatedField, brandDefault: item.brandDefault, currentValue: updatedField.currentValue, lastModifiedAt: now }
+          : updateFieldValue(item, updatedField.currentValue, now)
       );
     } else {
+      const monthsPerYear = raw.length > 5 ? Math.round(raw.length / 5) : 1;
       newValue = raw.map((item: FinancialFieldValue, i: number) =>
-        i === 0 ? updatedField : item
+        i < monthsPerYear
+          ? (isReset
+            ? { ...updatedField, brandDefault: item.brandDefault, currentValue: updatedField.currentValue, lastModifiedAt: now }
+            : updateFieldValue(item, updatedField.currentValue, now))
+          : item
       );
     }
   } else {
@@ -129,7 +138,10 @@ export function useFieldEditing({ financialInputs, isSaving, onSave }: UseFieldE
     const field = resolveField(categoryObj, fieldName);
     if (!field) return;
     if (parsedValue !== field.currentValue || allYears) {
-      const updatedField = updateFieldValue(field, parsedValue, new Date().toISOString());
+      const now = new Date().toISOString();
+      const updatedField = field.brandDefault !== null && parsedValue === field.brandDefault
+        ? resetFieldToDefault(field, now)
+        : updateFieldValue(field, parsedValue, now);
       const updatedInputs = buildUpdatedInputs(financialInputs, category, categoryObj, fieldName, updatedField, allYears);
       onSave(updatedInputs);
     }

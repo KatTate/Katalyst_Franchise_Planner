@@ -1,6 +1,6 @@
 # Story 7.1c: Forms Onboarding — New Field Sections & Simple Inputs
 
-Status: review
+Status: done
 
 ## Story
 
@@ -123,17 +123,34 @@ User reaches this via: **Sidebar → My Plan** → collapsible form sections.
 
 - Agent Model Used: Claude 4.6 Opus
 - All 4 ACs implemented and verified via Playwright E2E
-- AC-1: All field sections (Revenue, Operating Costs, Profitability & Distributions, Working Capital & Valuation, Financing, Startup Capital) render with proper fields. Per-year fields show "Fine-tune per year in Reports" hint and "Set for all years" checkbox.
-- AC-2: Single-value fields update currentValue directly. Per-year fields update Year 1 (index 0) by default. When "Set for all years" is checked, all 5 years are updated.
-- AC-3: "Set for all years" checkbox toggle on per-year fields, default checked. When checked, writes value to all 5 array elements. When unchecked, writes only Year 1. Hint: "Go to Reports to set different values per year or month" via the "Fine-tune per year in Reports" text.
-- AC-4: Brand default shown as always-visible subtle label below the field ("Brand default: X"). Reset to brand default button available per field when user has edited. SourceBadge shows default/user_entry state.
+- AC-1: All field sections (Revenue, Operating Costs, Profitability & Distributions, Working Capital & Valuation, Financing, Startup Capital) render with proper fields. Per-year fields show hint and "Set for all years" checkbox.
+- AC-2: Single-value fields update currentValue directly. Per-year fields update Year 1 (index 0) by default. Per-month fields update indices 0-11 (Year 1 months). When "Set for all years" is checked, all elements are updated.
+- AC-3: "Set for all years" checkbox toggle on per-year fields, default checked for new plans (unchecked when per-year values already differ). Hint: "Go to Reports to set different values per year or month".
+- AC-4: Brand default shown as always-visible subtle label below the field ("Brand default: X"). Reset to brand default button available per field when user has edited. SourceBadge shows default/user_entry state. Editing a value back to the brand default restores "brand_default" source.
 - No new npm packages introduced. No API endpoints created. No modifications to components/ui/*. No per-year column editing in Forms (all constraints respected).
+
+### Code Review Record
+
+- Reviewer: Claude 4.6 Opus (fresh context, adversarial review)
+- Review Date: 2026-02-21
+- Git Discovery: yes | Discrepancies: 0
+- LSP Scan: 0 errors, 0 warnings
+- Architect Review: yes
+- Issues Found: 1 High, 5 Medium, 2 Low — ALL FIXED
+- Fixes Applied:
+  - H1: "Set for all years" now defaults based on whether per-year values differ (safe for existing plans)
+  - M1: Per-month field handling added — indices 0-11 updated for Year 1 when allYears=false
+  - M2: Hint text corrected to "Go to Reports to set different values per year or month"
+  - M3: State variable renamed from `setAllYears`/`setSetAllYears` to `applyToAllYears`/`setApplyToAllYears`
+  - M4: Dense edited count logic extracted to `countEditedFields` helper function
+  - L1: Shared timestamp across batch updates in `buildUpdatedInputs`
+  - L2: Editing a value back to brand default now uses `resetFieldToDefault` to restore "brand_default" source
 
 ### File List
 
-- `client/src/hooks/use-field-editing.ts` — MODIFIED: Added `allYears` parameter to `buildUpdatedInputs` and `handleEditCommit` to support "Set for all years" mode
-- `client/src/components/planning/forms-mode.tsx` — MODIFIED: Added `isPerYear` detection, "Set for all years" toggle, "Fine-tune per year in Reports" hint, always-visible brand default label
-- `_bmad-output/implementation-artifacts/7-1c-forms-per-year-layout.md` — MODIFIED: Story status updates
+- `client/src/hooks/use-field-editing.ts` — MODIFIED: Added `allYears` parameter, per-month handling, shared timestamps, brand-default-value detection
+- `client/src/components/planning/forms-mode.tsx` — MODIFIED: Added `isPerYear` detection, `hasCustomPerYearValues` prop, `countEditedFields` helper, corrected hint text, renamed state variables
+- `_bmad-output/implementation-artifacts/7-1c-forms-per-year-layout.md` — MODIFIED: Story status updates, code review record
 - `_bmad-output/implementation-artifacts/sprint-status.yaml` — MODIFIED: Sprint status updates
 
 ### Testing Summary
@@ -141,5 +158,5 @@ User reaches this via: **Sidebar → My Plan** → collapsible form sections.
 - Testing approach: Playwright E2E via run_test tool
 - ACs covered: AC-1 (all sections visible, per-year hints visible, single-value fields lack per-year controls), AC-2/AC-3 (COGS% edit with "Set for all years" checked, value saved correctly), AC-4 (brand default labels visible, reset to brand default works)
 - All tests passing
-- LSP Status: 0 errors, 0 warnings
+- LSP Status: 0 errors, 0 warnings (post-review)
 - Visual Verification: yes (Playwright screenshots verified)

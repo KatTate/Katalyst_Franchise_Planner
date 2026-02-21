@@ -36,6 +36,18 @@ function resolveCategoryData(inputs: PlanFinancialInputs, category: string): Rec
   return ((inputs as any)[category] ?? {}) as Record<string, FinancialFieldValue | FinancialFieldValue[]>;
 }
 
+function countEditedFields(
+  fields: Record<string, FieldMeta>,
+  categoryData: Record<string, FinancialFieldValue | FinancialFieldValue[]>,
+): number {
+  return Object.keys(fields).filter((k) => {
+    const f = categoryData?.[k];
+    if (!f) return false;
+    if (Array.isArray(f)) return f[0]?.source !== "brand_default";
+    return (f as FinancialFieldValue)?.source !== "brand_default";
+  }).length;
+}
+
 type StartupCostCountCallback = (count: number) => void;
 
 interface FormsModeProps {
@@ -248,7 +260,7 @@ function FormSection({
           </div>
           <div className="flex items-center gap-2 shrink-0">
             <span className="text-xs text-muted-foreground tabular-nums">
-              {Object.keys(fields).filter((k) => { const f: any = categoryData?.[k]; if (!f) return false; if (Array.isArray(f)) return f[0]?.source !== "brand_default"; return f?.source !== "brand_default"; }).length}/{Object.keys(fields).length} edited
+              {countEditedFields(fields, categoryData)}/{Object.keys(fields).length} edited
             </span>
             <ChevronDown
               className={`h-4 w-4 text-muted-foreground transition-transform duration-200 ${
@@ -268,6 +280,9 @@ function FormSection({
               const key = `${category}.${fieldName}`;
               const isEditing = editingField === key;
               const isFocused = focusedField === key;
+              const hasCustomPerYearValues = isPerYear && (raw as FinancialFieldValue[]).some(
+                (item, i) => i > 0 && item.currentValue !== (raw as FinancialFieldValue[])[0].currentValue
+              );
 
               return (
                 <FormField
@@ -278,6 +293,7 @@ function FormSection({
                   meta={meta}
                   field={field}
                   isPerYear={isPerYear}
+                  hasCustomPerYearValues={hasCustomPerYearValues}
                   isEditing={isEditing}
                   isFocused={isFocused}
                   editValue={editValue}
@@ -304,6 +320,7 @@ interface FormFieldProps {
   meta: FieldMeta;
   field: FinancialFieldValue;
   isPerYear: boolean;
+  hasCustomPerYearValues: boolean;
   isEditing: boolean;
   isFocused: boolean;
   editValue: string;
@@ -322,6 +339,7 @@ function FormField({
   meta,
   field,
   isPerYear,
+  hasCustomPerYearValues,
   isEditing,
   isFocused,
   editValue,
@@ -332,14 +350,17 @@ function FormField({
   onReset,
   onFocusChange,
 }: FormFieldProps) {
-  const [setAllYears, setSetAllYears] = useState(true);
+  const [applyToAllYears, setApplyToAllYears] = useState(!hasCustomPerYearValues);
+  useEffect(() => {
+    setApplyToAllYears(!hasCustomPerYearValues);
+  }, [fieldKey, hasCustomPerYearValues]);
   const isUserEntry = field.source === "user_entry";
   const defaultDisplay =
     field.brandDefault !== null ? formatFieldValue(field.brandDefault, meta.format) : null;
 
   const commitWithAllYears = useCallback(() => {
-    onEditCommit(isPerYear && setAllYears ? true : undefined);
-  }, [onEditCommit, isPerYear, setAllYears]);
+    onEditCommit(isPerYear && applyToAllYears ? true : undefined);
+  }, [onEditCommit, isPerYear, applyToAllYears]);
 
   return (
     <div data-testid={`field-row-${fieldName}`} className="rounded-md px-3 py-2.5 hover-elevate">
@@ -422,15 +443,15 @@ function FormField({
           <label className="flex items-center gap-1.5 cursor-pointer select-none">
             <input
               type="checkbox"
-              checked={setAllYears}
-              onChange={(e) => setSetAllYears(e.target.checked)}
+              checked={applyToAllYears}
+              onChange={(e) => setApplyToAllYears(e.target.checked)}
               className="h-3.5 w-3.5 rounded border-input accent-primary cursor-pointer"
               data-testid={`checkbox-set-all-years-${fieldName}`}
             />
             <span className="text-[11px] text-muted-foreground">Set for all years</span>
           </label>
           <span className="text-[11px] text-muted-foreground/70 italic" data-testid={`hint-fine-tune-${fieldName}`}>
-            Fine-tune per year in Reports
+            Go to Reports to set different values per year or month
           </span>
         </div>
       )}
