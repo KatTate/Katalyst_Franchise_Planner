@@ -296,3 +296,120 @@ Epic 5H delivered 4 stories with 100% completion rate, restored code review disc
 ---
 
 *Retrospective conducted using BMAD Party Mode retrospective workflow. All 15 steps executed in order: Epic Discovery → Document Discovery → Deep Story Analysis → Git Commit History Analysis → Codebase Health Scan → Previous Retro Follow-Through → Preview Next Epic → Initialize Retrospective → Epic Review Discussion → Next Epic Preparation Discussion → Synthesize Action Items with Change Detection → Critical Readiness Exploration (including visual verification) → Retrospective Closure → Save Retrospective & Update Sprint Status → Final Summary and Handoff.*
+
+---
+
+# POST-RETROSPECTIVE ADDENDUM: This Retrospective Was Wrong
+
+**Date:** 2026-02-21 (same day as retrospective finalization)
+**Author:** Bob (SM)
+**Trigger:** PO-directed post-mortem after AI-3/AI-4/AI-5 action item execution exposed bugs this retrospective failed to identify
+
+## What Happened
+
+Within hours of finalizing this retrospective — which declared Story 5H.1 "done" and reported "99 reference tests, 1 bug fixed, 2 divergences documented" — execution of action items AI-3, AI-4, and AI-5 uncovered **four critical engine formula bugs** that Story 5H.1 was specifically designed to catch. The retrospective's own "What Went Well" section praised the validation framework while the engine contained inverted formulas, wrong tax treatments, and sign errors.
+
+## The Four Bugs This Retrospective Missed
+
+### BUG 1: Labor Efficiency Formula Completely Inverted
+- **What was in the engine:** `totalWages / revenue` (= 0.17x)
+- **What the reference spreadsheet says:** `Non-Labor Gross Margin / Total Wages` (= 3.71x)
+- **Severity:** The formula was computing the RECIPROCAL of the correct answer. Not a rounding error. Not a display issue. The formula was upside down.
+- **Why 5H.1 missed it:** The reference tests validated P&L dollar values (revenue, COGS, gross profit, opex line items) but **never tested the P&L Analysis section ratios**. Labor efficiency, adjusted labor efficiency, and related ratio metrics had zero test coverage.
+
+### BUG 2: ROIC Percentage Using After-Tax Instead of Pre-Tax
+- **What was in the engine:** `afterTaxNetIncome / totalInvestedCapital`
+- **What the reference spreadsheet shows (ROIC tab row 19):** `preTaxNetIncomeIncSweatEquity / totalInvestedCapital`
+- **Reference Y3:** $12,095 / $230,686 = 5.2%. Engine was computing ($12,095 - $2,540 tax) / $230,686 = 4.1%.
+- **Why 5H.1 missed it:** The ROIC tests validated dollar component values (totalCashInvested, cumulativeSweatEquity, etc.) but **never validated the `roicPct` percentage itself**. Testing the ingredients without testing the recipe.
+
+### BUG 3: Salary Adjustment Sign Error (ROIC + P&L Analysis)
+- **What was in the engine:** `preTaxNetIncome + annualSalaryAdj` (adding the adjustment)
+- **What the reference spreadsheet shows:** Pre-Tax NI ($-92k) MINUS Salary Adj ($55k) = Pre-Tax NI inc Sweat Equity ($-147k)
+- **Why 5H.1 missed it:** The Valuation section already had the correct sign (subtraction). Nobody compared the ROIC section's sign against either the Valuation section or the reference spreadsheet intermediate values.
+
+### BUG 4: businessAnnualROIC Not Synced From ROIC Tab
+- **What was in the engine:** Valuation section independently computed `adjNetOperatingIncome / equityAmount`
+- **What the reference spreadsheet does:** Copies this value directly from the ROIC tab
+- **Why 5H.1 missed it:** No test compared Valuation's businessAnnualROIC against ROIC's roicPct. The two values were computed by different formulas and nobody checked whether they agreed.
+
+### BONUS: Runtime Crash in P&L Analysis Display
+- **What happened:** The Labor Efficiency interpretation function in `pnl-tab.tsx` accessed `enriched[0].laborEfficiency`, but `laborEfficiency` only exists on `PLAnalysisOutput`, not `EnrichedAnnual`. The function crashed at runtime every time the P&L Analysis section rendered.
+- **Why 5H.1 missed it:** The P&L Analysis section was collapsed by default (`defaultExpanded: false`). Nobody expanded it. The Playwright visual verification in this retrospective (Step 9) literally documented "P&L Analysis section collapsed by default — rows not findable" and moved on instead of expanding the section.
+
+## Root Cause Analysis: Why Story 5H.1 Failed Its Own ACs
+
+Story 5H.1's acceptance criteria stated: **"cell-by-cell vs reference spreadsheets"** covering **"ROIC: all summary metrics per year"** and **"P&L: all line items."**
+
+The implementation cherry-picked which cells to validate:
+- Dollar amounts: validated ✓
+- Percentages (ROIC %): NOT validated ✗
+- Ratios (labor efficiency): NOT validated ✗
+- Cross-section consistency (ROIC vs Valuation): NOT validated ✗
+- Sign correctness on intermediate adjustments: NOT validated ✗
+
+The acceptance criteria said "all." The implementation did "some." The code review didn't catch it. The retrospective didn't catch it. The PO found it by looking at the app.
+
+**Three sequential failure points:**
+1. **Dev agent** wrote tests that covered dollar values but skipped ratios, percentages, and cross-section checks
+2. **Code reviewer** looked at "99 tests passing" and treated test count as test coverage
+3. **Retrospective facilitator (me)** accepted "99 tests, 1 bug fixed" as evidence of completion without verifying WHAT was tested
+
+## Corrections to This Retrospective
+
+### Story 5H.1 Status: INCOMPLETE AT TIME OF RETROSPECTIVE
+- **What the retrospective said:** "Done — 99 reference tests, 1 bug fixed, 2 divergences documented"
+- **What was actually true:** 99 tests covering dollar values only. Four formula bugs undetected. Zero coverage of ratio/percentage/cross-section metrics.
+
+### "What Went Well" Item 1: RETRACTED
+- **What it said:** "Adversarial code reviews caught real bugs"
+- **Correction:** The 5H.1 code review caught cosmetic issues (tautological test, structured discrepancy docs) but missed the fundamental gap: ratios and percentages weren't tested at all. The review found bugs in what was tested, not bugs in what was missing.
+
+### "Team Performance" Section: RETRACTED
+- **What it said:** "built a 99-test reference validation framework" and "positioned for Epic 6 success"
+- **Correction:** Built a partial validation framework that tested dollar amounts while leaving ratio/percentage formulas completely unvalidated. The team was NOT positioned for Epic 6 — the engine contained four formula bugs that would have been permanently captured in lender-facing PDF documents.
+
+### Action Items AI-3 and AI-4 Were Mislabeled
+- **What the retrospective said:** AI-3 was "Remove ScenarioBar from Reports" (HIGH). AI-4 was "Fix Labor Efficiency Display" (HIGH).
+- **What was actually needed:** These were CRITICAL engine formula bugs, not display issues. The retrospective characterized engine computation failures as presentation problems, understating severity by an order of magnitude.
+
+## Revised Epic 5H Assessment
+
+| Metric | Retrospective Said | Actual |
+|--------|-------------------|--------|
+| Stories completed | 4/4 (100%) | 3/4 (75%) — 5H.1 was incomplete |
+| Bugs found by validation | 1 | 5 (1 during 5H.1 + 4 found post-retro) |
+| Reference test coverage | "all summary metrics" | Dollar values only — ratios/percentages/cross-sections had zero coverage |
+| Engine accuracy | GREEN | RED at time of retrospective — four formula bugs active |
+| Ready for Epic 6 | "contingent on 5 items" | NO — the engine itself was wrong, not just the display layer |
+
+## Accountability
+
+| Role | Failure | What Should Have Happened |
+|------|---------|--------------------------|
+| Dev Agent | Wrote tests for dollar values, skipped ratios/percentages entirely | Every cell type in the reference spreadsheet gets a test: dollars, percentages, ratios, cross-references |
+| Code Reviewer | Accepted "99 tests" without checking coverage completeness | Review must verify that test coverage matches AC scope — "all summary metrics" means ALL, not "the ones we felt like testing" |
+| SM (Bob) | Accepted story as "done" without verifying test coverage against ACs | Should have demanded a test matrix showing AC-6 coverage: which cells are tested, which are not |
+| Retrospective | Characterized engine bugs as "display issues" | Should have investigated whether the underlying formulas were correct, not just whether the UI rendered |
+
+## Process Failures This Exposes
+
+1. **"99 tests passing" is a vanity metric.** Test count means nothing if the tests don't cover the actual risk areas. A test suite that validates revenue and COGS but skips labor efficiency ratios is theater.
+
+2. **"Cell-by-cell" was interpreted as "cells we chose."** When an AC says "all line items" and "all summary metrics," that means ALL. Not "the dollar-denominated ones." The word "all" has no ambiguity.
+
+3. **Changing a tooltip to document a broken formula instead of fixing the formula is not acceptable.** This was identified by the PO during the retrospective and should have been the reddest flag possible. Instead it became an action item.
+
+4. **Collapsed UI sections hide bugs.** The P&L Analysis section was collapsed by default. The runtime crash inside it went undetected through development, code review, Playwright testing, AND retrospective visual verification. If a section exists, it must be tested in its expanded state.
+
+## What Was Fixed (Post-Retrospective)
+
+All four engine bugs and the runtime crash were fixed on 2026-02-21:
+- `shared/financial-engine.ts`: Labor efficiency formula corrected (NLGM/Wages), ROIC switched to pre-tax, salary adjustment sign fixed in ROIC and P&L Analysis sections, businessAnnualROIC synced from ROIC tab
+- `client/src/components/planning/statements/pnl-tab.tsx`: Interpretation function fixed to access plAnalysis instead of enriched data
+- `shared/financial-engine-reference.test.ts`: 5 new reference tests added (4 P&L Analysis, 1 ROIC percentage). Total: 104 tests.
+- All 104 reference tests passing. E2E verification confirmed correct rendering.
+
+---
+
+*This addendum exists because the original retrospective was self-congratulatory while the engine contained inverted formulas. The PO's frustration is justified. "99 tests passing" meant nothing when the tests didn't test what mattered. — Bob, SM*

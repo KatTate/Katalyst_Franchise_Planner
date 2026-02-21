@@ -371,29 +371,62 @@ story_location: _bmad-output/implementation-artifacts
 #   - Deployment status: development only — not published
 #   - Epic 5H status: DONE (all 4 stories + retrospective complete)
 #   - See: epic-5h-retrospective.md
-# 2026-02-21: Epic 5H Retro Action Items — HIGH items executed, CRITICAL items deferred
+# 2026-02-21: Epic 5H Retro Action Items — HIGH items executed, then CRITICAL ENGINE BUGS FOUND
 #   - AI-3 HIGH (ScenarioBar removal): DONE — ScenarioBar import and render removed from
 #     financial-statements.tsx. "Compare Scenarios" button no longer visible in Reports.
-#   - AI-4 HIGH (Labor Efficiency fix): DONE — tooltip formula corrected from "Total wages /
-#     Gross Profit" to "Total Wages / Revenue" (matches engine line 826). Interpretation text
-#     corrected from "of gross profit" to "of revenue". Adjusted Labor Efficiency tooltip
-#     corrected similarly. P&L Analysis section defaultExpanded changed from false to true.
-#     NOTE: Reference spreadsheets define LER as Revenue / Direct Labor (inverse of engine).
-#     Formula direction mismatch deferred to AI-1 display format validation.
-#   - AI-5 HIGH (5H.3 AC amendments): DONE — all 6 amendments applied to epics.md:
-#     Amendment 1: Three-tier completeness model (< 50% / 50-90% / > 90%) replaces single tier
-#     Amendment 2: Error state ACs added (failure toast, loading state, no partial PDFs)
-#     Amendment 3: Subjective "professional formatting" replaced with measurable criteria
-#     Amendment 4: Audit Summary added to PDF content list
-#     Amendment 5: Thumbnail + immutability dev notes added to Story 6.2
-#     Amendment 6: Document history journey sketch + empty state copy added to Story 6.2
+#   - AI-4 HIGH (Labor Efficiency fix): ESCALATED TO CRITICAL — During AI-4 execution,
+#     discovered the engine formula was COMPLETELY INVERTED (totalWages/revenue instead of
+#     nonLaborGrossMargin/totalWages). This was NOT a tooltip issue — the engine computation
+#     itself was wrong. Produced 0.17x instead of correct 3.71x. Fixed in financial-engine.ts.
+#   - AI-5 HIGH (5H.3 AC amendments): DONE — all 6 amendments applied to epics.md.
 #   - AI-1 CRITICAL (Display format validation): DEFERRED — PO decision to address after
-#     progressing through several more epics. Known risk: displayed formats not validated
-#     against reference spreadsheets. LER formula direction mismatch identified (engine uses
-#     totalWages/revenue, reference uses Revenue/DirectLabor).
+#     progressing through several more epics.
 #   - AI-2 CRITICAL (30-day month resolution): DEFERRED — PO decision to address after
-#     progressing through several more epics. Known risk: working capital calculations use
-#     30-day months while reference spreadsheets use actual calendar days (28/30/31).
+#     progressing through several more epics.
+#
+# 2026-02-21: POST-RETROSPECTIVE ENGINE BUG DISCOVERY (PO-directed post-mortem)
+#   *** THIS ENTRY CORRECTS THE RECORD — Story 5H.1 was NOT complete at time of retrospective ***
+#   During AI-3/AI-4/AI-5 action item execution, 4 CRITICAL engine formula bugs were found
+#   that Story 5H.1 ("cell-by-cell validation") was specifically designed to catch:
+#
+#   BUG 1: Labor Efficiency formula INVERTED
+#     Engine had: totalWages / revenue (= 0.17x)
+#     Reference spreadsheet: nonLaborGrossMargin / totalWages (= 3.71x)
+#     The formula was computing the RECIPROCAL. Not a rounding error — completely backwards.
+#     Root cause: 5H.1 tests covered P&L dollar values but NEVER tested P&L Analysis ratios.
+#
+#   BUG 2: ROIC percentage using after-tax instead of pre-tax
+#     Engine had: afterTaxNetIncome / totalInvestedCapital
+#     Reference (ROIC tab row 19): preTaxNetIncomeIncSweatEquity / totalInvestedCapital
+#     Root cause: 5H.1 tests validated ROIC dollar components but NEVER validated roicPct itself.
+#
+#   BUG 3: Salary adjustment sign error (ROIC + P&L Analysis)
+#     Engine had: preTaxNetIncome + annualSalaryAdj (should be minus)
+#     Reference: Pre-Tax NI (-$92k) - Salary Adj ($55k) = -$147k
+#     Root cause: Valuation section already had correct sign (subtraction). Nobody cross-checked.
+#
+#   BUG 4: businessAnnualROIC not synced from ROIC tab
+#     Engine had: independent computation (adjNetOperatingIncome / equityAmount)
+#     Reference: copies value directly from ROIC tab
+#     Root cause: No cross-section consistency test existed.
+#
+#   BONUS: Runtime crash in pnl-tab.tsx interpretation function
+#     Accessed enriched[0].laborEfficiency but field only exists on PLAnalysisOutput.
+#     Crashed every time P&L Analysis section was expanded. Went undetected because section
+#     was collapsed by default and nobody expanded it during testing or retrospective.
+#
+#   ALL FIXES APPLIED 2026-02-21:
+#     - financial-engine.ts: 4 formula corrections
+#     - pnl-tab.tsx: interpretation function data source fix
+#     - financial-engine-reference.test.ts: 5 new tests (104 total, all passing)
+#     - E2E verified: ROIC, Labor Efficiency, Business Annual ROIC all rendering correctly
+#
+#   PROCESS FAILURE ANALYSIS:
+#     - Dev agent wrote tests covering dollar values, skipped ratios/percentages/cross-sections
+#     - Code reviewer accepted "99 tests" without checking coverage against AC scope
+#     - SM (Bob) accepted story as "done" without verifying test matrix against ACs
+#     - Retrospective characterized engine bugs as "display issues" (understated severity)
+#     - See: epic-5h-retrospective.md POST-RETROSPECTIVE ADDENDUM for full accountability
 
 development_status:
   # Epic 1: Auth, Onboarding & User Management
@@ -483,7 +516,7 @@ development_status:
   # AI-9 (large file decision) → architecture note during Epic 6 planning
   # AI-10 (taxRate TODO) → absorbed into 5H.1 engine validation
   epic-5h: done
-  5h-1-financial-engine-reference-validation: done  # AI-1: cell-by-cell vs reference spreadsheets. 99 tests, 2 brands (PostNet + Jeremiah's), 1 BUG fixed (ramp-up M1), 2 KNOWN DIVERGENCES documented, taxRate TODO resolved, adversarial code review completed
+  5h-1-financial-engine-reference-validation: done  # AI-1: cell-by-cell vs reference spreadsheets. CORRECTED RECORD: Initially closed with 99 tests covering dollar values only. Post-retro audit found 4 CRITICAL engine bugs (inverted labor efficiency, after-tax ROIC, salary adj sign, ROIC sync) because tests skipped ratios/percentages/cross-sections. Fixed 2026-02-21, now 104 tests including ratio/pct coverage. See retrospective addendum.
   5h-2-report-tab-ui-audit-remediation: done    # AI-2: Implementation complete. 5 per-tab callout bars removed, parent CalloutBar enriched (BS identity check + Valuation net proceeds), comparison mode visibility fixed, column width reduced. Adversarial code review completed 2026-02-21 (H1 BS identity fix, all findings resolved).
   5h-3-epic-6-ac-audit-user-journeys: done              # AI-3: Audit executed. 8 gaps found (3 Blocker, 3 Quality Risk, 2 Enhancement). 6 AC amendment proposals. Completeness threshold 2-surface model recommended. PO review completed 2026-02-21.
   5h-4-planning-artifact-alignment: done                  # AI-5: 111 FR traceability, fix stale coverage map. Audit complete: 111/111 FRs mapped, 54 stories traced, 6 artifact corrections applied. PO review completed 2026-02-21.
