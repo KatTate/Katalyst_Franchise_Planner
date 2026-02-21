@@ -35,6 +35,7 @@
 # - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
 
 generated: 2026-02-09
+updated: 2026-02-21  # Story 7.1 context document created (Create Story workflow)
 updated: 2026-02-21  # Story 5H.2 → done (adversarial code review completed, all findings fixed)
 updated: 2026-02-20  # Story 10.2 context document created (Create Story workflow)
 updated: 2026-02-20  # Story 5H.2 → review (dev-story workflow complete, pending code review)
@@ -329,6 +330,20 @@ story_location: _bmad-output/implementation-artifacts
 #   - Step 5: All findings fixed. Story status → done, sprint-status.yaml synced.
 #   - All 7 ACs verified SATISFIED (AC-2 required H1 fix to become truly functional)
 #   - Next action: Story 5H.3 (Epic 6 AC Audit & User Journeys)
+# 2026-02-21: Story 7.1 context document created (Create Story workflow)
+#   - Full story file: 7-1-per-year-input-columns.md (ready-for-dev)
+#   - 7 acceptance criteria covering: PlanFinancialInputs per-year restructuring (AC-1),
+#     lossless migration (AC-2), Reports independent per-year editing (AC-3),
+#     Forms mode 5-column per-year layout (AC-4), Facilities field alignment (AC-5),
+#     Other OpEx unit correction (AC-6), unwrapForEngine translation update (AC-7)
+#   - Dev notes include: FinancialFieldValue array pattern, fill5() removal audit,
+#     otherMonthly→otherOpexPct conversion elimination, facilities compound calculation
+#     removal, year1GrowthRate/year2GrowthRate consolidation, migration idempotency,
+#     scenario/sensitivity engine compatibility, 16 files in change summary
+#   - Anti-patterns: no engine computation changes, no new API endpoints, no fill5
+#     for per-year fields, no duplicate InlineEditableCell
+#   - Epic 7 status: in-progress (first story ready-for-dev)
+#   - Next action: Dev Story (DS) for 7.1 implementation
 
 development_status:
   # Epic 1: Auth, Onboarding & User Management
@@ -435,8 +450,8 @@ development_status:
   # Epic 7: Per-Year Inputs & Multi-Plan Management [NEW]
   # Year 1-5 input columns + plan CRUD
   # Dependencies: Epic 5 (linked-column indicators provide visual foundation)
-  epic-7: backlog
-  7-1-per-year-input-columns: backlog
+  epic-7: in-progress
+  7-1-per-year-input-columns: ready-for-dev
   7-2-plan-crud-navigation: backlog
   epic-7-retrospective: optional
 
