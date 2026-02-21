@@ -38,6 +38,7 @@ generated: 2026-02-09
 updated: 2026-02-21  # Story 5H.2 → done (adversarial code review completed, all findings fixed)
 updated: 2026-02-20  # Story 10.2 context document created (Create Story workflow)
 updated: 2026-02-20  # Story 5H.2 → review (dev-story workflow complete, pending code review)
+updated: 2026-02-21  # Story 5H.3 context document created (Create Story workflow)
 project: Katalyst Growth Planner
 project_key: NOKEY
 tracking_system: file-system
@@ -293,6 +294,30 @@ story_location: _bmad-output/implementation-artifacts
 #   - Dev Agent Record completed in story file
 #   - Story status: review (pending adversarial code review per Agent Session Control Rule #5)
 #   - Next action: adversarial code review (fresh agent context recommended)
+# 2026-02-21: Story 5H.3 context document created (Create Story workflow)
+#   - Full story file: 5h-3-epic-6-ac-audit-user-journeys.md (ready-for-dev)
+#   - 6 acceptance criteria covering: journey-to-story mapping (AC-1), gap analysis with
+#     11 specific checks (AC-2), AC amendment proposals (AC-3), Story 5.9 handoff
+#     verification (AC-4), completeness threshold consistency (AC-5), output format (AC-6)
+#   - Dev notes include: artifact locations with line numbers, mapping table format,
+#     gap classification scheme, amendment proposal template, 7 anti-patterns,
+#     8 gotchas (including known completeness threshold inconsistency), agent session
+#     control rules (carried from 5H.1/5H.2)
+#   - Documentation-only story — no application source code changes
+#   - Story status: ready-for-dev
+#   - Next action: Dev Story (DS) for 5H.3 audit execution
+# 2026-02-21: Story 5H.3 audit executed (Dev Story workflow)
+#   - 9 journey steps mapped across Journeys 1, 2, 3, 5
+#   - 8 gaps identified: GAP-01 (DRAFT threshold mismatch), GAP-02 (missing middle
+#     tier), GAP-03 (subjective formatting), GAP-04 (no journey for doc history),
+#     GAP-05 (no error state ACs), GAP-06 (thumbnail underspecified), GAP-07 (missing
+#     IStorage immutability reference), GAP-08 (missing Audit section in PDF)
+#   - 6 AC amendment proposals: threshold reconciliation, error states, measurable
+#     formatting, audit section, thumbnail/immutability dev notes, doc history guidance
+#   - Completeness threshold: two-surface model recommended (preview widget < 90%,
+#     generated PDF three-tier < 50% / 50-90% / > 90%)
+#   - Story 5.9 handoff: all 3 entry points aligned
+#   - Story status: review (pending PO review of amendment proposals)
 # 2026-02-21: Story 5H.2 adversarial code review completed (full BMAD CR workflow)
 #   - Step 1: Git discovery — 8 source files + 1 undocumented test file; 2 discrepancies (test file + test summary not in File List)
 #   - Step 3: Adversarial review — 4 findings (1 HIGH, 2 MEDIUM, 1 LOW), all resolved:
@@ -394,8 +419,8 @@ development_status:
   # AI-10 (taxRate TODO) → absorbed into 5H.1 engine validation
   epic-5h: in-progress
   5h-1-financial-engine-reference-validation: done  # AI-1: cell-by-cell vs reference spreadsheets. 99 tests, 2 brands (PostNet + Jeremiah's), 1 BUG fixed (ramp-up M1), 2 KNOWN DIVERGENCES documented, taxRate TODO resolved, adversarial code review completed
-  5h-2-report-tab-ui-audit-remediation: done       # AI-2: Adversarial code review completed. 1 HIGH (BS identity check name mismatch — FIXED), 2 MEDIUM, 1 LOW — all resolved. All 7 ACs verified SATISFIED.
-  5h-3-epic-6-ac-audit-user-journeys: backlog           # AI-3: Story ACs vs 8 user journeys, gap analysis
+  5h-2-report-tab-ui-audit-remediation: review    # AI-2: Implementation complete. 5 per-tab callout bars removed, parent CalloutBar enriched (BS identity check + Valuation net proceeds), comparison mode visibility fixed, column width reduced. Playwright e2e PASS, LSP clean. Pending adversarial code review.
+  5h-3-epic-6-ac-audit-user-journeys: review              # AI-3: Audit executed. 8 gaps found (3 Blocker, 3 Quality Risk, 2 Enhancement). 6 AC amendment proposals. Completeness threshold 2-surface model recommended. Pending PO review.
   5h-4-planning-artifact-alignment: backlog              # AI-5: 111 FR traceability, fix stale coverage map
   epic-5h-retrospective: optional
 
