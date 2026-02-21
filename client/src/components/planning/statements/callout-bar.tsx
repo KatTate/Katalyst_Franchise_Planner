@@ -71,10 +71,10 @@ function getTabContent(
           deNote = " Equity is negative — accumulated losses exceed invested capital.";
         }
       }
-      const bsCheck = (output?.identityChecks ?? []).find(
-        (c) => c.name.toLowerCase().includes("balance sheet") || c.name.toLowerCase().includes("assets = liabilities"),
+      const bsChecks = (output?.identityChecks ?? []).filter(
+        (c) => c.name.toLowerCase().includes("bs identity"),
       );
-      const bsPassed = bsCheck ? bsCheck.passed : true;
+      const bsPassed = bsChecks.length === 0 || bsChecks.every((c) => c.passed);
       return {
         metrics: [
           { label: "Total Assets (Y1)", value: annuals[0] ? formatFinancialValue(annuals[0].totalAssets, "currency") : "$0", testId: "callout-bs-assets" },

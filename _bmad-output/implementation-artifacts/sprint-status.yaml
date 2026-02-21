@@ -35,6 +35,7 @@
 # - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
 
 generated: 2026-02-09
+updated: 2026-02-21  # Story 5H.2 → done (adversarial code review completed, all findings fixed)
 updated: 2026-02-20  # Story 10.2 context document created (Create Story workflow)
 updated: 2026-02-20  # Story 5H.2 → review (dev-story workflow complete, pending code review)
 project: Katalyst Growth Planner
@@ -292,6 +293,17 @@ story_location: _bmad-output/implementation-artifacts
 #   - Dev Agent Record completed in story file
 #   - Story status: review (pending adversarial code review per Agent Session Control Rule #5)
 #   - Next action: adversarial code review (fresh agent context recommended)
+# 2026-02-21: Story 5H.2 adversarial code review completed (full BMAD CR workflow)
+#   - Step 1: Git discovery — 8 source files + 1 undocumented test file; 2 discrepancies (test file + test summary not in File List)
+#   - Step 3: Adversarial review — 4 findings (1 HIGH, 2 MEDIUM, 1 LOW), all resolved:
+#     H1: BS identity check name mismatch in callout-bar.tsx — search predicate "balance sheet" didn't match engine's "BS identity" names. Always showed "Balanced". Fixed with filter()+every() on "bs identity".
+#     M1: e2e test file added to story File List (was undocumented)
+#     M2: Dev agent AC-2 evidence was invalid — Playwright test passed vacuously due to H1 bug (documented as noted finding)
+#     L1: Unused useMemo import removed from roic-tab.tsx; unused ArrowDown import removed from balance-sheet-tab.tsx
+#   - Step 4: LSP diagnostics — 0 errors, 0 warnings. Architect review completed.
+#   - Step 5: All findings fixed. Story status → done, sprint-status.yaml synced.
+#   - All 7 ACs verified SATISFIED (AC-2 required H1 fix to become truly functional)
+#   - Next action: Story 5H.3 (Epic 6 AC Audit & User Journeys)
 
 development_status:
   # Epic 1: Auth, Onboarding & User Management
@@ -382,7 +394,7 @@ development_status:
   # AI-10 (taxRate TODO) → absorbed into 5H.1 engine validation
   epic-5h: in-progress
   5h-1-financial-engine-reference-validation: done  # AI-1: cell-by-cell vs reference spreadsheets. 99 tests, 2 brands (PostNet + Jeremiah's), 1 BUG fixed (ramp-up M1), 2 KNOWN DIVERGENCES documented, taxRate TODO resolved, adversarial code review completed
-  5h-2-report-tab-ui-audit-remediation: review    # AI-2: Implementation complete. 5 per-tab callout bars removed, parent CalloutBar enriched (BS identity check + Valuation net proceeds), comparison mode visibility fixed, column width reduced. Playwright e2e PASS, LSP clean. Pending adversarial code review.
+  5h-2-report-tab-ui-audit-remediation: done       # AI-2: Adversarial code review completed. 1 HIGH (BS identity check name mismatch — FIXED), 2 MEDIUM, 1 LOW — all resolved. All 7 ACs verified SATISFIED.
   5h-3-epic-6-ac-audit-user-journeys: backlog           # AI-3: Story ACs vs 8 user journeys, gap analysis
   5h-4-planning-artifact-alignment: backlog              # AI-5: 111 FR traceability, fix stale coverage map
   epic-5h-retrospective: optional
