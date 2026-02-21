@@ -6,7 +6,7 @@ import { useBrandTheme } from "@/hooks/use-brand-theme";
 import { useImpersonation } from "@/contexts/ImpersonationContext";
 import { useDemoMode } from "@/contexts/DemoModeContext";
 import { useWorkspaceView } from "@/contexts/WorkspaceViewContext";
-import { Home, Mail, Building2, LogOut, CalendarCheck, ClipboardList, BarChart3, FlaskConical, Settings, BookOpen, Plus, FileText } from "lucide-react";
+import { Home, Mail, Building2, LogOut, CalendarCheck, ClipboardList, BarChart3, FlaskConical, Settings, BookOpen, Plus, FileText, Circle } from "lucide-react";
 import { CreatePlanDialog } from "@/components/plan/create-plan-dialog";
 import { PlanContextMenu } from "@/components/plan/plan-context-menu";
 import {
@@ -172,6 +172,20 @@ export function AppSidebar() {
                       >
                         <FileText className="shrink-0" />
                         <span className="truncate flex-1">{plan.name}</span>
+                        {sidebarState === "expanded" && plan.status && (
+                          <span
+                            className={`text-[10px] leading-none px-1.5 py-0.5 rounded-full font-medium shrink-0 ${
+                              plan.status === "completed"
+                                ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400"
+                                : plan.status === "in_progress"
+                                ? "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400"
+                                : "bg-muted text-muted-foreground"
+                            }`}
+                            data-testid={`badge-plan-status-${plan.id}`}
+                          >
+                            {plan.status === "completed" ? "Done" : plan.status === "in_progress" ? "Active" : "Draft"}
+                          </span>
+                        )}
                         {sidebarState === "expanded" && (
                           <span className="opacity-0 group-hover/plan:opacity-100 transition-opacity" onClick={(e) => e.stopPropagation()}>
                             <PlanContextMenu
