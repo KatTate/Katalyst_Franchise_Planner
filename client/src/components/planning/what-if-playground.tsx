@@ -2,8 +2,9 @@ import { useState, useMemo, useEffect, useCallback } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Slider } from "@/components/ui/slider";
 import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { AlertCircle, TrendingUp, TrendingDown, Minus } from "lucide-react";
+import { AlertCircle, TrendingUp, TrendingDown, Minus, RotateCcw } from "lucide-react";
 import { usePlan } from "@/hooks/use-plan";
 import { formatCents } from "@/lib/format-currency";
 import {
@@ -14,7 +15,6 @@ import {
   type SliderConfig,
   type SensitivityOutputs,
 } from "@/lib/sensitivity-engine";
-import type { ScenarioOutputs } from "@/lib/scenario-engine";
 import type { PlanFinancialInputs } from "@shared/financial-engine";
 import type { StartupCostLineItem } from "@shared/financial-engine";
 
@@ -25,7 +25,7 @@ interface WhatIfPlaygroundProps {
 interface MetricDefinition {
   key: string;
   label: string;
-  getValue: (output: ScenarioOutputs["base"]) => number | null;
+  getValue: (output: SensitivityOutputs["base"]) => number | null;
   format: "currency" | "pct" | "months";
 }
 
@@ -93,7 +93,7 @@ function formatDelta(
   }
 }
 
-function sumY1Monthly(baseOutput: ScenarioOutputs["base"], field: "marketing" | "facilities"): number {
+function sumY1Monthly(baseOutput: SensitivityOutputs["base"], field: "marketing" | "facilities"): number {
   let total = 0;
   for (const mp of baseOutput.monthlyProjections) {
     if (mp.year === 1) total += mp[field];
@@ -104,7 +104,7 @@ function sumY1Monthly(baseOutput: ScenarioOutputs["base"], field: "marketing" | 
 function computeSliderDollarImpact(
   key: keyof SliderValues,
   pct: number,
-  baseOutput: ScenarioOutputs["base"]
+  baseOutput: SensitivityOutputs["base"]
 ): number {
   const y1 = baseOutput.annualSummaries[0];
   if (!y1) return 0;
@@ -122,7 +122,7 @@ function computeSliderDollarImpact(
   }
 }
 
-function formatSliderImpact(key: keyof SliderValues, pct: number, baseOutput: ScenarioOutputs["base"]): string {
+function formatSliderImpact(key: keyof SliderValues, pct: number, baseOutput: SensitivityOutputs["base"]): string {
   const impact = computeSliderDollarImpact(key, pct, baseOutput);
   if (impact === 0 && pct === 0) return "$0/yr";
   const sign = impact >= 0 ? "+" : "";
@@ -144,7 +144,7 @@ function SensitivitySliderRow({
   config: SliderConfig;
   value: number;
   onChange: (key: keyof SliderValues, val: number) => void;
-  baseOutput: ScenarioOutputs["base"] | null;
+  baseOutput: SensitivityOutputs["base"] | null;
   disabled: boolean;
 }) {
   const [inputValue, setInputValue] = useState(String(value));
@@ -166,7 +166,8 @@ function SensitivitySliderRow({
       setInputValue(String(value));
       return;
     }
-    const clamped = Math.max(config.min, Math.min(config.max, parsed));
+    const mathMin = config.key === "revenue" || config.key === "facilities" || config.key === "labor" || config.key === "marketing" ? -100 : -100;
+    const clamped = Math.max(mathMin, parsed);
     onChange(config.key, clamped);
     setInputValue(String(clamped));
   }, [inputValue, value, config, onChange]);
@@ -183,6 +184,8 @@ function SensitivitySliderRow({
   const impactDisplay = baseOutput ? formatSliderImpact(config.key, value, baseOutput) : "—";
   const pctDisplay = formatSliderPct(value);
 
+  const sliderDisplayValue = Math.max(config.min, Math.min(config.max, value));
+
   return (
     <div className="grid grid-cols-[140px_1fr_60px_120px_80px] gap-3 items-center" data-testid={`slider-row-${config.key}`}>
       <label className="text-sm font-medium text-foreground truncate">{config.label}</label>
@@ -190,7 +193,7 @@ function SensitivitySliderRow({
         min={config.min}
         max={config.max}
         step={config.step}
-        value={[value]}
+        value={[sliderDisplayValue]}
         onValueChange={handleSliderChange}
         disabled={disabled}
         data-testid={`slider-${config.key}`}
@@ -203,8 +206,6 @@ function SensitivitySliderRow({
       </span>
       <Input
         type="number"
-        min={config.min}
-        max={config.max}
         step={config.step}
         value={inputValue}
         onChange={(e) => setInputValue(e.target.value)}
@@ -268,16 +269,12 @@ function ScenarioColumn({
 function MetricCard({
   metric,
   scenarioOutputs,
-  hasCustom,
 }: {
   metric: MetricDefinition;
   scenarioOutputs: SensitivityOutputs;
-  hasCustom: boolean;
 }) {
   const baseVal = metric.getValue(scenarioOutputs.base);
-  const conservativeVal = metric.getValue(scenarioOutputs.conservative);
-  const optimisticVal = metric.getValue(scenarioOutputs.optimistic);
-  const customVal = metric.getValue(scenarioOutputs.custom);
+  const currentVal = metric.getValue(scenarioOutputs.current);
 
   return (
     <Card data-testid={`metric-card-${metric.key}`}>
@@ -287,13 +284,9 @@ function MetricCard({
         </CardTitle>
       </CardHeader>
       <CardContent className="px-4 pb-4">
-        <div className={`grid gap-2 ${hasCustom ? "grid-cols-4" : "grid-cols-3"}`}>
+        <div className="grid gap-2 grid-cols-2">
           <ScenarioColumn label="Base Case" value={baseVal} baseVal={baseVal} metricKey={metric.key} format={metric.format} testId={`metric-base-${metric.key}`} />
-          <ScenarioColumn label="Conservative" value={conservativeVal} baseVal={baseVal} metricKey={metric.key} format={metric.format} testId={`metric-conservative-${metric.key}`} />
-          <ScenarioColumn label="Optimistic" value={optimisticVal} baseVal={baseVal} metricKey={metric.key} format={metric.format} testId={`metric-optimistic-${metric.key}`} />
-          {hasCustom && (
-            <ScenarioColumn label="Your Scenario" value={customVal} baseVal={baseVal} metricKey={metric.key} format={metric.format} testId={`metric-custom-${metric.key}`} highlight />
-          )}
+          <ScenarioColumn label="Your Scenario" value={currentVal} baseVal={baseVal} metricKey={metric.key} format={metric.format} testId={`metric-current-${metric.key}`} highlight />
         </div>
       </CardContent>
     </Card>
@@ -316,10 +309,14 @@ export function WhatIfPlayground({ planId }: WhatIfPlaygroundProps) {
     setSliderValues((prev) => ({ ...prev, [key]: val }));
   }, []);
 
+  const handleResetSliders = useCallback(() => {
+    setSliderValues({ ...DEFAULT_SLIDER_VALUES });
+  }, []);
+
   const financialInputs = plan?.financialInputs as PlanFinancialInputs | null | undefined;
   const startupCostsData = (plan?.startupCosts ?? []) as StartupCostLineItem[];
 
-  const hasCustom = Object.values(sliderValues).some((v) => v !== 0);
+  const hasAdjustment = Object.values(sliderValues).some((v) => v !== 0);
 
   const scenarioOutputs = useMemo<SensitivityOutputs | null>(() => {
     if (!financialInputs) return null;
@@ -390,7 +387,22 @@ export function WhatIfPlayground({ planId }: WhatIfPlaygroundProps) {
 
         <Card data-testid="sensitivity-controls-panel">
           <CardHeader className="pb-3">
-            <CardTitle className="text-base">Sensitivity Controls</CardTitle>
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-base">Sensitivity Controls</CardTitle>
+              <div className="flex items-center gap-2">
+                {hasAdjustment && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleResetSliders}
+                    data-testid="button-reset-sliders"
+                  >
+                    <RotateCcw className="h-3.5 w-3.5 mr-1.5" />
+                    Reset Sliders
+                  </Button>
+                )}
+              </div>
+            </div>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="grid grid-cols-[140px_1fr_60px_120px_80px] gap-3 items-center text-[10px] text-muted-foreground uppercase tracking-wider mb-1">
@@ -414,7 +426,14 @@ export function WhatIfPlayground({ planId }: WhatIfPlaygroundProps) {
         </Card>
 
         <div>
-          <h2 className="text-base font-semibold mb-3" data-testid="metrics-heading">Key Metrics by Scenario</h2>
+          <h2 className="text-base font-semibold mb-3" data-testid="metrics-heading">
+            {hasAdjustment ? "Base Case vs Your Scenario" : "Key Metrics"}
+          </h2>
+          {!hasAdjustment && (
+            <p className="text-sm text-muted-foreground mb-3" data-testid="metrics-helper-text">
+              Move a slider to see how it changes your metrics
+            </p>
+          )}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4" data-testid="metric-cards-grid">
             {scenarioOutputs &&
               METRICS.map((metric) => (
@@ -422,7 +441,6 @@ export function WhatIfPlayground({ planId }: WhatIfPlaygroundProps) {
                   key={metric.key}
                   metric={metric}
                   scenarioOutputs={scenarioOutputs}
-                  hasCustom={hasCustom}
                 />
               ))}
           </div>

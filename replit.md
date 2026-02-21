@@ -75,16 +75,17 @@ When the user triggers an agent or workflow, the AI MUST load the referenced fil
 - **Impact Strip & Document Preview (Story 5.9):** ImpactStrip (`client/src/components/planning/impact-strip.tsx`) renders as sticky bottom bar in Forms view with context-sensitive metrics (changes based on active section), delta indicators with 3-second highlight animation, guardian dots with pulse animation (Gurple for concerning), and deep links to financial statements. DocumentPreviewModal (`client/src/components/planning/document-preview-modal.tsx`) shows styled HTML business plan preview with cover page, financial summaries, and DRAFT watermark when completeness <90%. DocumentPreviewWidget (`client/src/components/planning/document-preview-widget.tsx`) appears on Dashboard Panel as miniature preview card. Generate PDF buttons use completeness-aware labels: <50% "Generate Draft", 50-90% "Generate Package", >90% "Generate Lender Package". Shared completeness utility in `client/src/lib/plan-completeness.ts`.
 - **FinancialValue Component:** `client/src/components/shared/financial-value.tsx` — shared formatting component for all financial display. Handles currency ($), percentages (%), ratios (x), multipliers (x), numbers, and months. Accounting-style parentheses for negatives. Monospace font, destructive color for negative values.
 
-## Recent Changes (2026-02-20)
-- **Story 5H.1 complete (review):** Financial engine cell-by-cell validation against 2 brand reference spreadsheets (PostNet + Jeremiah's Italian Ice)
-  - 78 reference validation tests + 173 existing tests = 251 total engine tests, all passing (AC-10 tolerances: ±$1 line items, ±$10 section totals)
-  - 1 BUG fixed: Month 1 revenue ramp-up now uses `startingMonthAuvPct` directly (was interpolated)
-  - 2 KNOWN DIVERGENCES documented: (1) 30-day month simplification for working capital AR/Inv/AP, (2) tax accrual on balance sheet
-  - taxRate TODO (AI-10, carried since Epic 3) resolved: confirmed 21% correct, help content updated
-- Epic 5 COMPLETE — all 9 stories done, all SCP-2026-02-20 remediation CPs confirmed
-- Epic 5 Retrospective finalized — 10 action items (AI-1 through AI-10), 3 CRITICAL blockers identified
-- **Epic 5H (Hardening Sprint) in-progress** — Story 5H.1 in review, 3 stories remaining
-- Next action: **Story 5H.2 (Report Tab UI Audit) after 5H.1 code review completes**
+## Recent Changes (2026-02-21)
+- **SCP-2026-02-21 APPROVED:** Epic 10 pivot to user-authored scenario modeling
+  - Conservative/Optimistic system-defined columns KILLED — replaced with Base Case vs Your Scenario (user's live slider state)
+  - Slider ranges widened: ±50%/±100% visual range, uncapped numeric input (D6)
+  - Story 10.2 split → 10-2a (Chart Dashboard) + 10-2b (Metric Delta Cards)
+  - Story 10.3 promoted from optional to essential (Scenario Persistence & Comparison)
+  - sensitivity-engine.ts simplified: 4→2 engine calls
+  - what-if-playground.tsx updated: Reset button, 2-column metric layout
+  - All 8 change proposals (CP-1 through CP-8) applied to planning artifacts and code
+- **Epic 5H (Hardening Sprint) in-progress** — Stories 5H.1, 5H.2 done; 5H.3 in review
+- **Epic 10 in-progress** — Story 10.1 needs-revision (AC rewrite applied), 10-2a/10-2b needs-revision, 10.3 ready-for-dev
 
 **Feature Specifications:**
 - **Invitation Management:** Provides both UI and API capabilities for creating, monitoring, and copying invitation links.
