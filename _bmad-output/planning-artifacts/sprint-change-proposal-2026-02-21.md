@@ -1,9 +1,9 @@
 # Sprint Change Proposal: Epic 10 Pivot — User-Authored Scenario Modeling
 
 **Date:** 2026-02-21
-**Status:** PENDING APPROVAL
+**Status:** PENDING APPROVAL (Revision 2 — added D6 uncapped slider ranges, CP-8)
 **Author:** Correct Course workflow (Batch mode)
-**Triggered by:** UX review of Story 10-1 implementation — Product Owner identified that fixed Conservative/Optimistic columns answer a system-invented question, not a real user question
+**Triggered by:** UX review of Story 10-1 implementation — Product Owner identified that fixed Conservative/Optimistic columns answer a system-invented question, not a real user question. Follow-up PO feedback: slider ranges (±15%/±5%/±10%) are arbitrary holdovers from retired feature — should be uncapped.
 **Scope:** Epic 10 (What-If Playground) — Stories 10.1, 10.2a, 10.2b, 10.3
 **Severity:** Moderate — Epic 10 only, no impact on Epics 1–5H or 6–9
 
@@ -100,12 +100,13 @@ The What-If Playground becomes a place where **the user authors their own scenar
 │  What happens to my WHOLE business if things     │
 │  change?                                         │
 ├─────────────────────────────────────────────────┤
-│  SENSITIVITY CONTROLS                            │
-│  Revenue:    -15% ←——●——→ +15%    +$24,000/yr   │
-│  COGS:       -5%  ←——●——→ +5%     +$12,000/yr   │
-│  Labor:      -10% ←——●——→ +10%    -$8,000/yr    │
-│  Marketing:  -10% ←——●——→ +10%    +$0/yr        │
-│  Facilities: -10% ←——●——→ +10%    -$6,000/yr    │
+│  SENSITIVITY CONTROLS (uncapped — D6)             │
+│  Revenue:    -50% ←——●——→ +50%    +$24,000/yr   │
+│  COGS:       -20pp←——●——→ +20pp   +$12,000/yr   │
+│  Labor:      -50% ←——●——→ +50%    -$8,000/yr    │
+│  Marketing:  -50% ←——●——→ +50%    +$0/yr        │
+│  Facilities: -50% ←——●——→ +50%    -$6,000/yr    │
+│  (numeric fields accept any value — no cap)      │
 │                                                  │
 │  [Save as Scenario]  [Reset Sliders]             │
 │  ┌─────────────────────────────────────┐         │
@@ -136,6 +137,7 @@ The What-If Playground becomes a place where **the user authors their own scenar
 | D3 | Story 10-3 promoted from optional to essential | Scenario persistence IS the feature. Without save/load/compare, sliders are ephemeral toys. |
 | D4 | Comparison = Base vs Your Scenario (+ optional saved scenario overlay) | Users compare their authored scenarios against their actual plan. Additional saved scenarios can be overlaid for multi-scenario comparison. |
 | D5 | Engine simplification: compute 2 runs (base + current), not 4 | Fewer engine runs = better performance. Additional runs only when loading saved scenarios. |
+| D6 | Uncapped slider ranges — no artificial limits | The ±15%/±5%/±10% ranges were carried from the retired Quick Scenario Sensitivity Model (UX Spec Part 11, RETIRED). They were never designed as slider ranges. Franchisees doing real scenario modeling need to explore "what if revenue drops 40%?" without hitting an arbitrary wall. Sliders show a practical visual range (±50%) but numeric input fields accept any value within mathematical limits (revenue ≥ -100%, percentages clamped 0–100% by the engine's `clamp01()`). |
 
 ---
 
@@ -173,6 +175,8 @@ Standalone sidebar destination for interactive scenario modeling. Franchisees ad
 - Add AC: "A 'Reset Sliders' button returns all sliders to 0% (Your Scenario = Base Case)"
 - Remove Dev Note: "Conservative/Optimistic are computed by applying slider percentage multipliers to base case inputs"
 - Add Dev Note: "Engine runs twice: base (no adjustments) and current (slider adjustments applied). If sliders are all at zero, skip the second run — Your Scenario equals Base Case."
+- Remove AC: slider ranges of -15%/+15%, -5%/+5%, -10%/+10%
+- Replace with: "Sliders have a practical visual range (see CP-8 for details) but numeric input fields accept any value within mathematical limits. Revenue adjustment cannot go below -100%. Percentage-based inputs (COGS, labor, marketing) are clamped to valid ranges by the engine's existing `clamp01()` function."
 
 ### CP-3: Story 10.2a AC Revision (`10-2a-sensitivity-chart-dashboard.md`)
 
@@ -312,6 +316,46 @@ export function computeSensitivityOutputs(
 - Add "Reset Sliders" button
 - Prepare for Story 10-3 integration (scenario save/load/compare will be added later)
 
+### CP-8: Uncapped Slider Ranges (sensitivity-engine.ts + what-if-playground.tsx)
+
+**Origin of current limits:** The ±15%/±5%/±10% ranges were carried verbatim from the retired "Quick Scenario Sensitivity Model" in UX Spec Part 11 (marked `RETIRED — do not implement`). They were designed as fixed multipliers for system-defined Conservative/Optimistic snap calculations, not as slider range limits for user-authored scenarios. Per Product Owner direction (D6), they are replaced with uncapped ranges.
+
+**Design: Two-tier input model**
+
+Each slider has two input mechanisms:
+1. **Slider (visual):** Shows a practical drag range for common exploration. The visual range is generous but finite for usability:
+   - Revenue: -50% to +100%
+   - COGS: -20pp to +20pp
+   - Payroll/Labor: -50% to +100%
+   - Marketing: -50% to +100%
+   - Facilities: -50% to +100%
+2. **Numeric input field (uncapped):** Accepts any value within mathematical limits. No artificial cap. The slider thumb moves to the min/max edge when the numeric value exceeds the visual range, but the engine respects the entered value.
+
+**Mathematical limits (enforced by engine, not UI):**
+- Revenue adjustment: cannot go below -100% (revenue cannot be negative). No upper cap.
+- COGS adjustment (percentage points): the engine's `clamp01()` already prevents the resulting COGS% from exceeding 100% or going below 0%.
+- Labor, Marketing (percentage multipliers): same `clamp01()` applies after multiplication.
+- Facilities (dollar amount multiplier): cannot go below -100% (facilities cannot be negative). No upper cap.
+
+**File changes:**
+
+`sensitivity-engine.ts` — update `SLIDER_CONFIGS`:
+```typescript
+export const SLIDER_CONFIGS: SliderConfig[] = [
+  { key: "revenue", label: "Revenue", min: -50, max: 100, step: 5, unit: "%" },
+  { key: "cogs", label: "COGS", min: -20, max: 20, step: 1, unit: "pp" },
+  { key: "labor", label: "Payroll / Labor", min: -50, max: 100, step: 5, unit: "%" },
+  { key: "marketing", label: "Marketing", min: -50, max: 100, step: 5, unit: "%" },
+  { key: "facilities", label: "Facilities", min: -50, max: 100, step: 5, unit: "%" },
+];
+```
+
+`what-if-playground.tsx` — numeric input fields:
+- Remove `min`/`max` attributes from the `<Input>` element (or set them to mathematical limits: -100 min for revenue/facilities/labor/marketing, no max)
+- The slider component still uses `config.min`/`config.max` for its visual range
+- When the numeric field value exceeds the slider's visual range, the slider thumb clamps to its edge but the engine uses the actual numeric value
+- Add validation: revenue adjustment < -100 shows a warning "Revenue can't go below zero"
+
 ---
 
 ## 5. Implementation Handoff
@@ -338,7 +382,6 @@ export function computeSensitivityOutputs(
 ### What Does NOT Change
 
 - Financial engine (`financial-engine.ts`) — unchanged
-- Slider configurations and ranges — unchanged
 - Sandbox invariant (no PATCH to plan) — unchanged
 - Chart types and their data sources — unchanged (only which scenarios are plotted)
 - Epic 5H hardening work — unblocked, independent
