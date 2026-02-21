@@ -826,7 +826,14 @@ Until Epic 7 delivers per-year input arrays, all years broadcast the same value:
 
 ---
 
-## Part 11: Scenario Comparison
+## Part 11: Scenario Comparison — RETIRED
+
+> **RETIRED (SCP-2026-02-20 Decision D5/D6).** The column-splitting scenario comparison approach described below has been replaced by the standalone **What-If Playground** (Epic 10). Scenario comparison is no longer part of the Reports surface. See SCP-2026-02-20 Section 3 for the What-If Playground vision, and Part 15 Journey 4 for the updated user journey. The `ScenarioBar`, `ComparisonTableHead`, and `ScenarioSummaryCard` components remain in the codebase as dead code pending cleanup in Epic 10.
+>
+> The content below is preserved as historical record only. Do NOT use it as design authority for any implementation work.
+
+<details>
+<summary>Historical content (retired — do not implement)</summary>
 
 ### Good/Better/Best Is a First-Class Feature
 
@@ -875,6 +882,8 @@ To drill down while comparing: deactivate comparison first, drill, then reactiva
 - Base case IS the plan's current inputs.
 - Quick scenarios are computed client-side by applying sensitivity multipliers — they don't persist unless saved.
 - Custom scenarios (Epic 10) are persisted as separate input snapshots.
+
+</details>
 
 ---
 

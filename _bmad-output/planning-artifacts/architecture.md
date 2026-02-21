@@ -727,8 +727,8 @@ All errors return consistent structure. Validation errors (from Zod) return fiel
 
 ```
 <ReportsPage>                               (route: /plans/:planId/reports)
-  ├── <GuardianBar>                         (plan health status, scenario selection)
-  ├── <ScenarioBar>                         (active scenario indicator + comparison toggle)
+  ├── <GuardianBar>                         (plan health status)
+  ├── <ScenarioBar>                         [DEAD CODE — retired per SCP-2026-02-20 D5/D6, cleanup deferred to Epic 10]
   ├── <Tabs>                                (tab navigation across statement types)
   │     ├── <SummaryTab />                  (high-level projections)
   │     ├── <PnlTab />                      (P&L with inline-editable input cells)
@@ -1574,10 +1574,10 @@ katalyst-growth-planner/
 │       │   │   │   ├── inline-editable-cell.tsx # Input cell with inline editing in Reports
 │       │   │   │   ├── column-manager.tsx # Show/hide monthly columns, annual rollups
 │       │   │   │   ├── guardian-bar.tsx   # Plan health status bar above tabs
-│       │   │   │   ├── scenario-bar.tsx   # Scenario selection + comparison toggle
-│       │   │   │   ├── scenario-summary-card.tsx # Scenario comparison card
+│       │   │   │   ├── scenario-bar.tsx   # [DEAD CODE] Scenario comparison toggle — retired per SCP-2026-02-20 D5/D6, cleanup deferred to Epic 10
+│       │   │   │   ├── scenario-summary-card.tsx # [DEAD CODE] Scenario comparison card — retired per SCP-2026-02-20 D5/D6
 │       │   │   │   ├── callout-bar.tsx    # Contextual info/warning callouts
-│       │   │   │   └── comparison-table-head.tsx # Multi-scenario column headers
+│       │   │   │   └── comparison-table-head.tsx # [DEAD CODE] Multi-scenario column headers — retired per SCP-2026-02-20 D5/D6
 │       │   │   │
 │       │   │   ├── [DELETED] mode-switcher.tsx    # Deleted 2026-02-19 per SCP D1/CP-1
 │       │   │   └── [DELETED] quick-entry-mode.tsx # Deleted 2026-02-19 per SCP CP-2

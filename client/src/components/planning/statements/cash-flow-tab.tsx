@@ -292,7 +292,6 @@ export function CashFlowTab({ output, scenarioOutputs }: CashFlowTabProps) {
     const totalCompCols = comparisonCols.length;
     return (
       <div className="space-y-0 pb-8" data-testid="cash-flow-tab">
-        <CfCalloutBar annuals={annualSummaries} lowestCash={lowestCash} />
         <ColumnToolbar
           onExpandAll={expandAll}
           onCollapseAll={collapseAll}
@@ -327,10 +326,6 @@ export function CashFlowTab({ output, scenarioOutputs }: CashFlowTabProps) {
 
   return (
     <div className="space-y-0 pb-8" data-testid="cash-flow-tab">
-      <CfCalloutBar
-        annuals={annualSummaries}
-        lowestCash={lowestCash}
-      />
       <ColumnToolbar
         onExpandAll={expandAll}
         onCollapseAll={collapseAll}
@@ -368,64 +363,6 @@ export function CashFlowTab({ output, scenarioOutputs }: CashFlowTabProps) {
           </tbody>
         </table>
       </div>
-    </div>
-  );
-}
-
-function CfCalloutBar({
-  annuals,
-  lowestCash,
-}: {
-  annuals: AnnualSummary[];
-  lowestCash: { month: number; value: number };
-}) {
-  const y1 = annuals[0];
-  const y5 = annuals[4];
-  if (!y1) return null;
-
-  return (
-    <div
-      className="px-4 py-3 border-b bg-muted/30 sticky top-0 z-30"
-      data-testid="cf-callout-bar"
-    >
-      <div className="flex flex-wrap items-center gap-4">
-        <CalloutMetric
-          label="Net Cash Flow (Y1)"
-          value={formatFinancialValue(y1.netCashFlow, "currency")}
-          testId="cf-callout-net-cf-y1"
-        />
-        <div className="w-px h-8 bg-border" />
-        <CalloutMetric
-          label="Ending Cash (Y5)"
-          value={y5 ? formatFinancialValue(y5.endingCash, "currency") : "N/A"}
-          testId="cf-callout-ending-cash-y5"
-        />
-        <div className="w-px h-8 bg-border" />
-        <div className="flex flex-col">
-          <span className="text-xs text-muted-foreground font-medium uppercase tracking-wide">Lowest Cash Point</span>
-          <span className="text-lg font-semibold font-mono tabular-nums" data-testid="cf-callout-lowest-cash">
-            M{lowestCash.month}: {formatFinancialValue(lowestCash.value, "currency")}
-          </span>
-        </div>
-      </div>
-      <p
-        className="text-xs text-muted-foreground mt-1.5"
-        data-testid="cf-callout-interpretation"
-      >
-        Lowest cash point: {formatFinancialValue(lowestCash.value, "currency")} in Month {lowestCash.month}.{" "}
-        {lowestCash.value < 0
-          ? "You may need additional reserves to cover this shortfall."
-          : "Cash stays positive throughout the projection period."}
-      </p>
-    </div>
-  );
-}
-
-function CalloutMetric({ label, value, testId }: { label: string; value: string; testId: string }) {
-  return (
-    <div className="flex flex-col">
-      <span className="text-xs text-muted-foreground font-medium uppercase tracking-wide">{label}</span>
-      <span className="text-lg font-semibold font-mono tabular-nums" data-testid={testId}>{value}</span>
     </div>
   );
 }

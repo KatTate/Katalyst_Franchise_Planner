@@ -42,20 +42,33 @@ _Skip this section ONLY if the story's "As a..." role is explicitly a developer 
 - [ ] **UI visually verified**: The UI components were loaded in a browser and visually confirmed to work (not just tested via API calls or curl)
 - [ ] **UI states handled**: Error states, loading states, empty states, and success feedback are implemented in the UI
 
-## Platform Verification (Replit)
+## Platform Verification (Replit) — Step 9
 
-- [ ] **LSP diagnostics clean**: No type errors or unresolved references in files changed during this story
-- [ ] **Git status verified**: All implementation changes are tracked; no unexpected files modified outside story scope
-- [ ] **Visual verification** (if user-facing): Screenshots taken and UI confirmed to render correctly
+- [ ] **LSP diagnostics tool run**: LSP diagnostics tool called on each changed file individually
+- [ ] **{{lsp_error_count}} set**: Total LSP errors recorded
+- [ ] **{{lsp_warning_count}} set**: Total LSP warnings recorded
+- [ ] **LSP errors fixed**: Any errors in changed files resolved before proceeding
+- [ ] **Git status verified**: `git status --porcelain` run; {{git_status_clean}} set to "yes" or "no"
+- [ ] **Visual verification** (if user-facing): Screenshot tool used on affected pages; {{visual_verification_done}} set
 
-## Documentation & Traceability
+## Documentation & Traceability — Step 10
 
-- [ ] **Dev Agent Record updated**: Completion Notes summarize what was built and key decisions
-- [ ] **File List complete**: All created, modified, or deleted files listed with relative paths
-- [ ] **Testing Summary included**: Test approach, test files, AC coverage, and pass/fail status documented
-- [ ] **LSP Status recorded**: Clean, errors fixed, or warnings noted
-- [ ] **Story status updated**: Status changed to "review"
-- [ ] **Sprint status updated**: Sprint tracking file reflects "review" status for this story (if applicable)
+- [ ] **Story status updated**: Status changed to "review"; {{story_status_updated}} = "yes"
+- [ ] **Dev Agent Record updated**: Completion Notes, File List, Testing Summary, LSP Status, Visual Verification
+- [ ] **Sprint status updated**: Sprint tracking file reflects "review" status; {{sprint_status_updated}} set
+- [ ] **Architect tool run**: Architect tool called with relevant_files and include_git_diff: true; {{architect_review_done}} = "yes"
+
+## Completion Gate — Step 11
+
+- [ ] **ALL completion variables set** — if any are missing, the corresponding step was skipped:
+  - [ ] {{lsp_error_count}} = number (from Step 9)
+  - [ ] {{lsp_warning_count}} = number (from Step 9)
+  - [ ] {{git_status_clean}} = "yes" or "no" (from Step 9)
+  - [ ] {{visual_verification_done}} = "yes" or "N/A" (from Step 9)
+  - [ ] {{story_status_updated}} = "yes" (from Step 10)
+  - [ ] {{sprint_status_updated}} = "yes" or "N/A" (from Step 10)
+  - [ ] {{architect_review_done}} = "yes" (from Step 10)
+- [ ] **Final output includes completion verification section**
 
 ---
 
@@ -67,10 +80,16 @@ Definition of Done: {{PASS/FAIL}}
 ✅ **Story Implementation Complete:** {{story_key}}
 📊 **ACs Verified:** {{verified_count}}/{{total_count}}
 🧪 **Tests:** {{test_status}}
-🔍 **Platform Checks:** LSP {{lsp_status}} | Git {{git_status}}
-📝 **Documentation:** Story file {{story_update_status}} | Sprint status {{sprint_update_status}}
+
+Completion Verification:
+- LSP Diagnostics: {{lsp_error_count}} errors, {{lsp_warning_count}} warnings
+- Git Status: {{git_status_clean}}
+- Visual Verification: {{visual_verification_done}}
+- Story Status Updated: {{story_status_updated}}
+- Sprint Status Updated: {{sprint_status_updated}}
+- Architect Review: {{architect_review_done}}
 ```
 
-**If FAIL:** List which acceptance criteria are not yet satisfied, which Dev Notes constraints were violated, or which documentation/tracking steps were missed.
+**If FAIL:** List which acceptance criteria are not yet satisfied, which Dev Notes constraints were violated, or which completion variables are missing.
 
 **If PASS:** Story is ready for code review.

@@ -24,17 +24,24 @@
 - [ ] No hardcoded waits or sleeps
 - [ ] Tests are independent (no order dependency)
 
-## Output
+## Test Execution (Step 4) — COMMONLY MISSED
 
-- [ ] Test summary created
+- [ ] All generated tests actually executed (not just written to disk)
+- [ ] Test runner output captured showing pass/fail results
+- [ ] Failing tests debugged and fixed
+- [ ] {{tests_executed}} set to "yes"
+
+## Output (Step 5) — COMMONLY MISSED
+
+- [ ] Test summary created and saved to disk at default_output_file path
 - [ ] Tests saved to appropriate directories
 - [ ] Summary includes coverage metrics
+- [ ] {{summary_created}} set to "yes"
 
-## Validation
+## Completion Gate
 
-Run the tests using your project's test command.
-
-**Expected**: All tests pass ✅
+- [ ] {{tests_executed}} = "yes" — if not set, go back to Step 4
+- [ ] {{summary_created}} = "yes" — if not set, go back to Step 5
 
 ---
 

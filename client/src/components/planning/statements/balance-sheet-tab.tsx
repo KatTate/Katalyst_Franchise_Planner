@@ -441,16 +441,12 @@ export function BalanceSheetTab({ output, scenarioOutputs }: BalanceSheetTabProp
     setExpandedSections((prev) => ({ ...prev, [key]: !prev[key] }));
   }, []);
 
-  const bsIdentityCheck = identityChecks.find((c) => c.name.toLowerCase().includes("balance sheet") || c.name.toLowerCase().includes("assets = liabilities"));
-  const bsCheckPassed = bsIdentityCheck ? bsIdentityCheck.passed : true;
-
   const SCENARIOS: ScenarioId[] = ["base", "conservative", "optimistic"];
 
   if (comparisonActive && scenarioOutputs && scenarioEnriched) {
     const totalCompCols = comparisonCols.length;
     return (
       <div className="space-y-0 pb-8" data-testid="balance-sheet-tab">
-        <BsCalloutBar enriched={enriched} identityPassed={bsCheckPassed} />
         <ColumnToolbar
           onExpandAll={expandAll}
           onCollapseAll={collapseAll}
@@ -486,7 +482,6 @@ export function BalanceSheetTab({ output, scenarioOutputs }: BalanceSheetTabProp
 
   return (
     <div className="space-y-0 pb-8" data-testid="balance-sheet-tab">
-      <BsCalloutBar enriched={enriched} identityPassed={bsCheckPassed} />
       <ColumnToolbar
         onExpandAll={expandAll}
         onCollapseAll={collapseAll}
@@ -529,69 +524,6 @@ export function BalanceSheetTab({ output, scenarioOutputs }: BalanceSheetTabProp
   );
 }
 
-function BsCalloutBar({ enriched, identityPassed }: { enriched: EnrichedBsAnnual[]; identityPassed: boolean }) {
-  const y1 = enriched[0];
-  const y3 = enriched[2];
-  if (!y1) return null;
-  const debtToEquityY3 = y3 && y3.totalEquity !== 0 ? (y3.totalLiabilities / y3.totalEquity) : null;
-  return (
-    <div
-      className="px-4 py-3 border-b bg-muted/30 sticky top-0 z-30"
-      data-testid="bs-callout-bar"
-    >
-      <div className="flex flex-wrap items-center gap-4">
-        <CalloutMetric
-          label="Total Assets (Y1)"
-          value={formatFinancialValue(y1.totalAssets, "currency")}
-          testId="bs-callout-total-assets-y1"
-        />
-        <div className="w-px h-8 bg-border" />
-        <CalloutMetric
-          label="Total Equity (Y1)"
-          value={formatFinancialValue(y1.totalEquity, "currency")}
-          testId="bs-callout-total-equity-y1"
-        />
-        <div className="w-px h-8 bg-border" />
-        <div className="flex flex-col">
-          <span className="text-xs text-muted-foreground font-medium uppercase tracking-wide">Balance Sheet</span>
-          <span className="flex items-center gap-1.5" data-testid="bs-callout-identity-status">
-            {identityPassed ? (
-              <>
-                <Check className="h-4 w-4 text-green-600 dark:text-green-400" />
-                <span className="text-sm font-medium text-green-700 dark:text-green-400">Balanced</span>
-              </>
-            ) : (
-              <>
-                <AlertTriangle className="h-4 w-4 text-destructive" />
-                <span className="text-sm font-medium text-destructive">Imbalanced</span>
-              </>
-            )}
-          </span>
-        </div>
-      </div>
-      {debtToEquityY3 !== null && (
-        <p
-          className="text-xs text-muted-foreground mt-1.5"
-          data-testid="bs-callout-interpretation"
-        >
-          Debt-to-equity ratio: {debtToEquityY3.toFixed(1)}:1 by Year 3.{" "}
-          {debtToEquityY3 <= 3
-            ? "Lenders typically look for below 3:1."
-            : "Above 3:1 may raise concerns with lenders."}
-        </p>
-      )}
-    </div>
-  );
-}
-
-function CalloutMetric({ label, value, testId }: { label: string; value: string; testId: string }) {
-  return (
-    <div className="flex flex-col">
-      <span className="text-xs text-muted-foreground font-medium uppercase tracking-wide">{label}</span>
-      <span className="text-lg font-semibold font-mono tabular-nums" data-testid={testId}>{value}</span>
-    </div>
-  );
-}
 
 interface BsSectionProps {
   section: BsSectionDef;

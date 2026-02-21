@@ -88,7 +88,7 @@ This document provides the complete epic and story breakdown for the Katalyst Gr
 **9. Brand Identity & Experience**
 - FR49: Franchisee sees their franchise brand's identity (name, logo, colors) throughout the planning experience
 
-**10. AI Planning Advisor (Story Mode)**
+**10. AI Planning Advisor (Planning Assistant)**
 - FR50: In Planning Assistant mode, franchisee interacts with an AI Planning Advisor that collects plan inputs through natural language conversation
 - FR51: AI Planning Advisor extracts structured financial inputs from the franchisee's conversational responses and populates the corresponding fields
 - FR52: Franchisee can view, verify, and manually correct any value that the AI Planning Advisor populated — AI-populated values are clearly distinguishable
@@ -937,7 +937,7 @@ Epic 5 implements two interaction surfaces — **My Plan** and **Reports** — a
 **UX Design Authority:** `ux-design-specification-consolidated.md` (2026-02-18) — Single Source of Truth. Supersedes `ux-design-specification.md` and `ux-financial-statements-spec.md`.
 **FRs covered:** FR7a, FR7b, FR7c, FR7d, FR7e, FR7f, FR7g, FR7h, FR7k, FR7l, FR7m
 **Dependencies:** Epic 3 (financial engine), Epic 4 (planning workspace, EditableCell component)
-**Story sequence rationale:** Stories follow the consolidated UX spec's recommended rewrite structure (Part 20), building from engine → navigation + container → individual statements with inline editing → My Plan + Impact Strip → scenario comparison → interpretation → document preview → help. Each story has its dependencies met.
+**Story sequence rationale:** Stories follow the consolidated UX spec's recommended rewrite structure (Part 20), building from engine → navigation + container → individual statements with inline editing → My Plan + Impact Strip → ~~scenario comparison (RETIRED — D5/D6, moved to Epic 10)~~ → interpretation → document preview → help. Each story has its dependencies met. Story 5.7 was retired per SCP-2026-02-20 Decision D6; scenario functionality now lives in Epic 10 (What-If Playground).
 
 ### Story 5.1: Financial Engine Extension
 
@@ -1563,9 +1563,11 @@ So that I can confidently review my financial projections and present them to le
 The Epic 5 retrospective identified visible UI quality issues in screenshots provided by the Product Owner:
 - **Balance Sheet (Screenshot 1 — `attached_assets/image_1771605261047.png`):** Duplicate callout sections — a metrics bar at top AND a separate interpretation bar below both display overlapping information (Total Assets, Total Equity, Balance Sheet status). Sticky header architecture is visually cluttered.
 - **Balance Sheet with sidebar (Screenshot 2 — `attached_assets/image_1771605269747.png`):** Sidebar "Glossary" label overlapping with the callout metrics area. Z-index layering between sidebar and content area is not clean.
-- **Comparison mode (Screenshot 3 — `attached_assets/image_1771605283221.png`):** Column headers for Base/Conservative/Optimistic scenarios are cramped and overlapping. Row labels wrap awkwardly. Layout designed for 5 columns is forced to show 15.
+- **Comparison mode (Screenshot 3 — `attached_assets/image_1771605283221.png`):** Column cramping visible but **NOT in scope** — scenario comparison was retired from Reports per SCP-2026-02-20 Decision D5/D6. Comparison mode code remains in codebase as dead code; cleanup deferred to Epic 10 (What-If Playground).
 
 **CRITICAL NOTE:** The screenshots only captured Balance Sheet issues, but the same component patterns (callout bars, sticky headers, section collapsibles, interpretation rows) are shared across ALL statement tabs. The audit must verify whether these problems are exclusive to the Balance Sheet or persistent across other tabs. Every tab uses the same `StatementSection`, `CalloutBar`, and `ColumnManager` component patterns — if they're broken in one tab, they may be broken in others.
+
+**SCOPE EXCLUSION (SCP-2026-02-20 D5/D6):** Scenario comparison mode was retired from Reports. The column-splitting overlay is dead code awaiting removal in Epic 10. This story does NOT audit, remediate, or test comparison mode rendering. Any comparison mode code encountered during remediation should be left as-is — it is not this story's responsibility.
 
 **Acceptance Criteria:**
 
@@ -1595,12 +1597,6 @@ The Epic 5 retrospective identified visible UI quality issues in screenshots pro
 - Content area behavior when sidebar is open vs. closed
 - Z-index layering — no sidebar content overlapping report tab content
 - No content clipping or hiding behind sidebar at any viewport width ≥ 1024px (NFR25)
-
-*Comparison/Scenario Mode (if applicable):*
-- Column headers for Base/Conservative/Optimistic scenarios not cramped or overlapping
-- Row labels not wrapping awkwardly when comparison columns are shown
-- Layout gracefully handles the additional columns without horizontal overflow
-- If comparison mode is not supported on a tab, verify it is properly hidden/disabled
 
 *Responsive Behavior:*
 - Column progressive disclosure (annual → quarterly → monthly) works correctly via `ColumnManager`
@@ -1637,7 +1633,6 @@ The Epic 5 retrospective identified visible UI quality issues in screenshots pro
 **When** fixes are implemented
 **Then** the Balance Sheet duplicate callout bars issue is resolved — either consolidate into a single callout bar or clearly differentiate the two with visual separation and distinct content
 **And** the sidebar z-index layering is fixed — sidebar content never overlaps report tab content
-**And** comparison mode column layout is cleaned up — headers are readable, row labels don't wrap awkwardly, horizontal space is managed gracefully
 **And** any issues found in OTHER tabs during Phase 1 are also fixed (not just the Balance Sheet)
 **And** Medium/Low issues are documented for future resolution if they don't affect usability
 
@@ -1648,7 +1643,7 @@ The Epic 5 retrospective identified visible UI quality issues in screenshots pro
 **Then** all 7 tabs pass the Phase 1 audit checklist
 **And** the Impact Strip (in My Plan view) and Guardian Bar (in Reports view) position correctly relative to tab content
 **And** no new regressions have been introduced by the fixes
-**And** Playwright-based screenshot verification is performed for all 7 tabs in both default view and comparison mode (where applicable) — screenshots provide evidence of fix verification and serve as regression baselines for future changes
+**And** Playwright-based screenshot verification is performed for all 7 tabs in default view — screenshots provide evidence of fix verification and serve as regression baselines for future changes
 
 **Dev Notes:**
 - Statement tab components are in `client/src/components/planning/statements/` — P&L (`pl-statement-tab.tsx`), Balance Sheet (`balance-sheet-tab.tsx`), Cash Flow (`cash-flow-tab.tsx`), ROIC (`roic-tab.tsx`), Valuation (`valuation-tab.tsx`), Audit (`audit-tab.tsx`), Summary (`summary-tab.tsx`).
@@ -1728,7 +1723,7 @@ The following areas are specifically checked for gaps:
 **Dev Notes:**
 - User journeys are in `_bmad-output/planning-artifacts/ux-design-specification-consolidated.md`, Part 15.
 - Stories 6.1 and 6.2 are in `_bmad-output/planning-artifacts/epics.md`, Epic 6 section.
-- The scenario comparison AC in Story 6.1 references a feature that has been retired from Epic 5 and moved to Epic 10. This AC likely needs to be deferred or modified.
+- ~~The scenario comparison AC in Story 6.1 references a feature that has been retired from Epic 5 and moved to Epic 10. This AC likely needs to be deferred or modified.~~ **FIXED 2026-02-20:** Stale scenario comparison AC removed from Story 6.1 (was lines 1838-1840). Scenario PDF export deferred to Epic 10 if/when What-If Playground supports export.
 - Story 5.9 (Document Preview & PDF Generation Trigger) established the entry points for PDF generation — Dashboard widget, Impact Strip icon, Reports header button. Story 6.1 is the actual generation engine. Verify these handoff points are documented in both stories.
 - FTC disclaimer language (FR25) must be reviewed by the Product Owner before implementation — generic placeholder language is not acceptable for a product used in bank presentations.
 
@@ -1840,9 +1835,10 @@ So that I can walk into a bank meeting feeling confident and prepared (FR24, FR2
 **Then** the generated PDF includes a "DRAFT" watermark on every page
 **And** a brief note on the cover: "This plan contains brand default assumptions that have not been personalized. Review and update inputs for a complete projection."
 
-**Given** scenario comparison is active when PDF is generated
-**When** the PDF renders
-**Then** the PDF includes the comparison summary card text and scenario columns in the P&L and key metrics tables
+~~**Given** scenario comparison is active when PDF is generated~~
+~~**When** the PDF renders~~
+~~**Then** the PDF includes the comparison summary card text and scenario columns in the P&L and key metrics tables~~
+> **RETIRED (SCP-2026-02-20 D5/D6):** Scenario comparison was pulled out of Reports. Scenario PDF export deferred to Epic 10 (What-If Playground) if that feature supports export.
 
 **And** the PDF is available for immediate download upon generation
 **And** the generated PDF is stored for future access (Story 6.2)
@@ -1918,7 +1914,7 @@ So that I can model realistic growth trajectories instead of flat projections ac
 - The `PlanFinancialInputs` → `FinancialInputs` translation layer changes from broadcasting single values to passing per-year arrays directly.
 - Migration must handle existing plans gracefully — broadcast current single values to 5-element arrays.
 - The Facilities and Other OpEx field alignment fixes are included here because they are structurally tied to the per-year restructuring.
-- See Sprint Change Proposal CP-3 (Fix PlanFinancialInputs) and UX spec Part 3 (Pre-Epic-7 / Post-Epic-7 behavior).
+- See Sprint Change Proposal SCP-2026-02-15 CP-3 (Fix PlanFinancialInputs) — note: this is NOT SCP-2026-02-20 CP-3 (Fix Navigation Architecture). See also UX spec Part 3 (Pre-Epic-7 / Post-Epic-7 behavior).
 
 ### Story 7.2: Plan CRUD & Navigation
 

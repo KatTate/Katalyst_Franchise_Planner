@@ -1,6 +1,6 @@
 # Story 5H.1: Financial Engine Cell-by-Cell Validation Against Reference Spreadsheets
 
-Status: in-progress
+Status: done
 
 ## Story
 
@@ -365,6 +365,7 @@ These rules are from the Epic 5 Retrospective and are mandatory for ALL stories 
 | `shared/financial-engine-reference.test.ts` | **CREATE** | New test file — the primary deliverable |
 | `shared/financial-engine.ts` | **MODIFY** | Engine formula fix: revenue ramp-up month 1 |
 | `shared/help-content/field-help.ts` | **MODIFY** | taxRate help content updated (TODO resolved, AC-18–21) |
+| `shared/plan-initialization.test.ts` | **MODIFY** | Stale reference values updated (downstream of M1 ramp-up fix) |
 
 ### Dependencies & Blocking
 

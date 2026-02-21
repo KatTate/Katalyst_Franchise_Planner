@@ -14,6 +14,7 @@
   <critical>Read EVERY file in the File List — verify implementation against story requirements</critical>
   <critical>Do not review files outside the application's source code. Always exclude _bmad/, _bmad-output/, and IDE config folders (.cursor/, .windsurf/, .claude/) from review</critical>
   <critical>💡 REPLIT TIP: For best results, run code review in a fresh chat to maximize context and avoid implementation bias. A fresh context means the reviewer reads code cold without carrying the implementer's assumptions.</critical>
+  <critical>THIS WORKFLOW HAS 6 MANDATORY STEPS. You MUST execute every step 1 through 6 in order. The workflow is NOT complete until Step 6 (Completion Validation) confirms all checklist items are satisfied. Do NOT present a final summary or end the conversation before Step 6.</critical>
 
   <step n="1" goal="Load story and discover changes">
     <action>Use provided {{story_path}} or ask user which story file to review</action>
@@ -21,15 +22,15 @@
     <action>Set {{story_key}} from filename or story metadata</action>
     <action>Parse sections: Story, Acceptance Criteria, Dev Notes, Dev Agent Record (Completion Notes, File List)</action>
 
-    <!-- Discover actual changes via git -->
-    <check if="git repository exists">
-      <action>Run `git status --porcelain` to find any uncommitted changes</action>
-      <action>Run `git log --name-only --pretty=format: -1` to see files from the most recent commit</action>
-      <action>Run `git diff HEAD~1 --name-only` to see the diff from the last commit</action>
-      <action>Compile list of actually changed files from git output</action>
-      <action>Note: On platforms with auto-commit (e.g., Replit), changes are already committed by the time
-        code review runs. Use git log rather than git diff to discover changes.</action>
-    </check>
+    <!-- Discover actual changes via git — MANDATORY, not conditional -->
+    <critical>Git change discovery is MANDATORY. On Replit and most platforms, git is always available. Execute ALL of the following git commands unconditionally.</critical>
+    <action>Run `git status --porcelain` to find any uncommitted changes</action>
+    <action>Run `git log --name-only --pretty=format: -1` to see files from the most recent commit</action>
+    <action>Run `git diff HEAD~1 --name-only` to see the diff from the last commit</action>
+    <action>Compile list of actually changed files from git output</action>
+    <action>Note: On platforms with auto-commit (e.g., Replit), changes are already committed by the time
+      code review runs. Use git log rather than git diff to discover changes.</action>
+    <action>Set {{git_discovery_done}} = "yes"</action>
 
     <!-- Use story File List as primary source, git as cross-reference -->
     <action>If the story's Dev Agent Record contains a File List, use it as the primary source of changed files.
@@ -66,6 +67,7 @@
       1. **Files changed but not in File List** → MEDIUM finding (incomplete documentation)
       2. **Story lists files but no git changes** → HIGH finding (false claims)
       3. **Uncommitted changes not documented** → MEDIUM finding
+      Set {{git_discrepancy_count}} to the number of discrepancies found.
     </action>
 
     <!-- Create comprehensive file list from story + git -->
@@ -122,30 +124,36 @@
     </check>
   </step>
 
-  <step n="3.5" goal="Platform intelligence scan — LSP, architect analysis, and visual verification">
+  <step n="4" goal="Platform intelligence scan — LSP, architect analysis, and visual verification">
+    <critical>This step is MANDATORY. Do NOT skip it. It catches issues that manual code reading misses.</critical>
+
     <!-- LSP Diagnostics — Automated Code Quality Check -->
-    <action>Run LSP diagnostics on each file in the comprehensive review list.
+    <action>Use the LSP diagnostics tool to check each file in the comprehensive review list.
+      Call the LSP diagnostics tool with each file path individually.
       For each file, check for:
       - Type errors or unresolved references
       - Unused imports or variables
       - Syntax warnings or deprecated usage
-      Collect total error count and warning count across all reviewed files.
+      Set {{lsp_error_count}} to the total error count across all reviewed files.
+      Set {{lsp_warning_count}} to the total warning count across all reviewed files.
       Any LSP errors in changed files are automatic MEDIUM findings (code quality).
     </action>
 
     <!-- Architect Sub-Agent Deep Analysis -->
-    <action>Use the platform's architect/review capability to perform a deep structural analysis of the implementation.
-      Provide it with:
-      - The story's acceptance criteria and dev notes
-      - The list of all changed files
-      - The git diff of the changes
+    <action>Use the architect tool (the platform's built-in code review/analysis capability) to perform a deep structural analysis.
+      When calling the architect tool, provide:
+      - task: A description requesting evaluation of the story implementation
+      - relevant_files: The list of all changed files from the comprehensive review list
+      - include_git_diff: true
+      In the task description, include the story's acceptance criteria and dev notes so the architect can evaluate against them.
       Ask it to evaluate: architectural alignment, edge cases, security concerns, and implementation completeness.
       Incorporate its findings into the review as additional evidence.
+      Set {{architect_review_done}} = "yes"
     </action>
 
     <!-- Visual Verification for UI Stories -->
     <check if="story's 'As a...' role is an end user (not a developer/system) OR story has UI/UX Deliverables section">
-      <action>If the application has a running web server, take screenshots of the pages/views affected by this story.
+      <action>If the application has a running web server, use the screenshot tool to capture the pages/views affected by this story.
         Navigate to each route or page that the story's acceptance criteria reference.
         For each screenshot captured, verify:
         - Does the UI match the acceptance criteria descriptions?
@@ -158,7 +166,7 @@
     <action>Merge all platform intelligence findings (LSP errors, architect analysis, visual verification) into the review findings from Step 3, preserving the same HIGH/MEDIUM/LOW severity categories.</action>
   </step>
 
-  <step n="4" goal="Present findings and resolve">
+  <step n="5" goal="Present findings and resolve">
     <action>Categorize findings: HIGH (must fix), MEDIUM (should fix), LOW (nice to fix)</action>
     <action>Set {{fixed_count}} = 0</action>
     <action>Set {{action_count}} = 0</action>
@@ -166,7 +174,9 @@
     <output>**🔍 Code Review Findings, {user_name}**
 
       **Story:** {{story_key}}
-      **Git vs Story Discrepancies:** {{git_discrepancy_count}} found
+      **Git Discovery:** {{git_discovery_done}} | **Discrepancies:** {{git_discrepancy_count}}
+      **LSP Scan:** {{lsp_error_count}} errors, {{lsp_warning_count}} warnings
+      **Architect Review:** {{architect_review_done}}
       **Issues Found:** {{high_count}} High, {{medium_count}} Medium, {{low_count}} Low
 
       ## 🔴 HIGH — Must Fix
@@ -193,14 +203,14 @@
       <action>Update File List in story Dev Agent Record if files changed</action>
       <action>Add review summary to Dev Agent Record → Completion Notes</action>
       <action>Set {{fixed_count}} = number of issues fixed</action>
-      <critical>🛑 STOP AND READ: You have finished fixing issues but you are NOT done with the workflow. Step 5 (update story status and sync sprint tracking) is MANDATORY and MUST be executed next. DO NOT present results to the user, DO NOT end the conversation, DO NOT consider this workflow complete until Step 5 is fully executed. Proceed to Step 5 NOW.</critical>
+      <critical>🛑 STOP AND READ: You have finished fixing issues but you are NOT done with the workflow. Step 6 (update story status and sync sprint tracking) is MANDATORY and MUST be executed next. DO NOT present results to the user, DO NOT end the conversation, DO NOT consider this workflow complete until Step 6 is fully executed. Proceed to Step 6 NOW.</critical>
     </check>
 
     <check if="user chooses 2">
       <action>Append a "Code Review Notes" section to the story file with all findings</action>
       <action>Format each finding with severity, description, file reference, and suggested fix</action>
       <action>Set {{action_count}} = number of review notes added</action>
-      <critical>🛑 You are NOT done. Step 5 (update story status and sync sprint tracking) is MANDATORY. Proceed to Step 5 NOW.</critical>
+      <critical>🛑 You are NOT done. Step 6 (update story status and sync sprint tracking) is MANDATORY. Proceed to Step 6 NOW.</critical>
     </check>
 
     <check if="user chooses 3">
@@ -209,8 +219,9 @@
     </check>
   </step>
 
-  <step n="5" goal="Update story status and sync sprint tracking">
-    <critical>🛑 THIS STEP IS MANDATORY — The workflow is NOT complete without it. You MUST execute this step regardless of what happened in Step 4. If you fixed issues, if you added review notes, or if the user examined details — this step MUST run before the workflow ends.</critical>
+  <step n="6" goal="Update story status, sync sprint tracking, and validate completion">
+    <critical>🛑 THIS STEP IS MANDATORY — The workflow is NOT complete without it. You MUST execute this step regardless of what happened in Step 5. If you fixed issues, if you added review notes, or if the user examined details — this step MUST run before the workflow ends.</critical>
+
     <!-- Determine new status based on review outcome -->
     <check if="all HIGH issues resolved AND all ACs verified as satisfied">
       <action>Set {{new_status}} = "done"</action>
@@ -230,12 +241,31 @@
       <action>Save file, preserving ALL comments and structure</action>
     </check>
 
+    <!-- Completion Validation — verify all steps were executed -->
+    <critical>COMPLETION GATE: Before producing the final summary, verify ALL of the following are true. If ANY item is missing, go back and complete it NOW before continuing.</critical>
+    <action>Verify completion checklist:
+      1. {{git_discovery_done}} must equal "yes" — if not, go back to Step 1 and run git commands
+      2. {{git_discrepancy_count}} must be set — if not, go back to Step 3 and count discrepancies
+      3. {{lsp_error_count}} must be set — if not, go back to Step 4 and run LSP diagnostics
+      4. {{architect_review_done}} must equal "yes" — if not, go back to Step 4 and run architect analysis
+      5. {{new_status}} must be set — if not, determine status from review outcome above
+      6. Story file must be saved with updated status
+      7. Sprint-status.yaml must be synced (if it exists)
+    </action>
+
     <output>**✅ Review Complete!**
 
       **Story:** {{story_key}}
       **Status:** {{new_status}}
       **Issues Fixed:** {{fixed_count}}
       **Review Notes Added:** {{action_count}}
+
+      **Completion Verification:**
+      - Git Discovery: {{git_discovery_done}} | Discrepancies: {{git_discrepancy_count}}
+      - LSP Scan: {{lsp_error_count}} errors, {{lsp_warning_count}} warnings
+      - Architect Review: {{architect_review_done}}
+      - Story Status Updated: {{new_status}}
+      - Sprint Tracking Synced: yes
 
       {{#if new_status == "done"}}
       **Recommended Next Steps (stay in this session):**
