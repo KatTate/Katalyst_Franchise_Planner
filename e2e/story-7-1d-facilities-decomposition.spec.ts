@@ -116,7 +116,7 @@ test.describe("Story 7.1d: Facilities Guided Decomposition & Other OpEx", () => 
 
   async function loginAndGoToForms(page: any) {
     await page.goto("/login");
-    await page.click("[data-testid='button-dev-login']");
+    await page.click("[data-testid='button-dev-login-admin']");
     await page.waitForURL("/", { timeout: 10_000 });
     await page.goto(`/plans/${planId}`);
     await expect(
@@ -129,7 +129,7 @@ test.describe("Story 7.1d: Facilities Guided Decomposition & Other OpEx", () => 
 
   async function loginAndGoToReports(page: any) {
     await page.goto("/login");
-    await page.click("[data-testid='button-dev-login']");
+    await page.click("[data-testid='button-dev-login-admin']");
     await page.waitForURL("/", { timeout: 10_000 });
     await page.goto(`/plans/${planId}`);
     await expect(
