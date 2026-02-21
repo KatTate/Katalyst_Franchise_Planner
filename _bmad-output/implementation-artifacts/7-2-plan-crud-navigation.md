@@ -239,9 +239,26 @@ And these actions behave identically to the sidebar context menu actions
 ## Dev Agent Record
 
 ### Agent Model Used
+Claude 4.6 Opus (Replit Agent)
 
 ### Completion Notes
+All 9 acceptance criteria verified and passing. Implementation follows existing patterns: `requirePlanAccess()` for ownership, `getEffectiveUser()` for data scoping, `apiRequest` + `queryClient.invalidateQueries()` for mutations. Clone uses `JSON.parse(JSON.stringify())` deep copy and resets status to "draft". Last-plan protection enforced server-side via `getPlanCountByUser()` and client-side via `isLastPlan` prop disabling delete. Inline rename only visible after `quickStartCompleted=true` (new plans show QuickStartOverlay).
 
 ### File List
+| File | Action | Description |
+|------|--------|-------------|
+| `server/storage.ts` | MODIFY | Added `clonePlan()` and `getPlanCountByUser()` to IStorage interface and DatabaseStorage |
+| `server/routes/plans.ts` | MODIFY | Added `POST /api/plans/:planId/clone` and `DELETE /api/plans/:planId` endpoints; enhanced `POST /api/plans` to seed brand defaults |
+| `shared/plan-initialization.ts` | CREATE | `buildPlanFinancialInputs()` and `buildPlanStartupCosts()` for brand-default seeding |
+| `client/src/components/plan/create-plan-dialog.tsx` | CREATE | Dialog with name input, validation (non-empty, max 100 chars), mutation to POST /api/plans |
+| `client/src/components/plan/delete-plan-dialog.tsx` | CREATE | AlertDialog with type-to-confirm, last-plan disabled state |
+| `client/src/components/plan/plan-context-menu.tsx` | CREATE | DropdownMenu with Rename, Clone, Delete; isLastPlan tooltip for delete |
+| `client/src/components/app-sidebar.tsx` | MODIFY | Added MY PLANS section with plan list, "+" create button, context menus, active highlighting |
+| `client/src/pages/dashboard.tsx` | MODIFY | Added "New Plan" button, context menus on plan cards |
+| `client/src/components/planning/planning-header.tsx` | MODIFY | Added inline plan name editing (pencil icon, input, Enter/Escape, confirm/cancel buttons) |
 
 ### Testing Summary
+- **E2E (Playwright)**: 2 test suites passed — full CRUD flow (create, clone, delete, rename via API and UI) and visual verification (dashboard, dialog, sidebar)
+- **LSP Diagnostics**: 0 errors, 0 warnings across all 10 changed files
+- **Git Status**: Clean (all changes committed)
+- **AC Coverage**: All 9 ACs verified (AC-1 through AC-9)
