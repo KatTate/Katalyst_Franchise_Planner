@@ -35,6 +35,7 @@
 # - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
 
 generated: 2026-02-09
+updated: 2026-02-21  # Story 9.1 context document created (Create Story workflow)
 updated: 2026-02-21  # Story 5H.4 context document created (Create Story workflow)
 updated: 2026-02-21  # SCP-2026-02-21 approved: Epic 10 pivot to user-authored scenario modeling
 updated: 2026-02-21  # Story 5H.2 → done (adversarial code review completed, all findings fixed)
@@ -355,6 +356,22 @@ story_location: _bmad-output/implementation-artifacts
 #   - Edits epics.md (coverage map) and architecture.md (FR count, stale references)
 #   - Story status: ready-for-dev
 #   - Next action: Dev Story (DS) for 5H.4 audit execution
+# 2026-02-21: Story 9.1 context document created (Create Story workflow)
+#   - Full story file: 9-1-llm-integration-conversation-api.md (ready-for-dev)
+#   - 8 acceptance criteria covering: SSE streaming conversation endpoint (AC-1),
+#     conversation history retrieval (AC-2), system prompt construction with brand
+#     context and FTC framing (AC-3), financial value extraction and validation with
+#     three-tier confidence (AC-4), conversation persistence and token tracking (AC-5),
+#     authorization and data isolation (AC-6), graceful degradation (AC-7),
+#     ai_conversations database schema (AC-8)
+#   - Dev notes include: route module pattern (server/routes/ai.ts), service layer
+#     pattern (server/services/ai-service.ts), plan access authorization, Drizzle ORM
+#     table definition, SSE streaming from Express 5.0, LLM SDK choice guidance
+#     (Vercel AI SDK recommended or reuse Gemini), cents/decimal conversion gotcha,
+#     FTC compliance tone, tool use for structured extraction
+#   - Developer story — API/backend only, no client UI changes (Story 9.2 scope)
+#   - Epic 9 status: in-progress (first story ready-for-dev)
+#   - Next action: Dev Story (DS) for 9.1 implementation
 
 development_status:
   # Epic 1: Auth, Onboarding & User Management
@@ -477,8 +494,8 @@ development_status:
   epic-8-retrospective: optional
 
   # Epic 9: AI Planning Advisor (Planning Assistant) [was Epic 6]
-  epic-9: backlog
-  9-1-llm-integration-conversation-api: backlog
+  epic-9: in-progress
+  9-1-llm-integration-conversation-api: ready-for-dev
   9-2-split-screen-planning-assistant-interface: backlog
   9-3-ai-value-extraction-field-population: backlog
   9-4-graceful-degradation-mode-continuity: backlog
