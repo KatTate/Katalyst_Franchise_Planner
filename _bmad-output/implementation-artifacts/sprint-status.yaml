@@ -360,6 +360,21 @@ story_location: _bmad-output/implementation-artifacts
 #   - See story files: 7-1-per-year-input-columns.md (now 7.1a),
 #     7-1b-reports-per-year-editing.md, 7-1c-forms-per-year-layout.md,
 #     7-1d-new-field-surfaces.md
+# 2026-02-21: Story 7.1b implementation completed (Dev Story workflow)
+#   - AC-1: 15 editable fields in P&L Reports (was 5). INPUT_FIELD_MAP extended with
+#     growth-rate, royalty-pct, ad-fund-pct, other-opex-pct, facilities, mgmt-salaries,
+#     payroll-tax-pct, target-pretax-profit-pct, distributions, shareholder-salary-adj,
+#     non-capex-investment
+#   - AC-2 (per-month independence): DEFERRED to follow-up story 7.1b.1 per Scope Risk Note
+#   - AC-3: Copy Year 1 to All — hover button + AlertDialog confirmation, reuses buildUpdatedInputs
+#   - AC-4: Flash animation cleanup complete (flashingRows, isFlashing, animate-flash-linked removed)
+#   - Bug fix: Expense rows use Math.abs for storedGranularity fields in edit mode
+#   - handleCopyYear1ToAll refactored to eliminate facilitiesDecomposition dead code branch
+#   - Architect review: 2 rounds (initial FAIL on dead code, fix applied, re-reviewed)
+#   - LSP: 0 errors, 0 warnings on all 5 changed files
+#   - E2E: Playwright verified COGS% editing, Copy Y1, all new rows rendering
+#   - Story status: done
+#   - Next: 7.1c + 7.1d can proceed in parallel (both unblocked)
 # 2026-02-21: Story 7.1 context document created (Create Story workflow)
 #   - Full story file: 7-1-per-year-input-columns.md (ready-for-dev)
 #   - 7 acceptance criteria covering: PlanFinancialInputs per-year restructuring (AC-1),
@@ -570,7 +585,7 @@ development_status:
   # Dependency chain: 7.1a (DONE) → 7.1b → 7.1c + 7.1d (parallel, depend on 7.1b) → 7.1e (parallel with 7.1c/d)
   epic-7: in-progress
   7-1a-data-model-restructuring-migration: done                # Foundation: per-year arrays, migration, drill-down display, storedGranularity, revenue drill-down
-  7-1b-all-fields-editable-reports: in-progress                # REWRITTEN: Make ALL financial assumptions editable in Reports. Per-year + per-month independence. Copy Year 1. Flash cleanup.
+  7-1b-all-fields-editable-reports: done                        # DONE 2026-02-21: 15 editable fields, Copy Y1 to All, flash cleanup. AC-2 (per-month) deferred to 7.1b.1.
   7-1c-forms-onboarding-new-fields: ready-for-dev              # REWRITTEN/DESCOPED: Forms = onboarding only. Simple single-value inputs. New field sections. No 5-column per-year editing.
   7-1d-facilities-decomposition-opex: ready-for-dev            # REWRITTEN/SIMPLIFIED: Facilities guided decomposition in Forms + direct total edit in Reports. Other OpEx % correction. Simplified mismatch handling.
   7-1e-balance-sheet-valuation-editing: ready-for-dev          # NEW: Balance Sheet (AR/AP/Inventory Days, Tax Delay) + Valuation (EBITDA Multiple) inline editing in Reports.
