@@ -71,7 +71,7 @@ export function ComparisonTableHead({
   const hasQuarterly = yearGroups.some((yg) => yg.level === "quarterly");
 
   const labelCellClass =
-    "text-left py-2 px-3 font-medium text-muted-foreground sticky left-0 z-10 min-w-[200px] shadow-[2px_0_4px_-2px_rgba(0,0,0,0.06)]";
+    "text-left py-2 px-3 font-medium text-muted-foreground sticky left-0 z-10 min-w-[180px] shadow-[2px_0_4px_-2px_rgba(0,0,0,0.06)]";
 
   return (
     <thead>

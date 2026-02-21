@@ -36,6 +36,7 @@
 
 generated: 2026-02-09
 updated: 2026-02-20  # Story 10.2 context document created (Create Story workflow)
+updated: 2026-02-20  # Story 5H.2 → review (dev-story workflow complete, pending code review)
 project: Katalyst Growth Planner
 project_key: NOKEY
 tracking_system: file-system
@@ -274,6 +275,23 @@ story_location: _bmad-output/implementation-artifacts
 #   - Phases 1-2 audit findings preserved as architectural context in dev notes
 #   - Story status: ready-for-dev
 #   - Next action: dev-story implementation (fresh context recommended)
+# 2026-02-20: Story 5H.2 dev-story implementation verified & documented
+#   - Implementation completed in prior session; this session executed BMAD dev-story workflow Steps 5-11
+#   - All 7 acceptance criteria verified:
+#     AC-1: No duplicate callout bars (count=1 on all 7 tabs) — Playwright PASS
+#     AC-2: BS identity check preserved (Balanced/Imbalanced with icons) — Playwright PASS
+#     AC-3: Valuation net proceeds preserved ($, data-testid) — Playwright PASS
+#     AC-4: CalloutBar visible in comparison mode — Playwright PASS
+#     AC-5: Column layout at 1024px (label column 200→180px) — Code verified
+#     AC-6: No regressions (tab switching, rendering stability) — Playwright PASS
+#     AC-7: Playwright e2e test suite passed (all assertions)
+#   - 8 files modified: callout-bar.tsx, financial-statements.tsx, pnl-tab.tsx,
+#     balance-sheet-tab.tsx, cash-flow-tab.tsx, roic-tab.tsx, valuation-tab.tsx,
+#     comparison-table-head.tsx
+#   - LSP diagnostics: 0 errors, 0 warnings across all 8 files
+#   - Dev Agent Record completed in story file
+#   - Story status: review (pending adversarial code review per Agent Session Control Rule #5)
+#   - Next action: adversarial code review (fresh agent context recommended)
 
 development_status:
   # Epic 1: Auth, Onboarding & User Management
@@ -364,7 +382,7 @@ development_status:
   # AI-10 (taxRate TODO) → absorbed into 5H.1 engine validation
   epic-5h: in-progress
   5h-1-financial-engine-reference-validation: done  # AI-1: cell-by-cell vs reference spreadsheets. 99 tests, 2 brands (PostNet + Jeremiah's), 1 BUG fixed (ramp-up M1), 2 KNOWN DIVERGENCES documented, taxRate TODO resolved, adversarial code review completed
-  5h-2-report-tab-ui-audit-remediation: ready-for-dev    # AI-2: Story context document created (Create Story workflow). Phases 1-2 audit preserved in story doc. Ready for dev-story implementation.
+  5h-2-report-tab-ui-audit-remediation: review    # AI-2: Implementation complete. 5 per-tab callout bars removed, parent CalloutBar enriched (BS identity check + Valuation net proceeds), comparison mode visibility fixed, column width reduced. Playwright e2e PASS, LSP clean. Pending adversarial code review.
   5h-3-epic-6-ac-audit-user-journeys: backlog           # AI-3: Story ACs vs 8 user journeys, gap analysis
   5h-4-planning-artifact-alignment: backlog              # AI-5: 111 FR traceability, fix stale coverage map
   epic-5h-retrospective: optional

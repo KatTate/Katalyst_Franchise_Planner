@@ -1,5 +1,6 @@
 import { formatFinancialValue } from "@/components/shared/financial-value";
 import { formatROI, formatBreakEven } from "@/components/shared/summary-metrics";
+import { Check, AlertTriangle } from "lucide-react";
 import type { AnnualSummary, ROIMetrics, EngineOutput, PlanFinancialInputs } from "@shared/financial-engine";
 import type { StatementTabId } from "../financial-statements";
 
@@ -70,10 +71,25 @@ function getTabContent(
           deNote = " Equity is negative — accumulated losses exceed invested capital.";
         }
       }
+      const bsCheck = (output?.identityChecks ?? []).find(
+        (c) => c.name.toLowerCase().includes("balance sheet") || c.name.toLowerCase().includes("assets = liabilities"),
+      );
+      const bsPassed = bsCheck ? bsCheck.passed : true;
       return {
         metrics: [
           { label: "Total Assets (Y1)", value: annuals[0] ? formatFinancialValue(annuals[0].totalAssets, "currency") : "$0", testId: "callout-bs-assets" },
           { label: "Debt-to-Equity (Y3)", value: deRatio, testId: "callout-bs-de-ratio" },
+          {
+            label: "Balance Sheet",
+            value: bsPassed ? "Balanced" : "Imbalanced",
+            testId: "callout-bs-identity-status",
+            icon: bsPassed
+              ? { element: Check, className: "h-4 w-4 text-green-600 dark:text-green-400" }
+              : { element: AlertTriangle, className: "h-4 w-4 text-destructive" },
+            valueClassName: bsPassed
+              ? "text-sm font-medium text-green-700 dark:text-green-400"
+              : "text-sm font-medium text-destructive",
+          },
         ],
         interpretation: `Debt-to-equity ratio: ${deRatio} by Year 3.${deNote}`,
       };
@@ -118,10 +134,12 @@ function getTabContent(
       const val5 = output?.valuation?.[4];
       const estValue = val5 ? formatFinancialValue(val5.estimatedValue, "currency") : "$0";
       const multiple = val5 ? `${val5.ebitdaMultiple.toFixed(1)}x` : "N/A";
+      const netProceeds = val5 ? formatFinancialValue(val5.netAfterTaxProceeds, "currency") : "$0";
       return {
         metrics: [
           { label: "Estimated Value (Y5)", value: estValue, testId: "callout-val-value" },
           { label: "EBITDA Multiple", value: multiple, testId: "callout-val-multiple" },
+          { label: "Net After-Tax Proceeds (Y5)", value: netProceeds, testId: "callout-val-net-proceeds" },
         ],
         interpretation: `Estimated business value at Year 5: ${estValue} based on ${multiple} EBITDA multiple.`,
       };
@@ -159,11 +177,18 @@ function getTabContent(
   }
 }
 
+interface MetricIcon {
+  element: React.ComponentType<{ className?: string }>;
+  className: string;
+}
+
 interface MetricDef {
   label: string;
   value: string;
   subtitle?: string;
   testId: string;
+  icon?: MetricIcon;
+  valueClassName?: string;
 }
 
 export function CalloutBar({ annualSummaries, roiMetrics, planStartDate, activeTab = "summary", output, financialInputs, brandName }: CalloutBarProps) {
@@ -184,6 +209,8 @@ export function CalloutBar({ annualSummaries, roiMetrics, planStartDate, activeT
               value={m.value}
               subtitle={m.subtitle}
               testId={m.testId}
+              icon={m.icon}
+              valueClassName={m.valueClassName}
             />
           </span>
         ))}
@@ -203,21 +230,27 @@ function CalloutMetric({
   value,
   subtitle,
   testId,
+  icon,
+  valueClassName,
 }: {
   label: string;
   value: string;
   subtitle?: string;
   testId: string;
+  icon?: MetricIcon;
+  valueClassName?: string;
 }) {
+  const IconComp = icon?.element;
   return (
     <div className="flex flex-col">
       <span className="text-xs text-muted-foreground font-medium uppercase tracking-wide">
         {label}
       </span>
       <span
-        className="text-lg font-semibold font-mono tabular-nums"
+        className={`${valueClassName || "text-lg font-semibold font-mono tabular-nums"} flex items-center gap-1.5`}
         data-testid={testId}
       >
+        {IconComp && <IconComp className={icon!.className} />}
         {value}
       </span>
       {subtitle && (

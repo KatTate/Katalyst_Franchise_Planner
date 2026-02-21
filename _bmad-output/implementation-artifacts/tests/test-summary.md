@@ -640,6 +640,69 @@ All 9 E2E test scenarios passed via Playwright testing agent. No failures, no bu
 
 ---
 
+## Generated Tests (2026-02-20) — Story 5H.2 QA: Report Tab UI Audit & Remediation
+
+### E2E Tests — Story 5H.2: Callout Bar Remediation (8 tests)
+
+- [x] `e2e/story-5h-2-callout-bar-remediation.spec.ts` — Callout Bar UI Audit (8 tests)
+  - AC-1/AC-7: Each of the 7 tabs has exactly one callout bar (no duplicates)
+  - AC-2/AC-7: Balance Sheet tab callout bar shows identity check status (Balanced/Imbalanced)
+  - AC-3/AC-7: Valuation tab callout bar shows Net After-Tax Proceeds
+  - AC-4/AC-7: CalloutBar remains visible in comparison mode
+  - AC-5: Comparison mode column headers do not overlap at 1024px viewport
+  - AC-6: Tab switching does not produce duplicate callout bars at any transition point
+  - AC-1: Callout bar shows tab-specific metrics when switching tabs (all 7 tabs verified)
+  - AC-6: Callout interpretation text updates per tab (all 7 tabs verified)
+
+### API Tests — Story 5H.2
+
+N/A — Story 5H.2 is a UI-only remediation story. No API or engine changes were made.
+
+### Playwright E2E Verification — Story 5H.2 (via testing agent)
+
+Full end-to-end flow verified:
+- Dev login → brand/plan creation → quickStart completion → workspace load
+- Navigate to Reports via sidebar
+- Verify exactly 1 `[data-testid="callout-bar"]` on each of 7 tabs
+- Verify tab-specific metrics render (Summary, P&L, Balance Sheet, Cash Flow, ROIC, Valuation, Audit)
+- Verify Balance Sheet identity check status indicator (Balanced/Imbalanced with icon)
+- Verify Valuation Net After-Tax Proceeds metric visible
+- Verify CalloutBar remains visible when comparison mode is activated
+- Verify rapid tab switching does not produce duplicate callout bars
+- Verify interpretation text updates per tab with expected content
+
+**Acceptance Criteria Coverage:**
+
+| AC | Description | Test Coverage | Status |
+|----|-------------|---------------|--------|
+| AC-1 | No Duplicate Callout Bars (all 7 tabs) | 2 tests — count assertion per tab + tab-specific metric verification | Fully Covered |
+| AC-2 | Balance Sheet Identity Check Preserved | 1 test — identity status visible, contains Balanced/Imbalanced | Fully Covered |
+| AC-3 | Valuation Net After-Tax Proceeds Preserved | 1 test — net proceeds metric visible with value | Fully Covered |
+| AC-4 | CalloutBar Visible in Comparison Mode | 1 test — callout bar visible after comparison activation | Fully Covered |
+| AC-5 | Comparison Mode Column Layout No Overlap | 1 test — verified at 1024px viewport width | Fully Covered |
+| AC-6 | No Regressions Introduced | 2 tests — tab switching stability + interpretation text per tab | Fully Covered |
+| AC-7 | Playwright Verification (concrete assertions) | All concrete assertions from AC-7 verified across tests 1-6 | Fully Covered |
+
+- **ACs with test coverage:** 7/7
+- **Uncovered ACs:** None
+
+### Test Results
+
+All 8 E2E test scenarios passed via Playwright testing agent. No failures, no bugs found.
+
+### Minor Notes During Testing
+
+- Brand slug validation required lowercase normalization — resolved in test fixture
+- Financial inputs PATCH required item7Range.min/max fields — resolved by adding required keys
+- Transient click interception by open dropdown — resolved with Escape key dismissal (not a functional bug)
+
+### Variables
+
+- {{tests_executed}} = "yes"
+- {{summary_created}} = "yes"
+
+---
+
 ## Next Steps
 
 - Add E2E tests for accept-invitation flow (requires token generation)
@@ -647,4 +710,5 @@ All 9 E2E test scenarios passed via Playwright testing agent. No failures, no bu
 - Add E2E tests for onboarding UI (requires franchisee user creation via invitation flow)
 - Add E2E tests for StartupCostBuilder CRUD operations within Forms/Quick Entry contexts
 - Add responsive viewport tests for Financial Statements (AC9 — tab-to-dropdown at <1024px)
+- Add dark mode variant tests for identity check color verification (Story 5H.2 follow-up)
 - Run tests in CI pipeline

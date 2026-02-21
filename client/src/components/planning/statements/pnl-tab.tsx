@@ -474,7 +474,6 @@ export function PnlTab({ output, financialInputs, onCellEdit, isSaving, scenario
     const totalScenarioCols = comparisonCols.length;
     return (
       <div className="space-y-0 pb-8" data-testid="pnl-tab">
-        <PnlCalloutBar enriched={enriched} />
         <ColumnToolbar
           onExpandAll={expandAll}
           onCollapseAll={collapseAll}
@@ -519,7 +518,6 @@ export function PnlTab({ output, financialInputs, onCellEdit, isSaving, scenario
 
   return (
     <div className="space-y-0 pb-8" data-testid="pnl-tab">
-      <PnlCalloutBar enriched={enriched} />
       <ColumnToolbar
         onExpandAll={expandAll}
         onCollapseAll={collapseAll}
@@ -566,55 +564,6 @@ export function PnlTab({ output, financialInputs, onCellEdit, isSaving, scenario
   );
 }
 
-function PnlCalloutBar({ enriched }: { enriched: EnrichedAnnual[] }) {
-  const y1 = enriched[0];
-  if (!y1) return null;
-  const marginPct = (y1.preTaxIncomePct * 100).toFixed(1);
-  return (
-    <div
-      className="px-4 py-3 border-b bg-muted/30 sticky top-0 z-30"
-      data-testid="pnl-callout-bar"
-    >
-      <div className="flex flex-wrap items-center gap-4">
-        <CalloutMetric
-          label="Annual Revenue (Y1)"
-          value={formatFinancialValue(y1.revenue, "currency")}
-          testId="pnl-callout-revenue-y1"
-        />
-        <div className="w-px h-8 bg-border" />
-        <CalloutMetric
-          label="Pre-Tax Income (Y1)"
-          value={formatFinancialValue(y1.preTaxIncome, "currency")}
-          testId="pnl-callout-pretax-y1"
-        />
-        <div className="w-px h-8 bg-border" />
-        <CalloutMetric
-          label="Pre-Tax Margin %"
-          value={`${marginPct}%`}
-          testId="pnl-callout-margin-y1"
-        />
-      </div>
-      <p
-        className="text-xs text-muted-foreground mt-1.5"
-        data-testid="pnl-callout-interpretation"
-      >
-        Year 1 pre-tax margin: {marginPct}%.{" "}
-        {y1.preTaxIncome >= 0
-          ? "Your business is projected to be profitable in Year 1."
-          : "Your Year 1 projections show a net loss. Review revenue and expense assumptions."}
-      </p>
-    </div>
-  );
-}
-
-function CalloutMetric({ label, value, testId }: { label: string; value: string; testId: string }) {
-  return (
-    <div className="flex flex-col">
-      <span className="text-xs text-muted-foreground font-medium uppercase tracking-wide">{label}</span>
-      <span className="text-lg font-semibold font-mono tabular-nums" data-testid={testId}>{value}</span>
-    </div>
-  );
-}
 
 interface PnlSectionProps {
   section: PnlSectionDef;

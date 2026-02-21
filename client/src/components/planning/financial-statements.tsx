@@ -281,16 +281,14 @@ export function FinancialStatements({ planId, defaultTab = "summary", plan, queu
           onDeactivateComparison={handleDeactivateComparison}
         />
 
-        {!comparisonActive && (
-          <CalloutBar
-            annualSummaries={output.annualSummaries}
-            roiMetrics={output.roiMetrics}
-            activeTab={activeTab}
-            output={output}
-            financialInputs={financialInputs}
-            brandName={brandName}
-          />
-        )}
+        <CalloutBar
+          annualSummaries={output.annualSummaries}
+          roiMetrics={output.roiMetrics}
+          activeTab={activeTab}
+          output={output}
+          financialInputs={financialInputs}
+          brandName={brandName}
+        />
 
         <div className="flex-1 overflow-auto" ref={scrollContainerRef} data-testid="statements-scroll-container">
           <div className="p-4">

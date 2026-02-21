@@ -175,7 +175,6 @@ export function ValuationTab({ output, scenarioOutputs }: ValuationTabProps) {
   if (comparisonActive && scenarioOutputs && scenarioEnriched) {
     return (
       <div className="space-y-0 pb-8" data-testid="valuation-tab">
-        <ValCalloutBar enriched={enriched} />
         <div className="overflow-x-auto" data-testid="valuation-table">
           <table className="w-full text-sm" role="grid" aria-label="Business Valuation — Scenario Comparison">
             <thead>
@@ -229,7 +228,6 @@ export function ValuationTab({ output, scenarioOutputs }: ValuationTabProps) {
 
   return (
     <div className="space-y-0 pb-8" data-testid="valuation-tab">
-      <ValCalloutBar enriched={enriched} />
       <div className="overflow-x-auto" data-testid="valuation-table">
         <table className="w-full text-sm" role="grid" aria-label="Business Valuation">
           <thead>
@@ -261,60 +259,6 @@ export function ValuationTab({ output, scenarioOutputs }: ValuationTabProps) {
           </tbody>
         </table>
       </div>
-    </div>
-  );
-}
-
-function ValCalloutBar({ enriched }: { enriched: EnrichedValYear[] }) {
-  if (enriched.length === 0) {
-    return (
-      <div className="px-4 py-3 border-b bg-muted/30 sticky top-0 z-30" data-testid="valuation-callout-bar">
-        <span className="text-sm text-muted-foreground">No valuation data available.</span>
-      </div>
-    );
-  }
-
-  const y5 = enriched[enriched.length - 1];
-
-  return (
-    <div
-      className="px-4 py-3 border-b bg-muted/30 sticky top-0 z-30"
-      data-testid="valuation-callout-bar"
-    >
-      <div className="flex flex-wrap items-center gap-4">
-        <CalloutMetric
-          label={`Estimated Enterprise Value (Y${y5.year})`}
-          value={formatFinancialValue(y5.val.estimatedValue, "currency")}
-          testId="val-callout-value-y5"
-        />
-        <div className="w-px h-8 bg-border" />
-        <CalloutMetric
-          label={`Net After-Tax Proceeds (Y${y5.year})`}
-          value={formatFinancialValue(y5.val.netAfterTaxProceeds, "currency")}
-          testId="val-callout-net-proceeds-y5"
-        />
-        <div className="w-px h-8 bg-border" />
-        <CalloutMetric
-          label="EBITDA Multiple"
-          value={`${y5.val.ebitdaMultiple.toFixed(1)}x`}
-          testId="val-callout-multiple"
-        />
-      </div>
-      <p
-        className="text-xs text-muted-foreground mt-1.5"
-        data-testid="val-callout-interpretation"
-      >
-        Estimated business value at Year {y5.year}: {formatFinancialValue(y5.val.estimatedValue, "currency")} based on {y5.val.ebitdaMultiple.toFixed(1)}x EBITDA multiple.
-      </p>
-    </div>
-  );
-}
-
-function CalloutMetric({ label, value, testId }: { label: string; value: string; testId: string }) {
-  return (
-    <div className="flex flex-col">
-      <span className="text-xs text-muted-foreground font-medium uppercase tracking-wide">{label}</span>
-      <span className="text-lg font-semibold font-mono tabular-nums" data-testid={testId}>{value}</span>
     </div>
   );
 }
