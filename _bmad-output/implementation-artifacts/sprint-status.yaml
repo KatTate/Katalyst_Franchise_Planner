@@ -436,7 +436,7 @@ development_status:
   5h-1-financial-engine-reference-validation: done  # AI-1: cell-by-cell vs reference spreadsheets. 99 tests, 2 brands (PostNet + Jeremiah's), 1 BUG fixed (ramp-up M1), 2 KNOWN DIVERGENCES documented, taxRate TODO resolved, adversarial code review completed
   5h-2-report-tab-ui-audit-remediation: review    # AI-2: Implementation complete. 5 per-tab callout bars removed, parent CalloutBar enriched (BS identity check + Valuation net proceeds), comparison mode visibility fixed, column width reduced. Playwright e2e PASS, LSP clean. Pending adversarial code review.
   5h-3-epic-6-ac-audit-user-journeys: review              # AI-3: Audit executed. 8 gaps found (3 Blocker, 3 Quality Risk, 2 Enhancement). 6 AC amendment proposals. Completeness threshold 2-surface model recommended. Pending PO review.
-  5h-4-planning-artifact-alignment: in-progress            # AI-5: 111 FR traceability, fix stale coverage map
+  5h-4-planning-artifact-alignment: review                  # AI-5: 111 FR traceability, fix stale coverage map. Audit complete: 111/111 FRs mapped, 54 stories traced, 6 artifact corrections applied. Pending PO review.
   epic-5h-retrospective: optional
 
   # Epic 6: Document Generation & Vault [ELEVATED from old Epic 7]
