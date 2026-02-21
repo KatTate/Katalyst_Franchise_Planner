@@ -105,6 +105,7 @@ export function PlanningHeader({
             variant="ghost"
             size="icon"
             className="h-7 w-7 shrink-0"
+            onMouseDown={(e) => e.preventDefault()}
             onClick={handleSaveName}
             disabled={renameMutation.isPending}
             data-testid="button-confirm-rename"
@@ -115,6 +116,7 @@ export function PlanningHeader({
             variant="ghost"
             size="icon"
             className="h-7 w-7 shrink-0"
+            onMouseDown={(e) => e.preventDefault()}
             onClick={handleCancelEdit}
             data-testid="button-cancel-rename"
           >
@@ -123,7 +125,11 @@ export function PlanningHeader({
         </div>
       ) : (
         <div className="flex items-center gap-1 min-w-0 group">
-          <h1 className="text-sm font-semibold truncate min-w-0" data-testid="text-plan-name">{planName}</h1>
+          <h1
+            className="text-sm font-semibold truncate min-w-0 cursor-pointer"
+            onClick={() => { setEditValue(planName); setIsEditing(true); }}
+            data-testid="text-plan-name"
+          >{planName}</h1>
           <Button
             variant="ghost"
             size="icon"

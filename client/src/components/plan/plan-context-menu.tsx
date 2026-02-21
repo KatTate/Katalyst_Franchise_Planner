@@ -17,6 +17,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { DeletePlanDialog } from "./delete-plan-dialog";
+import { RenamePlanDialog } from "./rename-plan-dialog";
 
 interface PlanContextMenuProps {
   planId: string;
@@ -38,6 +39,8 @@ export function PlanContextMenu({
   const [, setLocation] = useLocation();
   const { toast } = useToast();
   const [deleteOpen, setDeleteOpen] = useState(false);
+  const [renameOpen, setRenameOpen] = useState(false);
+  const [clonedPlan, setClonedPlan] = useState<{ id: string; name: string } | null>(null);
 
   const cloneMutation = useMutation({
     mutationFn: async () => {
@@ -46,13 +49,28 @@ export function PlanContextMenu({
     },
     onSuccess: (plan: any) => {
       queryClient.invalidateQueries({ queryKey: ["/api/plans"] });
-      toast({ title: "Plan cloned", description: `"${plan.name}" created.` });
-      setLocation(`/plans/${plan.id}`);
+      toast({ title: "Plan cloned", description: `"${plan.name}" created. You can rename it now.` });
+      setClonedPlan({ id: plan.id, name: plan.name });
     },
     onError: (err: Error) => {
       toast({ title: "Failed to clone plan", description: err.message, variant: "destructive" });
     },
   });
+
+  const handleRenameClick = () => {
+    if (onRename) {
+      onRename();
+    } else {
+      setRenameOpen(true);
+    }
+  };
+
+  const handleCloneRenameClose = (open: boolean) => {
+    if (!open && clonedPlan) {
+      setLocation(`/plans/${clonedPlan.id}`);
+      setClonedPlan(null);
+    }
+  };
 
   return (
     <>
@@ -69,15 +87,13 @@ export function PlanContextMenu({
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
-          {onRename && (
-            <DropdownMenuItem
-              onClick={onRename}
-              data-testid={`menu-rename-plan-${planId}`}
-            >
-              <Pencil className="h-4 w-4 mr-2" />
-              Rename
-            </DropdownMenuItem>
-          )}
+          <DropdownMenuItem
+            onClick={handleRenameClick}
+            data-testid={`menu-rename-plan-${planId}`}
+          >
+            <Pencil className="h-4 w-4 mr-2" />
+            Rename
+          </DropdownMenuItem>
           <DropdownMenuItem
             onClick={() => cloneMutation.mutate()}
             disabled={cloneMutation.isPending}
@@ -122,6 +138,22 @@ export function PlanContextMenu({
         isActivePlan={isActivePlan}
         nextPlanId={nextPlanId}
       />
+
+      <RenamePlanDialog
+        open={renameOpen}
+        onOpenChange={setRenameOpen}
+        planId={planId}
+        currentName={planName}
+      />
+
+      {clonedPlan && (
+        <RenamePlanDialog
+          open={!!clonedPlan}
+          onOpenChange={handleCloneRenameClose}
+          planId={clonedPlan.id}
+          currentName={clonedPlan.name}
+        />
+      )}
     </>
   );
 }

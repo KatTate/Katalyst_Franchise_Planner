@@ -60,6 +60,7 @@ export function AppSidebar() {
     id: string;
     name: string;
     brandId: string;
+    status: string | null;
   }
 
   const showPlansSection = user?.role === "franchisee" || user?.role === "franchisor";

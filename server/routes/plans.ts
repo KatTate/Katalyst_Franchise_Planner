@@ -160,6 +160,14 @@ router.patch(
     // Stage 1b: strip protected fields that clients must never mutate
     const { userId, brandId, ...allowedFields } = parsed.data;
 
+    if (allowedFields.name !== undefined) {
+      const trimmedName = String(allowedFields.name).trim();
+      if (trimmedName.length === 0 || trimmedName.length > 100) {
+        return res.status(400).json({ message: "Plan name must be between 1 and 100 characters" });
+      }
+      allowedFields.name = trimmedName;
+    }
+
     // Stage 1c: conflict detection — compare client's expected updatedAt with current DB value
     const clientUpdatedAt = req.body._expectedUpdatedAt;
     if (clientUpdatedAt) {
@@ -328,6 +336,11 @@ router.delete(
   async (req: Request<{ planId: string }>, res: Response) => {
     const plan = await requirePlanAccess(req, res);
     if (plan === null) return;
+
+    const planOwner = await storage.getUser(plan.userId);
+    if (planOwner?.isDemo) {
+      return res.status(403).json({ message: "Demo plans cannot be deleted" });
+    }
 
     const effectiveUser = await getEffectiveUser(req);
     const planCount = await storage.getPlanCountByUser(effectiveUser.id);
