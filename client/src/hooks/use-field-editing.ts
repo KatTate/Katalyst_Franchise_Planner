@@ -32,13 +32,20 @@ function buildUpdatedInputs(
   categoryObj: Record<string, any>,
   fieldName: string,
   updatedField: FinancialFieldValue,
+  allYears: boolean = false,
 ): PlanFinancialInputs {
   const raw = categoryObj[fieldName];
   let newValue: FinancialFieldValue | FinancialFieldValue[];
   if (Array.isArray(raw)) {
-    newValue = raw.map((item: FinancialFieldValue, i: number) =>
-      i === 0 ? updatedField : item
-    );
+    if (allYears) {
+      newValue = raw.map((item: FinancialFieldValue) =>
+        updateFieldValue(item, updatedField.currentValue, new Date().toISOString())
+      );
+    } else {
+      newValue = raw.map((item: FinancialFieldValue, i: number) =>
+        i === 0 ? updatedField : item
+      );
+    }
   } else {
     newValue = updatedField;
   }
@@ -101,7 +108,7 @@ export function useFieldEditing({ financialInputs, isSaving, onSave }: UseFieldE
     [isSaving]
   );
 
-  const handleEditCommit = useCallback(() => {
+  const handleEditCommit = useCallback((allYears?: boolean) => {
     if (!editingField || !financialInputs || editCanceledRef.current) {
       editCanceledRef.current = false;
       setEditingField(null);
@@ -121,9 +128,9 @@ export function useFieldEditing({ financialInputs, isSaving, onSave }: UseFieldE
     if (!categoryObj) return;
     const field = resolveField(categoryObj, fieldName);
     if (!field) return;
-    if (parsedValue !== field.currentValue) {
+    if (parsedValue !== field.currentValue || allYears) {
       const updatedField = updateFieldValue(field, parsedValue, new Date().toISOString());
-      const updatedInputs = buildUpdatedInputs(financialInputs, category, categoryObj, fieldName, updatedField);
+      const updatedInputs = buildUpdatedInputs(financialInputs, category, categoryObj, fieldName, updatedField, allYears);
       onSave(updatedInputs);
     }
     setEditingField(null);

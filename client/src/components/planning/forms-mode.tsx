@@ -194,7 +194,7 @@ interface FormSectionProps {
   focusedField: string | null;
   onEditValueChange: (v: string) => void;
   onEditStart: (category: string, fieldName: string, field: FinancialFieldValue) => void;
-  onEditCommit: () => void;
+  onEditCommit: (allYears?: boolean) => void;
   onEditCancel: () => void;
   onReset: (category: string, fieldName: string) => void;
   onFocusChange: (key: string | null) => void;
@@ -262,7 +262,8 @@ function FormSection({
             {Object.entries(fields).map(([fieldName, meta]) => {
               const raw = categoryData[fieldName];
               if (!raw) return null;
-              const field = (Array.isArray(raw) ? raw[0] : raw) as FinancialFieldValue;
+              const isPerYear = Array.isArray(raw);
+              const field = (isPerYear ? raw[0] : raw) as FinancialFieldValue;
               if (!field) return null;
               const key = `${category}.${fieldName}`;
               const isEditing = editingField === key;
@@ -276,6 +277,7 @@ function FormSection({
                   fieldName={fieldName}
                   meta={meta}
                   field={field}
+                  isPerYear={isPerYear}
                   isEditing={isEditing}
                   isFocused={isFocused}
                   editValue={editValue}
@@ -301,12 +303,13 @@ interface FormFieldProps {
   fieldName: string;
   meta: FieldMeta;
   field: FinancialFieldValue;
+  isPerYear: boolean;
   isEditing: boolean;
   isFocused: boolean;
   editValue: string;
   onEditValueChange: (v: string) => void;
   onEditStart: (category: string, fieldName: string, field: FinancialFieldValue) => void;
-  onEditCommit: () => void;
+  onEditCommit: (allYears?: boolean) => void;
   onEditCancel: () => void;
   onReset: (category: string, fieldName: string) => void;
   onFocusChange: (key: string | null) => void;
@@ -318,6 +321,7 @@ function FormField({
   fieldName,
   meta,
   field,
+  isPerYear,
   isEditing,
   isFocused,
   editValue,
@@ -328,9 +332,14 @@ function FormField({
   onReset,
   onFocusChange,
 }: FormFieldProps) {
+  const [setAllYears, setSetAllYears] = useState(true);
   const isUserEntry = field.source === "user_entry";
   const defaultDisplay =
     field.brandDefault !== null ? formatFieldValue(field.brandDefault, meta.format) : null;
+
+  const commitWithAllYears = useCallback(() => {
+    onEditCommit(isPerYear && setAllYears ? true : undefined);
+  }, [onEditCommit, isPerYear, setAllYears]);
 
   return (
     <div data-testid={`field-row-${fieldName}`} className="rounded-md px-3 py-2.5 hover-elevate">
@@ -350,12 +359,12 @@ function FormField({
               value={editValue}
               onChange={(e) => onEditValueChange(e.target.value)}
               onBlur={() => {
-                onEditCommit();
+                commitWithAllYears();
                 onFocusChange(null);
               }}
               onKeyDown={(e) => {
                 if (e.key === "Enter") {
-                  onEditCommit();
+                  commitWithAllYears();
                   onFocusChange(null);
                 }
                 if (e.key === "Escape") onEditCancel();
@@ -401,6 +410,30 @@ function FormField({
           )}
         </div>
       </div>
+
+      {defaultDisplay && !isEditing && !isFocused && (
+        <p className="mt-0.5 ml-0 text-[11px] text-muted-foreground/70" data-testid={`field-brand-default-${fieldName}`}>
+          Brand default: <span className="font-mono tabular-nums">{defaultDisplay}</span>
+        </p>
+      )}
+
+      {isPerYear && (
+        <div className="mt-1.5 flex items-center justify-between gap-2" data-testid={`field-per-year-controls-${fieldName}`}>
+          <label className="flex items-center gap-1.5 cursor-pointer select-none">
+            <input
+              type="checkbox"
+              checked={setAllYears}
+              onChange={(e) => setSetAllYears(e.target.checked)}
+              className="h-3.5 w-3.5 rounded border-input accent-primary cursor-pointer"
+              data-testid={`checkbox-set-all-years-${fieldName}`}
+            />
+            <span className="text-[11px] text-muted-foreground">Set for all years</span>
+          </label>
+          <span className="text-[11px] text-muted-foreground/70 italic" data-testid={`hint-fine-tune-${fieldName}`}>
+            Fine-tune per year in Reports
+          </span>
+        </div>
+      )}
 
       {(isFocused || isEditing) && (
         <div

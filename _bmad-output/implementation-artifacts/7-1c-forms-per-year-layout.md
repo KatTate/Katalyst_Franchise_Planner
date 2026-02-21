@@ -1,6 +1,6 @@
 # Story 7.1c: Forms Onboarding — New Field Sections & Simple Inputs
 
-Status: ready-for-dev
+Status: review
 
 ## Story
 
@@ -121,6 +121,25 @@ User reaches this via: **Sidebar → My Plan** → collapsible form sections.
 
 ### Completion Notes
 
+- Agent Model Used: Claude 4.6 Opus
+- All 4 ACs implemented and verified via Playwright E2E
+- AC-1: All field sections (Revenue, Operating Costs, Profitability & Distributions, Working Capital & Valuation, Financing, Startup Capital) render with proper fields. Per-year fields show "Fine-tune per year in Reports" hint and "Set for all years" checkbox.
+- AC-2: Single-value fields update currentValue directly. Per-year fields update Year 1 (index 0) by default. When "Set for all years" is checked, all 5 years are updated.
+- AC-3: "Set for all years" checkbox toggle on per-year fields, default checked. When checked, writes value to all 5 array elements. When unchecked, writes only Year 1. Hint: "Go to Reports to set different values per year or month" via the "Fine-tune per year in Reports" text.
+- AC-4: Brand default shown as always-visible subtle label below the field ("Brand default: X"). Reset to brand default button available per field when user has edited. SourceBadge shows default/user_entry state.
+- No new npm packages introduced. No API endpoints created. No modifications to components/ui/*. No per-year column editing in Forms (all constraints respected).
+
 ### File List
 
+- `client/src/hooks/use-field-editing.ts` — MODIFIED: Added `allYears` parameter to `buildUpdatedInputs` and `handleEditCommit` to support "Set for all years" mode
+- `client/src/components/planning/forms-mode.tsx` — MODIFIED: Added `isPerYear` detection, "Set for all years" toggle, "Fine-tune per year in Reports" hint, always-visible brand default label
+- `_bmad-output/implementation-artifacts/7-1c-forms-per-year-layout.md` — MODIFIED: Story status updates
+- `_bmad-output/implementation-artifacts/sprint-status.yaml` — MODIFIED: Sprint status updates
+
 ### Testing Summary
+
+- Testing approach: Playwright E2E via run_test tool
+- ACs covered: AC-1 (all sections visible, per-year hints visible, single-value fields lack per-year controls), AC-2/AC-3 (COGS% edit with "Set for all years" checked, value saved correctly), AC-4 (brand default labels visible, reset to brand default works)
+- All tests passing
+- LSP Status: 0 errors, 0 warnings
+- Visual Verification: yes (Playwright screenshots verified)
