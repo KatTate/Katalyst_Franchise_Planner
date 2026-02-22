@@ -1,6 +1,6 @@
 # Story 10.2b: Metric Delta Cards & Dashboard Polish
 
-Status: needs-revision
+Status: in-progress
 
 ## Story
 

@@ -4,7 +4,7 @@ import { Slider } from "@/components/ui/slider";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { AlertCircle, TrendingUp, TrendingDown, Minus, RotateCcw } from "lucide-react";
+import { AlertCircle, ArrowRight, Minus, RotateCcw } from "lucide-react";
 import { usePlan } from "@/hooks/use-plan";
 import { formatCents } from "@/lib/format-currency";
 import {
@@ -23,70 +23,197 @@ interface WhatIfPlaygroundProps {
   planId: string;
 }
 
-interface MetricDefinition {
-  key: string;
-  label: string;
-  getValue: (output: SensitivityOutputs["base"]) => number | null;
-  format: "currency" | "pct" | "months";
+// ─── Delta Card Formatting ──────────────────────────────────────────────
+
+function formatCompactDollars(cents: number): string {
+  const dollars = cents / 100;
+  const absDollars = Math.abs(dollars);
+  const prefix = dollars < 0 ? "-$" : "$";
+  if (absDollars >= 1000) {
+    return `${prefix}${Math.round(absDollars / 1000)}K`;
+  }
+  return `${prefix}${Math.round(absDollars)}`;
 }
 
-const METRICS: MetricDefinition[] = [
+function formatDeltaDollars(deltaCents: number): string {
+  const dollars = deltaCents / 100;
+  const absDollars = Math.abs(dollars);
+  const sign = dollars >= 0 ? "+" : "-";
+  if (absDollars >= 1000) {
+    return `${sign}$${Math.round(absDollars / 1000)}K`;
+  }
+  return `${sign}$${Math.round(absDollars)}`;
+}
+
+interface DeltaMetricConfig {
+  key: string;
+  label: string;
+  testId: string;
+  getBase: (o: SensitivityOutputs) => number | null;
+  getCurrent: (o: SensitivityOutputs) => number | null;
+  formatValue: (v: number | null) => string;
+  formatDelta: (base: number | null, current: number | null) => string;
+  higherIsBetter: boolean;
+}
+
+const DELTA_METRICS: DeltaMetricConfig[] = [
   {
     key: "break-even",
-    label: "Break-Even Month",
-    getValue: (o) => o.roiMetrics?.breakEvenMonth ?? null,
-    format: "months",
+    label: "Break-Even",
+    testId: "sensitivity-metric-delta-break-even",
+    getBase: (o) => o.base.roiMetrics.breakEvenMonth,
+    getCurrent: (o) => o.current.roiMetrics.breakEvenMonth,
+    formatValue: (v) => (v === null ? "—" : `Mo ${v}`),
+    formatDelta: (base, current) => {
+      if (base === null || current === null) return "N/A";
+      const diff = current - base;
+      if (diff === 0) return "0";
+      const sign = diff > 0 ? "+" : "";
+      return `${sign}${diff} mo`;
+    },
+    higherIsBetter: false,
   },
   {
-    key: "y1-revenue",
-    label: "Year-1 Revenue",
-    getValue: (o) => o.annualSummaries[0]?.revenue ?? null,
-    format: "currency",
+    key: "revenue",
+    label: "Year 1 Revenue",
+    testId: "sensitivity-metric-delta-revenue",
+    getBase: (o) => o.base.annualSummaries[0]?.revenue ?? null,
+    getCurrent: (o) => o.current.annualSummaries[0]?.revenue ?? null,
+    formatValue: (v) => (v === null ? "—" : formatCompactDollars(v)),
+    formatDelta: (base, current) => {
+      if (base === null || current === null) return "N/A";
+      const diff = current - base;
+      if (diff === 0) return "$0";
+      return formatDeltaDollars(diff);
+    },
+    higherIsBetter: true,
   },
   {
     key: "roi",
-    label: "5-Year ROI %",
-    getValue: (o) => o.roiMetrics?.fiveYearROIPct ?? null,
-    format: "pct",
+    label: "5-Year ROI",
+    testId: "sensitivity-metric-delta-roi",
+    getBase: (o) => o.base.roiMetrics.fiveYearROIPct ?? null,
+    getCurrent: (o) => o.current.roiMetrics.fiveYearROIPct ?? null,
+    formatValue: (v) => (v === null ? "—" : `${(v * 100).toFixed(0)}%`),
+    formatDelta: (base, current) => {
+      if (base === null || current === null) return "N/A";
+      const diffPct = (current - base) * 100;
+      if (Math.round(diffPct) === 0) return "0%";
+      const sign = diffPct > 0 ? "+" : "";
+      return `${sign}${Math.round(diffPct)}%`;
+    },
+    higherIsBetter: true,
   },
   {
-    key: "y5-cash",
-    label: "Year-5 Cash",
-    getValue: (o) => o.annualSummaries[4]?.endingCash ?? null,
-    format: "currency",
+    key: "cash",
+    label: "Year 5 Cash",
+    testId: "sensitivity-metric-delta-cash",
+    getBase: (o) => o.base.annualSummaries[4]?.endingCash ?? null,
+    getCurrent: (o) => o.current.annualSummaries[4]?.endingCash ?? null,
+    formatValue: (v) => (v === null ? "—" : formatCompactDollars(v)),
+    formatDelta: (base, current) => {
+      if (base === null || current === null) return "N/A";
+      const diff = current - base;
+      if (diff === 0) return "$0";
+      return formatDeltaDollars(diff);
+    },
+    higherIsBetter: true,
   },
 ];
 
-function formatMetricValue(value: number | null, format: "currency" | "pct" | "months"): string {
-  if (value === null || value === undefined) return "—";
-  switch (format) {
-    case "currency":
-      return formatCents(value);
-    case "pct":
-      return `${(value * 100).toFixed(1)}%`;
-    case "months":
-      return `${value} mo`;
-  }
+type DeltaColor = "green" | "amber" | "neutral";
+
+function getDeltaColor(
+  base: number | null,
+  current: number | null,
+  higherIsBetter: boolean,
+): DeltaColor {
+  if (base === null || current === null) return "neutral";
+  const diff = current - base;
+  if (diff === 0) return "neutral";
+  const isPositive = diff > 0;
+  const isDesirable = higherIsBetter ? isPositive : !isPositive;
+  return isDesirable ? "green" : "amber";
 }
 
-function formatDelta(
-  base: number | null,
-  compare: number | null,
-  format: "currency" | "pct" | "months"
-): string | null {
-  if (base === null || compare === null) return null;
-  const diff = compare - base;
-  if (diff === 0) return null;
-  const sign = diff > 0 ? "+" : "";
-  switch (format) {
-    case "currency":
-      return `${sign}${formatCents(diff)}`;
-    case "pct":
-      return `${sign}${(diff * 100).toFixed(1)}pp`;
-    case "months":
-      return `${sign}${diff} mo`;
-  }
+const deltaColorClasses: Record<DeltaColor, string> = {
+  green: "text-green-600 dark:text-green-500",
+  amber: "text-amber-500 dark:text-amber-400",
+  neutral: "text-muted-foreground",
+};
+
+function MetricDeltaCard({
+  config,
+  outputs,
+}: {
+  config: DeltaMetricConfig;
+  outputs: SensitivityOutputs;
+}) {
+  const baseVal = config.getBase(outputs);
+  const currentVal = config.getCurrent(outputs);
+  const deltaStr = config.formatDelta(baseVal, currentVal);
+  const color = getDeltaColor(baseVal, currentVal, config.higherIsBetter);
+  const isZero = baseVal !== null && currentVal !== null && baseVal === currentVal;
+
+  return (
+    <div
+      className="rounded-lg border bg-card p-3 space-y-1"
+      data-testid={config.testId}
+    >
+      <div className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+        {config.label}
+      </div>
+      <div className="flex items-center gap-1.5 text-base font-semibold font-mono tabular-nums">
+        <span>{config.formatValue(baseVal)}</span>
+        <ArrowRight className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+        <span>{config.formatValue(currentVal)}</span>
+      </div>
+      <div className={`text-sm font-mono tabular-nums ${isZero ? "text-muted-foreground" : deltaColorClasses[color]}`}>
+        ({deltaStr})
+      </div>
+    </div>
+  );
 }
+
+function MetricDeltaCardStrip({
+  outputs,
+  hasInteractedWithSlider,
+}: {
+  outputs: SensitivityOutputs;
+  hasInteractedWithSlider: boolean;
+}) {
+  const deltaMetrics = useMemo(() => {
+    return DELTA_METRICS.map((config) => ({
+      config,
+      baseVal: config.getBase(outputs),
+      currentVal: config.getCurrent(outputs),
+    }));
+  }, [outputs]);
+
+  return (
+    <div className="rounded-xl bg-muted/30 p-4 space-y-3" data-testid="sensitivity-delta-strip">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+        {deltaMetrics.map(({ config }) => (
+          <MetricDeltaCard
+            key={config.key}
+            config={config}
+            outputs={outputs}
+          />
+        ))}
+      </div>
+      {!hasInteractedWithSlider && (
+        <p
+          className="text-sm text-muted-foreground text-center"
+          data-testid="sensitivity-delta-helper-text"
+        >
+          Move a slider to see how it changes your metrics.
+        </p>
+      )}
+    </div>
+  );
+}
+
+// ─── Slider Utilities ───────────────────────────────────────────────────
 
 function sumY1Monthly(baseOutput: SensitivityOutputs["base"], field: "marketing" | "facilities"): number {
   let total = 0;
@@ -211,80 +338,6 @@ function SensitivitySliderRow({
         data-testid={`input-${config.key}`}
       />
     </div>
-  );
-}
-
-function isBetter(metricKey: string, val: number | null, baseVal: number | null): boolean {
-  if (val === null || baseVal === null) return false;
-  return metricKey === "break-even" ? val < baseVal : val > baseVal;
-}
-
-function isWorse(metricKey: string, val: number | null, baseVal: number | null): boolean {
-  if (val === null || baseVal === null) return false;
-  return metricKey === "break-even" ? val > baseVal : val < baseVal;
-}
-
-function ScenarioColumn({
-  label,
-  value,
-  baseVal,
-  metricKey,
-  format,
-  testId,
-  highlight,
-}: {
-  label: string;
-  value: number | null;
-  baseVal: number | null;
-  metricKey: string;
-  format: "currency" | "pct" | "months";
-  testId: string;
-  highlight?: boolean;
-}) {
-  const delta = formatDelta(baseVal, value, format);
-  const worse = isWorse(metricKey, value, baseVal);
-  const better = isBetter(metricKey, value, baseVal);
-
-  return (
-    <div data-testid={testId} className={highlight ? "bg-primary/5 rounded-md p-1.5 -m-1.5" : ""}>
-      <div className="text-[10px] text-muted-foreground mb-0.5">{label}</div>
-      <div className={`text-sm font-semibold font-mono tabular-nums ${highlight ? "text-primary" : ""}`}>
-        {value === null && metricKey === "break-even" ? "60+ mo" : formatMetricValue(value, format)}
-      </div>
-      {delta && (
-        <div className={`flex items-center gap-0.5 text-[10px] font-mono ${worse ? "text-orange-600 dark:text-orange-400" : better ? "text-blue-600 dark:text-blue-400" : "text-muted-foreground"}`}>
-          {worse ? <TrendingDown className="h-3 w-3" /> : better ? <TrendingUp className="h-3 w-3" /> : <Minus className="h-3 w-3" />}
-          {delta}
-        </div>
-      )}
-    </div>
-  );
-}
-
-function MetricCard({
-  metric,
-  scenarioOutputs,
-}: {
-  metric: MetricDefinition;
-  scenarioOutputs: SensitivityOutputs;
-}) {
-  const baseVal = metric.getValue(scenarioOutputs.base);
-  const currentVal = metric.getValue(scenarioOutputs.current);
-
-  return (
-    <Card data-testid={`metric-card-${metric.key}`}>
-      <CardHeader className="pb-2 pt-4 px-4">
-        <CardTitle className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
-          {metric.label}
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="px-4 pb-4">
-        <div className="grid gap-2 grid-cols-2">
-          <ScenarioColumn label="Base Case" value={baseVal} baseVal={baseVal} metricKey={metric.key} format={metric.format} testId={`metric-base-${metric.key}`} />
-          <ScenarioColumn label="Your Scenario" value={currentVal} baseVal={baseVal} metricKey={metric.key} format={metric.format} testId={`metric-current-${metric.key}`} highlight />
-        </div>
-      </CardContent>
-    </Card>
   );
 }
 
@@ -422,26 +475,12 @@ export function WhatIfPlayground({ planId }: WhatIfPlaygroundProps) {
           </CardContent>
         </Card>
 
-        <div>
-          <h2 className="text-base font-semibold mb-3" data-testid="metrics-heading">
-            {hasAdjustment ? "Base Case vs Your Scenario" : "Key Metrics"}
-          </h2>
-          {!hasAdjustment && (
-            <p className="text-sm text-muted-foreground mb-3" data-testid="metrics-helper-text">
-              Move a slider to see how it changes your metrics
-            </p>
-          )}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4" data-testid="metric-cards-grid">
-            {scenarioOutputs &&
-              METRICS.map((metric) => (
-                <MetricCard
-                  key={metric.key}
-                  metric={metric}
-                  scenarioOutputs={scenarioOutputs}
-                />
-              ))}
-          </div>
-        </div>
+        {scenarioOutputs && (
+          <MetricDeltaCardStrip
+            outputs={scenarioOutputs}
+            hasInteractedWithSlider={hasInteractedWithSlider}
+          />
+        )}
 
         <div>
           <h2 className="text-base font-semibold mb-3" data-testid="charts-heading">
