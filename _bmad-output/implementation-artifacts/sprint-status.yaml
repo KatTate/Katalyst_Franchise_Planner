@@ -40,6 +40,7 @@
 # - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
 
 generated: 2026-02-09
+updated: 2026-02-22  # Story 7H.4 context document created (Create Story workflow). 8 ACs, 1 file in change summary. Test-only story.
 updated: 2026-02-22  # Story 7H.3 context document created (Create Story workflow). 10 ACs, 5 files in change summary.
 updated: 2026-02-22  # Story 7H.2 implementation complete → review. All 10 ACs satisfied, 407 tests passing, 12 files modified.
 updated: 2026-02-22  # Story 7H.2 context document created (Create Story workflow). 10 ACs, 13+ files in change summary.
@@ -60,6 +61,22 @@ story_location: _bmad-output/implementation-artifacts
 
 # CHANGE LOG:
 # ===========
+# 2026-02-22: Story 7H.4 context document created (Create Story workflow)
+#   - Full story file: 7h-4-input-field-map-validation.md (ready-for-dev)
+#   - 8 acceptance criteria covering: existing test preservation (AC-1), engine type
+#     cross-reference via ENGINE_FIELD_SEMANTICS map (AC-2, AC-7), FIELD_METADATA
+#     completeness coverage with EXCLUDED_FIELDS set (AC-3), category validity (AC-4),
+#     format mismatch detection verification (AC-5), minimum 6 test count (AC-6),
+#     full suite no-regression (AC-8)
+#   - Dev notes include: ENGINE_FIELD_SEMANTICS mapping table (20 entries with engine
+#     paths and semantic types), EXCLUDED_FIELDS inventory (12 entries with exclusion
+#     reasons), anti-patterns (no source file modifications, no separate test file,
+#     no weakening existing tests), ebitdaMultiple special case handling
+#   - Test-only story — modifies 1 file: input-field-map-validation.test.ts
+#   - Addresses recurring display format bug flagged in 3 consecutive retrospectives
+#     (Epics 5, 5H, 7). Root cause: manual mapping without engine cross-reference.
+#   - Next action: Dev Story (DS) for 7H.4 implementation
+#
 # 2026-02-22: Story 7H.3 context document created (Create Story workflow)
 #   - Full story file: 7h-3-brand-crud-completion.md (ready-for-dev)
 #   - 10 acceptance criteria covering: brand metadata editing (name, display name, slug)
@@ -726,7 +743,7 @@ development_status:
   7h-1-planning-document-realignment: done                  # All 12 ACs satisfied 2026-02-22. PO review feedback applied: sidebar redesigned (Home→Dashboard pattern), HELP section expanded. Done 2026-02-22.
   7h-2-per-month-independence: review                     # Implementation complete 2026-02-22. All 10 ACs satisfied. 407 tests passing. 12 files modified. Pending adversarial code review.
   7h-3-brand-crud-completion: done                       # Delete (with confirmation) + metadata editing. All 10 ACs satisfied. E2E tests passing. Code review completed 2026-02-22: 2H/3M/1L findings, 4 fixed (FK cleanup, transaction, fetcher convention, duplicate field). Done 2026-02-22.
-  7h-4-input-field-map-validation: backlog              # Test-time assertion: every INPUT_FIELD_MAP entry format matches FIELD_METADATA/engine output. Build fails on mismatch.
+  7h-4-input-field-map-validation: ready-for-dev         # Test-time assertion: every INPUT_FIELD_MAP entry format matches FIELD_METADATA/engine output. Build fails on mismatch.
   7h-5-e2e-testing-standards: backlog                   # Test agents auth as franchisee, no demo mode, clean up test data. Documentation + enforcement.
   epic-7h-retrospective: optional
 
