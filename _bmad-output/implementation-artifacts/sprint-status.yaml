@@ -1,4 +1,5 @@
 # generated: 2026-02-09
+# updated: 2026-02-22 (SCP-2026-02-22 approved — Post-Epic-7 Course Correction & Stabilization)
 # updated: 2026-02-21 (Epic 7 retrospective completed — sprint planning reset required)
 # updated: 2026-02-21 (Epic 7 Party Mode review: 7.1a→done, 7.1b-7.1d rewritten, 7.1e created)
 # updated: 2026-02-20 (Story 10.2 context document created: Multi-Chart Sensitivity Dashboard)
@@ -37,17 +38,13 @@
 # - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
 
 generated: 2026-02-09
+updated: 2026-02-22  # SCP-2026-02-22 approved: Post-Epic-7 Course Correction & Stabilization. Epic 7H created. Epic sequencing reset. 7.1b.1 promoted from deferred to required.
 updated: 2026-02-21  # Story 7.2 adversarial code review completed → done. 9 findings fixed (3H/4M/2L). E2E re-verified.
-updated: 2026-02-21  # Story 7.2 dev-story complete → review. All 9 ACs verified. E2E passing. LSP clean.
 updated: 2026-02-21  # Story 7.1e adversarial code review completed — done (0H/3M/3L, all resolved)
 updated: 2026-02-21  # Story 7.1d adversarial code review completed — done
 updated: 2026-02-21  # Story 7.1 split into 7.1a-7.1d per Party Mode review
-updated: 2026-02-21  # Story 7.1 context document created (Create Story workflow)
-updated: 2026-02-21  # Story 5H.4 context document created (Create Story workflow)
 updated: 2026-02-21  # SCP-2026-02-21 approved: Epic 10 pivot to user-authored scenario modeling
 updated: 2026-02-21  # Story 5H.2 → done (adversarial code review completed, all findings fixed)
-updated: 2026-02-20  # Story 10.2 context document created (Create Story workflow)
-updated: 2026-02-20  # Story 5H.2 → review (dev-story workflow complete, pending code review)
 updated: 2026-02-21  # Story 5H.3 context document created (Create Story workflow)
 project: Katalyst Growth Planner
 project_key: NOKEY
@@ -56,6 +53,31 @@ story_location: _bmad-output/implementation-artifacts
 
 # CHANGE LOG:
 # ===========
+# 2026-02-22: SCP-2026-02-22 APPROVED — Post-Epic-7 Course Correction & Stabilization
+#   - Sprint planning reset executed per PO direction
+#   - Epic 7 status: DONE (all 6 original stories complete)
+#   - NEW: Epic 7H (Post-Epic-7 Stabilization Sprint) created with 5 stories:
+#     7H.1 Planning Document Realignment (all 4 docs + UX spec)
+#     7H.2 Per-Month Independence (7.1b.1 — promoted from deferred to required)
+#     7H.3 Brand CRUD Completion (delete + edit — Epic 2 gap fix)
+#     7H.4 INPUT_FIELD_MAP Mechanical Validation (recurring bug prevention)
+#     7H.5 E2E Testing Standards & Infrastructure
+#   - Epic sequencing reset by PO:
+#     NEXT: Epic 7H (stabilization)
+#     THEN: Epic 10 (What-If Playground)
+#     THEN: Epic 8 (Advisory Guardrails)
+#     THEN: Epic 11 (Data Sharing & Dashboards)
+#     LATER: Epic ST (Admin Tools — ST-4 blocked on 11.2)
+#     LAST: Epic 6 (PDF Generation) — presentation layer, wait for core to stabilize
+#     LAST: Epic 9 (AI Planning Advisor) — intelligence layer, same reason
+#     PHASE 2: Epic 12 (Advisory Board Meeting)
+#   - FR98 (Multi-Plan CRUD) to be added to PRD (CP-1)
+#   - Epic 10 description to be updated — still references killed Conservative/Optimistic (CP-3)
+#   - UX spec to be updated for Epic 7 decisions (CP-7 — 5 issues)
+#   - Process rules activated: mandatory adversarial review (P-1), change proposal for
+#     design pivots (P-2), story complexity threshold (P-3), completion report accuracy (P-4)
+#   - See: sprint-change-proposal-2026-02-22.md
+#
 # 2026-02-21: Epic 7 Retrospective completed
 #   - Epic 7 delivered all 6 stories (7.1a-7.1e + 7.2)
 #   - CRITICAL: Stories were rewritten mid-epic without Sprint Change Proposal
@@ -598,15 +620,29 @@ development_status:
   # Design Principle: Forms = onboarding wizard, Reports = power editing surface
   # Expert users skip Forms entirely and edit directly in Reports
   # Story 7.1 split into 7.1a–7.1e per Party Mode review (2026-02-21)
-  # Dependency chain: 7.1a (DONE) → 7.1b → 7.1c + 7.1d (parallel, depend on 7.1b) → 7.1e (parallel with 7.1c/d)
-  epic-7: in-progress
-  7-1a-data-model-restructuring-migration: done                # Foundation: per-year arrays, migration, drill-down display, storedGranularity, revenue drill-down
-  7-1b-all-fields-editable-reports: done                        # DONE 2026-02-21: 15 editable fields, Copy Y1 to All, flash cleanup. AC-2 (per-month) deferred to 7.1b.1.
-  7-1c-forms-onboarding-new-fields: done                 # DONE 2026-02-21: Adversarial code review completed. 8 findings (1H, 5M, 2L) all fixed. Per-month handling, safe defaults, hint text, naming, brand-default detection.
-  7-1d-facilities-decomposition-opex: done                        # 2026-02-21: Adversarial code review completed. 1H/3M/3L findings all fixed. H1: AC-4 P&L Other OpEx % now displays percentage (was currency). M1: DRY extraction. M2/M3: File List corrected.
-  7-1e-balance-sheet-valuation-editing: done                  # DONE 2026-02-21: Balance Sheet Working Capital Assumptions (AR/AP/Inventory Days, Tax Delay) + Valuation (EBITDA Multiple) inline editing in Reports. E2E tested. Adversarial code review completed: 0H/3M/3L, all resolved.
-  7-2-plan-crud-navigation: done                       # 2026-02-21: Adversarial code review completed. 9 findings (3H/4M/2L) all fixed: H1 context-menu rename, H2 clone rename prompt, H3 status badges, M1 demo guard, M2 double-save race, M3 undocumented file, M4 server-side name validation, L1 file list corrections, L2 click-to-edit. E2E re-verified. LSP clean.
-  epic-7-retrospective: done  # Completed 2026-02-22. 15 sections. 13 action items (3 CRITICAL, 5 HIGH, 2 MEDIUM, 3 LOW). Sprint planning reset required.
+  # NOTE: 7.1b.1 (per-month independence) promoted to Epic 7H per SCP-2026-02-22
+  epic-7: done
+  7-1a-data-model-restructuring-migration: done
+  7-1b-all-fields-editable-reports: done
+  7-1c-forms-onboarding-new-fields: done
+  7-1d-facilities-decomposition-opex: done
+  7-1e-balance-sheet-valuation-editing: done
+  7-2-plan-crud-navigation: done
+  epic-7-retrospective: done
+
+  # Epic 7H: Post-Epic-7 Stabilization Sprint [NEW — from SCP-2026-02-22]
+  # Resolve accumulated gaps from Epic 7, complete per-month independence,
+  # fix Brand CRUD gap from Epic 2, establish testing infrastructure.
+  # All planning documents realigned in this epic.
+  # Dependency: 7H.1 first (no code deps), then 7H.2-7H.5 can parallel
+  # PO directive: THIS EPIC IS NEXT — before any feature work (Epic 10, etc.)
+  epic-7h: backlog
+  7h-1-planning-document-realignment: backlog           # Update PRD (FR98), Architecture (per-month status), Epics (Epic 10 desc, 7.1b.1 status, FR map), UX Spec (5 issues)
+  7h-2-per-month-independence: backlog                  # 7.1b.1 promoted: 60-element arrays for revenue/COGS%/labor%/marketing%, engine type updates, Reports UI for monthly editing
+  7h-3-brand-crud-completion: backlog                   # Delete (with confirmation) + metadata editing. Closes Epic 2 gap causing active dev pain.
+  7h-4-input-field-map-validation: backlog              # Test-time assertion: every INPUT_FIELD_MAP entry format matches FIELD_METADATA/engine output. Build fails on mismatch.
+  7h-5-e2e-testing-standards: backlog                   # Test agents auth as franchisee, no demo mode, clean up test data. Documentation + enforcement.
+  epic-7h-retrospective: optional
 
   # ==========================================================================
   # RENUMBERED EPICS (from Sprint Change Proposal 2026-02-15)
@@ -630,7 +666,9 @@ development_status:
   # Rewritten per SCP-2026-02-20 D5/D6 — standalone sensitivity dashboard, not column-splitting
   # Pivoted per SCP-2026-02-21 — user-authored scenarios replace system-defined Conservative/Optimistic
   # Stories (4): Sensitivity Controls, Chart Dashboard, Metric Delta Cards, Scenario Persistence & Comparison
-  epic-10: in-progress
+  # PO SEQUENCING (SCP-2026-02-22): NEXT FEATURE EPIC — after Epic 7H stabilization completes
+  # Description stale: still references Conservative/Optimistic — to be fixed in 7H.1
+  epic-10: backlog  # Was in-progress. Reset to backlog per SCP-2026-02-22 — Epic 7H is next.
   10-1-sensitivity-controls-sandbox-engine: needs-revision  # AC rewrite + code modification per SCP-2026-02-21 CP-2/CP-7/CP-8
   10-2a-sensitivity-chart-dashboard: needs-revision  # AC rewrite per SCP-2026-02-21 CP-3 (split from 10-2)
   10-2b-metric-delta-cards: needs-revision  # AC rewrite per SCP-2026-02-21 CP-4 (split from 10-2)

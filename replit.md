@@ -39,6 +39,18 @@ When the user triggers an agent or workflow, the AI MUST load the referenced fil
 
 # Recent Changes
 
+## SCP-2026-02-22: Post-Epic-7 Course Correction & Stabilization (APPROVED)
+- **Epic 7 complete** (6/6 stories done). Per-year independence delivered.
+- **Epic 7H created** (5 stories) — stabilization mini-epic is NEXT before any feature work:
+  - 7H.1: Planning Document Realignment (PRD FR98, Architecture per-month status, Epics desc fixes, UX Spec 5 issues)
+  - 7H.2: Per-Month Independence (7.1b.1 — 60-element arrays, engine types, Reports UI for monthly editing)
+  - 7H.3: Brand CRUD Completion (delete + edit metadata)
+  - 7H.4: INPUT_FIELD_MAP Mechanical Validation (build-time format mismatch detection)
+  - 7H.5: E2E Testing Standards (franchisee auth, no demo mode, cleanup)
+- **Epic sequencing reset by PO:** 7H → 10 → 8 → 11 → ST → 6 → 9 (PDF and AI last)
+- **Process rules activated:** mandatory adversarial code review, change proposals for design pivots, story complexity threshold, completion report accuracy
+- See: `_bmad-output/planning-artifacts/sprint-change-proposal-2026-02-22.md`
+
 ## Story 7.2: Plan CRUD & Navigation (Feb 2026)
 - **Plan Lifecycle Management:** Full CRUD operations for financial plans — create, rename (inline & context menu), clone (deep copy), and delete (type-to-confirm) with last-plan protection.
 - **New Backend Endpoints:** `POST /api/plans/:planId/clone` (deep copies financialInputs/startupCosts), `DELETE /api/plans/:planId` (with last-plan protection via `getPlanCountByUser()`).
