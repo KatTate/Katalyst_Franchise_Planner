@@ -1,6 +1,6 @@
 # Story 7H.1: Planning Document Realignment
 
-Status: in-progress
+Status: review
 
 ## Story
 
@@ -289,10 +289,30 @@ editing either surface.
 
 ### Agent Model Used
 
-{{agent_model_name_version}}
+Claude 4.6 Opus (via Replit Agent)
 
 ### Completion Notes
 
+Documentation-only story — all 12 acceptance criteria satisfied. Four planning artifacts edited with exact text from SCP-2026-02-22 CP-1 through CP-7. Key changes:
+- PRD: Added FR98 (multi-plan CRUD) after FR97
+- Architecture: Updated per-month independence status from "Deferred" to "Stabilization Mini-Epic" with implementation requirements
+- Epics: Updated Epic 10 description (SCP-2026-02-21 decisions), changed 7.1b.1 from "Deferred" to "Remaining/scheduled", added Epic 7H section (5 stories), added FR98 to FR Coverage Map (112/112)
+- UX Spec: Added Two-Surface Design Boundary subsection, marked Pre-Epic-7 Per-Year Behavior historical, added Facilities Guided Decomposition pattern, marked Story Rewrite Implications historical, updated sidebar wireframe (MY PLANS section with context menus, What-If replaces Scenarios, Glossary replaces Planning Assistant), marked 2 deferred items as DONE in Part 19, added changelog entry
+
 ### File List
 
+- `_bmad-output/planning-artifacts/prd.md` — MODIFIED (AC-1: FR98 added)
+- `_bmad-output/planning-artifacts/architecture.md` — MODIFIED (AC-2: per-month independence status updated)
+- `_bmad-output/planning-artifacts/epics.md` — MODIFIED (AC-3: Epic 10 desc, AC-4: 7.1b.1 status, AC-5: Epic 7H section, AC-6: FR Coverage Map 112/112)
+- `_bmad-output/planning-artifacts/ux-design-specification-consolidated.md` — MODIFIED (AC-7: two-surface boundary, AC-8: pre-Epic-7 historical, AC-9: facilities decomposition, AC-10: story rewrite historical, AC-11: sidebar wireframe, AC-12: changelog)
+- `_bmad-output/implementation-artifacts/sprint-status.yaml` — MODIFIED (story status tracking)
+- `_bmad-output/implementation-artifacts/7h-1-planning-document-realignment.md` — MODIFIED (story status + dev agent record)
+
 ### Testing Summary
+
+- **Test approach:** Document inspection — grep verification of all 12 ACs against edited files
+- **Test files:** None (documentation-only story, no code or test files created)
+- **ACs covered:** All 12 (AC-1 through AC-12) verified via content matching
+- **All tests passing:** Yes (all 12 ACs satisfied)
+- **LSP Status:** 0 errors, 0 warnings (no code files modified)
+- **Visual Verification:** N/A (documentation-only story, not user-facing)
