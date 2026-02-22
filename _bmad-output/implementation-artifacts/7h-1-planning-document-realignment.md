@@ -297,7 +297,7 @@ Documentation-only story — all 12 acceptance criteria satisfied. Four planning
 - PRD: Added FR98 (multi-plan CRUD) after FR97
 - Architecture: Updated per-month independence status from "Deferred" to "Stabilization Mini-Epic" with implementation requirements
 - Epics: Updated Epic 10 description (SCP-2026-02-21 decisions), changed 7.1b.1 from "Deferred" to "Remaining/scheduled", added Epic 7H section (5 stories), added FR98 to FR Coverage Map (112/112)
-- UX Spec: Added Two-Surface Design Boundary subsection, marked Pre-Epic-7 Per-Year Behavior historical, added Facilities Guided Decomposition pattern, marked Story Rewrite Implications historical, updated sidebar wireframe (MY PLANS section with context menus, What-If replaces Scenarios, Glossary replaces Planning Assistant), marked 2 deferred items as DONE in Part 19, added changelog entry
+- UX Spec: Added Two-Surface Design Boundary subsection, marked Pre-Epic-7 Per-Year Behavior historical, added Facilities Guided Decomposition pattern, marked Story Rewrite Implications historical, updated sidebar wireframe per PO review (removed MY PLANS list — doesn't scale for 20+ location franchisees; sidebar shows Home→Dashboard + active plan context; What-If replaces Scenarios; HELP section with Planning Assistant, Glossary, Book a Consultation), marked 2 deferred items as DONE in Part 19, added changelog entry
 
 ### File List
 

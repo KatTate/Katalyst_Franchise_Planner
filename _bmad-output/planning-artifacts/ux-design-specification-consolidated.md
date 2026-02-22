@@ -1375,7 +1375,7 @@ Every color-coded element has a non-color alternative:
 |------|-------------|--------|
 | Custom scenario creation (duplicate base case, modify inputs) | Epic 10 | Quick multi-variable scenarios sufficient for Epic 5 |
 | Per-year input columns in My Plan and Reports | ~~Epic 7~~ DONE | Delivered in Epic 7 (Stories 7.1a-7.1e). Per-year independence in Reports; single-value with "Set for all years" in Forms. |
-| Multi-plan comparison (portfolio-level) | ~~Epic 7~~ DONE | Delivered in Story 7.2. Plan CRUD, sidebar plan list, context menus. |
+| Multi-plan comparison (portfolio-level) | ~~Epic 7~~ DONE | Delivered in Story 7.2. Plan CRUD on Dashboard (create, rename, clone, delete). Sidebar shows Home→Dashboard link; active plan loaded from Dashboard. |
 | AI Planning Assistant integration with Reports | Epic 9 | AI integration is My Plan-focused for MVP |
 | Advisory nudges on individual input fields | Epic 8 | Guardian Bar provides plan-level advisory; field-level is Epic 8 |
 | Excel/CSV export | Backlog | Lower priority than PDF |

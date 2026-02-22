@@ -903,7 +903,7 @@ _Scope: Katalyst admins only. Franchisors and franchisees never see or access th
 
 ### 18. Multi-Plan Management
 
-- **FR98:** Franchisee can create, rename, clone (deep copy), and delete financial plans. Cloning creates an independent copy of all financial inputs. Deletion requires type-to-confirm and is blocked if only one plan remains (last-plan protection). Plan list is visible in the sidebar with context menus for lifecycle actions.
+- **FR98:** Franchisee can create, rename, clone (deep copy), and delete financial plans. Cloning creates an independent copy of all financial inputs. Deletion requires type-to-confirm and is blocked if only one plan remains (last-plan protection). Plan management (CRUD) lives on the Dashboard; the sidebar provides a Home link to the Dashboard and shows workspace navigation for the active plan.
 
 ## Non-Functional Requirements
 

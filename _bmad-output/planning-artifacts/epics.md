@@ -339,7 +339,7 @@ Enable Year 1-5 independent input values for all per-year financial assumptions,
 - 7.1c Forms Onboarding — New Field Sections & Simple Inputs — DONE (all fields in Forms with single-value inputs, "Set for all years" checkbox, brand default indicators, new sections for Profitability & Working Capital)
 - 7.1d Facilities Guided Decomposition & Other OpEx Correction — DONE (facilities sub-field breakdown in Forms with rollup, simplified mismatch handling as informational note only, Other OpEx displayed as percentage)
 - 7.1e Balance Sheet & Valuation Inline Editing — DONE (arDays, apDays, inventoryDays, taxPaymentDelayMonths, ebitdaMultiple inline-editable in Balance Sheet and Valuation tabs)
-- 7.2 Plan CRUD & Navigation — DONE (create, rename, clone, delete with type-to-confirm, sidebar plan list with context menus, last-plan protection)
+- 7.2 Plan CRUD & Navigation — DONE (create, rename, clone, delete with type-to-confirm, last-plan protection). **PO design pivot:** Plan CRUD lives on Dashboard, not sidebar. Sidebar shows Home→Dashboard + active plan context. Sidebar plan list from 7.2 implementation to be removed in future cleanup.
 **Dependency chain:** 7.1a → 7.1b → 7.1c + 7.1d (parallel) → 7.1e
 **Remaining:** 7.1b.1 Per-Month Independence (60-element arrays for revenue, COGS%, labor%, marketing%) — scheduled in stabilization mini-epic (Epic 7H). Infrastructure (storedGranularity, scaleForStorage) in place from 7.1a.
 
