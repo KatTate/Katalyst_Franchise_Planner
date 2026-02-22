@@ -467,10 +467,7 @@ The sidebar is the single, persistent navigation structure. There is no mode swi
 |                                            |
 |  [Brand Logo / Katalyst]                   |
 |                                            |
-|  -- MY PLANS --                            |
-|  ▸ PostNet - Downtown       [⋮]            |
-|  ▸ PostNet - Mall Location  [⋮]            |
-|  + Create New Plan                         |
+|  Home                                      |
 |                                            |
 |  -- [ACTIVE PLAN NAME] --                 |
 |  My Plan                                   |
@@ -486,13 +483,15 @@ The sidebar is the single, persistent navigation structure. There is no mode swi
 +--------------------------------------------+
 ```
 
-**MY PLANS section:** Lists all plans belonging to the franchisee. Each plan row shows the plan name and a [⋮] context menu providing Rename, Clone, and Delete actions (per Story 7.2). The active plan is highlighted. "+ Create New Plan" opens the plan creation dialog.
+**Home:** Navigates to the franchisee's Dashboard — the plan management surface. The Dashboard displays all plans as cards with full CRUD actions (create, rename, clone, delete with type-to-confirm, last-plan protection). Selecting a plan from the Dashboard loads it into the sidebar as the active plan context. Plan lifecycle management lives exclusively on the Dashboard, not in the sidebar.
+
+**Active plan section:** Appears once a plan is selected from the Dashboard. Shows the plan name as a section header. The workspace items (My Plan, Reports, What-If, Settings) operate on this active plan.
 
 **Sidebar items explained:**
 
 | Item | What It Is | Primary Persona |
 |------|-----------|-----------------|
-| MY PLANS | Plan list with context menus — rename, clone, delete (type-to-confirm), last-plan protection. Active plan highlighted. | Chris, Sam |
+| Home | Dashboard — plan portfolio with CRUD actions. Select a plan to load it as the active context. | All |
 | My Plan | Structured form-based input workspace with AI Planning Assistant available as slide-in panel | Sam, Chris |
 | Reports | Tabbed financial statements with inline editing — the power-user input surface | Maria (primary), Sam & Chris (review) |
 | What-If | Interactive sensitivity analysis playground — sliders adjust assumptions, 6 charts compare Base Case vs Your Scenario. Sandbox only — does not modify the actual plan. | All |
@@ -1448,7 +1447,7 @@ This consolidated spec requires the following story structure for Epic 5:
 | 2026-02-17 | Tech spec for Story 5.2 progressive disclosure gaps completed. | `tech-spec-5.2-progressive-disclosure-gaps.md` |
 | 2026-02-18 | **Consolidated into single document.** Mode switcher retired. Quick Entry retired. AI Planning Assistant repositioned from workspace mode to contextual feature (slide-in panel within My Plan). All content from both source documents preserved, with v3 architecture taking precedence on navigation, input surfaces, and component architecture. Part 9 (AI Planning Assistant) freshly written. | This document |
 | 2026-02-20 | **Part 15 expanded to 8 comprehensive user journey narratives** per SCP-2026-02-20 Decision D7. Replaces previous 3 brief journey traces. New journeys cover: Normal tier franchisee, Story tier with AI, returning franchisee session recovery, What-If Playground scenario review, Katalyst admin brand setup, admin invitation flow, franchisor pipeline visibility, and admin View As/impersonation. | SCP-2026-02-20, Party Mode review |
-| 2026-02-22 | **Epic 7H.1 Document Realignment.** Added two-surface design boundary (Part 7). Marked Pre-Epic-7 Per-Year Behavior as historical (Part 10). Added Facilities Guided Decomposition pattern (Part 8). Marked Story Rewrite Implications as historical. Updated sidebar wireframe to match Epic 7.2 implementation (MY PLANS section with context menus, What-If replaces Scenarios). HELP section expanded: Planning Assistant restored, Glossary retained, Book a Consultation added (human help escalation — Katalyst AM and/or brand contact). Updated Part 19 deferred items: per-year inputs and multi-plan comparison marked DONE. | SCP-2026-02-22, CP-7, PO review feedback |
+| 2026-02-22 | **Epic 7H.1 Document Realignment.** Added two-surface design boundary (Part 7). Marked Pre-Epic-7 Per-Year Behavior as historical (Part 10). Added Facilities Guided Decomposition pattern (Part 8). Marked Story Rewrite Implications as historical. Sidebar wireframe redesigned per PO review: removed MY PLANS list from sidebar (over-scoped in 7.2 — doesn't scale for 20+ location franchisees), replaced with Home link to Dashboard where plan CRUD lives. Active plan section loads when a plan is selected from Dashboard. What-If replaces Scenarios. HELP section: Planning Assistant, Glossary, Book a Consultation (human help — Katalyst AM and/or brand contact). Updated Part 19 deferred items: per-year inputs and multi-plan comparison marked DONE. | SCP-2026-02-22, CP-7, PO review feedback |
 
 ---
 
