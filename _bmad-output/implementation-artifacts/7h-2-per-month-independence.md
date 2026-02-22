@@ -1,6 +1,6 @@
 # Story 7H.2: Per-Month Independence (7.1b.1)
 
-Status: ready-for-dev
+Status: in-progress
 
 ## Story
 

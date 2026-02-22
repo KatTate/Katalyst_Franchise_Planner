@@ -18,7 +18,7 @@ import { RoicTab } from "./statements/roic-tab";
 import { ValuationTab } from "./statements/valuation-tab";
 import { AuditTab } from "./statements/audit-tab";
 import { parseFieldInput } from "@/lib/field-metadata";
-import { INPUT_FIELD_MAP } from "./statements/input-field-map";
+import { INPUT_FIELD_MAP, getMonthRangeForColKey } from "./statements/input-field-map";
 import { updateFieldValue } from "@shared/plan-initialization";
 import { computeScenarioOutputs, type ScenarioOutputs } from "@/lib/scenario-engine";
 import { useToast } from "@/hooks/use-toast";
@@ -153,13 +153,37 @@ export function FinancialStatements({ planId, defaultTab = "summary", plan, queu
   }, []);
 
   const handleCellEdit = useCallback(
-    (category: string, fieldName: string, rawInput: string, inputFormat: FormatType, yearIndex: number) => {
+    (category: string, fieldName: string, rawInput: string, inputFormat: FormatType, yearIndex: number, colKey?: string) => {
       if (!financialInputs || !queueSave) return;
       const parsedValue = parseFieldInput(rawInput, inputFormat);
       if (isNaN(parsedValue)) return;
       const categoryObj = resolveCategoryObj(financialInputs, category);
       if (!categoryObj) return;
       const fieldArr = categoryObj[fieldName];
+
+      const mapping = Object.values(INPUT_FIELD_MAP).find(m => m.fieldName === fieldName && m.category === category);
+      if (mapping?.perMonth && Array.isArray(fieldArr) && fieldArr.length === 60 && colKey) {
+        const { start, count } = getMonthRangeForColKey(colKey);
+        const now = new Date().toISOString();
+        let result = financialInputs;
+        for (let i = start; i < start + count && i < 60; i++) {
+          const existing = (resolveCategoryObj(result, category) as any)[fieldName][i] as FinancialFieldValue;
+          if (existing && parsedValue !== existing.currentValue) {
+            const updated = updateFieldValue(existing, parsedValue, now);
+            const catObj = resolveCategoryObj(result, category)!;
+            const newArr = [...(catObj[fieldName] as FinancialFieldValue[])];
+            newArr[i] = updated;
+            if (category === "facilitiesDecomposition") {
+              result = { ...result, operatingCosts: { ...result.operatingCosts, facilitiesDecomposition: { ...catObj, [fieldName]: newArr } } } as PlanFinancialInputs;
+            } else {
+              result = { ...result, [category]: { ...catObj, [fieldName]: newArr } };
+            }
+          }
+        }
+        queueSave({ financialInputs: result });
+        return;
+      }
+
       const field = Array.isArray(fieldArr) ? fieldArr[yearIndex] as FinancialFieldValue : fieldArr as FinancialFieldValue;
       if (!field || parsedValue === field.currentValue) return;
       const updatedField = updateFieldValue(field, parsedValue, new Date().toISOString());
@@ -177,7 +201,29 @@ export function FinancialStatements({ planId, defaultTab = "summary", plan, queu
       const categoryObj = resolveCategoryObj(financialInputs, mapping.category);
       if (!categoryObj) return;
       const fieldArr = categoryObj[mapping.fieldName];
-      if (!Array.isArray(fieldArr) || fieldArr.length < 5) return;
+      if (!Array.isArray(fieldArr)) return;
+
+      if (mapping.perMonth && fieldArr.length === 60) {
+        const now = new Date().toISOString();
+        const newArr = [...fieldArr] as FinancialFieldValue[];
+        for (let monthInYear = 0; monthInYear < 12; monthInYear++) {
+          const sourceValue = (fieldArr[monthInYear] as FinancialFieldValue).currentValue;
+          for (let year = 1; year < 5; year++) {
+            const targetIdx = year * 12 + monthInYear;
+            newArr[targetIdx] = updateFieldValue(fieldArr[targetIdx] as FinancialFieldValue, sourceValue, now);
+          }
+        }
+        let result = financialInputs;
+        if (mapping.category === "facilitiesDecomposition") {
+          result = { ...result, operatingCosts: { ...result.operatingCosts, facilitiesDecomposition: { ...categoryObj, [mapping.fieldName]: newArr } } } as PlanFinancialInputs;
+        } else {
+          result = { ...result, [mapping.category]: { ...categoryObj, [mapping.fieldName]: newArr } };
+        }
+        queueSave({ financialInputs: result });
+        return;
+      }
+
+      if (fieldArr.length < 5) return;
       const year1Value = (fieldArr[0] as FinancialFieldValue).currentValue;
       const now = new Date().toISOString();
       let result = financialInputs;

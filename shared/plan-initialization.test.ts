@@ -110,8 +110,10 @@ describe("buildPlanFinancialInputs", () => {
   });
 
   describe("revenue fields", () => {
-    it("converts monthlyAuv from dollars to cents", () => {
-      expect(result.revenue.monthlyAuv.currentValue).toBe(2686700);
+    it("creates 60-element monthlyAuv array from dollars to cents", () => {
+      expect(result.revenue.monthlyAuv).toHaveLength(60);
+      expect(result.revenue.monthlyAuv[0].currentValue).toBe(2686700);
+      expect(result.revenue.monthlyAuv[59].currentValue).toBe(2686700);
     });
 
     it("creates per-year growthRates array from year1/year2 growth rates", () => {
@@ -127,12 +129,17 @@ describe("buildPlanFinancialInputs", () => {
   });
 
   describe("operating costs fields", () => {
-    it("creates per-year arrays for percentage fields", () => {
-      expect(result.operatingCosts.cogsPct).toHaveLength(5);
+    it("creates per-month (60-element) arrays for qualifying fields and per-year (5-element) for others", () => {
+      expect(result.operatingCosts.cogsPct).toHaveLength(60);
       expect(result.operatingCosts.cogsPct[0].currentValue).toBe(0.30);
+      expect(result.operatingCosts.cogsPct[59].currentValue).toBe(0.30);
+      expect(result.operatingCosts.laborPct).toHaveLength(60);
       expect(result.operatingCosts.laborPct[0].currentValue).toBe(0.17);
+      expect(result.operatingCosts.marketingPct).toHaveLength(60);
       expect(result.operatingCosts.marketingPct[0].currentValue).toBe(0.05);
+      expect(result.operatingCosts.royaltyPct).toHaveLength(5);
       expect(result.operatingCosts.royaltyPct[0].currentValue).toBe(0.05);
+      expect(result.operatingCosts.adFundPct).toHaveLength(5);
       expect(result.operatingCosts.adFundPct[0].currentValue).toBe(0.02);
     });
 
@@ -245,9 +252,10 @@ describe("unwrapForEngine", () => {
   const engineInput = unwrapForEngine(planInputs, startupCosts);
 
   describe("revenue mapping", () => {
-    it("converts monthlyAuv to annualGrossSales (×12)", () => {
-      // monthlyAuv = 2,686,700 cents → annualGrossSales = 32,240,400 cents
-      expect(engineInput.financialInputs.revenue.annualGrossSales).toBe(2686700 * 12);
+    it("creates 60-element monthlyAuvByMonth array from monthlyAuv", () => {
+      expect(engineInput.financialInputs.revenue.monthlyAuvByMonth).toHaveLength(60);
+      expect(engineInput.financialInputs.revenue.monthlyAuvByMonth[0]).toBe(2686700);
+      expect(engineInput.financialInputs.revenue.monthlyAuvByMonth[59]).toBe(2686700);
     });
 
     it("sets monthsToReachAuv to system default", () => {
@@ -264,12 +272,16 @@ describe("unwrapForEngine", () => {
   });
 
   describe("operating costs mapping", () => {
-    it("expands percentage values into 5-year arrays", () => {
-      expect(engineInput.financialInputs.operatingCosts.cogsPct).toEqual([0.30, 0.30, 0.30, 0.30, 0.30]);
-      expect(engineInput.financialInputs.operatingCosts.laborPct).toEqual([0.17, 0.17, 0.17, 0.17, 0.17]);
+    it("expands qualifying fields into 60-element arrays and non-qualifying into 5-element arrays", () => {
+      expect(engineInput.financialInputs.operatingCosts.cogsPct).toHaveLength(60);
+      expect(engineInput.financialInputs.operatingCosts.cogsPct[0]).toBe(0.30);
+      expect(engineInput.financialInputs.operatingCosts.cogsPct[59]).toBe(0.30);
+      expect(engineInput.financialInputs.operatingCosts.laborPct).toHaveLength(60);
+      expect(engineInput.financialInputs.operatingCosts.laborPct[0]).toBe(0.17);
+      expect(engineInput.financialInputs.operatingCosts.marketingPct).toHaveLength(60);
+      expect(engineInput.financialInputs.operatingCosts.marketingPct[0]).toBe(0.05);
       expect(engineInput.financialInputs.operatingCosts.royaltyPct).toEqual([0.05, 0.05, 0.05, 0.05, 0.05]);
       expect(engineInput.financialInputs.operatingCosts.adFundPct).toEqual([0.02, 0.02, 0.02, 0.02, 0.02]);
-      expect(engineInput.financialInputs.operatingCosts.marketingPct).toEqual([0.05, 0.05, 0.05, 0.05, 0.05]);
     });
 
     it("passes facilitiesAnnual from per-year arrays with escalation", () => {
@@ -581,10 +593,7 @@ describe("Edge Cases", () => {
     const pi = buildPlanFinancialInputs(params);
     const sc = buildPlanStartupCosts(testStartupTemplate);
     const ei = unwrapForEngine(pi, sc);
-    expect(ei.financialInputs.revenue.annualGrossSales).toBe(0);
-    // otherOpexPct should default to 0 when other_monthly > 0 but revenue is 0
-    // In this case, other_monthly = $1000, annualGrossSales = 0
-    // so otherOpexPct uses DEFAULT_OTHER_OPEX_PCT
+    expect(ei.financialInputs.revenue.monthlyAuvByMonth[0]).toBe(0);
     const output = calculateProjections(ei);
     expect(output.monthlyProjections).toHaveLength(60);
   });
@@ -626,7 +635,7 @@ describe("Edge Cases", () => {
 describe("Round-trip: edit then reset", () => {
   it("field returns to original value after edit + reset", () => {
     const planInputs = buildPlanFinancialInputs(testBrandParams);
-    const original = planInputs.revenue.monthlyAuv;
+    const original = planInputs.revenue.monthlyAuv[0];
 
     const edited = updateFieldValue(original, 3000000, "2026-02-10T10:00:00Z");
     expect(edited.currentValue).toBe(3000000);
@@ -642,37 +651,37 @@ describe("Round-trip: edit then reset", () => {
     const planInputs = buildPlanFinancialInputs(testBrandParams);
     const startupCosts = buildPlanStartupCosts(testStartupTemplate);
 
-    // Original output
     const originalEngine = unwrapForEngine(planInputs, startupCosts);
     const originalOutput = calculateProjections(originalEngine);
 
-    // Edit a field
+    const editedAuv = planInputs.revenue.monthlyAuv.map(
+      (f: FinancialFieldValue) => updateFieldValue(f, 3000000, "2026-02-10T10:00:00Z")
+    );
     const edited = {
       ...planInputs,
       revenue: {
         ...planInputs.revenue,
-        monthlyAuv: updateFieldValue(planInputs.revenue.monthlyAuv, 3000000, "2026-02-10T10:00:00Z"),
+        monthlyAuv: editedAuv,
       },
     };
     const editedEngine = unwrapForEngine(edited, startupCosts);
     const editedOutput = calculateProjections(editedEngine);
 
-    // Revenue should differ
     expect(editedOutput.annualSummaries[0].revenue).not.toBe(originalOutput.annualSummaries[0].revenue);
 
-    // Reset the field
-    const resetField = resetFieldToDefault(edited.revenue.monthlyAuv, "2026-02-10T11:00:00Z");
+    const resetAuv = edited.revenue.monthlyAuv.map(
+      (f: FinancialFieldValue) => resetFieldToDefault(f, "2026-02-10T11:00:00Z")
+    );
     const resetInputs = {
       ...edited,
       revenue: {
         ...edited.revenue,
-        monthlyAuv: resetField,
+        monthlyAuv: resetAuv,
       },
     };
     const resetEngine = unwrapForEngine(resetInputs, startupCosts);
     const resetOutput = calculateProjections(resetEngine);
 
-    // Revenue should match original after reset
     expect(resetOutput.annualSummaries[0].revenue).toBe(originalOutput.annualSummaries[0].revenue);
   });
 });

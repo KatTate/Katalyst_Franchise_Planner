@@ -67,6 +67,19 @@ function makeFieldArray5(value: number, brandDefault?: number | null): Financial
   return Array.from({ length: 5 }, () => makeField(value, bd));
 }
 
+function makeFieldArray60(value: number, brandDefault?: number | null): FinancialFieldValue[] {
+  const bd = brandDefault !== undefined ? brandDefault : null;
+  return Array.from({ length: 60 }, () => makeField(value, bd));
+}
+
+function expandArray5To60(arr5: FinancialFieldValue[]): FinancialFieldValue[] {
+  return Array.from({ length: 60 }, (_, i) => ({ ...arr5[Math.floor(i / 12)] }));
+}
+
+function expandSingleTo60(field: FinancialFieldValue): FinancialFieldValue[] {
+  return Array.from({ length: 60 }, () => ({ ...field }));
+}
+
 function makeEscalatedArray5(baseValue: number, escalationRate: number): FinancialFieldValue[] {
   return Array.from({ length: 5 }, (_, i) =>
     makeField(Math.round(baseValue * Math.pow(1 + escalationRate, i)))
@@ -117,7 +130,7 @@ export function buildPlanFinancialInputs(
 
   return {
     revenue: {
-      monthlyAuv: makeField(monthlyAuvCents),
+      monthlyAuv: makeFieldArray60(monthlyAuvCents),
       growthRates: [
         makeField(year1Growth),
         makeField(year2Growth),
@@ -130,11 +143,11 @@ export function buildPlanFinancialInputs(
     operatingCosts: {
       royaltyPct: makeFieldArray5(safeValue(bp?.operating_costs?.royalty_pct)),
       adFundPct: makeFieldArray5(safeValue(bp?.operating_costs?.ad_fund_pct)),
-      cogsPct: makeFieldArray5(safeValue(bp?.operating_costs?.cogs_pct)),
-      laborPct: makeFieldArray5(safeValue(bp?.operating_costs?.labor_pct)),
+      cogsPct: makeFieldArray60(safeValue(bp?.operating_costs?.cogs_pct)),
+      laborPct: makeFieldArray60(safeValue(bp?.operating_costs?.labor_pct)),
       facilitiesAnnual,
       facilitiesDecomposition,
-      marketingPct: makeFieldArray5(safeValue(bp?.operating_costs?.marketing_pct)),
+      marketingPct: makeFieldArray60(safeValue(bp?.operating_costs?.marketing_pct)),
       managementSalariesAnnual: makeFieldArray5(0),
       payrollTaxPct: makeFieldArray5(DEFAULT_PAYROLL_TAX_PCT),
       otherOpexPct: makeFieldArray5(otherOpexPct),
@@ -340,9 +353,58 @@ function migrateFieldWithEscalation(old: FinancialFieldValue, annualFactor: numb
   }));
 }
 
+function isPerYearFormat(data: unknown): boolean {
+  if (!data || typeof data !== "object") return false;
+  const d = data as Record<string, unknown>;
+  const rev = d.revenue as Record<string, unknown> | undefined;
+  if (!rev) return false;
+  const monthlyAuv = rev.monthlyAuv;
+  if (!monthlyAuv) return false;
+  if (Array.isArray(monthlyAuv)) return false;
+  if (typeof monthlyAuv === "object" && "currentValue" in (monthlyAuv as object)) return true;
+  return false;
+}
+
+function migratePerYearToPerMonth(data: PlanFinancialInputs): PlanFinancialInputs {
+  const rev = data.revenue;
+  const oc = data.operatingCosts;
+
+  const monthlyAuv = Array.isArray(rev.monthlyAuv) && rev.monthlyAuv.length >= 60
+    ? rev.monthlyAuv
+    : Array.isArray(rev.monthlyAuv)
+      ? expandArray5To60(rev.monthlyAuv)
+      : expandSingleTo60(rev.monthlyAuv as unknown as FinancialFieldValue);
+
+  const cogsPct = Array.isArray(oc.cogsPct) && oc.cogsPct.length >= 60
+    ? oc.cogsPct
+    : expandArray5To60(oc.cogsPct);
+
+  const laborPct = Array.isArray(oc.laborPct) && oc.laborPct.length >= 60
+    ? oc.laborPct
+    : expandArray5To60(oc.laborPct);
+
+  const marketingPct = Array.isArray(oc.marketingPct) && oc.marketingPct.length >= 60
+    ? oc.marketingPct
+    : expandArray5To60(oc.marketingPct);
+
+  return {
+    ...data,
+    revenue: { ...rev, monthlyAuv },
+    operatingCosts: { ...oc, cogsPct, laborPct, marketingPct },
+  };
+}
+
 export function migratePlanFinancialInputs(data: unknown): PlanFinancialInputs {
   if (!isOldFormat(data)) {
-    return data as PlanFinancialInputs;
+    const pfi = data as PlanFinancialInputs;
+    if (isPerYearFormat(data)) {
+      return migratePerYearToPerMonth(pfi);
+    }
+    const rev = pfi.revenue;
+    if (Array.isArray(rev?.monthlyAuv) && rev.monthlyAuv.length === 5) {
+      return migratePerYearToPerMonth(pfi);
+    }
+    return pfi;
   }
 
   const old = data;
@@ -379,7 +441,7 @@ export function migratePlanFinancialInputs(data: unknown): PlanFinancialInputs {
 
   return {
     revenue: {
-      monthlyAuv: { ...old.revenue.monthlyAuv },
+      monthlyAuv: expandSingleTo60(old.revenue.monthlyAuv),
       growthRates: [
         { ...old.revenue.year1GrowthRate },
         { ...old.revenue.year2GrowthRate },
@@ -392,8 +454,8 @@ export function migratePlanFinancialInputs(data: unknown): PlanFinancialInputs {
     operatingCosts: {
       royaltyPct: migrateField(old.operatingCosts.royaltyPct),
       adFundPct: migrateField(old.operatingCosts.adFundPct),
-      cogsPct: migrateField(old.operatingCosts.cogsPct),
-      laborPct: migrateField(old.operatingCosts.laborPct),
+      cogsPct: expandArray5To60(migrateField(old.operatingCosts.cogsPct)),
+      laborPct: expandArray5To60(migrateField(old.operatingCosts.laborPct)),
       facilitiesAnnual: facilitiesAnnualValues.map((val) => makeField(val)),
       facilitiesDecomposition: {
         rent: rentDecomp,
@@ -402,7 +464,7 @@ export function migratePlanFinancialInputs(data: unknown): PlanFinancialInputs {
         vehicleFleet: makeFieldArray5(0),
         insurance: insuranceDecomp,
       },
-      marketingPct: migrateField(old.operatingCosts.marketingPct),
+      marketingPct: expandArray5To60(migrateField(old.operatingCosts.marketingPct)),
       managementSalariesAnnual: makeFieldArray5(0),
       payrollTaxPct: makeFieldArray5(DEFAULT_PAYROLL_TAX_PCT),
       otherOpexPct: Array.from({ length: 5 }, () => ({ ...otherOpexField })),
@@ -435,9 +497,11 @@ export function unwrapForEngine(
   const v = (field: FinancialFieldValue) => field.currentValue;
   const va = (arr: FinancialFieldValue[]): [number, number, number, number, number] =>
     [arr[0], arr[1], arr[2], arr[3], arr[4]].map((f) => f.currentValue) as [number, number, number, number, number];
+  const va60 = (arr: FinancialFieldValue[]): number[] =>
+    arr.map((f) => f.currentValue);
 
-  const monthlyAuv = v(pi.revenue.monthlyAuv);
-  const annualGrossSales = monthlyAuv * 12;
+  const monthlyAuvArr = pi.revenue.monthlyAuv;
+  const monthlyAuvByMonth = va60(monthlyAuvArr);
 
   const totalInvestment = startupCosts.reduce((sum, c) => sum + c.amount, 0);
   const loanAmount = v(pi.financing.loanAmount);
@@ -454,17 +518,17 @@ export function unwrapForEngine(
 
   const financialInputs: FinancialInputs = {
     revenue: {
-      annualGrossSales,
+      monthlyAuvByMonth,
       monthsToReachAuv: DEFAULT_MONTHS_TO_REACH_AUV,
       startingMonthAuvPct: v(pi.revenue.startingMonthAuvPct),
       growthRates: va(pi.revenue.growthRates),
     },
     operatingCosts: {
-      cogsPct: va(pi.operatingCosts.cogsPct),
-      laborPct: va(pi.operatingCosts.laborPct),
+      cogsPct: va60(pi.operatingCosts.cogsPct),
+      laborPct: va60(pi.operatingCosts.laborPct),
       royaltyPct: va(pi.operatingCosts.royaltyPct),
       adFundPct: va(pi.operatingCosts.adFundPct),
-      marketingPct: va(pi.operatingCosts.marketingPct),
+      marketingPct: va60(pi.operatingCosts.marketingPct),
       otherOpexPct: va(pi.operatingCosts.otherOpexPct),
       payrollTaxPct: va(pi.operatingCosts.payrollTaxPct),
       facilitiesAnnual: va(pi.operatingCosts.facilitiesAnnual),

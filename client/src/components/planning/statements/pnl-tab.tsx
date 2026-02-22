@@ -17,7 +17,7 @@ import { formatFinancialValue } from "@/components/shared/financial-value";
 import { useColumnManager, ColumnToolbar, GroupedTableHead } from "./column-manager";
 import { ComparisonTableHead, buildComparisonColumns, type ComparisonColumnDef } from "./comparison-table-head";
 import { InlineEditableCell } from "./inline-editable-cell";
-import { INPUT_FIELD_MAP, isEditableRow, getDrillLevelFromColKey, scaleForStorage } from "./input-field-map";
+import { INPUT_FIELD_MAP, isEditableRow, getDrillLevelFromColKey, scaleForStorage, getAbsoluteMonthIndex, getMonthRangeForColKey } from "./input-field-map";
 import { SCENARIO_COLORS, type ScenarioId, type ScenarioOutputs } from "@/lib/scenario-engine";
 import type { EngineOutput, MonthlyProjection, AnnualSummary, PLAnalysisOutput, PlanFinancialInputs, FinancialFieldValue } from "@shared/financial-engine";
 import type { ColumnDef } from "./column-manager";
@@ -28,7 +28,7 @@ import type { FormatType } from "@/lib/field-metadata";
 interface PnlTabProps {
   output: EngineOutput;
   financialInputs?: PlanFinancialInputs | null;
-  onCellEdit?: (category: string, fieldName: string, rawInput: string, inputFormat: FormatType, yearIndex: number) => void;
+  onCellEdit?: (category: string, fieldName: string, rawInput: string, inputFormat: FormatType, yearIndex: number, colKey?: string) => void;
   onCopyYear1ToAll?: (rowKey: string) => void;
   isSaving?: boolean;
   scenarioOutputs?: ScenarioOutputs | null;
@@ -484,7 +484,7 @@ export function PnlTab({ output, financialInputs, onCellEdit, onCopyYear1ToAll, 
     const yearIndex = yearMatch ? parseInt(yearMatch[1]) - 1 : 0;
 
     let finalInput = rawInput;
-    if (mapping.storedGranularity) {
+    if (mapping.storedGranularity && !mapping.perMonth) {
       const drillLevel = getDrillLevelFromColKey(colKey);
       const parsed = parseFieldInput(rawInput, mapping.inputFormat);
       if (!isNaN(parsed)) {
@@ -495,7 +495,7 @@ export function PnlTab({ output, financialInputs, onCellEdit, onCopyYear1ToAll, 
       }
     }
 
-    onCellEdit(mapping.category, mapping.fieldName, finalInput, mapping.inputFormat, yearIndex);
+    onCellEdit(mapping.category, mapping.fieldName, finalInput, mapping.inputFormat, yearIndex, mapping.perMonth ? colKey : undefined);
     setEditingCell(null);
   }, [onCellEdit, financialInputs, editingCell]);
 
@@ -516,7 +516,7 @@ export function PnlTab({ output, financialInputs, onCellEdit, onCopyYear1ToAll, 
     }
   }, [visibleCols, expandedSections]);
 
-  const getRawValue = useCallback((rowKey: string, yearIndex: number = 0): number => {
+  const getRawValue = useCallback((rowKey: string, yearIndex: number = 0, colKey?: string): number => {
     if (!financialInputs) return 0;
     const mapping = INPUT_FIELD_MAP[rowKey];
     if (!mapping) return 0;
@@ -525,6 +525,18 @@ export function PnlTab({ output, financialInputs, onCellEdit, onCopyYear1ToAll, 
       : (financialInputs as any)[mapping.category];
     if (!categoryObj) return 0;
     const fieldArr = categoryObj[mapping.fieldName];
+    if (mapping.perMonth && Array.isArray(fieldArr) && fieldArr.length === 60 && colKey) {
+      const { start, count } = getMonthRangeForColKey(colKey);
+      if (count === 1) {
+        const field = fieldArr[start] as FinancialFieldValue;
+        return field?.currentValue ?? 0;
+      }
+      let sum = 0;
+      for (let i = start; i < start + count && i < 60; i++) {
+        sum += (fieldArr[i] as FinancialFieldValue)?.currentValue ?? 0;
+      }
+      return sum / count;
+    }
     const field = Array.isArray(fieldArr) ? fieldArr[yearIndex] as FinancialFieldValue : fieldArr as FinancialFieldValue;
     return field?.currentValue ?? 0;
   }, [financialInputs]);
@@ -645,7 +657,7 @@ interface PnlSectionProps {
   onCancelEdit: () => void;
   onCommitEdit: (rowKey: string, rawInput: string) => void;
   onTabNav: (rowKey: string, direction: "next" | "prev") => void;
-  getRawValue: (rowKey: string, yearIndex: number) => number;
+  getRawValue: (rowKey: string, yearIndex: number, colKey?: string) => number;
   showInterpretation?: boolean;
   financialInputs?: PlanFinancialInputs | null;
   brandName?: string;
@@ -723,7 +735,7 @@ interface PnlRowProps {
   onCancelEdit: () => void;
   onCommitEdit: (rowKey: string, rawInput: string) => void;
   onTabNav: (rowKey: string, direction: "next" | "prev") => void;
-  getRawValue: (rowKey: string, yearIndex: number) => number;
+  getRawValue: (rowKey: string, yearIndex: number, colKey?: string) => number;
   showInterpretation?: boolean;
   financialInputs?: PlanFinancialInputs | null;
   brandName?: string;
@@ -818,11 +830,11 @@ function PnlRow({
             let cellRawValue: number;
             let displayFormatted: string;
 
-            if (mapping.storedGranularity) {
+            if (mapping.storedGranularity && !mapping.perMonth) {
               cellRawValue = row.isExpense ? Math.abs(value) : value;
               displayFormatted = formatFieldValue(cellRawValue, mapping.inputFormat);
             } else {
-              cellRawValue = getRawValue(row.key, (col.year ?? 1) - 1);
+              cellRawValue = getRawValue(row.key, (col.year ?? 1) - 1, col.key);
               displayFormatted = formatFieldValue(cellRawValue, mapping.inputFormat);
             }
 
@@ -982,9 +994,9 @@ interface ComparisonPnlSectionProps {
   onCancelEdit: () => void;
   onCommitEdit: (rowKey: string, rawInput: string) => void;
   onTabNav: (rowKey: string, direction: "next" | "prev") => void;
-  getRawValue: (rowKey: string, yearIndex: number) => number;
+  getRawValue: (rowKey: string, yearIndex: number, colKey?: string) => number;
   financialInputs?: PlanFinancialInputs | null;
-  onCellEdit?: (category: string, fieldName: string, rawInput: string, inputFormat: FormatType, yearIndex: number) => void;
+  onCellEdit?: (category: string, fieldName: string, rawInput: string, inputFormat: FormatType, yearIndex: number, colKey?: string) => void;
 }
 
 function ComparisonPnlSection({
@@ -1055,9 +1067,9 @@ interface ComparisonPnlRowProps {
   onCancelEdit: () => void;
   onCommitEdit: (rowKey: string, rawInput: string) => void;
   onTabNav: (rowKey: string, direction: "next" | "prev") => void;
-  getRawValue: (rowKey: string, yearIndex: number) => number;
+  getRawValue: (rowKey: string, yearIndex: number, colKey?: string) => number;
   financialInputs?: PlanFinancialInputs | null;
-  onCellEdit?: (category: string, fieldName: string, rawInput: string, inputFormat: FormatType, yearIndex: number) => void;
+  onCellEdit?: (category: string, fieldName: string, rawInput: string, inputFormat: FormatType, yearIndex: number, colKey?: string) => void;
 }
 
 function ComparisonPnlRow({
@@ -1109,9 +1121,9 @@ function ComparisonPnlRow({
         const isYearBoundary = colIdx > 0 && col.year !== comparisonCols[colIdx - 1].year;
 
         if (isBase && editable && editingCell === `${row.key}:${col.key}`) {
-          const cellRawValue = mapping!.storedGranularity
+          const cellRawValue = (mapping!.storedGranularity && !mapping!.perMonth)
             ? (row.isExpense ? Math.abs(value) : value)
-            : getRawValue(row.key, (col.year ?? 1) - 1);
+            : getRawValue(row.key, (col.year ?? 1) - 1, col.key);
           return (
             <InlineEditableCell
               key={col.key}

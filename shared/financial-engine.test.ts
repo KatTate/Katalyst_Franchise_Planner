@@ -14,16 +14,23 @@ import {
 const postNetInputs: FinancialInputs = {
   revenue: {
     annualGrossSales: 32240100, // $322,401
+    monthlyAuvByMonth: Array(60).fill(2686675),
     monthsToReachAuv: 14,
     startingMonthAuvPct: 0.08,
     growthRates: [0.13, 0.13, 0.10, 0.08, 0.08],
   },
   operatingCosts: {
-    cogsPct: [0.30, 0.30, 0.30, 0.30, 0.30],
-    laborPct: [0.17, 0.17, 0.17, 0.17, 0.17],
+    cogsPct: Array(60).fill(0.30),
+    laborPct: Array(60).fill(0.17),
     royaltyPct: [0.05, 0.05, 0.05, 0.05, 0.05],
     adFundPct: [0.02, 0.02, 0.02, 0.02, 0.02],
-    marketingPct: [0.05, 0.03, 0.02, 0.02, 0.02],
+    marketingPct: [
+      ...Array(12).fill(0.05),
+      ...Array(12).fill(0.03),
+      ...Array(12).fill(0.02),
+      ...Array(12).fill(0.02),
+      ...Array(12).fill(0.02),
+    ],
     otherOpexPct: [0.03, 0.03, 0.03, 0.03, 0.03],
     payrollTaxPct: [0.20, 0.20, 0.20, 0.20, 0.20],
     facilitiesAnnual: [1000000, 1030000, 1060900, 1092700, 1125500], // $10k, escalating 3%/yr
@@ -336,6 +343,7 @@ describe("Financial Engine", () => {
           ...postNetInputs,
           revenue: {
             annualGrossSales: 0,
+            monthlyAuvByMonth: Array(60).fill(0),
             monthsToReachAuv: 14,
             startingMonthAuvPct: 0,
             growthRates: [0, 0, 0, 0, 0],
@@ -466,16 +474,17 @@ describe("Financial Engine", () => {
     const altBrandInputs: FinancialInputs = {
       revenue: {
         annualGrossSales: 50000000,
+        monthlyAuvByMonth: Array(60).fill(4166667),
         monthsToReachAuv: 6,
         startingMonthAuvPct: 0.50,
         growthRates: [0.05, 0.04, 0.03, 0.02, 0.02],
       },
       operatingCosts: {
-        cogsPct: [0.25, 0.25, 0.25, 0.25, 0.25],
-        laborPct: [0.20, 0.20, 0.20, 0.20, 0.20],
+        cogsPct: Array(60).fill(0.25),
+        laborPct: Array(60).fill(0.20),
         royaltyPct: [0.06, 0.06, 0.06, 0.06, 0.06],
         adFundPct: [0.01, 0.01, 0.01, 0.01, 0.01],
-        marketingPct: [0.03, 0.03, 0.03, 0.03, 0.03],
+        marketingPct: Array(60).fill(0.03),
         otherOpexPct: [0.02, 0.02, 0.02, 0.02, 0.02],
         payrollTaxPct: [0.15, 0.15, 0.15, 0.15, 0.15],
         facilitiesAnnual: [2400000, 2472000, 2546160, 2622545, 2701221],
@@ -999,11 +1008,11 @@ describe("Financial Engine", () => {
         expect(be.length).toBeGreaterThanOrEqual(1);
       }
       const altBrandInputs: FinancialInputs = {
-        revenue: { annualGrossSales: 50000000, monthsToReachAuv: 6, startingMonthAuvPct: 0.50, growthRates: [0.05, 0.04, 0.03, 0.02, 0.02] },
+        revenue: { annualGrossSales: 50000000, monthlyAuvByMonth: Array(60).fill(4166667), monthsToReachAuv: 6, startingMonthAuvPct: 0.50, growthRates: [0.05, 0.04, 0.03, 0.02, 0.02] },
         operatingCosts: {
-          cogsPct: [0.25, 0.25, 0.25, 0.25, 0.25], laborPct: [0.20, 0.20, 0.20, 0.20, 0.20],
+          cogsPct: Array(60).fill(0.25), laborPct: Array(60).fill(0.20),
           royaltyPct: [0.06, 0.06, 0.06, 0.06, 0.06], adFundPct: [0.01, 0.01, 0.01, 0.01, 0.01],
-          marketingPct: [0.03, 0.03, 0.03, 0.03, 0.03], otherOpexPct: [0.02, 0.02, 0.02, 0.02, 0.02],
+          marketingPct: Array(60).fill(0.03), otherOpexPct: [0.02, 0.02, 0.02, 0.02, 0.02],
           payrollTaxPct: [0.15, 0.15, 0.15, 0.15, 0.15],
           facilitiesAnnual: [2400000, 2472000, 2546160, 2622545, 2701221],
           managementSalariesAnnual: [3600000, 3708000, 3819240, 3933817, 4051832],
@@ -1208,16 +1217,17 @@ describe("Financial Engine", () => {
       const altBrandInputs: FinancialInputs = {
         revenue: {
           annualGrossSales: 50000000,
+          monthlyAuvByMonth: Array(60).fill(4166667),
           monthsToReachAuv: 6,
           startingMonthAuvPct: 0.50,
           growthRates: [0.05, 0.04, 0.03, 0.02, 0.02],
         },
         operatingCosts: {
-          cogsPct: [0.25, 0.25, 0.25, 0.25, 0.25],
-          laborPct: [0.20, 0.20, 0.20, 0.20, 0.20],
+          cogsPct: Array(60).fill(0.25),
+          laborPct: Array(60).fill(0.20),
           royaltyPct: [0.06, 0.06, 0.06, 0.06, 0.06],
           adFundPct: [0.01, 0.01, 0.01, 0.01, 0.01],
-          marketingPct: [0.03, 0.03, 0.03, 0.03, 0.03],
+          marketingPct: Array(60).fill(0.03),
           otherOpexPct: [0.02, 0.02, 0.02, 0.02, 0.02],
           payrollTaxPct: [0.15, 0.15, 0.15, 0.15, 0.15],
           facilitiesAnnual: [2400000, 2472000, 2546160, 2622545, 2701221],
@@ -1249,7 +1259,7 @@ describe("Financial Engine", () => {
       const zeroInput: EngineInput = {
         financialInputs: {
           ...postNetInputs,
-          revenue: { annualGrossSales: 0, monthsToReachAuv: 14, startingMonthAuvPct: 0, growthRates: [0, 0, 0, 0, 0] },
+          revenue: { annualGrossSales: 0, monthlyAuvByMonth: Array(60).fill(0), monthsToReachAuv: 14, startingMonthAuvPct: 0, growthRates: [0, 0, 0, 0, 0] },
         },
         startupCosts: postNetStartupCosts,
       };
@@ -1325,11 +1335,11 @@ describe("Financial Engine", () => {
 
     it("CF disaggregation works with alternate brand", () => {
       const altBrandInputs: FinancialInputs = {
-        revenue: { annualGrossSales: 50000000, monthsToReachAuv: 6, startingMonthAuvPct: 0.50, growthRates: [0.05, 0.04, 0.03, 0.02, 0.02] },
+        revenue: { annualGrossSales: 50000000, monthlyAuvByMonth: Array(60).fill(4166667), monthsToReachAuv: 6, startingMonthAuvPct: 0.50, growthRates: [0.05, 0.04, 0.03, 0.02, 0.02] },
         operatingCosts: {
-          cogsPct: [0.25, 0.25, 0.25, 0.25, 0.25], laborPct: [0.20, 0.20, 0.20, 0.20, 0.20],
+          cogsPct: Array(60).fill(0.25), laborPct: Array(60).fill(0.20),
           royaltyPct: [0.06, 0.06, 0.06, 0.06, 0.06], adFundPct: [0.01, 0.01, 0.01, 0.01, 0.01],
-          marketingPct: [0.03, 0.03, 0.03, 0.03, 0.03], otherOpexPct: [0.02, 0.02, 0.02, 0.02, 0.02],
+          marketingPct: Array(60).fill(0.03), otherOpexPct: [0.02, 0.02, 0.02, 0.02, 0.02],
           payrollTaxPct: [0.15, 0.15, 0.15, 0.15, 0.15],
           facilitiesAnnual: [2400000, 2472000, 2546160, 2622545, 2701221],
           managementSalariesAnnual: [3600000, 3708000, 3819240, 3933817, 4051832],
@@ -1401,7 +1411,7 @@ describe("Financial Engine", () => {
       const zeroInput: EngineInput = {
         financialInputs: {
           ...postNetInputs,
-          revenue: { annualGrossSales: 0, monthsToReachAuv: 14, startingMonthAuvPct: 0, growthRates: [0, 0, 0, 0, 0] },
+          revenue: { annualGrossSales: 0, monthlyAuvByMonth: Array(60).fill(0), monthsToReachAuv: 14, startingMonthAuvPct: 0, growthRates: [0, 0, 0, 0, 0] },
         },
         startupCosts: postNetStartupCosts,
       };
@@ -1611,11 +1621,11 @@ describe("Financial Engine", () => {
 
     it("alternate brand passes all identity checks", () => {
       const altBrandInputs: FinancialInputs = {
-        revenue: { annualGrossSales: 50000000, monthsToReachAuv: 6, startingMonthAuvPct: 0.50, growthRates: [0.05, 0.04, 0.03, 0.02, 0.02] },
+        revenue: { annualGrossSales: 50000000, monthlyAuvByMonth: Array(60).fill(4166667), monthsToReachAuv: 6, startingMonthAuvPct: 0.50, growthRates: [0.05, 0.04, 0.03, 0.02, 0.02] },
         operatingCosts: {
-          cogsPct: [0.25, 0.25, 0.25, 0.25, 0.25], laborPct: [0.20, 0.20, 0.20, 0.20, 0.20],
+          cogsPct: Array(60).fill(0.25), laborPct: Array(60).fill(0.20),
           royaltyPct: [0.06, 0.06, 0.06, 0.06, 0.06], adFundPct: [0.01, 0.01, 0.01, 0.01, 0.01],
-          marketingPct: [0.03, 0.03, 0.03, 0.03, 0.03], otherOpexPct: [0.02, 0.02, 0.02, 0.02, 0.02],
+          marketingPct: Array(60).fill(0.03), otherOpexPct: [0.02, 0.02, 0.02, 0.02, 0.02],
           payrollTaxPct: [0.15, 0.15, 0.15, 0.15, 0.15],
           facilitiesAnnual: [2400000, 2472000, 2546160, 2622545, 2701221],
           managementSalariesAnnual: [3600000, 3708000, 3819240, 3933817, 4051832],

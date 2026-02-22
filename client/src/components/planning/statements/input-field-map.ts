@@ -6,6 +6,7 @@ export interface InputFieldMapping {
   fieldName: string;
   inputFormat: FormatType;
   storedGranularity?: "monthly" | "annual";
+  perMonth?: boolean;
   min?: number;
   max?: number;
   singleValue?: boolean;
@@ -17,6 +18,7 @@ export const INPUT_FIELD_MAP: Record<string, InputFieldMapping> = {
     fieldName: "monthlyAuv",
     inputFormat: "currency",
     storedGranularity: "monthly",
+    perMonth: true,
   },
   "growth-rate": {
     category: "revenue",
@@ -27,6 +29,7 @@ export const INPUT_FIELD_MAP: Record<string, InputFieldMapping> = {
     category: "operatingCosts",
     fieldName: "cogsPct",
     inputFormat: "percentage",
+    perMonth: true,
   },
   "royalty-pct": {
     category: "operatingCosts",
@@ -42,6 +45,7 @@ export const INPUT_FIELD_MAP: Record<string, InputFieldMapping> = {
     category: "operatingCosts",
     fieldName: "laborPct",
     inputFormat: "percentage",
+    perMonth: true,
   },
   "facilities": {
     category: "operatingCosts",
@@ -64,6 +68,7 @@ export const INPUT_FIELD_MAP: Record<string, InputFieldMapping> = {
     category: "operatingCosts",
     fieldName: "marketingPct",
     inputFormat: "percentage",
+    perMonth: true,
   },
   "other-opex": {
     category: "operatingCosts",
@@ -145,6 +150,48 @@ export function getDrillLevelFromColKey(colKey: string): DrillLevel {
   if (/^y\d+m\d+$/.test(colKey)) return "monthly";
   if (/^y\d+q\d+$/.test(colKey)) return "quarterly";
   return "annual";
+}
+
+export function getAbsoluteMonthIndex(colKey: string): number {
+  const monthMatch = colKey.match(/^y(\d+)m(\d+)$/);
+  if (monthMatch) {
+    const year = parseInt(monthMatch[1]);
+    const month = parseInt(monthMatch[2]);
+    return (year - 1) * 12 + month - 1;
+  }
+  const quarterMatch = colKey.match(/^y(\d+)q(\d+)$/);
+  if (quarterMatch) {
+    const year = parseInt(quarterMatch[1]);
+    const quarter = parseInt(quarterMatch[2]);
+    return (year - 1) * 12 + (quarter - 1) * 3;
+  }
+  const yearMatch = colKey.match(/^y(\d+)$/);
+  if (yearMatch) {
+    const year = parseInt(yearMatch[1]);
+    return (year - 1) * 12;
+  }
+  return 0;
+}
+
+export function getMonthRangeForColKey(colKey: string): { start: number; count: number } {
+  const monthMatch = colKey.match(/^y(\d+)m(\d+)$/);
+  if (monthMatch) {
+    const year = parseInt(monthMatch[1]);
+    const month = parseInt(monthMatch[2]);
+    return { start: (year - 1) * 12 + month - 1, count: 1 };
+  }
+  const quarterMatch = colKey.match(/^y(\d+)q(\d+)$/);
+  if (quarterMatch) {
+    const year = parseInt(quarterMatch[1]);
+    const quarter = parseInt(quarterMatch[2]);
+    return { start: (year - 1) * 12 + (quarter - 1) * 3, count: 3 };
+  }
+  const yearMatch = colKey.match(/^y(\d+)$/);
+  if (yearMatch) {
+    const year = parseInt(yearMatch[1]);
+    return { start: (year - 1) * 12, count: 12 };
+  }
+  return { start: 0, count: 12 };
 }
 
 export function scaleForStorage(

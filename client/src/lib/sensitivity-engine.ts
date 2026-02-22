@@ -41,13 +41,13 @@ function clamp01(v: number): number {
 
 export function cloneFinancialInputs(fi: FinancialInputs): FinancialInputs {
   return {
-    revenue: { ...fi.revenue, growthRates: [...fi.revenue.growthRates] as [number, number, number, number, number] },
+    revenue: { ...fi.revenue, monthlyAuvByMonth: [...fi.revenue.monthlyAuvByMonth], growthRates: [...fi.revenue.growthRates] as [number, number, number, number, number] },
     operatingCosts: {
-      cogsPct: [...fi.operatingCosts.cogsPct] as [number, number, number, number, number],
-      laborPct: [...fi.operatingCosts.laborPct] as [number, number, number, number, number],
+      cogsPct: [...fi.operatingCosts.cogsPct],
+      laborPct: [...fi.operatingCosts.laborPct],
       royaltyPct: [...fi.operatingCosts.royaltyPct] as [number, number, number, number, number],
       adFundPct: [...fi.operatingCosts.adFundPct] as [number, number, number, number, number],
-      marketingPct: [...fi.operatingCosts.marketingPct] as [number, number, number, number, number],
+      marketingPct: [...fi.operatingCosts.marketingPct],
       otherOpexPct: [...fi.operatingCosts.otherOpexPct] as [number, number, number, number, number],
       payrollTaxPct: [...fi.operatingCosts.payrollTaxPct] as [number, number, number, number, number],
       facilitiesAnnual: [...fi.operatingCosts.facilitiesAnnual] as [number, number, number, number, number],
@@ -70,17 +70,19 @@ export function applySensitivityFactors(
   fi: FinancialInputs,
   sliders: SliderValues,
 ): FinancialInputs {
-  fi.revenue.annualGrossSales = Math.round(fi.revenue.annualGrossSales * (1 + sliders.revenue / 100));
+  for (let i = 0; i < fi.revenue.monthlyAuvByMonth.length; i++) {
+    fi.revenue.monthlyAuvByMonth[i] = Math.round(fi.revenue.monthlyAuvByMonth[i] * (1 + sliders.revenue / 100));
+  }
 
-  for (let i = 0; i < 5; i++) {
+  for (let i = 0; i < fi.operatingCosts.cogsPct.length; i++) {
     fi.operatingCosts.cogsPct[i] = clamp01(fi.operatingCosts.cogsPct[i] + sliders.cogs / 100);
   }
 
-  for (let i = 0; i < 5; i++) {
+  for (let i = 0; i < fi.operatingCosts.laborPct.length; i++) {
     fi.operatingCosts.laborPct[i] = clamp01(fi.operatingCosts.laborPct[i] * (1 + sliders.labor / 100));
   }
 
-  for (let i = 0; i < 5; i++) {
+  for (let i = 0; i < fi.operatingCosts.marketingPct.length; i++) {
     fi.operatingCosts.marketingPct[i] = clamp01(fi.operatingCosts.marketingPct[i] * (1 + sliders.marketing / 100));
   }
 

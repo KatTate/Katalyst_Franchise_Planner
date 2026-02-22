@@ -24,13 +24,13 @@ function clamp01(v: number): number {
 
 function cloneFinancialInputs(fi: FinancialInputs): FinancialInputs {
   return {
-    revenue: { ...fi.revenue, growthRates: [...fi.revenue.growthRates] as [number, number, number, number, number] },
+    revenue: { ...fi.revenue, monthlyAuvByMonth: [...fi.revenue.monthlyAuvByMonth], growthRates: [...fi.revenue.growthRates] as [number, number, number, number, number] },
     operatingCosts: {
-      cogsPct: [...fi.operatingCosts.cogsPct] as [number, number, number, number, number],
-      laborPct: [...fi.operatingCosts.laborPct] as [number, number, number, number, number],
+      cogsPct: [...fi.operatingCosts.cogsPct],
+      laborPct: [...fi.operatingCosts.laborPct],
       royaltyPct: [...fi.operatingCosts.royaltyPct] as [number, number, number, number, number],
       adFundPct: [...fi.operatingCosts.adFundPct] as [number, number, number, number, number],
-      marketingPct: [...fi.operatingCosts.marketingPct] as [number, number, number, number, number],
+      marketingPct: [...fi.operatingCosts.marketingPct],
       otherOpexPct: [...fi.operatingCosts.otherOpexPct] as [number, number, number, number, number],
       payrollTaxPct: [...fi.operatingCosts.payrollTaxPct] as [number, number, number, number, number],
       facilitiesAnnual: [...fi.operatingCosts.facilitiesAnnual] as [number, number, number, number, number],
@@ -55,18 +55,24 @@ function applyScenarioFactors(
   cogsPP: number,
   opexFactor: number,
 ): FinancialInputs {
-  fi.revenue.annualGrossSales = Math.round(fi.revenue.annualGrossSales * (1 + revenueFactor));
+  for (let i = 0; i < fi.revenue.monthlyAuvByMonth.length; i++) {
+    fi.revenue.monthlyAuvByMonth[i] = Math.round(fi.revenue.monthlyAuvByMonth[i] * (1 + revenueFactor));
+  }
 
-  for (let i = 0; i < 5; i++) {
+  for (let i = 0; i < fi.operatingCosts.cogsPct.length; i++) {
     fi.operatingCosts.cogsPct[i] = clamp01(fi.operatingCosts.cogsPct[i] + cogsPP);
   }
 
   const opexMult = 1 + opexFactor;
-  for (let i = 0; i < 5; i++) {
+  for (let i = 0; i < fi.operatingCosts.laborPct.length; i++) {
     fi.operatingCosts.laborPct[i] = clamp01(fi.operatingCosts.laborPct[i] * opexMult);
+  }
+  for (let i = 0; i < 5; i++) {
     fi.operatingCosts.facilitiesAnnual[i] = Math.round(fi.operatingCosts.facilitiesAnnual[i] * opexMult);
-    fi.operatingCosts.marketingPct[i] = clamp01(fi.operatingCosts.marketingPct[i] * opexMult);
     fi.operatingCosts.otherOpexPct[i] = clamp01(fi.operatingCosts.otherOpexPct[i] * opexMult);
+  }
+  for (let i = 0; i < fi.operatingCosts.marketingPct.length; i++) {
+    fi.operatingCosts.marketingPct[i] = clamp01(fi.operatingCosts.marketingPct[i] * opexMult);
   }
 
   return fi;
