@@ -1,6 +1,6 @@
 # Story 10.2a: Sensitivity Chart Dashboard
 
-Status: review
+Status: done
 
 ## Story
 
@@ -222,3 +222,17 @@ Each chart card uses a plain-language primary title (in `CardTitle`) with the te
   - ACs covered by code inspection: AC3-AC6 (profitability, cash flow details), AC11-AC12 (balance sheet, debt), AC14 (memoization), AC16 (colors)
 - **LSP Status:** 0 errors, 0 warnings
 - **Visual Verification:** yes (E2E Playwright test with screenshots confirmed all charts visible)
+- **Code Review (Adversarial):**
+  - Reviewer: Claude 4.6 Opus (fresh context)
+  - Date: 2026-02-22
+  - Findings: 3 HIGH, 2 MEDIUM, 3 LOW — all HIGH and MEDIUM fixed
+  - H1 FIXED: Grid breakpoint `lg:grid-cols-2` → `md:grid-cols-2` (tablet 2-column per Dev Notes)
+  - H2 FIXED: Custom tooltip for Chart 1 showing year, scenario labels, all 5 P&L values formatted as dollars
+  - H3 FIXED: Data validation guard now checks both `base` AND `current` for annualSummaries, roicExtended, monthlyProjections
+  - M1 NOTED: Cash flow advisory text below chart (acceptable — recharts annotation positioning limitation)
+  - M2 FIXED: Break-Even chart `<rect>` → recharts `<Cell>` for proper individual bar coloring
+  - L1 FIXED: Removed unused `Legend` import
+  - L2 FIXED: Static `tickMonths` array moved to module-level constant `CASH_FLOW_TICK_MONTHS`
+  - L3 NOTED: Hardcoded hex `#D0D1DB4D` in CartesianGrid follows existing `dashboard-charts.tsx` pattern
+  - All 17 ACs verified: 15 SATISFIED, 1 PARTIAL (AC6 annotation position — acceptable), 1 PARTIAL (AC15 tooltip data-testid forwarding — shadcn limitation)
+  - Post-fix LSP: 0 errors, 0 warnings

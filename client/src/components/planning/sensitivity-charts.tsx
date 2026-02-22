@@ -11,7 +11,7 @@ import {
   YAxis,
   ReferenceLine,
   ReferenceArea,
-  Legend,
+  Cell,
 } from "recharts";
 import {
   ChartContainer,
@@ -30,6 +30,7 @@ interface SensitivityChartsProps {
 
 const YEAR_INDICES = [0, 1, 2, 3, 4] as const;
 const YEAR_END_MONTH_INDICES = [11, 23, 35, 47, 59] as const;
+const CASH_FLOW_TICK_MONTHS = [1, 12, 24, 36, 48, 60];
 
 function dollarTickFormatter(v: number): string {
   if (Math.abs(v) >= 1000) return `$${(v / 1000).toFixed(0)}K`;
@@ -101,12 +102,34 @@ function ProfitabilityChart({ base, current }: { base: EngineOutput; current: En
             <XAxis dataKey="year" tickLine={false} axisLine={false} tick={{ fontSize: 11 }} />
             <YAxis tickLine={false} axisLine={false} tick={{ fontSize: 11 }} tickFormatter={dollarTickFormatter} width={60} />
             <ChartTooltip
-              content={
-                <ChartTooltipContent
-                  data-testid="chart-profitability-tooltip"
-                  formatter={(value) => dollarTooltipFormatter(value)}
-                />
-              }
+              content={({ active, payload, label }) => {
+                if (!active || !payload?.length) return null;
+                const row = payload[0]?.payload;
+                if (!row) return null;
+                return (
+                  <div data-testid="chart-profitability-tooltip" className="bg-background border rounded-lg shadow-lg p-3 text-xs space-y-2">
+                    <p className="font-semibold">{label}</p>
+                    {[
+                      { key: "Revenue", base: row.baseRevenue, current: row.currentRevenue, color: "hsl(var(--chart-1))" },
+                      { key: "COGS", base: row.baseCogs, current: row.currentCogs, color: "hsl(var(--chart-2))" },
+                      { key: "Gross Profit", base: row.baseGrossProfit, current: row.currentGrossProfit, color: "hsl(var(--chart-3))" },
+                      { key: "EBITDA", base: row.baseEbitda, current: row.currentEbitda, color: "hsl(var(--chart-4))" },
+                      { key: "Pre-Tax Income", base: row.basePreTaxIncome, current: row.currentPreTaxIncome, color: "hsl(var(--chart-5))" },
+                    ].map((s) => (
+                      <div key={s.key} className="grid grid-cols-[8px_1fr_auto_auto] gap-x-2 items-center">
+                        <span className="w-2 h-2 rounded-full" style={{ backgroundColor: s.color }} />
+                        <span className="text-muted-foreground">{s.key}</span>
+                        <span className="font-mono tabular-nums">{dollarTooltipFormatter(s.base)}</span>
+                        <span className="font-mono tabular-nums text-muted-foreground">{dollarTooltipFormatter(s.current)}</span>
+                      </div>
+                    ))}
+                    <div className="flex gap-3 pt-1 border-t text-[10px] text-muted-foreground">
+                      <span>Base Case (solid)</span>
+                      <span>Your Scenario (dashed)</span>
+                    </div>
+                  </div>
+                );
+              }}
             />
             <Area type="monotone" dataKey="baseRevenue" stroke="hsl(var(--chart-1))" strokeWidth={2} fill="url(#fillBaseRevenue)" dot={false} name="Revenue (Base)" />
             <Area type="monotone" dataKey="currentRevenue" stroke="hsl(var(--chart-1))" strokeWidth={2} strokeDasharray="5 5" fill="url(#fillCurrentRevenue)" dot={false} name="Revenue (Yours)" />
@@ -176,10 +199,6 @@ function CashFlowChart({ base, current }: { base: EngineOutput; current: EngineO
     return { data: chartData, hasNegativeCash: anyNegative, negativeRanges: ranges };
   }, [base, current]);
 
-  const tickMonths = useMemo(() => {
-    return [1, 12, 24, 36, 48, 60];
-  }, []);
-
   return (
     <Card data-testid="sensitivity-chart-cash-flow">
       <CardHeader className="pb-2 pt-4 px-4">
@@ -195,7 +214,7 @@ function CashFlowChart({ base, current }: { base: EngineOutput; current: EngineO
               tickLine={false}
               axisLine={false}
               tick={{ fontSize: 10 }}
-              ticks={tickMonths}
+              ticks={CASH_FLOW_TICK_MONTHS}
               tickFormatter={(m: number) => {
                 if (m % 12 === 0) return `Y${m / 12}`;
                 return `M${m}`;
@@ -295,7 +314,7 @@ function BreakEvenChart({ base, current }: { base: EngineOutput; current: Engine
             />
             <Bar dataKey="months" radius={[0, 4, 4, 0]} animationDuration={300}>
               {data.map((entry, index) => (
-                <rect key={index} fill={entry.fill} />
+                <Cell key={index} fill={entry.fill} />
               ))}
             </Bar>
           </BarChart>
@@ -512,7 +531,9 @@ function SensitivityChartsInner({ scenarioOutputs }: { scenarioOutputs: Sensitiv
     !base.annualSummaries || base.annualSummaries.length < 5 ||
     !current.annualSummaries || current.annualSummaries.length < 5 ||
     !base.roicExtended || base.roicExtended.length < 5 ||
-    !base.monthlyProjections || base.monthlyProjections.length !== 60
+    !current.roicExtended || current.roicExtended.length < 5 ||
+    !base.monthlyProjections || base.monthlyProjections.length !== 60 ||
+    !current.monthlyProjections || current.monthlyProjections.length !== 60
   ) {
     return (
       <div data-testid="sensitivity-charts-error" className="flex items-center justify-center p-8">
@@ -528,7 +549,7 @@ function SensitivityChartsInner({ scenarioOutputs }: { scenarioOutputs: Sensitiv
   }
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4" data-testid="sensitivity-charts-grid">
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-4" data-testid="sensitivity-charts-grid">
       <ProfitabilityChart base={base} current={current} />
       <CashFlowChart base={base} current={current} />
       <BreakEvenChart base={base} current={current} />
@@ -542,7 +563,7 @@ function SensitivityChartsInner({ scenarioOutputs }: { scenarioOutputs: Sensitiv
 export const SensitivityCharts = memo(function SensitivityCharts({ scenarioOutputs }: SensitivityChartsProps) {
   if (!scenarioOutputs) {
     return (
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4" data-testid="sensitivity-charts-grid">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4" data-testid="sensitivity-charts-grid">
         {Array.from({ length: 6 }).map((_, i) => (
           <Card key={i}>
             <CardHeader className="pb-2 pt-4 px-4">
