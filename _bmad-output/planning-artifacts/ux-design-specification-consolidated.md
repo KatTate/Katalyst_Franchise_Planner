@@ -467,31 +467,35 @@ The sidebar is the single, persistent navigation structure. There is no mode swi
 |                                            |
 |  [Brand Logo / Katalyst]                   |
 |                                            |
-|  -- MY LOCATIONS --                        |
-|  All Plans (portfolio)                     |
+|  -- MY PLANS --                            |
+|  ▸ PostNet - Downtown       [⋮]            |
+|  ▸ PostNet - Mall Location  [⋮]            |
+|  + Create New Plan                         |
 |                                            |
 |  -- [ACTIVE PLAN NAME] --                 |
 |  My Plan                                   |
 |  Reports                                   |
-|  Scenarios                                 |
+|  What-If                                   |
 |  Settings                                  |
 |                                            |
 |  -- HELP --                                |
-|  Planning Assistant                        |
+|  Glossary                                  |
 |                                            |
 +--------------------------------------------+
 ```
+
+**MY PLANS section:** Lists all plans belonging to the franchisee. Each plan row shows the plan name and a [⋮] context menu providing Rename, Clone, and Delete actions (per Story 7.2). The active plan is highlighted. "+ Create New Plan" opens the plan creation dialog.
 
 **Sidebar items explained:**
 
 | Item | What It Is | Primary Persona |
 |------|-----------|-----------------|
-| All Plans | Portfolio view — list of franchise locations/plans | Chris |
+| MY PLANS | Plan list with context menus — rename, clone, delete (type-to-confirm), last-plan protection. Active plan highlighted. | Chris, Sam |
 | My Plan | Structured form-based input workspace with AI Planning Assistant available as slide-in panel | Sam, Chris |
 | Reports | Tabbed financial statements with inline editing — the power-user input surface | Maria (primary), Sam & Chris (review) |
-| Scenarios | Good/Better/Best scenario comparison | All |
+| What-If | Interactive sensitivity analysis playground — sliders adjust assumptions, 6 charts compare Base Case vs Your Scenario. Sandbox only — does not modify the actual plan. | All |
 | Settings | Plan-level settings — name, brand, projection period | All |
-| Planning Assistant | AI Planning Assistant in conversational format, contextual to active plan. This is the AI — not the human account manager. | Sam |
+| Glossary | Financial term definitions with contextual tooltip integration | All |
 
 **Critical design rules:**
 
@@ -504,6 +508,12 @@ The sidebar is the single, persistent navigation structure. There is no mode swi
 4. **The AI Planning Assistant is a feature, not a destination.** It's available from within My Plan as a slide-in panel. The "Planning Assistant" sidebar item in the Help section opens the same assistant from a conversational starting point — useful for first-time users who want guidance before diving into forms.
 
 5. **If you find yourself writing `if (mode === 'quick-entry')` or `editable={mode === 'quick-entry'}`, you are violating this spec.** Input cells in Reports are ALWAYS editable. Period.
+
+### Two-Surface Design Boundary (Epic 7 Decision)
+
+Forms (My Plan) deliberately does NOT replicate Reports' per-year or per-month editing granularity. My Plan provides single-value inputs with a "Set for all years" checkbox only. Per-year independence and per-month independence are exclusively Reports capabilities.
+
+This is the core design principle adopted during Epic 7: Forms = onboarding wizard for less experienced personas. Reports = power editing surface where all financial assumptions are editable inline with full granularity. Expert users may skip Forms entirely.
 
 ### How Users Enter Reports
 
@@ -565,6 +575,19 @@ Every financial input carries:
 - **Source attribution** — "Brand Default" / "AI-Populated" / "Your Entry"
 - **Reset affordance** — one-click return to brand default
 - **Contextual help** — expand/collapse explanation of what this input means
+
+### Facilities Guided Decomposition (Epic 7.1d)
+
+The Facilities section in My Plan decomposes the single "Facilities" input into sub-fields:
+- Rent
+- Utilities
+- Telecom
+- Vehicle
+- Insurance
+
+Each sub-field accepts a monthly dollar value. The sub-fields roll up to a total Facilities value that maps to the engine's facilities input.
+
+**Mismatch handling:** When the decomposition sum differs from the Reports total (e.g., due to direct editing in Reports), an informational note is displayed: "Your itemized total ($X) differs from the Reports total ($Y)." No action buttons, no proportional redistribution — the note is advisory only. The user can resolve the difference by editing either surface.
 
 ---
 
@@ -796,6 +819,13 @@ Every financial statement view follows a three-layer information hierarchy:
 - Escape -> cancels edit, restores previous value
 - All auto-formatting rules apply (currency, percentage, integer on blur)
 
+<details>
+<summary>Historical: Pre-Epic-7 Per-Year Behavior (superseded by Epic 7)</summary>
+
+> **Superseded by Epic 7 (2026-02-21).** Per-year editing is now independent — each year
+> can have its own value. The link icon and broadcast behavior described below no longer
+> apply. "Copy Y1 to all years" is available as an opt-in action, not the default.
+
 ### Pre-Epic-7 Per-Year Behavior
 
 Until Epic 7 delivers per-year input arrays, all years broadcast the same value:
@@ -803,6 +833,8 @@ Until Epic 7 delivers per-year input arrays, all years broadcast the same value:
 - A small **link icon** in the column header row with tooltip: "All years share the same value. Per-year values will be available in a future update."
 - Editing any year column updates all years simultaneously with a brief flash.
 - After Epic 7: link icon disappears, per-year editing is independent, "Copy Y1 to all years" is opt-in.
+
+</details>
 
 ### Statement-Specific Details
 
@@ -1339,8 +1371,8 @@ Every color-coded element has a non-color alternative:
 | Item | Deferred To | Reason |
 |------|-------------|--------|
 | Custom scenario creation (duplicate base case, modify inputs) | Epic 10 | Quick multi-variable scenarios sufficient for Epic 5 |
-| Per-year input columns in My Plan and Reports | Epic 7 | Dependency on PlanFinancialInputs restructuring |
-| Multi-plan comparison (portfolio-level) | Epic 7 | Requires plan CRUD + All Plans navigation |
+| Per-year input columns in My Plan and Reports | ~~Epic 7~~ DONE | Delivered in Epic 7 (Stories 7.1a-7.1e). Per-year independence in Reports; single-value with "Set for all years" in Forms. |
+| Multi-plan comparison (portfolio-level) | ~~Epic 7~~ DONE | Delivered in Story 7.2. Plan CRUD, sidebar plan list, context menus. |
 | AI Planning Assistant integration with Reports | Epic 9 | AI integration is My Plan-focused for MVP |
 | Advisory nudges on individual input fields | Epic 8 | Guardian Bar provides plan-level advisory; field-level is Epic 8 |
 | Excel/CSV export | Backlog | Lower priority than PDF |
@@ -1375,6 +1407,13 @@ Every color-coded element has a non-color alternative:
 
 ---
 
+<details>
+<summary>Historical: Story Rewrite Implications (superseded by implementation)</summary>
+
+> **Superseded (2026-02-20).** Epic 5 was implemented with 9 stories (5.1-5.6, 5.8-5.10),
+> not the 10-story structure suggested below. Story 5.7 (Scenario Comparison) was retired
+> and moved to Epic 10. See epics.md for the authoritative story structure.
+
 ## Story Rewrite Implications
 
 This consolidated spec requires the following story structure for Epic 5:
@@ -1392,6 +1431,8 @@ This consolidated spec requires the following story structure for Epic 5:
 | 5.9: Document Preview + PDF Generation | Dashboard preview widget. Generate PDF with completeness-aware labels. |
 | 5.10: Glossary + Contextual Help | Glossary page + inline tooltip integration. |
 
+</details>
+
 ---
 
 ## Change Log
@@ -1403,6 +1444,7 @@ This consolidated spec requires the following story structure for Epic 5:
 | 2026-02-17 | Tech spec for Story 5.2 progressive disclosure gaps completed. | `tech-spec-5.2-progressive-disclosure-gaps.md` |
 | 2026-02-18 | **Consolidated into single document.** Mode switcher retired. Quick Entry retired. AI Planning Assistant repositioned from workspace mode to contextual feature (slide-in panel within My Plan). All content from both source documents preserved, with v3 architecture taking precedence on navigation, input surfaces, and component architecture. Part 9 (AI Planning Assistant) freshly written. | This document |
 | 2026-02-20 | **Part 15 expanded to 8 comprehensive user journey narratives** per SCP-2026-02-20 Decision D7. Replaces previous 3 brief journey traces. New journeys cover: Normal tier franchisee, Story tier with AI, returning franchisee session recovery, What-If Playground scenario review, Katalyst admin brand setup, admin invitation flow, franchisor pipeline visibility, and admin View As/impersonation. | SCP-2026-02-20, Party Mode review |
+| 2026-02-22 | **Epic 7H.1 Document Realignment.** Added two-surface design boundary (Part 7). Marked Pre-Epic-7 Per-Year Behavior as historical (Part 10). Added Facilities Guided Decomposition pattern (Part 8). Marked Story Rewrite Implications as historical. Updated sidebar wireframe to match Epic 7.2 implementation (MY PLANS section with context menus, What-If replaces Scenarios). Updated Part 19 deferred items: per-year inputs and multi-plan comparison marked DONE. | SCP-2026-02-22, CP-7 |
 
 ---
 
