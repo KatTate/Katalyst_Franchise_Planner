@@ -522,7 +522,6 @@ export function BalanceSheetTab({ output, scenarioOutputs, financialInputs, onCe
           onExpandAll={expandAll}
           onCollapseAll={collapseAll}
           hasAnyDrillDown={hasAnyDrillDown}
-          showLinkedIndicator={false}
           comparisonActive
         />
         <div className="overflow-x-auto" data-testid="bs-table">
@@ -557,7 +556,6 @@ export function BalanceSheetTab({ output, scenarioOutputs, financialInputs, onCe
         onExpandAll={expandAll}
         onCollapseAll={collapseAll}
         hasAnyDrillDown={hasAnyDrillDown}
-        showLinkedIndicator={false}
       />
       <div className="overflow-x-auto" data-testid="bs-table">
         <table className="w-full text-sm" role="grid" aria-label="Balance Sheet">

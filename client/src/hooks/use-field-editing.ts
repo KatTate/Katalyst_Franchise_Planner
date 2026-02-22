@@ -74,16 +74,16 @@ function buildUpdatedInputs(
   if (Array.isArray(raw)) {
     const now = new Date().toISOString();
     const isReset = updatedField.source === "brand_default";
-    if (allYears) {
+    const isPerMonth = raw.length === 60;
+    if (allYears || isPerMonth) {
       newValue = raw.map((item: FinancialFieldValue) =>
         isReset
           ? { ...updatedField, brandDefault: item.brandDefault, currentValue: updatedField.currentValue, lastModifiedAt: now }
           : updateFieldValue(item, updatedField.currentValue, now)
       );
     } else {
-      const monthsPerYear = raw.length > 5 ? Math.round(raw.length / 5) : 1;
       newValue = raw.map((item: FinancialFieldValue, i: number) =>
-        i < monthsPerYear
+        i === 0
           ? (isReset
             ? { ...updatedField, brandDefault: item.brandDefault, currentValue: updatedField.currentValue, lastModifiedAt: now }
             : updateFieldValue(item, updatedField.currentValue, now))

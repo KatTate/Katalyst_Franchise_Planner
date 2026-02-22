@@ -1,6 +1,6 @@
 # Story 7H.2: Per-Month Independence (7.1b.1)
 
-Status: in-progress
+Status: review
 
 ## Story
 
@@ -162,9 +162,41 @@ Currently `scaleForStorage` handles `storedGranularity: "monthly" | "annual"` to
 ## Dev Agent Record
 
 ### Agent Model Used
+Claude 4.6 Opus (Replit Agent)
 
 ### Completion Notes
+All 10 acceptance criteria implemented and verified:
+- AC-1: Qualifying fields (monthlyAuv, cogsPct, laborPct, marketingPct) stored as 60-element FinancialFieldValue[] arrays. Non-qualifying fields remain 5-element arrays.
+- AC-2: 5→60 migration via expandArray5To60() and expandSingleTo60() helpers. Idempotent — running on already-migrated data produces identical output.
+- AC-3: unwrapForEngine() extracts 60-element number arrays for qualifying fields. monthlyAuvByMonth replaces annualGrossSales in FinancialInputs.
+- AC-4: Engine uses direct month indexing [m-1] for qualifying fields. All 13 identity checks pass. Determinism preserved.
+- AC-5: Monthly-level inline editing in Reports P&L updates single month in 60-element array.
+- AC-6: Annual-level edit updates all 12 months; quarterly-level edit updates 3 months. Uses getMonthRangeForColKey() helper. Annual/quarterly display shows average across month range.
+- AC-7: Copy Year 1 to All replicates month-by-month pattern (month 0→12,24,36,48; month 1→13,25,37,49; etc.).
+- AC-8: Forms displays Month 1 value (index 0). Editing in Forms updates all 60 months to entered value. Per-month granularity is Reports-only.
+- AC-9: All 407 tests pass (101 plan-init + 173 engine + 104 reference + 29 schema). Updated fixtures for 60-element arrays. Added migration, idempotency, and engine month-indexing tests.
+- AC-10: INPUT_FIELD_MAP entries for qualifying fields have perMonth flag. scaleForStorage and helpers handle 60-element array semantics.
+- "Linked" indicator removed from ColumnToolbar (no longer accurate with per-year and per-month independence).
+- Scenario engine and sensitivity engine updated for 60-element qualifying field arrays.
 
 ### File List
+| File | Action |
+|------|--------|
+| shared/financial-engine.ts | MODIFIED — PlanFinancialInputs: monthlyAuv→FinancialFieldValue[60]. FinancialInputs: annualGrossSales replaced by monthlyAuvByMonth: number[60]. cogsPct/laborPct/marketingPct changed to number[]. Engine loop uses [m-1] for qualifying fields. |
+| shared/plan-initialization.ts | MODIFIED — makeFieldArray60(), expandArray5To60(), expandSingleTo60() helpers. buildPlanFinancialInputs generates 60-element arrays. migratePlanFinancialInputs handles 5→60 migration. unwrapForEngine extracts 60-element number arrays. |
+| shared/plan-initialization.test.ts | MODIFIED — Tests for 60-element buildPlanFinancialInputs, 5→60 migration, migration idempotency, unwrapForEngine with 60-element arrays. Updated fixtures. |
+| shared/financial-engine.test.ts | MODIFIED — Updated all test fixtures to use 60-element arrays for qualifying fields. monthlyAuvByMonth replaces annualGrossSales. |
+| shared/financial-engine-reference.test.ts | MODIFIED — Updated reference test fixtures for 60-element arrays. |
+| client/src/components/planning/financial-statements.tsx | MODIFIED — handleCellEdit loops to update month ranges for annual/quarterly edits on per-month fields. handleCopyYear1ToAll copies month-by-month pattern for 60-element arrays. |
+| client/src/components/planning/statements/pnl-tab.tsx | MODIFIED — handleCommitEdit extracts absolute month index via getAbsoluteMonthIndex(). getRawValue computes average across month range for annual/quarterly columns on per-month fields. |
+| client/src/components/planning/statements/input-field-map.ts | MODIFIED — Added perMonth flag to qualifying field entries. Added getAbsoluteMonthIndex() and getMonthRangeForColKey() helpers. |
+| client/src/components/planning/statements/column-manager.tsx | MODIFIED — Removed "Linked" indicator (showLinkedIndicator prop, Link2 icon, tooltip). |
+| client/src/lib/scenario-engine.ts | MODIFIED — Updated scenario input construction for 60-element qualifying fields. |
+| client/src/lib/sensitivity-engine.ts | MODIFIED — Updated sensitivity input construction for 60-element qualifying fields. |
+| client/src/hooks/use-field-editing.ts | MODIFIED — Forms edits on 60-element arrays always update all elements (AC-8 compliance). |
 
 ### Testing Summary
+- **Unit tests:** 407/407 passing (plan-initialization: 101, financial-engine: 173, reference: 104, schema: 29)
+- **Migration tests:** 5→60 expansion, idempotency, single-value→60 monthlyAuv expansion
+- **Engine tests:** Month-specific values, determinism, identity checks with 60-element inputs
+- **E2E:** Not yet run via Playwright (pending code review)

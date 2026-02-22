@@ -40,6 +40,7 @@
 # - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
 
 generated: 2026-02-09
+updated: 2026-02-22  # Story 7H.2 implementation complete → review. All 10 ACs satisfied, 407 tests passing, 12 files modified.
 updated: 2026-02-22  # Story 7H.2 context document created (Create Story workflow). 10 ACs, 13+ files in change summary.
 updated: 2026-02-22  # Story 7H.1 context document created (Create Story workflow). Epic 7H status: in-progress.
 updated: 2026-02-22  # Sprint Planning regenerated: 15 epics, 69 stories (incl. 2 orphans, 1 retired). Epic 7H verified. All statuses preserved — no downgrades.
@@ -58,6 +59,21 @@ story_location: _bmad-output/implementation-artifacts
 
 # CHANGE LOG:
 # ===========
+# 2026-02-22: Story 7H.2 implementation complete → review (Dev Story workflow)
+#   - All 10 acceptance criteria satisfied
+#   - 12 files modified across shared/ and client/
+#   - Core changes: qualifying fields (monthlyAuv, cogsPct, laborPct, marketingPct) now
+#     use 60-element FinancialFieldValue[] arrays; engine uses [m-1] direct month indexing;
+#     5→60 migration with idempotency; unwrapForEngine extracts 60-element number arrays;
+#     monthlyAuvByMonth replaces annualGrossSales in FinancialInputs
+#   - UI changes: per-month inline editing in Reports P&L; annual/quarterly convenience editing
+#     updates month ranges; getRawValue averages per-month values for annual/quarterly display;
+#     Copy Year 1 copies month-by-month pattern; "Linked" indicator removed from ColumnToolbar
+#   - Forms: edits on 60-element arrays update all months (AC-8); displays Month 1 value
+#   - Scenario/sensitivity engines updated for 60-element qualifying field arrays
+#   - 407 tests passing (101 plan-init + 173 engine + 104 reference + 29 schema)
+#   - Next action: Adversarial Code Review (CR) for 7H.2
+#
 # 2026-02-22: Story 7H.2 context document created (Create Story workflow)
 #   - Full story file: 7h-2-per-month-independence.md (ready-for-dev)
 #   - 10 acceptance criteria covering: 60-element PlanFinancialInputs arrays (AC-1),
@@ -692,7 +708,7 @@ development_status:
   # NOTE: Epic 7H stories NOT YET in epics.md — will be added during story 7H.1 execution
   epic-7h: in-progress  # First story (7H.1) context document created 2026-02-22
   7h-1-planning-document-realignment: done                  # All 12 ACs satisfied 2026-02-22. PO review feedback applied: sidebar redesigned (Home→Dashboard pattern), HELP section expanded. Done 2026-02-22.
-  7h-2-per-month-independence: ready-for-dev             # Story file created 2026-02-22. 10 ACs, 60-element arrays, engine type updates, Reports monthly editing, migration.
+  7h-2-per-month-independence: review                     # Implementation complete 2026-02-22. All 10 ACs satisfied. 407 tests passing. 12 files modified. Pending adversarial code review.
   7h-3-brand-crud-completion: backlog                   # Delete (with confirmation) + metadata editing. Closes Epic 2 gap causing active dev pain.
   7h-4-input-field-map-validation: backlog              # Test-time assertion: every INPUT_FIELD_MAP entry format matches FIELD_METADATA/engine output. Build fails on mismatch.
   7h-5-e2e-testing-standards: backlog                   # Test agents auth as franchisee, no demo mode, clean up test data. Documentation + enforcement.

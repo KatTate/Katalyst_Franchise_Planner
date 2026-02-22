@@ -558,7 +558,6 @@ export function PnlTab({ output, financialInputs, onCellEdit, onCopyYear1ToAll, 
           onExpandAll={expandAll}
           onCollapseAll={collapseAll}
           hasAnyDrillDown={hasAnyDrillDown}
-          showLinkedIndicator={canEdit}
           comparisonActive
         />
         <div className="overflow-x-auto" data-testid="pnl-table">
@@ -601,7 +600,6 @@ export function PnlTab({ output, financialInputs, onCellEdit, onCopyYear1ToAll, 
         onExpandAll={expandAll}
         onCollapseAll={collapseAll}
         hasAnyDrillDown={hasAnyDrillDown}
-        showLinkedIndicator={canEdit}
       />
       <div className="overflow-x-auto" data-testid="pnl-table">
         <table className="w-full text-sm" role="grid" aria-label="Profit and Loss Statement">
