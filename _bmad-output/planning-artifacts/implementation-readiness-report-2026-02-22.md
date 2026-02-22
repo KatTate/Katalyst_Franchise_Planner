@@ -1,5 +1,5 @@
 ---
-stepsCompleted: [step-01-document-discovery, step-02-prd-analysis, step-03-epic-coverage-validation, step-04-ux-alignment]
+stepsCompleted: [step-01-document-discovery, step-02-prd-analysis, step-03-epic-coverage-validation, step-04-ux-alignment, step-05-epic-quality-review]
 assessmentDate: 2026-02-22
 project: workspace
 documentsAssessed:
@@ -379,3 +379,191 @@ The epics document contains an FR Coverage Map (lines 190-294) claiming 111/111 
 - The UX spec is comprehensive and well-structured but was last updated 2026-02-18 (before Epic 7 delivery). Several sections describe pre-implementation designs that no longer match the actual product.
 - No critical misalignments — the core two-surface model, navigation architecture, and interaction patterns are all aligned across PRD, Architecture, and UX.
 - The UX spec should be updated to reflect Epic 7 implementation decisions before the next epic begins, to prevent agent confusion.
+
+## Step 5: Epic Quality Review
+
+### 1. Epic User Value Focus
+
+| Epic | Title | User-Centric? | Assessment |
+|------|-------|---------------|------------|
+| 1 | Auth, Onboarding & User Management | Yes | Franchisees create accounts, onboard, access the platform |
+| 2 | Brand Configuration & Administration | Yes | Katalyst admins configure brands for franchisee use |
+| 3 | Financial Planning Engine | Borderline | Title is technical ("engine"), but stories deliver user-facing value (projections, ROI) |
+| 4 | Forms Experience & Planning Infrastructure | Yes | Franchisees build plans through guided forms |
+| 5 | Financial Statement Views & Output Layer | Yes | Franchisees view and edit financial statements |
+| 5H | Post-Epic-5 Hardening Sprint | No (quality gate) | Developer-facing validation — no direct user value |
+| 6 | Document Generation & Vault | Yes | Franchisees generate lender-grade PDF packages |
+| 7 | Per-Year Inputs & Multi-Plan Management | Yes | Franchisees model growth trajectories per year |
+| 8 | Advisory Guardrails & Smart Guidance | Yes | System provides advisory feedback to franchisees |
+| 9 | AI Planning Advisor | Yes | Franchisees interact with AI for plan input |
+| 10 | What-If Playground | Yes | Franchisees explore sensitivity analysis |
+| 11 | Data Sharing, Privacy & Pipeline Dashboards | Yes | Franchisees control sharing; franchisors see pipeline |
+| 12 | Advisory Board Meeting (Deferred) | Yes | Franchisees stress-test plans with AI advisors |
+| ST | Admin Support Tools | Yes | Katalyst admins validate and demo the platform |
+
+**Violations Found:**
+
+**Epic 3 — "Financial Planning Engine" (MINOR):** Title reads as a technical milestone. However, stories within Epic 3 are user-centric (e.g., "As a franchisee, I want the system to compute a 5-year monthly financial projection"). The epic delivers user-facing value (live projections, ROI). Borderline — title could be improved to "Financial Planning & Projections" but not blocking.
+
+**Epic 5H — Hardening Sprint (ACCEPTABLE):** This is explicitly a quality gate, not a user-facing epic. It exists to validate engine accuracy and UI quality before Epic 6 (Document Generation) turns outputs into permanent lender documents. The hardening sprint pattern is justified when the downstream epic produces immutable artifacts. Deviation from user-value principle is acknowledged and accepted.
+
+### 2. Epic Independence Validation
+
+| Epic | Can Stand Alone? | Dependencies | Assessment |
+|------|-----------------|--------------|------------|
+| 1 | Yes | None | ✓ Foundation epic — auth, users, roles |
+| 2 | Yes | Epic 1 (users exist) | ✓ Normal build-on dependency |
+| 3 | Mostly | Epic 2 (brand parameters) | ✓ Engine needs brand config inputs |
+| 4 | Mostly | Epic 3 (engine for live metrics) | ✓ Forms need computed outputs |
+| 5 | Mostly | Epic 3 (engine), Epic 4 (workspace) | ✓ Reports render engine outputs |
+| 5H | No | Epic 5 (complete) | ✓ Quality gate by design |
+| 6 | No | Epic 5 + 5H (must complete first) | ✓ PDF exports engine outputs in statement format |
+| 7 | No | Epic 5 (per-year editing extends statements) | ✓ Done — delivered successfully |
+| 8 | Mostly | Epic 5 (Guardian Bar foundation) | ✓ Extends existing advisory display |
+| 9 | No | Epic 4 (My Plan workspace), Epic 3 (engine) | ✓ AI populates plan state |
+| 10 | No | Epic 5 (financial statements as foundation) | ✓ What-If extends engine/chart capabilities |
+| 11 | Mostly | Epic 1 (roles), Epic 2 (brands) | ✓ Dashboard adds visibility layer |
+| 12 | No | Epic 9 (AI infrastructure) | ✓ Deferred to Phase 2 |
+| ST | Partially | Epic 2 (brands), ST-4 blocked on Epic 11.2 | ⚠️ ST-4 explicitly blocked |
+
+**No circular dependencies detected.** All dependencies flow forward (lower epic number → higher). No epic N requires epic N+1.
+
+**One blocking dependency noted:** Story ST-4 (Franchisor Demo Mode) is blocked until Epic 11.2 (Franchisor Pipeline Dashboard) is complete. This is explicitly documented and acceptable — the demo mode needs the dashboard to demo.
+
+### 3. Story Quality Assessment
+
+#### A. Story Sizing
+
+| Story | Size | Assessment |
+|-------|------|------------|
+| 1.1 | Large | Schema + auth + Passport + sessions — acceptable for foundation |
+| 3.6 | Medium | Quick ROI — focused feature |
+| 4.1 | **OVERSIZED** | Mode switcher + dashboard + split view + source badges + formatting — too many ACs |
+| 5.1 | **OVERSIZED** | 17+ new fields + valuation + ROIC + audit extension + test coverage — massive |
+| 5.2 | **OVERSIZED** | Navigation + container + Summary tab + progressive disclosure + sticky elements |
+| 5.6 | **OVERSIZED** | My Plan + Impact Strip + bidirectional sync + AI panel slot — 4 distinct features |
+| 5H.1 | Large | Engine validation across 4 brands — justified by scope |
+| 6.1 | Large | PDF generation with 10+ sections — acceptable for deliverable focus |
+| 7.1a | Large | Data model restructuring — justified as foundation |
+| 7.2 | Medium | CRUD operations — well-scoped |
+| 10.1a | Medium | Sensitivity sliders — focused |
+
+**Oversized Stories Identified:**
+
+1. **Story 4.1** — Contains mode switcher (now retired), dashboard, split view, source badges, and formatting. However, since Epic 4 stories 4.1/4.3/4.4 are effectively retired (mode switcher superseded), this is a historical issue, not a current blocker.
+
+2. **Story 5.1** — Engine extension adds 17+ MonthlyProjection fields, 17 cash flow fields, 11 valuation fields, 15 ROIC fields, 13 audit checks, and 12+ P&L analysis lines. This is enormous for a single story. However, it's pure computation (no UI), which makes it more manageable. Delivered successfully in Epic 5.
+
+3. **Story 5.2** — Combines application-level navigation, tab container, Summary tab content, progressive disclosure infrastructure, sticky elements, and BD badges. At least 3 distinct features packed into one story. Delivered but was a risk point.
+
+4. **Story 5.6** — Combines My Plan workspace, Impact Strip, bidirectional data flow, and AI panel slot. These could be 2-3 separate stories. Not yet implemented.
+
+#### B. Acceptance Criteria Quality
+
+**Well-Structured ACs (exemplary):**
+- Story 1.3 (Invitation Acceptance): 6 Given/When/Then blocks covering valid, expired, accepted, invalid tokens plus validation
+- Story 1.5 (RBAC): 7 scenarios covering every role + unauthenticated + API-level enforcement
+- Story 7.2 (Plan CRUD): Clear create/clone/rename/delete flows with edge cases
+- Story 6.1 (PDF Generation): Detailed content spec, completeness tiers, error handling, loading state
+
+**Problematic ACs:**
+
+1. **Story 4.1 — Stale ACs (MEDIUM):** References mode switcher, segmented control, "Direction F (Hybrid Adaptive)" layout — all retired. Story is effectively superseded but not marked as such (only a note at Epic 4 header mentions retirement). Future agents reading Story 4.1 directly would be confused.
+   - **Recommendation:** Add "RETIRED" marker to Story 4.1 title, matching Stories 4.3/4.4 treatment.
+
+2. **Story 5.6 — Vague AI Panel AC (LOW):** "the AI Planning Assistant panel slides in from the right edge (see Epic 9 for full AI behavior)" — defers to a future epic without specifying the panel slot's technical contract (min width, z-index, collapse behavior).
+   - **Recommendation:** Add concrete panel slot ACs or explicitly defer panel behavior to Epic 9 with a placeholder slot only.
+
+3. **Story 3.4 — Vague Logging AC (LOW):** "validation failures are logged with full input/output context to a structured log" — doesn't specify log format, destination, or alert mechanism.
+   - **Recommendation:** Accept as-is; logging details are implementation decisions.
+
+4. **Story 1.6 — Stale Tier References (MEDIUM):** "the system recommends an initial experience tier (Planning Assistant, Forms, or Quick Entry)" — Quick Entry is retired. The three-tier model has been superseded by the two-surface architecture.
+   - **Recommendation:** Update Story 1.6 ACs to reference My Plan vs Reports recommendation instead of three tiers.
+
+### 4. Dependency Analysis
+
+#### A. Within-Epic Dependencies
+
+| Epic | Dependency Chain | Valid? |
+|------|-----------------|--------|
+| 1 | 1.1 → 1.2 → 1.3 → 1.4 → 1.5 → 1.6 | ✓ Linear, each builds on previous |
+| 3 | 3.1 → 3.2 → 3.3 → 3.4 → 3.5 → 3.6 → 3.7 | ✓ Engine first, then features |
+| 5 | 5.1 → 5.2 → 5.3 → 5.4 → 5.5 → 5.6 → 5.8 → 5.9 → 5.10 | ✓ Engine → container → tabs → My Plan → interpretation → preview → help |
+| 5H | 5H.1 + 5H.2 parallel → 5H.3 → 5H.4 | ✓ Validation first, then AC audit, then alignment |
+| 7 | 7.1a → 7.1b → 7.1c + 7.1d (parallel) → 7.1e | ✓ Foundation → editing → forms (parallel) → remaining tabs |
+| 10 | 10.1a → 10.1b (parallel with 10.2a) → 10.2b → 10.3 | ✓ Controls → charts → polish → persistence |
+
+**No forward dependencies detected within epics.** All story dependencies flow in document order.
+
+#### B. Cross-Epic Dependencies
+
+| Dependency | Valid? | Risk |
+|-----------|--------|------|
+| Epic 5H blocks Epic 6 | ✓ | Quality gate — engine must be validated before PDF export |
+| Epic 7 depends on Epic 5 | ✓ | Per-year editing extends statement tabs |
+| Epic 10 depends on Epic 5 | ✓ | What-If uses engine + chart infrastructure |
+| ST-4 blocked on Epic 11.2 | ✓ | Demo needs dashboard to demo |
+| Epic 9 depends on Epic 4 | ✓ | AI panel lives in My Plan workspace |
+
+#### C. Database/Entity Creation Timing
+
+- **Story 1.1** creates users, sessions, brands, invitations tables — all needed for auth. ✓
+- **Story 3.1** creates plans table — needed for engine output. ✓
+- **Story 6.2** would create documents table — needed for document history. ✓
+- Tables are created when first needed by each story, not all upfront. ✓
+
+### 5. Special Implementation Checks
+
+#### A. Brownfield Status
+
+This is a brownfield project — Epic 7 (6 stories) has been delivered. The codebase has:
+- 27+ components in `client/src/components/planning/`
+- Financial engine at 2,000+ lines with 686+ tests
+- Database schema with 5+ tables
+- Auth system with Google OAuth + email/password
+
+Future stories build on existing infrastructure. No project initialization story needed.
+
+#### B. Stale Story Content
+
+Several stories contain stale content from before the two-surface architecture adoption:
+
+| Story | Stale Content | Impact |
+|-------|--------------|--------|
+| 4.1 | Mode switcher ACs | MEDIUM — confusing if read directly |
+| 4.3, 4.4 | Quick Entry grid ACs | LOW — marked as superseded in Epic 4 header |
+| 1.6 | Three-tier recommendation | MEDIUM — incorrect tier naming |
+| 5.2 | "Pre-Epic-7" single-value broadcast | LOW — historical reference, now stale after Epic 7 |
+| 5.7 | Scenario comparison | LOW — explicitly marked RETIRED |
+
+### 6. Best Practices Compliance Summary
+
+| Check | Status | Notes |
+|-------|--------|-------|
+| Epics deliver user value | ✓ (with 2 minor exceptions) | Epic 3 borderline title; Epic 5H justified quality gate |
+| Epic independence | ✓ | No circular dependencies; all forward-flowing |
+| Stories appropriately sized | ⚠️ | 4 oversized stories identified (4.1, 5.1, 5.2, 5.6) |
+| No forward dependencies | ✓ | All dependencies within and across epics flow correctly |
+| Database tables created when needed | ✓ | Tables created in the story that first needs them |
+| Clear acceptance criteria | ⚠️ | Mostly excellent; 4 stale/vague AC issues identified |
+| FR traceability maintained | ✓ | All 111 FRs mapped; 2 implementation gaps noted (Step 3) |
+
+### Quality Assessment Summary
+
+#### Critical Violations: None
+
+No technical-only epics masquerading as user value. No circular dependencies. No forward dependencies that break independence.
+
+#### Major Issues (2)
+
+1. **Stale Story ACs — Stories 4.1 and 1.6 reference retired concepts (mode switcher, three tiers) without explicit retirement markers.** Future implementing agents reading these stories would build the wrong thing.
+   - **Remediation:** Add "RETIRED" markers to Story 4.1. Update Story 1.6 tier references to two-surface model.
+
+2. **Oversized Stories — Stories 5.1, 5.2, and 5.6 pack too much scope into single stories.** Story 5.6 combines 4 distinct features (My Plan workspace, Impact Strip, bidirectional sync, AI panel slot). When 5.6 is next implemented, it should be considered for decomposition.
+   - **Remediation:** Before implementing Story 5.6, consider splitting into: 5.6a (My Plan form workspace), 5.6b (Impact Strip), 5.6c (Bidirectional sync verification). Stories 5.1 and 5.2 are already delivered — document as retrospective lesson.
+
+#### Minor Concerns (3)
+
+1. Epic 3 title "Financial Planning Engine" reads as technical rather than user-centric. Suggest renaming to "Financial Planning & Projections."
+2. Story 5.2 contains "Pre-Epic-7" section that is now stale after Epic 7 delivery.
+3. Epic 4 header mentions retirement of Stories 4.3/4.4 but Story 4.1 is not explicitly marked despite being equally superseded.
