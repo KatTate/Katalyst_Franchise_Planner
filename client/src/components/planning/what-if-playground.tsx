@@ -37,27 +37,21 @@ const METRICS: MetricDefinition[] = [
     format: "months",
   },
   {
-    key: "roi",
-    label: "5-Year ROI %",
-    getValue: (o) => o.roiMetrics?.fiveYearROIPct ?? null,
-    format: "pct",
-  },
-  {
     key: "y1-revenue",
     label: "Year-1 Revenue",
     getValue: (o) => o.annualSummaries[0]?.revenue ?? null,
     format: "currency",
   },
   {
-    key: "y1-ebitda",
-    label: "Year-1 EBITDA",
-    getValue: (o) => o.annualSummaries[0]?.ebitda ?? null,
-    format: "currency",
+    key: "roi",
+    label: "5-Year ROI %",
+    getValue: (o) => o.roiMetrics?.fiveYearROIPct ?? null,
+    format: "pct",
   },
   {
-    key: "y1-pretax",
-    label: "Year-1 Pre-Tax Income",
-    getValue: (o) => o.annualSummaries[0]?.preTaxIncome ?? null,
+    key: "y5-cash",
+    label: "Year-5 Cash",
+    getValue: (o) => o.annualSummaries[4]?.endingCash ?? null,
     format: "currency",
   },
 ];
@@ -297,6 +291,7 @@ export function WhatIfPlayground({ planId }: WhatIfPlaygroundProps) {
   const { plan, isLoading, error } = usePlan(planId);
   const [sliderValues, setSliderValues] = useState<SliderValues>({ ...DEFAULT_SLIDER_VALUES });
   const [debouncedSliders, setDebouncedSliders] = useState<SliderValues>({ ...DEFAULT_SLIDER_VALUES });
+  const [hasInteractedWithSlider, setHasInteractedWithSlider] = useState(false);
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -307,6 +302,7 @@ export function WhatIfPlayground({ planId }: WhatIfPlaygroundProps) {
 
   const handleSliderChange = useCallback((key: keyof SliderValues, val: number) => {
     setSliderValues((prev) => ({ ...prev, [key]: val }));
+    setHasInteractedWithSlider(true);
   }, []);
 
   const handleResetSliders = useCallback(() => {
@@ -332,8 +328,8 @@ export function WhatIfPlayground({ planId }: WhatIfPlaygroundProps) {
             <Skeleton key={i} className="h-10 w-full" />
           ))}
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {Array.from({ length: 5 }).map((_, i) => (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          {Array.from({ length: 4 }).map((_, i) => (
             <Skeleton key={i} className="h-28 w-full rounded-lg" />
           ))}
         </div>
@@ -374,7 +370,7 @@ export function WhatIfPlayground({ planId }: WhatIfPlaygroundProps) {
   }
 
   return (
-    <div data-testid="what-if-playground" className="flex-1 overflow-y-auto">
+    <div data-testid="what-if-playground" data-has-interacted={hasInteractedWithSlider} className="flex-1 overflow-y-auto">
       <div className="p-6 space-y-6 max-w-5xl mx-auto">
         <div data-testid="what-if-header">
           <h1 className="text-xl font-bold tracking-tight" data-testid="what-if-title">
@@ -434,7 +430,7 @@ export function WhatIfPlayground({ planId }: WhatIfPlaygroundProps) {
               Move a slider to see how it changes your metrics
             </p>
           )}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4" data-testid="metric-cards-grid">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4" data-testid="metric-cards-grid">
             {scenarioOutputs &&
               METRICS.map((metric) => (
                 <MetricCard

@@ -1,6 +1,6 @@
 # Story 10.1: Sensitivity Controls & Sandbox Engine
 
-Status: needs-revision
+Status: review
 
 > **Revised per SCP-2026-02-21:** Conservative/Optimistic system-defined columns removed. Now shows Base Case vs Your Scenario (user's live slider state). Slider ranges widened (±50%/±100% visual, uncapped numeric). Reset button added.
 
@@ -197,18 +197,20 @@ Implemented the What-If Playground as a client-side sandbox feature. Created a n
 
 > **Updated 2026-02-22 (Party Mode review):** Dev Agent Record corrected to reflect post-SCP-2026-02-21 state (2 engine runs, not 3; 4 metric cards, not 5; `SensitivityOutputs { base, current }`, not `ScenarioOutputs`). Sidebar label changed from "Scenarios" to "What-If" per PO decision.
 
+> **Updated 2026-02-22 (DS revision):** Code aligned with revised ACs post-SCP-2026-02-21. METRICS array corrected from 5 to 4 metrics (removed Y1 EBITDA and Y1 Pre-Tax Income, added Year-5 Cash per AC). Loading skeleton count fixed (5→4). Grid layout updated to 4-column. `hasInteractedWithSlider` boolean state exposed via data attribute for Story 10.2b consumption. 753 tests passing, 0 LSP errors.
+
 ### File List
 
-- `client/src/lib/sensitivity-engine.ts` — CREATED: Sensitivity computation engine with `computeSensitivityOutputs()`, `SliderValues`, `SliderConfig`, `SLIDER_CONFIGS`, `DEFAULT_SLIDER_VALUES`
-- `client/src/components/planning/what-if-playground.tsx` — CREATED: What-If Playground React component with sensitivity controls panel and metric cards
-- `client/src/pages/planning-workspace.tsx` — MODIFIED: Replaced `case "scenarios":` placeholder with `<WhatIfPlayground planId={planId} />`, added import, fixed `StartupCostLineItem` import source
+- `client/src/lib/sensitivity-engine.ts` — CREATED (prior session): Sensitivity computation engine with `computeSensitivityOutputs()`, `SliderValues`, `SliderConfig`, `SLIDER_CONFIGS`, `DEFAULT_SLIDER_VALUES`
+- `client/src/components/planning/what-if-playground.tsx` — MODIFIED (this session): Fixed METRICS array (5→4 metrics per revised AC), fixed skeleton count, added `hasInteractedWithSlider` state, updated grid layout to 4-column
+- `client/src/pages/planning-workspace.tsx` — MODIFIED (prior session): Replaced `case "scenarios":` placeholder with `<WhatIfPlayground planId={planId} />`
 - `_bmad-output/implementation-artifacts/10-1-sensitivity-controls-sandbox-engine.md` — MODIFIED: Status updates and Dev Agent Record
 
 ### Testing Summary
 
 - **Test approach:** E2E browser testing via Playwright + Vitest regression testing
-- **Vitest:** All 646 existing tests pass — no regressions
-- **E2E test:** Playwright test verified: navigation to What-If view, header text, 5 slider rows with controls, 4 metric cards with Base Case vs Your Scenario columns, slider interaction (set revenue to +8% → showed "+$35,000/yr" impact), visual layout captured via screenshot
+- **Vitest:** All 753 existing tests pass — no regressions
+- **E2E test:** Playwright test verified: navigation to What-If view, header text, 5 slider rows with controls, 4 metric cards (Break-Even Month, Year-1 Revenue, 5-Year ROI %, Year-5 Cash) with Base Case vs Your Scenario columns, slider interaction (set revenue to +10% → showed "+$33,110/yr" impact), Reset Sliders behavior, helper text state, sandbox invariant
 - **ACs covered:** All 5 acceptance criteria verified (navigation, slider rendering, scenario computation, slider interaction, sandbox invariant)
 - **All tests passing:** Yes
 - **LSP Status:** 0 errors, 0 warnings
