@@ -1,123 +1,32 @@
 import { test, expect } from "@playwright/test";
-
-function makeField(value: number) {
-  return {
-    currentValue: value,
-    brandDefault: value,
-    source: "brand_default" as const,
-    isCustom: false,
-    lastModifiedAt: null,
-    item7Range: null,
-  };
-}
-
-function makeFieldArray5(value: number) {
-  return Array.from({ length: 5 }, () => makeField(value));
-}
-
-function buildFinancialInputs() {
-  const facilitiesDecomposition = {
-    rent: makeFieldArray5(6000000),
-    utilities: makeFieldArray5(960000),
-    telecomIt: makeFieldArray5(0),
-    vehicleFleet: makeFieldArray5(0),
-    insurance: makeFieldArray5(600000),
-  };
-  const facilitiesAnnual = Array.from({ length: 5 }, (_, i) => {
-    const total =
-      facilitiesDecomposition.rent[i].currentValue +
-      facilitiesDecomposition.utilities[i].currentValue +
-      facilitiesDecomposition.telecomIt[i].currentValue +
-      facilitiesDecomposition.vehicleFleet[i].currentValue +
-      facilitiesDecomposition.insurance[i].currentValue;
-    return makeField(total);
-  });
-
-  return {
-    revenue: {
-      monthlyAuv: makeField(2686700),
-      growthRates: [
-        makeField(0.13),
-        makeField(0.13),
-        makeField(0.13),
-        makeField(0.13),
-        makeField(0.13),
-      ],
-      startingMonthAuvPct: makeField(0.08),
-    },
-    operatingCosts: {
-      royaltyPct: makeFieldArray5(0.05),
-      adFundPct: makeFieldArray5(0.02),
-      cogsPct: makeFieldArray5(0.3),
-      laborPct: makeFieldArray5(0.17),
-      facilitiesAnnual,
-      facilitiesDecomposition,
-      marketingPct: makeFieldArray5(0.05),
-      managementSalariesAnnual: makeFieldArray5(0),
-      payrollTaxPct: makeFieldArray5(0.2),
-      otherOpexPct: makeFieldArray5(0.03),
-    },
-    profitabilityAndDistributions: {
-      targetPreTaxProfitPct: makeFieldArray5(0),
-      shareholderSalaryAdj: makeFieldArray5(0),
-      distributions: makeFieldArray5(0),
-      nonCapexInvestment: makeFieldArray5(0),
-    },
-    workingCapitalAndValuation: {
-      arDays: makeField(30),
-      apDays: makeField(60),
-      inventoryDays: makeField(60),
-      taxPaymentDelayMonths: makeField(0),
-      ebitdaMultiple: makeField(3.0),
-    },
-    financing: {
-      loanAmount: makeField(20000000),
-      interestRate: makeField(0.105),
-      loanTermMonths: makeField(144),
-      downPaymentPct: makeField(0.2),
-    },
-    startupCapital: {
-      workingCapitalMonths: makeField(3),
-      depreciationYears: makeField(4),
-    },
-  };
-}
+import {
+  loginAsAdmin,
+  loginAsFranchiseeUI,
+  createTestPlan,
+  deleteTestPlan,
+  buildNewFormatFinancialInputs,
+} from "./test-helpers";
 
 test.describe("Story 7.1b: Reports Per-Year Editing", () => {
   let planId: string;
 
   test.beforeEach(async ({ request }) => {
-    await request.post("/api/auth/dev-login");
-    const meRes = await request.get("/api/auth/me");
-    const me = await meRes.json();
-
-    const brandName = `71bBrand-${Date.now()}`;
-    const slug = brandName.toLowerCase().replace(/[^a-z0-9]+/g, "-");
-    const brandRes = await request.post("/api/brands", {
-      data: { name: brandName, slug },
+    const user = await loginAsAdmin(request);
+    const plan = await createTestPlan(request, {
+      userId: user.id,
+      financialInputs: buildNewFormatFinancialInputs(),
+      quickStartCompleted: true,
     });
-    const brand = await brandRes.json();
-
-    const planRes = await request.post("/api/plans", {
-      data: {
-        userId: me.id,
-        brandId: brand.id,
-        name: `71b-Test-${Date.now()}`,
-        status: "draft",
-      },
-    });
-    const plan = await planRes.json();
     planId = plan.id;
+  });
 
-    await request.patch(`/api/plans/${planId}`, {
-      data: { quickStartCompleted: true, financialInputs: buildFinancialInputs() },
-    });
+  test.afterEach(async ({ request }) => {
+    await loginAsAdmin(request);
+    if (planId) await deleteTestPlan(request, planId);
   });
 
   async function loginAndGoToReports(page: any) {
-    await page.goto("/login");
-    await page.click("[data-testid='button-dev-login-admin']");
-    await page.waitForURL("/", { timeout: 10_000 });
+    await loginAsFranchiseeUI(page);
     await page.goto(`/plans/${planId}`);
     await expect(
       page.locator("[data-testid='planning-workspace']")
