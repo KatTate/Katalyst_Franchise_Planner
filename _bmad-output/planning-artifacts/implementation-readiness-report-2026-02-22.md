@@ -1,5 +1,5 @@
 ---
-stepsCompleted: [step-01-document-discovery, step-02-prd-analysis, step-03-epic-coverage-validation, step-04-ux-alignment, step-05-epic-quality-review, step-05b-retrospective-integration, step-06-final-assessment]
+stepsCompleted: [step-01-document-discovery, step-02-prd-analysis, step-03-epic-coverage-validation, step-04-ux-alignment, step-05-epic-quality-review, step-05b-retrospective-integration, step-06-environment-readiness, step-06-final-assessment]
 readinessStatus: CONDITIONAL GO — WITH SIGNIFICANT BLOCKERS
 retrospectivesReviewed: [epic-5-retrospective, epic-5h-retrospective, epic-7-retrospective]
 assessmentDate: 2026-02-22
@@ -569,6 +569,52 @@ No technical-only epics masquerading as user value. No circular dependencies. No
 1. Epic 3 title "Financial Planning Engine" reads as technical rather than user-centric. Suggest renaming to "Financial Planning & Projections."
 2. Story 5.2 contains "Pre-Epic-7" section that is now stale after Epic 7 delivery.
 3. Epic 4 header mentions retirement of Stories 4.3/4.4 but Story 4.1 is not explicitly marked despite being equally superseded.
+
+---
+
+## Environment Readiness
+
+### Database: READY
+
+PostgreSQL database is provisioned (Replit built-in, Neon-backed). `DATABASE_URL`, `PGDATABASE`, `PGHOST`, `PGPORT`, `PGUSER`, `PGPASSWORD` environment variables are all configured. Architecture specifies PostgreSQL for relational data with brand_id partitioning, session storage via connect-pg-simple, and Drizzle ORM — all consistent with current environment.
+
+### Secrets & Configuration: GAPS FOUND
+
+| Secret/Variable | Required By | Status |
+|-----------------|-------------|--------|
+| SESSION_SECRET | Session management | ✅ Configured |
+| DATABASE_URL | PostgreSQL connection | ✅ Configured (auto-provisioned) |
+| GOOGLE_CLIENT_ID | Google OAuth for Katalyst admins | ❌ NOT CONFIGURED |
+| GOOGLE_CLIENT_SECRET | Google OAuth for Katalyst admins | ❌ NOT CONFIGURED |
+
+**WARNING:** Architecture specifies dual authentication — Google OAuth for Katalyst admin users (`passport-google-oauth20` with `@katgroupinc.com` domain restriction). Google OAuth credentials are not configured. This means admin authentication will not function in production. The dev environment uses a "Dev Login (Admin)" bypass, but production deployment requires Google Cloud Console OAuth 2.0 credentials.
+
+Architecture also references Email/Invitations (FR28) with "Resend, SendGrid, or Nodemailer" as options — no email service credentials are configured. This is expected since invitation email delivery stories have not yet been implemented.
+
+### Deployment: CONFIGURED
+
+Deployment is configured as `autoscale` type:
+- **Build command:** `npm run build`
+- **Run command:** `node ./dist/index.cjs`
+- **Port:** 5000 (mapped to external port 80)
+
+The app has not been published yet, which is expected at this stage of development.
+
+### Codebase Health: CLEAN
+
+- **LSP errors:** 0
+- **LSP warnings:** 0
+- **Tech debt markers:** 23 total across source files
+  - `shared/help-content/field-help.ts`: 18 markers (Loom video TODO placeholders — known carried item from Epic 5, 4th carry)
+  - `server/routes/plans.test.ts`: 4 markers
+  - `client/src/components/shared/field-help-icon.tsx`: 1 marker
+- **Baseline assessment:** 18 of 23 markers are the known Loom video TODOs (content authoring task, not engineering). The remaining 5 are minor code-level TODOs. This is healthy for a project at this stage.
+
+### Integrations: GAPS FOUND
+
+- **Currently configured:** No Replit integrations configured.
+- **Architecture requires:** Google OAuth (passport-google-oauth20). This could benefit from a Replit integration for OAuth credential management, but is not blocking development since the dev environment uses a bypass.
+- **Future consideration:** When Email/Invitations (FR28) is implemented, an email service integration (Resend, SendGrid) will be needed.
 
 ---
 
