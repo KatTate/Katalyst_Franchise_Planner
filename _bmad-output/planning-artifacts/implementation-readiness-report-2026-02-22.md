@@ -1,5 +1,5 @@
 ---
-stepsCompleted: [step-01-document-discovery, step-02-prd-analysis]
+stepsCompleted: [step-01-document-discovery, step-02-prd-analysis, step-03-epic-coverage-validation, step-04-ux-alignment]
 assessmentDate: 2026-02-22
 project: workspace
 documentsAssessed:
@@ -309,3 +309,73 @@ The epics document contains an FR Coverage Map (lines 190-294) claiming 111/111 
 - FRs covered in epics: 111 (per coverage map)
 - Coverage percentage: 100% (for existing FRs)
 - Implementation gaps: 2 capabilities implemented without corresponding FRs (plan CRUD, quick start)
+
+## Step 4: UX Alignment Assessment
+
+### UX Document Status
+
+**Found:** `ux-design-specification-consolidated.md` (1,414 lines, 2026-02-18, consolidated from two prior specs by Party Mode session)
+
+### UX ↔ PRD Alignment
+
+| Area | PRD | UX Spec | Status |
+|------|-----|---------|--------|
+| Two-surface architecture | FR12: Two surfaces + three tiers (updated 2026-02-22) | Part 7: Two-Door Model, no modes | ✓ Aligned |
+| Inline editing always-on | FR7h: Input cells always editable | Part 10: "Not gated by a mode" | ✓ Aligned |
+| Progressive disclosure | FR7a-FR7c imply drill-down | Part 10: Annual → Quarterly → Monthly | ✓ Aligned |
+| Impact Strip | FR90-FR94: Persistent metrics bar | Part 8: My Plan + Impact Strip | ✓ Aligned |
+| Guardian Bar | FR88-FR89: Advisory visual language | Part 12: Guardian Bar + Dynamic Interpretation | ✓ Aligned |
+| Document Preview | FR96: Dashboard widget with DRAFT watermark | Part 13: Document Preview + PDF | ✓ Aligned |
+| Financial formatting | FR84-FR87: Currency, accounting negatives, monospace | Part 6: Design token architecture | ✓ Aligned |
+| AI Planning Assistant | FR50-FR54: Slide-in panel in My Plan | Part 9: AI Planning Assistant | ✓ Aligned |
+| Admin impersonation | FR59-FR65: View As + banner | Admin Support Tools section | ✓ Aligned |
+| Demo modes | FR66-FR73: Franchisee + Franchisor demo | Admin Support Tools section | ✓ Aligned |
+| Source badges | FR87: BD/AI badges on input cells | Part 14: Per-Cell "BD" indicator | ✓ Aligned |
+| White-labeling | FR49: Brand identity | Part 1: Brand theming mechanism | ✓ Aligned |
+| **Two-surface design principle** | FR12 updated: "Forms = Onboarding Wizard, Reports = Power Editing Surface" | Part 7 says "two doors" but doesn't explicitly state Forms limitation | ⚠️ Partial |
+| **Multi-plan management** | No FR (Gap 1 from Step 3) | Part 7: Sidebar mentions "All Plans (portfolio)" | ⚠️ In UX but not in PRD |
+| **Scenario Comparison** | Not in MVP FRs (moved to Epic 10) | Part 11: RETIRED | ✓ Aligned (both retired) |
+
+### UX ↔ Architecture Alignment
+
+| Area | Architecture | UX Spec | Status |
+|------|-------------|---------|--------|
+| Two-surface model | Section 2.1: Two-Surface Architecture | Part 7: Two-Door Model | ✓ Aligned |
+| Bidirectional sync | Documented in architecture | FR97 + UX Part 7 rule #3 | ✓ Aligned |
+| INPUT_FIELD_MAP as source of truth | Documented in architecture (2026-02-22 update) | Not mentioned in UX spec | ⚠️ Architecture detail not needed in UX |
+| Financial engine purity | TypeScript engine, cents-based | UX Part 10 assumes instant recalculation | ✓ Aligned (NFR1: < 2 seconds) |
+| Progressive disclosure | Architecture supports drill-down | UX Part 10 specifies Annual → Quarterly → Monthly | ✓ Aligned |
+| Per-year independence | Architecture documents 5-value arrays | UX Part 10 Pre-Epic-7 section now stale (describes pre-7 behavior) | ⚠️ Stale |
+| Facilities decomposition | Architecture documents the tradeoff | UX Part 8 doesn't describe decomposition | ⚠️ Gap — UX doesn't spec the facilities decomposition pattern from Epic 7.1d |
+
+### Alignment Issues
+
+**Issue 1: UX spec does not reflect Two-Surface Design Principle (MEDIUM)**
+- The UX spec (2026-02-18) predates Epic 7's formalization of "Forms = Onboarding Wizard / Reports = Power Editing Surface" (2026-02-21).
+- Part 7 describes My Plan and Reports as "two doors" but does not explicitly state that Forms deliberately does NOT replicate Reports' per-year/per-month editing capability.
+- The PRD and Architecture were updated (2026-02-22) to document this principle, but UX spec was not.
+- **Recommendation:** Update UX spec Part 7 and Part 8 to explicitly document the design principle boundary.
+
+**Issue 2: Pre-Epic-7 per-year section is stale (LOW)**
+- UX Part 10 "Pre-Epic-7 Per-Year Behavior" describes link icons and broadcast behavior that no longer applies — Epic 7 has been delivered and per-year editing is independent.
+- **Recommendation:** Update Part 10 to remove "Pre-Epic-7" section or mark it as historical.
+
+**Issue 3: Facilities decomposition not in UX spec (MEDIUM)**
+- Epic 7.1d introduced Facilities decomposition (Rent + Utilities + Telecom + Vehicle + Insurance) in My Plan. The UX spec Part 8 does not describe this pattern.
+- The architecture documents the decomposition-vs-total tradeoff but UX doesn't specify the interaction design.
+- **Recommendation:** Add facilities decomposition interaction spec to UX Part 8.
+
+**Issue 4: UX story structure suggestion is stale (LOW)**
+- UX Part 19 "Story Rewrite Implications" suggests a 10-story structure for Epic 5. Actual implementation was different (Epic 5 had different story breakdown, followed by Epic 5H hardening sprint).
+- **Recommendation:** Mark this section as historical or remove it.
+
+**Issue 5: Sidebar structure divergence (LOW)**
+- UX Part 7 shows sidebar with "MY LOCATIONS → All Plans" and "Scenarios" as separate destinations.
+- Actual implementation uses "MY PLANS" section listing all plans with context menus (Epic 7.2), and Scenarios sidebar item leads to What-If Playground (Epic 10, not yet implemented).
+- **Recommendation:** Update sidebar wireframe in UX spec to match implementation.
+
+### Warnings
+
+- The UX spec is comprehensive and well-structured but was last updated 2026-02-18 (before Epic 7 delivery). Several sections describe pre-implementation designs that no longer match the actual product.
+- No critical misalignments — the core two-surface model, navigation architecture, and interaction patterns are all aligned across PRD, Architecture, and UX.
+- The UX spec should be updated to reflect Epic 7 implementation decisions before the next epic begins, to prevent agent confusion.
