@@ -1,6 +1,6 @@
 # Story 7H.4: INPUT_FIELD_MAP Mechanical Validation
 
-Status: review
+Status: done
 
 ## Story
 
@@ -177,3 +177,18 @@ Source: Architecture doc — "Two-Surface Design Principle" and `INPUT_FIELD_MAP
   - All tests passing: Yes (6/6 in target file, 753/753 full suite)
 - **LSP Status:** 0 new errors, 0 warnings (pre-existing path alias LSP errors are unchanged)
 - **Visual Verification:** N/A (developer-facing test-only story)
+
+## Code Review Record
+
+- **Review Date:** 2026-02-22
+- **Reviewer:** Claude 4.6 Opus (Replit Agent) — fresh context, adversarial review
+- **Review Outcome:** PASS — all 8 ACs satisfied, 4 issues found and fixed
+- **Findings Summary:** 0 HIGH, 2 MEDIUM, 2 LOW — all resolved
+  - M1: Completeness test error message in uncovered-category branch was misleading (said "has entries" when category has none) — fixed
+  - M2: No reverse coverage check on ENGINE_FIELD_SEMANTICS — added bidirectional validation + fieldName consistency check
+  - L1: SEMANTIC_TO_FORMAT typed as `Record<string, string>` — tightened to `Record<SemanticType, FormatType>` with local type aliases
+  - L2: Redundant `fieldName` property never validated — added fieldName-vs-compound-key consistency check in M2 fix
+- **Tests After Fixes:** 6/6 in target file, 753/753 full suite
+- **Git Discovery:** yes | Discrepancies: 0
+- **LSP Scan:** 0 new errors, 0 warnings
+- **Architect Review:** yes — confirmed all ACs satisfied, agreed with findings

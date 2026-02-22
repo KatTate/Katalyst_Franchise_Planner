@@ -102,7 +102,10 @@ describe("INPUT_FIELD_MAP mechanical validation", () => {
     "workingCapitalAndValuation.ebitdaMultiple": { fieldName: "ebitdaMultiple", enginePath: "ebitdaMultiple", semanticType: "decimal_number" },
   };
 
-  const SEMANTIC_TO_FORMAT: Record<string, string> = {
+  type SemanticType = "cents" | "decimal_pct" | "integer" | "decimal_number";
+  type FormatType = "currency" | "percentage" | "integer" | "decimal";
+
+  const SEMANTIC_TO_FORMAT: Record<SemanticType, FormatType> = {
     cents: "currency",
     decimal_pct: "percentage",
     integer: "integer",
@@ -128,6 +131,29 @@ describe("INPUT_FIELD_MAP mechanical validation", () => {
         mismatches.push(
           `${rowKey} (${compoundKey}): INPUT_FIELD_MAP format is "${mapping.inputFormat}" but engine semantic type "${semantics.semanticType}" requires "${expectedFormat}" (engine path: ${semantics.enginePath})`
         );
+      }
+    }
+
+    const inputFieldMapCompoundKeys = new Set(
+      Object.values(INPUT_FIELD_MAP).map((m) => `${m.category}.${m.fieldName}`)
+    );
+    for (const semanticsKey of Object.keys(ENGINE_FIELD_SEMANTICS)) {
+      if (!inputFieldMapCompoundKeys.has(semanticsKey)) {
+        mismatches.push(
+          `${semanticsKey}: present in ENGINE_FIELD_SEMANTICS but not in INPUT_FIELD_MAP — remove stale entry or add the field to INPUT_FIELD_MAP`
+        );
+      }
+    }
+
+    const semanticsEntry = ENGINE_FIELD_SEMANTICS[Object.keys(ENGINE_FIELD_SEMANTICS)[0]];
+    if (semanticsEntry) {
+      for (const [compoundKey, entry] of Object.entries(ENGINE_FIELD_SEMANTICS)) {
+        const expectedFieldName = compoundKey.split(".")[1];
+        if (entry.fieldName !== expectedFieldName) {
+          mismatches.push(
+            `${compoundKey}: ENGINE_FIELD_SEMANTICS fieldName is "${entry.fieldName}" but compound key implies "${expectedFieldName}"`
+          );
+        }
       }
     }
 
@@ -172,7 +198,7 @@ describe("INPUT_FIELD_MAP mechanical validation", () => {
           const compoundKey = `${category}.${fieldName}`;
           if (!EXCLUDED_FIELDS.has(compoundKey)) {
             uncovered.push(
-              `${compoundKey}: category "${category}" has INPUT_FIELD_MAP entries but this field is missing from both INPUT_FIELD_MAP and EXCLUDED_FIELDS`
+              `${compoundKey}: category "${category}" has no INPUT_FIELD_MAP entries — add this field to INPUT_FIELD_MAP or EXCLUDED_FIELDS`
             );
           }
         }
