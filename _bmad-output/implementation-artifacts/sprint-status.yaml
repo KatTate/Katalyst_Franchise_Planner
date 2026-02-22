@@ -40,6 +40,7 @@
 # - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
 
 generated: 2026-02-09
+updated: 2026-02-22  # Story 7H.2 context document created (Create Story workflow). 10 ACs, 13+ files in change summary.
 updated: 2026-02-22  # Story 7H.1 context document created (Create Story workflow). Epic 7H status: in-progress.
 updated: 2026-02-22  # Sprint Planning regenerated: 15 epics, 69 stories (incl. 2 orphans, 1 retired). Epic 7H verified. All statuses preserved — no downgrades.
 updated: 2026-02-22  # SCP-2026-02-22 approved: Post-Epic-7 Course Correction & Stabilization. Epic 7H created. Epic sequencing reset. 7.1b.1 promoted from deferred to required.
@@ -57,6 +58,23 @@ story_location: _bmad-output/implementation-artifacts
 
 # CHANGE LOG:
 # ===========
+# 2026-02-22: Story 7H.2 context document created (Create Story workflow)
+#   - Full story file: 7h-2-per-month-independence.md (ready-for-dev)
+#   - 10 acceptance criteria covering: 60-element PlanFinancialInputs arrays (AC-1),
+#     5-to-60 lossless migration with idempotency (AC-2), unwrapForEngine with 60-element
+#     number arrays and monthlyAuvByMonth (AC-3), engine direct month indexing with identity
+#     checks (AC-4), monthly-level inline editing in Reports (AC-5), annual/quarterly
+#     convenience editing updating multiple months (AC-6), Copy Year 1 pattern copy (AC-7),
+#     Forms single-value semantics preserved (AC-8), test coverage (AC-9),
+#     INPUT_FIELD_MAP / scaleForStorage updates (AC-10)
+#   - Dev notes include: engine revenue ramp-up interaction, growth rate preservation,
+#     migration idempotency detection, scenario/sensitivity engine updates, Copy Year 1
+#     month-by-month pattern copy, Forms bidirectional sync (Month 1 representative),
+#     scaleForStorage per-month semantics, "Linked" indicator removal
+#   - 13+ files in change summary spanning shared/ (engine, schema, plan-init, tests) and
+#     client/ (financial-statements, pnl-tab, input-field-map, column-manager, forms)
+#   - Next action: Dev Story (DS) for 7H.2 implementation
+#
 # 2026-02-22: Story 7H.1 context document created (Create Story workflow)
 #   - Full story file: 7h-1-planning-document-realignment.md (ready-for-dev)
 #   - 12 acceptance criteria covering: FR98 addition to PRD (AC-1), architecture per-month
@@ -674,7 +692,7 @@ development_status:
   # NOTE: Epic 7H stories NOT YET in epics.md — will be added during story 7H.1 execution
   epic-7h: in-progress  # First story (7H.1) context document created 2026-02-22
   7h-1-planning-document-realignment: done                  # All 12 ACs satisfied 2026-02-22. PO review feedback applied: sidebar redesigned (Home→Dashboard pattern), HELP section expanded. Done 2026-02-22.
-  7h-2-per-month-independence: backlog                  # 7.1b.1 promoted: 60-element arrays for revenue/COGS%/labor%/marketing%, engine type updates, Reports UI for monthly editing
+  7h-2-per-month-independence: ready-for-dev             # Story file created 2026-02-22. 10 ACs, 60-element arrays, engine type updates, Reports monthly editing, migration.
   7h-3-brand-crud-completion: backlog                   # Delete (with confirmation) + metadata editing. Closes Epic 2 gap causing active dev pain.
   7h-4-input-field-map-validation: backlog              # Test-time assertion: every INPUT_FIELD_MAP entry format matches FIELD_METADATA/engine output. Build fails on mismatch.
   7h-5-e2e-testing-standards: backlog                   # Test agents auth as franchisee, no demo mode, clean up test data. Documentation + enforcement.
