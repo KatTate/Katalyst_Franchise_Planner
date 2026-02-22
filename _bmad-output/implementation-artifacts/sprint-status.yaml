@@ -1,4 +1,5 @@
 # generated: 2026-02-09
+# updated: 2026-02-21 (Epic 7 retrospective completed — sprint planning reset required)
 # updated: 2026-02-21 (Epic 7 Party Mode review: 7.1a→done, 7.1b-7.1d rewritten, 7.1e created)
 # updated: 2026-02-20 (Story 10.2 context document created: Multi-Chart Sensitivity Dashboard)
 # project: Katalyst Growth Planner
@@ -55,6 +56,17 @@ story_location: _bmad-output/implementation-artifacts
 
 # CHANGE LOG:
 # ===========
+# 2026-02-21: Epic 7 Retrospective completed
+#   - Epic 7 delivered all 6 stories (7.1a-7.1e + 7.2)
+#   - CRITICAL: Stories were rewritten mid-epic without Sprint Change Proposal
+#   - CRITICAL: PRD, architecture, epics summary misaligned with what was built
+#   - "Forms = onboarding wizard / Reports = power editing surface" design pivot adopted informally
+#   - 13 action items generated (3 CRITICAL, 5 HIGH, 2 MEDIUM, 3 LOW)
+#   - SPRINT PLANNING RESET REQUIRED before new epic work
+#   - PO directive: Epic 6 (PDF) and Epic 9 (AI Advisor) are NOT next
+#   - Brand CRUD gap (Epic 2) causing active dev pain — needs scheduling
+#   - E2E testing standards needed: agents must auth as franchisee, not admin
+#   - See: epic-7-retrospective.md
 # 2026-02-21: SCP-2026-02-21 approved — Epic 10 pivot to user-authored scenario modeling
 #   - Conservative/Optimistic system-defined columns KILLED (D1)
 #   - Replaced with Base Case vs Your Scenario (user's live slider state) (D2/D3)
