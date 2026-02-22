@@ -1,6 +1,7 @@
 ---
-stepsCompleted: [step-01-document-discovery, step-02-prd-analysis, step-03-epic-coverage-validation, step-04-ux-alignment, step-05-epic-quality-review, step-06-final-assessment]
-readinessStatus: CONDITIONAL GO
+stepsCompleted: [step-01-document-discovery, step-02-prd-analysis, step-03-epic-coverage-validation, step-04-ux-alignment, step-05-epic-quality-review, step-05b-retrospective-integration, step-06-final-assessment]
+readinessStatus: CONDITIONAL GO — WITH SIGNIFICANT BLOCKERS
+retrospectivesReviewed: [epic-5-retrospective, epic-5h-retrospective, epic-7-retrospective]
 assessmentDate: 2026-02-22
 project: workspace
 documentsAssessed:
@@ -571,52 +572,213 @@ No technical-only epics masquerading as user value. No circular dependencies. No
 
 ---
 
+## Step 5b: Retrospective Integration
+
+### Sources Reviewed
+
+| Retrospective | Date | Epic Status | Key Concern |
+|--------------|------|-------------|-------------|
+| Epic 5 Retrospective | 2026-02-20 | Complete (9/9) | "Dumpster fire" — engine unverified, 44% code review coverage, rogue agent sessions |
+| Epic 5H Retrospective | 2026-02-21 | Complete (4/4) | Engine validated but display layer NOT — 4 critical bugs found POST-retro |
+| Epic 7 Retrospective | 2026-02-21 | Complete (6/6) | Mid-epic design pivot without process — documents now contradict reality |
+
+### Critical Intelligence from Retrospectives
+
+#### 1. PO Has Directed Epic 6 and Epic 9 Are NOT Next
+
+**Source:** Epic 7 Retrospective, Part 12 + Decision Table (line 390)
+
+> "Epic 6 (PDF Generation) and Epic 9 (AI Planning Advisor) are NOT next per PO direction — both are presentation/intelligence layers that would require repeated rework as core architecture evolves."
+
+This PO direction is not yet documented in the sprint plan. Linear epic numbering does not reflect actual priorities.
+
+#### 2. Mid-Epic Story Rewrite Without Formal Process (CRITICAL)
+
+**Source:** Epic 7 Retrospective, Part 2
+
+All 5 of 6 Epic 7 stories were fundamentally rewritten during implementation. A core design philosophy pivot (Forms = onboarding wizard / Reports = power editing surface) was adopted informally without a Sprint Change Proposal. This left the PRD, architecture, and epics.md summary section misaligned with what was built. The same epics.md file now contradicts itself — old story descriptions in the summary (~line 331), new ones in the detailed section (~line 1915).
+
+**Impact on this assessment:** Steps 2-4 of this report assessed the detailed sections of planning documents, which ARE correct. But the epics.md summary section (which an agent might read first) contains stale 5-story structure, references to PerYearEditableRow, "5-column per-year editing in Forms," and combined 7.1d — all retired.
+
+#### 3. Recurring Bug Pattern: Display Format Validation (3 Consecutive Retros)
+
+**Source:** Epic 5, 5H, and 7 Retrospectives
+
+| Retro | Bug | Root Cause |
+|-------|-----|-----------|
+| Epic 5 | P&L formatting issues | Manual mapping without validation |
+| Epic 5H | Labor efficiency not displaying as ratio | Same — plus engine formula inverted |
+| Epic 7 | Other OpEx showing dollars instead of percentages | Same — INPUT_FIELD_MAP mapped as currency instead of percentage |
+
+**E7 Retro Action Item AI-E7-2 (CRITICAL):** Add a test-time assertion that verifies every INPUT_FIELD_MAP entry has a format type matching FIELD_METADATA / engine output type. Build fails if a percentage field is mapped as currency.
+
+**Status:** INPUT_FIELD_MAP validation test was created during Epic 7 with 3 mechanical tests. **Partially addressed but needs verification that it covers all 15+ editable fields.**
+
+#### 4. Four Critical Engine Bugs Found AFTER 5H Retrospective Was Finalized
+
+**Source:** Epic 5H Retrospective, Post-Retrospective Addendum (line 302+)
+
+Within hours of the 5H retro declaring Story 5H.1 "done" (99 reference tests, 1 bug fixed), execution of action items AI-3/AI-4/AI-5 uncovered **four critical engine formula bugs**:
+
+| Bug | What Was Wrong | Severity |
+|-----|---------------|----------|
+| Labor Efficiency formula inverted | Engine: `totalWages/revenue` (0.17x). Correct: `nonLaborGrossMargin/totalWages` (3.71x) | CRITICAL — reciprocal of correct answer |
+| ROIC using after-tax instead of pre-tax | Engine used `afterTaxNetIncome`. Spreadsheet uses `preTaxNetIncomeIncSweatEquity` | HIGH — wrong intermediate in percentage |
+| Salary Adjustment sign error | Engine: `preTaxNI + salaryAdj`. Correct: `preTaxNI - salaryAdj` | HIGH — addition vs subtraction |
+| businessAnnualROIC not synced from ROIC tab | Valuation computed independently instead of copying from ROIC tab | MEDIUM — values diverge |
+
+**Plus:** Runtime crash in P&L Analysis display — `laborEfficiency` accessed on wrong type. Section was collapsed by default, so nobody expanded it during testing.
+
+**Resolution status:** All 4 bugs were fixed during post-5H-retro action item execution. Regression tests added. **The engine is now more accurate, but this incident reveals that "99 tests passing" is not equivalent to "validated."**
+
+#### 5. Brand CRUD Gap Causing Active Development Pain
+
+**Source:** Epic 7 Retrospective, Part 7.3 + Action Item AI-E7-5 (HIGH)
+
+Epic 2's Brand Management shipped without delete or full metadata editing. Meanwhile:
+- E2E test agents create dozens of junk brands per test run
+- PO must manually clean up junk data
+- Brand CRUD gap was flagged in Story 7.2 dev notes but **ignored during implementation**
+
+#### 6. E2E Testing Creating Waste
+
+**Source:** Epic 7 Retrospective, Part 7.7 + Action Item AI-E7-6 (HIGH)
+
+Test agents consistently authenticate as admin instead of franchisee, triggering brand creation flows. Each Playwright run creates multiple bogus brands, wastes API tokens, and hits unwired demo mode paths. E7 retro mandates:
+1. Test agents MUST authenticate as franchisee, NOT admin
+2. Test agents MUST NOT use demo mode
+3. Test agents MUST clean up any test data created
+4. Test plans must specify authentication path explicitly
+
+#### 7. Dev Agent Completion Reliability
+
+**Source:** Epic 7 Retrospective, Part 7.4
+
+Story 7.2 had 9 code review findings (3 HIGH) despite the dev agent marking it "done." File lists were inaccurate in 60% of reviews. AC counts were wrong in 7.1e. Pattern: **the more complex the story, the less reliable the self-assessment.** Stories with 5+ ACs or 3+ new components are high-risk for incomplete implementation.
+
+**E7 Retro Action Item AI-E7-8 (HIGH):** Stories with 5+ ACs or 3+ new components get either split before implementation or an extra review round.
+
+#### 8. Hotspot File Accumulation
+
+**Source:** Epic 7 Retrospective, Part 7.6
+
+| File | Modifications (E7) | Stories | Risk |
+|------|-------------------|---------|------|
+| pnl-tab.tsx | 9 | 7.1a, 7.1b, 7.1d, 7.1e | Renders rows, handles drill-down, manages editing state — maintenance bottleneck |
+| use-field-editing.ts | 6 | 7.1b, 7.1c, 7.1d | Cross-story coupling |
+| forms-mode.tsx | 6 | 7.1c, 7.1d | Cross-story coupling |
+
+**E7 Retro Action Item AI-E7-9 (MEDIUM):** Evaluate pnl-tab.tsx for decomposition before any new epic adds logic to it.
+
+#### 9. Action Item Follow-Through Pattern
+
+| Retro | Items | Completed | Partial | Not Addressed | Rate |
+|-------|-------|-----------|---------|---------------|------|
+| Epic 5 → 5H | 10 | 7 | 1 | 2 | 70% |
+| Epic 5H → E7 | 9 | 3 | 3 | 3 | 33% |
+| Epic 7 → Next | 13 | 0 | 0 | 13 | 0% (pending) |
+
+**Pattern:** Items executed immediately after the retro succeed. Items deferred to "later" are not addressed. The E7 retro specifically structured CRITICAL items as blockers to prevent this pattern.
+
+#### 10. Carried Items Aging
+
+| Item | First Flagged | Carries | Status |
+|------|--------------|---------|--------|
+| Content Authoring (19 Loom TODOs) | Epic 5 | 4th carry | Content task, not engineering |
+| 30-Day Month Decision | Epic 5H | 2nd carry | PO-deferred |
+| Document Large File Decision | Epic 5 | 4th carry | Documentation task |
+
+### Epic 7 Retrospective Action Item Status (13 items)
+
+| ID | Priority | Action | Status |
+|----|----------|--------|--------|
+| AI-E7-1 | CRITICAL | Planning document realignment (epics summary, PRD, architecture) | **NOT STARTED** |
+| AI-E7-2 | CRITICAL | INPUT_FIELD_MAP mechanical validation | **PARTIALLY DONE** (test exists, coverage TBD) |
+| AI-E7-3 | CRITICAL | Sprint planning reset (PO-directed sequencing) | **NOT STARTED** |
+| AI-E7-4 | HIGH | Mandatory adversarial review for ALL stories | Process rule — applies to next sprint |
+| AI-E7-5 | HIGH | Brand CRUD completion (delete + edit) | **NOT STARTED** |
+| AI-E7-6 | HIGH | E2E testing standards | Process rule — applies to next sprint |
+| AI-E7-7 | HIGH | Change proposal requirement for design pivots | Process rule — applies to next sprint |
+| AI-E7-8 | HIGH | Story complexity threshold (5+ ACs = split or extra review) | Process rule — applies to story creation |
+| AI-E7-9 | MEDIUM | Hotspot file refactoring budget (pnl-tab.tsx) | Assess during next epic planning |
+| AI-E7-10 | MEDIUM | Completion report accuracy standard | **NOT STARTED** |
+| AI-E7-11 | LOW | Schedule 7.1b.1 (per-month independence) decision | PO decision pending |
+| AI-E7-12 | LOW | 30-Day month decision (carried from 5H) | PO-deferred (4th carry) |
+| AI-E7-13 | LOW | Content authoring — 19 Loom TODOs (carried from E5) | Content task (4th carry) |
+
+**3 CRITICAL items are non-negotiable blockers before any new epic work.**
+
+---
+
 ## Step 6: Final Assessment
 
-### Readiness Status: CONDITIONAL GO
+### Readiness Status: CONDITIONAL GO — WITH SIGNIFICANT BLOCKERS
 
-The project planning artifacts are mature, comprehensive, and well-structured. The PRD (111 FRs + 30 NFRs), Architecture, Epics (13 epics, 40+ stories), and UX Design are aligned on the core product vision. Epic 7 (6 stories) has been delivered successfully with a clean codebase (0 LSP errors, 686+ tests passing). The two-surface architecture (My Plan + Reports) is consistently reflected across all documents.
+The project planning artifacts are mature, comprehensive, and well-structured. The PRD (111 FRs + 30 NFRs), Architecture, Epics (13 epics, 40+ stories), and UX Design are aligned on the core product vision. Epic 7 (6 stories) has been delivered successfully with a clean codebase (0 LSP errors, 686+ tests passing). The two-surface architecture (My Plan + Reports) is consistently reflected across the detailed sections of all documents.
 
-Implementation can proceed with the next planned epic, subject to the conditions below being addressed.
+However, the Epic 7 retrospective identified **3 CRITICAL blockers and 5 HIGH-priority process improvements** that must be addressed before any new epic work begins. Additionally, the PO has explicitly directed that **Epic 6 (PDF Generation) and Epic 9 (AI Planning Advisor) are NOT next** — both are presentation/intelligence layers that would require repeated rework as core architecture evolves.
 
-### Conditions for Proceeding
+### CRITICAL Blockers (3 items — must complete before new story work)
 
-#### Must-Fix Before Next Epic (2 items)
+1. **AI-E7-1: Planning Document Realignment**
+   - **Problem:** epics.md summary section (~line 331) contradicts the detailed section (~line 1915). Summary lists 5 stories with old names (PerYearEditableRow, "5-column per-year editing," combined 7.1d). PRD missing "Forms = onboarding wizard" design principle. Architecture missing two-surface philosophy documentation.
+   - **Action:** Reconcile epics.md summary with detailed section. Add two-surface design principle to PRD. Update architecture with new component structure and deferred 7.1b.1 reference.
+   - **Includes:** Story 4.1 "RETIRED" marker, Story 1.6 tier reference updates, FR98/FR99 additions (from Steps 3 and 5 findings).
+   - **Effort:** ~1 hour — document edits only, no code changes.
 
-1. **Stale Story ACs (Stories 4.1 and 1.6):** Stories 4.1 and 1.6 reference retired concepts (mode switcher, three-tier model) without explicit retirement markers. An implementing agent reading Story 4.1 would build the wrong UI. Story 1.6's onboarding recommendation still references "Quick Entry" which no longer exists.
-   - **Action:** Add "RETIRED" or "SUPERSEDED" marker to Story 4.1 title. Update Story 1.6 ACs to reference the two-surface model (My Plan vs Reports) instead of three tiers.
-   - **Effort:** 30 minutes — document edits only, no code changes.
+2. **AI-E7-2: INPUT_FIELD_MAP Mechanical Validation**
+   - **Problem:** Display format bugs flagged in 3 consecutive retrospectives (Epic 5, 5H, 7). Code review catches them, but prevention is needed. An INPUT_FIELD_MAP validation test was created during Epic 7 but needs verification of complete coverage across all 15+ editable fields.
+   - **Action:** Verify existing test covers all editable fields. If gaps exist, extend coverage. Build should fail if a percentage field is mapped as currency.
+   - **Effort:** 30 minutes — verify test, extend if needed.
 
-2. **FR Coverage Gap — Multi-Plan CRUD and Quick Start:** Epic 7.2 (Plan CRUD) and the Quick Start flow were implemented without corresponding functional requirements in the PRD. The PRD should have FR98 (multi-plan CRUD operations) and FR99 (Quick Start onboarding flow) to maintain traceability.
-   - **Action:** Add FR98 and FR99 to PRD Section 8 (Planning Features). Update the epics FR Coverage Map accordingly.
-   - **Effort:** 15 minutes — document edits only, no code changes.
+3. **AI-E7-3: Sprint Planning Reset**
+   - **Problem:** Current sprint plan is stale. PO has directed Epic 6 and Epic 9 are NOT next. Deferred work (7.1b.1, Brand CRUD) needs explicit scheduling decisions. Next epic selection must be based on accurate documents (depends on AI-E7-1).
+   - **Action:** After document realignment, reset sprint plan with PO-directed epic sequencing.
+   - **Effort:** PO decision required.
 
-#### Should-Fix Before Story 5.6 Implementation (1 item)
+### HIGH-Priority Process Items (5 items — apply to next sprint)
 
-3. **Story 5.6 Decomposition:** Story 5.6 packs 4 distinct features (My Plan workspace, Impact Strip, bidirectional data flow, AI panel slot) into a single story. When this story reaches the sprint, it should be decomposed into 2-3 focused stories (e.g., 5.6a: My Plan form workspace, 5.6b: Impact Strip, 5.6c: Bidirectional sync verification).
-   - **Action:** Decompose Story 5.6 before sprint planning for the epic containing it.
-   - **Effort:** 1 hour — story writing, no code changes.
+4. **AI-E7-4: Mandatory Adversarial Review for ALL Stories.** No story moves to "done" without adversarial code review. Foundation stories reviewed FIRST. 100% hit rate across all reviews validates the process.
 
-#### Recommended but Non-Blocking (3 items)
+5. **AI-E7-5: Brand CRUD Completion (Delete + Edit).** Active development pain — test agents create junk brands requiring manual PO cleanup. Schedule as part of sprint planning reset.
 
-4. **UX Spec Refresh:** The UX spec (dated 2026-02-18) predates Epic 7 delivery and doesn't reflect the two-surface principle, facilities decomposition, or per-year independence. Agents referencing Parts 8-10 of the UX spec may encounter stale designs.
-   - **Action:** Update UX spec Parts 8 (My Plan), 9 (AI Planning), and 10 (Reports) to reflect Epic 7 implementation decisions.
+6. **AI-E7-6: E2E Testing Standards.** Test agents must authenticate as franchisee, must not use demo mode, must clean up test data. Prevents junk brand accumulation and wasted tokens.
 
-5. **Architecture Document Cleanup:** `architecture.md` still references "three modes" and retired components in some sections. Story 5H.4 explicitly covers this remediation.
-   - **Action:** Defer to Story 5H.4 execution, or address earlier if Epic 5H is prioritized next.
+7. **AI-E7-7: Change Proposal Requirement for Design Pivots.** Surface-level design philosophy cannot change without PO sign-off and document updates. Story-level ACs can evolve; product surface relationships cannot.
 
-6. **Epic 3 Title:** "Financial Planning Engine" reads as a technical milestone. Consider renaming to "Financial Planning & Projections" for consistency with user-centric naming.
-   - **Action:** Optional rename in epics.md.
+8. **AI-E7-8: Story Complexity Threshold.** Stories with 5+ ACs or 3+ new component files get split before implementation, or get an additional review round. Evidence: Story 7.2 (5 ACs, 4 new components) had 9 review findings. Story 7.1e (3 ACs, 0 new components) had 0 HIGH findings.
+
+### Should-Fix Before Applicable Epic (3 items)
+
+9. **Story 5.6 Decomposition:** Packs 4 distinct features into one story. Decompose into 2-3 focused stories before sprint planning for Epic 5 remaining stories.
+
+10. **UX Spec Refresh:** UX spec (2026-02-18) predates Epic 7 delivery. Update Parts 8-10 to reflect two-surface principle before any epic that touches Forms or Reports.
+
+11. **Hotspot File Assessment (AI-E7-9):** If the next epic's stories will modify pnl-tab.tsx (9 modifications in E7), evaluate for decomposition first — separate row rendering from editing orchestration.
+
+### Recommended but Non-Blocking (3 items)
+
+12. **Architecture Document Cleanup:** Still references "three modes" in some sections. Covered by Story 5H.4 or AI-E7-1.
+
+13. **Epic 3 Title:** "Financial Planning Engine" reads as technical. Consider renaming to "Financial Planning & Projections."
+
+14. **Completion Report Accuracy Standard (AI-E7-10):** File lists verified against git diff, AC-by-AC verification with evidence, dev note TODOs explicitly addressed or escalated.
 
 ### Risk Summary
 
-| Risk | Severity | Mitigation |
-|------|----------|------------|
-| Stale ACs mislead implementing agents | HIGH | Fix Stories 4.1 and 1.6 before next sprint |
-| Story 5.6 scope causes implementation overrun | MEDIUM | Decompose before sprint planning |
-| UX spec drift creates design inconsistency | MEDIUM | Update UX spec; or accept divergence with architecture.md as source of truth |
-| Missing FR traceability for delivered features | LOW | Add FR98/FR99 to maintain PRD completeness |
-| Engine accuracy unverified against reference spreadsheets | HIGH | Story 5H.1 explicitly addresses this — prioritize in next epic selection |
+| Risk | Severity | Source | Mitigation |
+|------|----------|--------|------------|
+| Planning documents contradict reality | CRITICAL | E7 Retro AI-E7-1 | Document realignment before any new story work |
+| Display format bugs recur (4th retro) | CRITICAL | E5/5H/7 Retros | INPUT_FIELD_MAP mechanical validation (AI-E7-2) |
+| Wrong epic gets worked on next | CRITICAL | E7 Retro AI-E7-3 | Sprint planning reset with PO direction |
+| Stale ACs mislead implementing agents | HIGH | Steps 3, 5 | Part of AI-E7-1 realignment |
+| Brand CRUD gap creates junk data | HIGH | E7 Retro AI-E7-5 | Schedule as part of sprint reset |
+| E2E tests waste tokens and create noise | HIGH | E7 Retro AI-E7-6 | Testing standards enforcement |
+| Dev agent over-reports completeness on complex stories | HIGH | E7 Retro Part 7.4 | Complexity threshold + mandatory review |
+| Hotspot files become maintenance bottleneck | MEDIUM | E7 Retro AI-E7-9 | Assess before next epic modifying pnl-tab.tsx |
+| Story 5.6 scope causes implementation overrun | MEDIUM | Step 5 | Decompose before sprint planning |
+| UX spec drift creates design inconsistency | MEDIUM | Step 4 | Update before next Forms/Reports epic |
+| Action items deferred to "later" are not addressed | MEDIUM | Follow-through pattern | Structure items as blockers, not recommendations |
 
 ### Metrics
 
@@ -630,19 +792,36 @@ Implementation can proceed with the next planned epic, subject to the conditions
 | Stories Delivered (Epic 7) | 6/6 (100%) |
 | Unit Tests Passing | 686+ |
 | LSP Errors | 0 |
+| Retrospectives Reviewed | 3 (Epic 5, 5H, 7) |
+| E7 Retro Action Items Outstanding | 13 (3 CRITICAL, 5 HIGH, 2 MEDIUM, 3 LOW) |
+| E5H→E7 Action Item Follow-Through | 33% complete |
+| Recurring Bug Patterns | 1 (display format — 3 consecutive retros) |
+| Carried Items (4+ retros) | 3 (content authoring, 30-day months, large file decision) |
 | UX Alignment Issues | 5 (2 MEDIUM, 3 LOW) |
 | Epic Quality Major Issues | 2 |
-| Epic Quality Minor Concerns | 3 |
-| Critical Violations | 0 |
 
-### Next Steps (Recommended Order)
+### Epic Sequencing (PO-Directed)
 
-1. Fix Must-Fix items #1 and #2 (stale ACs + missing FRs) — 45 minutes
-2. Select next epic for implementation (options: Epic 5H hardening, Epic 5 remaining stories, or Epic 6)
-3. If selecting Epic 5H: Begin with Story 5H.1 (engine validation) — highest risk mitigation value
-4. If selecting Epic 5/6: Complete UX spec refresh first to prevent agent confusion
+| Epic | PO Direction | Rationale |
+|------|-------------|-----------|
+| Epic 6 (PDF Generation) | **NOT NEXT** | Presentation layer — will change if underlying model changes |
+| Epic 9 (AI Planning Advisor) | **NOT NEXT** | Intelligence layer — same rework risk |
+| Epic 8 (Advisory Guardrails) | **CONSIDER** | Extends core editing system, builds on Epic 7 foundation |
+| Epic 10 (What-If Playground) | **CONSIDER** | Standalone sidebar feature with contained scope |
+| Brand CRUD Completion | **CONSIDER** | Resolves active development pain (AI-E7-5) |
+| Stabilization Mini-Epic | **CONSIDER** | Document alignment + testing infra + Brand CRUD |
+| 7.1b.1 (Per-Month Independence) | **DECISION NEEDED** | Backlogged — no persona actively requesting seasonality |
+
+### Preparation Sequence (Before Next Epic)
+
+1. **Execute CRITICAL blockers:** AI-E7-1 (document realignment), AI-E7-2 (INPUT_FIELD_MAP validation verification), AI-E7-3 (sprint planning reset with PO)
+2. **Apply HIGH process rules:** AI-E7-4 (mandatory reviews), AI-E7-6 (E2E standards), AI-E7-7 (change proposal requirement)
+3. **Sprint Planning Reset determines next epic** — this report does NOT make that decision
+4. **If next epic touches pnl-tab.tsx:** Assess for decomposition first (AI-E7-9)
+5. **Story creation:** Only after documents are aligned per AI-E7-1
 
 ---
 
-*Report generated by Implementation Readiness workflow, Step 6 (Final Assessment)*
+*Report generated by Implementation Readiness workflow, Steps 1-6*
 *Assessment covers: PRD v2026-02-22, Architecture v2026-02-22, Epics v2026-02-22, UX Spec v2026-02-21*
+*Retrospectives reviewed: Epic 5 (2026-02-20), Epic 5H (2026-02-21 + addendum), Epic 7 (2026-02-21)*
