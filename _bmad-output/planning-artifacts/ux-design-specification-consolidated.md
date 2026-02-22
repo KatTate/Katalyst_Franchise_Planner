@@ -479,7 +479,9 @@ The sidebar is the single, persistent navigation structure. There is no mode swi
 |  Settings                                  |
 |                                            |
 |  -- HELP --                                |
+|  Planning Assistant                        |
 |  Glossary                                  |
+|  Book a Consultation                       |
 |                                            |
 +--------------------------------------------+
 ```
@@ -495,7 +497,9 @@ The sidebar is the single, persistent navigation structure. There is no mode swi
 | Reports | Tabbed financial statements with inline editing — the power-user input surface | Maria (primary), Sam & Chris (review) |
 | What-If | Interactive sensitivity analysis playground — sliders adjust assumptions, 6 charts compare Base Case vs Your Scenario. Sandbox only — does not modify the actual plan. | All |
 | Settings | Plan-level settings — name, brand, projection period | All |
+| Planning Assistant | AI Planning Assistant in conversational format, contextual to active plan. Opens the same slide-in panel as the My Plan floating action button, but from a conversational starting point — useful for first-time users who want guidance before diving into forms. This is the AI — not the human account manager. | Sam |
 | Glossary | Financial term definitions with contextual tooltip integration | All |
+| Book a Consultation | Schedule time with the franchisee's Katalyst account manager (e.g., "Book time with Denise") or, if configured, a brand-level contact. Human help escalation path — separate from the AI Planning Assistant. | Sam, Chris |
 
 **Critical design rules:**
 
@@ -1444,7 +1448,7 @@ This consolidated spec requires the following story structure for Epic 5:
 | 2026-02-17 | Tech spec for Story 5.2 progressive disclosure gaps completed. | `tech-spec-5.2-progressive-disclosure-gaps.md` |
 | 2026-02-18 | **Consolidated into single document.** Mode switcher retired. Quick Entry retired. AI Planning Assistant repositioned from workspace mode to contextual feature (slide-in panel within My Plan). All content from both source documents preserved, with v3 architecture taking precedence on navigation, input surfaces, and component architecture. Part 9 (AI Planning Assistant) freshly written. | This document |
 | 2026-02-20 | **Part 15 expanded to 8 comprehensive user journey narratives** per SCP-2026-02-20 Decision D7. Replaces previous 3 brief journey traces. New journeys cover: Normal tier franchisee, Story tier with AI, returning franchisee session recovery, What-If Playground scenario review, Katalyst admin brand setup, admin invitation flow, franchisor pipeline visibility, and admin View As/impersonation. | SCP-2026-02-20, Party Mode review |
-| 2026-02-22 | **Epic 7H.1 Document Realignment.** Added two-surface design boundary (Part 7). Marked Pre-Epic-7 Per-Year Behavior as historical (Part 10). Added Facilities Guided Decomposition pattern (Part 8). Marked Story Rewrite Implications as historical. Updated sidebar wireframe to match Epic 7.2 implementation (MY PLANS section with context menus, What-If replaces Scenarios). Updated Part 19 deferred items: per-year inputs and multi-plan comparison marked DONE. | SCP-2026-02-22, CP-7 |
+| 2026-02-22 | **Epic 7H.1 Document Realignment.** Added two-surface design boundary (Part 7). Marked Pre-Epic-7 Per-Year Behavior as historical (Part 10). Added Facilities Guided Decomposition pattern (Part 8). Marked Story Rewrite Implications as historical. Updated sidebar wireframe to match Epic 7.2 implementation (MY PLANS section with context menus, What-If replaces Scenarios). HELP section expanded: Planning Assistant restored, Glossary retained, Book a Consultation added (human help escalation — Katalyst AM and/or brand contact). Updated Part 19 deferred items: per-year inputs and multi-plan comparison marked DONE. | SCP-2026-02-22, CP-7, PO review feedback |
 
 ---
 
