@@ -606,7 +606,7 @@ development_status:
   7-1d-facilities-decomposition-opex: done                        # 2026-02-21: Adversarial code review completed. 1H/3M/3L findings all fixed. H1: AC-4 P&L Other OpEx % now displays percentage (was currency). M1: DRY extraction. M2/M3: File List corrected.
   7-1e-balance-sheet-valuation-editing: done                  # DONE 2026-02-21: Balance Sheet Working Capital Assumptions (AR/AP/Inventory Days, Tax Delay) + Valuation (EBITDA Multiple) inline editing in Reports. E2E tested. Adversarial code review completed: 0H/3M/3L, all resolved.
   7-2-plan-crud-navigation: done                       # 2026-02-21: Adversarial code review completed. 9 findings (3H/4M/2L) all fixed: H1 context-menu rename, H2 clone rename prompt, H3 status badges, M1 demo guard, M2 double-save race, M3 undocumented file, M4 server-side name validation, L1 file list corrections, L2 click-to-edit. E2E re-verified. LSP clean.
-  epic-7-retrospective: optional
+  epic-7-retrospective: done  # Completed 2026-02-22. 15 sections. 13 action items (3 CRITICAL, 5 HIGH, 2 MEDIUM, 3 LOW). Sprint planning reset required.
 
   # ==========================================================================
   # RENUMBERED EPICS (from Sprint Change Proposal 2026-02-15)
