@@ -40,6 +40,7 @@
 # - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
 
 generated: 2026-02-09
+updated: 2026-02-22  # Story 10.1 adversarial code review completed → done. 2H fixed (COGS unit "pp", input clamping), 2M/2L documented. All 5 ACs satisfied.
 updated: 2026-02-22  # Story 7H.4 adversarial code review completed → done. 4 findings fixed (2M/2L). All 8 ACs satisfied. 753 tests passing.
 updated: 2026-02-22  # Story 7H.4 implementation complete → review. All 8 ACs satisfied, 753 tests passing (6 in target file), 1 file modified. Test-only story.
 updated: 2026-02-22  # Story 7H.4 context document created (Create Story workflow). 8 ACs, 1 file in change summary. Test-only story.
@@ -776,7 +777,7 @@ development_status:
   # PO SEQUENCING (SCP-2026-02-22): NEXT FEATURE EPIC — after Epic 7H stabilization completes
   # Description stale: still references Conservative/Optimistic — to be fixed in 7H.1
   epic-10: backlog  # Was in-progress. Reset to backlog per SCP-2026-02-22 — Epic 7H is next.
-  10-1-sensitivity-controls-sandbox-engine: review  # Revised implementation complete — 4 metrics (was 5), hasInteractedWithSlider exposed, 753 tests passing
+  10-1-sensitivity-controls-sandbox-engine: done  # Adversarial code review completed — 2H fixed (COGS unit display, dead conditional), 2M/2L documented. All 5 ACs satisfied.
   10-2a-sensitivity-chart-dashboard: needs-revision  # AC rewrite per SCP-2026-02-21 CP-3 (split from 10-2)
   10-2b-metric-delta-cards: needs-revision  # AC rewrite per SCP-2026-02-21 CP-4 (split from 10-2)
   10-3-scenario-persistence-comparison: ready-for-dev  # Promoted from optional to essential per SCP-2026-02-21 CP-5

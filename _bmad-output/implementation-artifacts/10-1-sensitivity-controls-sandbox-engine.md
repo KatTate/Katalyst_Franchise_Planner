@@ -1,6 +1,6 @@
 # Story 10.1: Sensitivity Controls & Sandbox Engine
 
-Status: review
+Status: done
 
 > **Revised per SCP-2026-02-21:** Conservative/Optimistic system-defined columns removed. Now shows Base Case vs Your Scenario (user's live slider state). Slider ranges widened (±50%/±100% visual, uncapped numeric). Reset button added.
 
@@ -205,6 +205,30 @@ Implemented the What-If Playground as a client-side sandbox feature. Created a n
 - `client/src/components/planning/what-if-playground.tsx` — MODIFIED (this session): Fixed METRICS array (5→4 metrics per revised AC), fixed skeleton count, added `hasInteractedWithSlider` state, updated grid layout to 4-column
 - `client/src/pages/planning-workspace.tsx` — MODIFIED (prior session): Replaced `case "scenarios":` placeholder with `<WhatIfPlayground planId={planId} />`
 - `_bmad-output/implementation-artifacts/10-1-sensitivity-controls-sandbox-engine.md` — MODIFIED: Status updates and Dev Agent Record
+
+### Code Review Record
+
+> **Reviewed 2026-02-22 (Adversarial Code Review — fresh context)**
+>
+> **Reviewer:** Claude 4.6 Opus (Replit Agent, fresh session)
+>
+> **Findings (6 total): 2 HIGH, 2 MEDIUM, 2 LOW**
+>
+> **HIGH issues fixed in this session:**
+> - **H1 — COGS unit display:** `formatSliderPct()` always showed `%` for all sliders. COGS should display `pp` (percentage points) per AC and Dev Notes. Fixed by passing `config.unit` to `formatSliderPct()`. COGS now shows "+2pp" instead of "+2%".
+> - **H2 — Dead conditional in `handleInputBlur`:** Both branches of the ternary returned `-100`, making it pointless. Fixed: COGS now uses `-Infinity` (uncapped per AC — engine's `clamp01()` enforces bounds), multiplicative sliders use `-100` (revenue cannot drop below -100%).
+>
+> **MEDIUM issues documented (no code fix needed):**
+> - **M1 — Git discrepancy:** Commit `3ed471a4` modified `app-sidebar.tsx` (sidebar What-If label + other changes) but file not in story File List. Process/traceability gap only.
+> - **M2 — COGS dollar impact uses revenue as reference:** Dev Notes say "the reference is the relevant Y1 cost" for COGS, but code uses `y1.revenue`. Mathematically correct for percentage-point sliders (impact = pp × revenue). Dev Notes language is ambiguous.
+>
+> **LOW issues acknowledged (no fix):**
+> - **L1 — `applySensitivityFactors` mutates input:** Follows existing `scenario-engine.ts` pattern. Consistent with codebase.
+> - **L2 — Accounting-style negatives in deltas:** `formatCents()` uses `($X)` for negatives. Project-wide convention. Changing just for deltas would be inconsistent.
+>
+> **AC Verification:** AC1 SATISFIED, AC2 SATISFIED (after H1 fix), AC3 SATISFIED, AC4 SATISFIED, AC5 SATISFIED
+> **Protected files:** All 4 verified unmodified via git log
+> **LSP:** 0 errors, 0 warnings (pre- and post-fix)
 
 ### Testing Summary
 

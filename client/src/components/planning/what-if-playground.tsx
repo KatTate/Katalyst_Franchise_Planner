@@ -123,9 +123,9 @@ function formatSliderImpact(key: keyof SliderValues, pct: number, baseOutput: Se
   return `${sign}${formatCents(impact)}/yr`;
 }
 
-function formatSliderPct(pct: number): string {
+function formatSliderPct(pct: number, unit: string): string {
   const sign = pct > 0 ? "+" : "";
-  return `${sign}${pct}%`;
+  return `${sign}${pct}${unit}`;
 }
 
 function SensitivitySliderRow({
@@ -160,7 +160,7 @@ function SensitivitySliderRow({
       setInputValue(String(value));
       return;
     }
-    const mathMin = config.key === "revenue" || config.key === "facilities" || config.key === "labor" || config.key === "marketing" ? -100 : -100;
+    const mathMin = config.key === "cogs" ? -Infinity : -100;
     const clamped = Math.max(mathMin, parsed);
     onChange(config.key, clamped);
     setInputValue(String(clamped));
@@ -176,7 +176,7 @@ function SensitivitySliderRow({
   );
 
   const impactDisplay = baseOutput ? formatSliderImpact(config.key, value, baseOutput) : "—";
-  const pctDisplay = formatSliderPct(value);
+  const pctDisplay = formatSliderPct(value, config.unit);
 
   const sliderDisplayValue = Math.max(config.min, Math.min(config.max, value));
 
