@@ -264,3 +264,48 @@ documentsAssessed:
 - FR48 appears under Section 8 but its numbering falls between Section 7 and Section 8 boundaries — minor organizational issue
 - Some FRs are very dense (FR83 is a single FR covering ~20 distinct output metrics) — could cause coverage validation ambiguity
 - No explicit FR for multi-plan management (create/rename/clone/delete plans) despite this being implemented in Epic 7.2 — gap between PRD and implementation
+
+## Step 3: Epic Coverage Validation
+
+### Coverage Matrix
+
+The epics document contains an FR Coverage Map (lines 190-294) claiming 111/111 FRs mapped. Adversarial cross-check results:
+
+| FR Range | Epic Assignment | Status |
+|----------|----------------|--------|
+| FR1-FR10 | Epic 3 (Financial Engine) | ✓ Covered |
+| FR7a-FR7n | Epic 5 (Financial Statements), Epic 6 (Documents) | ✓ Covered |
+| FR11-FR19 | Epic 4 (Forms), Epic 1 (Auth/Onboarding) | ✓ Covered |
+| FR20-FR23 | Epic 8 (Advisory Guardrails) | ✓ Covered |
+| FR24-FR27 | Epic 6 (Document Generation) | ✓ Covered |
+| FR28-FR32 | Epic 1 (Auth/Onboarding) | ✓ Covered |
+| FR33-FR38 | Epic 11 (Data Sharing/Privacy) | ✓ Covered |
+| FR39-FR44 | Epic 2 (Brand Configuration) | ✓ Covered |
+| FR45-FR48 | Epic 11 (Pipeline/Dashboards) | ✓ Covered |
+| FR49 | Epic 2 (Brand Identity) | ✓ Covered |
+| FR50-FR54 | Epic 9 (AI Planning Advisor) | ✓ Covered |
+| FR55-FR58 | Epic 12 (Advisory Board — Phase 2 deferred) | ✓ Covered |
+| FR59-FR65 | Epic ST (Admin Impersonation) | ✓ Covered (range notation) |
+| FR66-FR69 | Epic ST (Franchisee Demo Mode) | ✓ Covered (range notation) |
+| FR70-FR73 | Epic ST (Franchisor Demo Mode) | ✓ Covered (range notation) |
+| FR74-FR82 | Epic 3 (Engine), Epic 5 (Views) | ✓ Covered |
+| FR83-FR97 | Epic 5 (Display Standards, Impact Strip, etc.) | ✓ Covered |
+
+### Missing Requirements
+
+**Gap 1: Multi-Plan CRUD (MEDIUM)**
+- **Issue:** No explicit FR for plan lifecycle management (create, rename, clone, delete plans). Epic 7.2 implemented this functionality, and the RBAC table mentions "Create/edit plans" as a franchisee action, but there is no dedicated FR.
+- **Impact:** Implementation exists (Epic 7.2 delivered) but lacks PRD traceability. Future agents won't know this capability is required.
+- **Recommendation:** Add FR98 covering multi-plan lifecycle: create new plans, rename plans, clone plans (deep copy), delete plans (with last-plan protection). Assign to Epic 7.
+
+**Gap 2: Quick Start / Quick ROI Entry (LOW)**
+- **Issue:** The user journeys describe a "Quick ROI entry" (Sam's Journey, Session 1) as a 5-input rapid assessment, but there's no dedicated FR for it. FR11 covers the general planning experience, but the Quick Start as a distinct entry point isn't specified.
+- **Impact:** Quick Start is implemented but not formally required. Low risk since it's additive UX, not a core data flow.
+- **Recommendation:** Consider adding FR99 if Quick Start is considered a required capability.
+
+### Coverage Statistics
+
+- Total PRD FRs: 111
+- FRs covered in epics: 111 (per coverage map)
+- Coverage percentage: 100% (for existing FRs)
+- Implementation gaps: 2 capabilities implemented without corresponding FRs (plan CRUD, quick start)
