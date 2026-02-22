@@ -391,7 +391,112 @@ Test agents consistently authenticate as admin instead of franchisee, triggering
 
 ---
 
-## Part 12: Recommendations for Next Sprint
+## Part 12: Next Epic Preparation Assessment
+
+### Current Situation
+
+The PO has directed that Epic 6 (PDF Generation) and Epic 9 (AI Planning Advisor) are NOT next. Both are presentation/intelligence layers that would require repeated rework as the core system architecture continues evolving. Linear epic numbering does not reflect actual priorities.
+
+### Realistic Next Epic Candidates
+
+| Option | Description | Dependencies on E7 | Risk |
+|--------|-------------|---------------------|------|
+| Epic 8 | Franchisor Dashboard & Data Sharing | Depends on stable financial model | Advisory nudge UI is new pattern |
+| Epic 10 | What-If Playground / Sensitivity Analysis | Depends on per-year editing (E7) | Contained sidebar scope |
+| Stabilization Mini-Epic | Brand CRUD + Document Alignment + Testing Infra | Resolves active pain | No new features for stakeholders |
+
+### Preparation Sequence
+
+1. **CRITICAL blockers first** (AI-E7-1, AI-E7-2, AI-E7-3) — these are non-negotiable prerequisites
+2. **Sprint Planning Reset** (AI-E7-3) — determines which epic is next based on accurate documents
+3. **Hotspot assessment** (AI-E7-9) — if next epic touches pnl-tab.tsx, decompose first
+4. **Story creation** — only after documents are aligned per AI-E7-1
+
+### Significant Discoveries Requiring Epic Updates
+
+Three findings from Epic 7 affect any future epic that touches Forms or Reports:
+
+1. **Forms/Reports design philosophy pivot** — Any epic adding new input fields or editing capabilities must know which surface they target. Forms = onboarding wizard (single-value inputs). Reports = power editing surface (multi-year/month inline editing). Expert users skip Forms entirely.
+
+2. **Facilities decomposition pattern** — Simplified to "informational note only" (no action buttons, no re-sync). Any epic adding guided decomposition for other categories must follow this pattern.
+
+3. **INPUT_FIELD_MAP as single source of truth** — Every editable field in Reports requires an entry with correct format type. No mechanical validation exists yet (AI-E7-2 addresses this).
+
+**Resolution:** AI-E7-1 (document realignment) ensures these discoveries are captured in PRD, architecture, and epics.md before any new story creation. No separate planning session needed — alignment IS the fix.
+
+---
+
+## Part 13: Critical Readiness Assessment
+
+### Epic 7 Completion Readiness
+
+| Dimension | Status | Notes |
+|-----------|--------|-------|
+| Testing & Quality | Stories individually verified via adversarial CR | No full E2E flow test across all stories |
+| Deployment | Dev environment only | Not blocking — app not yet published |
+| Stakeholder Acceptance | PO signed off on all stories during epic | Document misalignment = incomplete acceptance record |
+| Technical Health | 0 LSP errors, 0 new debt markers | 3 hotspot files accumulating complexity |
+| Code Quality (Platform) | Clean | 0 errors, 0 warnings across 9 key files |
+| Tech Debt Trend | Flat | 0 new markers, 19 carried (18 Loom placeholders) |
+| Git Health | Healthy | 5% fix ratio (below 7.8% avg), 0 reverts |
+
+### Verdict
+
+Epic 7 is **complete from a story perspective** but has **3 CRITICAL items** that must be resolved before any new epic work:
+
+1. Planning document realignment (AI-E7-1)
+2. INPUT_FIELD_MAP mechanical validation (AI-E7-2)
+3. Sprint planning reset (AI-E7-3)
+
+### Unresolved Items Carrying Forward
+
+| Item | Impact if Ignored | Priority |
+|------|-------------------|----------|
+| Planning documents contradict reality | New stories created from wrong assumptions | CRITICAL |
+| No format validation in INPUT_FIELD_MAP | Same display bug class will recur (4th retro) | CRITICAL |
+| Sprint plan stale | Wrong epic gets worked on next | CRITICAL |
+| Brand CRUD missing delete/edit | Junk data accumulation, PO manual cleanup | HIGH |
+| E2E tests auth as admin | Wasted tokens, false failures, junk brands | HIGH |
+| Hotspot files growing | Maintenance burden, harder code reviews | MEDIUM |
+
+---
+
+## Part 14: Retrospective Closure
+
+### Key Takeaways
+
+1. **Process discipline matters as much as code quality.** Epic 7's code was clean (0 errors, 0 new debt, 5% fix ratio), but the process failure (rewriting stories without formal change proposal) created document debt that now blocks forward progress.
+
+2. **Adversarial code reviews are non-negotiable.** 100% hit rate finding real functional bugs across all stories reviewed. The one story that skipped review (7.1a) was the highest-risk foundation story.
+
+3. **Display format validation is a systemic gap.** Flagged for the 3rd consecutive retrospective. Code review catches it, but prevention (mechanical validation) is needed.
+
+4. **Complexity concentrates in hotspot files.** pnl-tab.tsx (9 changes), use-field-editing.ts (6 changes), forms-mode.tsx (6 changes) need decomposition monitoring.
+
+### Commitments Summary
+
+| Category | Count |
+|----------|-------|
+| CRITICAL Blockers | 3 |
+| HIGH Process Improvements | 5 |
+| MEDIUM Technical Improvements | 2 |
+| LOW Carried Items | 3 |
+| **Total** | **13** |
+
+### Previous Retro Follow-Through Warning
+
+Epic 5H retrospective had 9 action items. Follow-through: 33% complete, 33% partial, 33% not addressed. The 3 items completed immediately post-retro succeeded. Items deferred to "later" were not addressed. This retro's CRITICAL items are structured as blockers specifically to prevent the same pattern.
+
+### Next Steps
+
+1. Execute CRITICAL blockers: Document Realignment, INPUT_FIELD_MAP Validation, Sprint Planning Reset
+2. Apply HIGH process improvements: Mandatory reviews, E2E standards, Change Proposal requirement
+3. Sprint Planning Reset determines next epic (this retro does NOT make that decision)
+4. Begin next epic only after CRITICAL blockers cleared
+
+---
+
+## Part 15: Recommendations for Next Sprint
 
 ### Before Any New Story Work
 
