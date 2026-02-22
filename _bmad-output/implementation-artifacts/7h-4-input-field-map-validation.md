@@ -1,6 +1,6 @@
 # Story 7H.4: INPUT_FIELD_MAP Mechanical Validation
 
-Status: ready-for-dev
+Status: review
 
 ## Story
 
@@ -163,3 +163,17 @@ Source: Architecture doc — "Two-Surface Design Principle" and `INPUT_FIELD_MAP
 - Engine types — FinancialInputs interface: `shared/financial-engine.ts` lines 94-158
 - INPUT_FIELD_MAP — Current 20 entries: `client/src/components/planning/statements/input-field-map.ts` lines 15-141
 - FIELD_METADATA — Current entries: `client/src/lib/field-metadata.ts` lines 10-57
+
+## Dev Agent Record
+
+- **Agent Model Used:** Claude 4.6 Opus (Replit Agent)
+- **Completion Notes:** Added 3 new test cases to the existing `input-field-map-validation.test.ts` file: (1) engine type cross-reference test with `ENGINE_FIELD_SEMANTICS` map covering all 20 INPUT_FIELD_MAP entries and deterministic `SEMANTIC_TO_FORMAT` lookup, (2) completeness coverage test with explicit `EXCLUDED_FIELDS` set documenting 12 fields edited through Forms mode, (3) category validity test verifying all INPUT_FIELD_MAP category values are valid FIELD_METADATA keys. No production code was modified — this is a pure test story.
+- **File List:**
+  - `client/src/lib/input-field-map-validation.test.ts` — MODIFIED (added 3 new tests, ENGINE_FIELD_SEMANTICS map, SEMANTIC_TO_FORMAT lookup, EXCLUDED_FIELDS set)
+- **Testing Summary:**
+  - Test approach: Vitest unit tests (test-only story)
+  - Test file modified: `client/src/lib/input-field-map-validation.test.ts`
+  - ACs covered by tests: AC1 (existing tests pass), AC2 (engine cross-reference), AC3 (completeness), AC4 (category validity), AC5 (mismatch detection), AC6 (6 tests), AC7 (ENGINE_FIELD_SEMANTICS structure), AC8 (full suite passes)
+  - All tests passing: Yes (6/6 in target file, 753/753 full suite)
+- **LSP Status:** 0 new errors, 0 warnings (pre-existing path alias LSP errors are unchanged)
+- **Visual Verification:** N/A (developer-facing test-only story)

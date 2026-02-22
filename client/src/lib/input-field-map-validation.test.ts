@@ -75,4 +75,142 @@ describe("INPUT_FIELD_MAP mechanical validation", () => {
       );
     }
   });
+
+  const ENGINE_FIELD_SEMANTICS: Record<
+    string,
+    { fieldName: string; enginePath: string; semanticType: "cents" | "decimal_pct" | "integer" | "decimal_number" }
+  > = {
+    "revenue.monthlyAuv": { fieldName: "monthlyAuv", enginePath: "revenue.monthlyAuvByMonth", semanticType: "cents" },
+    "revenue.growthRates": { fieldName: "growthRates", enginePath: "revenue.growthRates", semanticType: "decimal_pct" },
+    "operatingCosts.cogsPct": { fieldName: "cogsPct", enginePath: "operatingCosts.cogsPct", semanticType: "decimal_pct" },
+    "operatingCosts.royaltyPct": { fieldName: "royaltyPct", enginePath: "operatingCosts.royaltyPct", semanticType: "decimal_pct" },
+    "operatingCosts.adFundPct": { fieldName: "adFundPct", enginePath: "operatingCosts.adFundPct", semanticType: "decimal_pct" },
+    "operatingCosts.laborPct": { fieldName: "laborPct", enginePath: "operatingCosts.laborPct", semanticType: "decimal_pct" },
+    "operatingCosts.facilitiesAnnual": { fieldName: "facilitiesAnnual", enginePath: "operatingCosts.facilitiesAnnual", semanticType: "cents" },
+    "operatingCosts.managementSalariesAnnual": { fieldName: "managementSalariesAnnual", enginePath: "operatingCosts.managementSalariesAnnual", semanticType: "cents" },
+    "operatingCosts.payrollTaxPct": { fieldName: "payrollTaxPct", enginePath: "operatingCosts.payrollTaxPct", semanticType: "decimal_pct" },
+    "operatingCosts.marketingPct": { fieldName: "marketingPct", enginePath: "operatingCosts.marketingPct", semanticType: "decimal_pct" },
+    "operatingCosts.otherOpexPct": { fieldName: "otherOpexPct", enginePath: "operatingCosts.otherOpexPct", semanticType: "decimal_pct" },
+    "profitabilityAndDistributions.targetPreTaxProfitPct": { fieldName: "targetPreTaxProfitPct", enginePath: "targetPreTaxProfitPct", semanticType: "decimal_pct" },
+    "profitabilityAndDistributions.distributions": { fieldName: "distributions", enginePath: "distributions", semanticType: "cents" },
+    "profitabilityAndDistributions.shareholderSalaryAdj": { fieldName: "shareholderSalaryAdj", enginePath: "shareholderSalaryAdj", semanticType: "cents" },
+    "profitabilityAndDistributions.nonCapexInvestment": { fieldName: "nonCapexInvestment", enginePath: "nonCapexInvestment", semanticType: "cents" },
+    "workingCapitalAndValuation.arDays": { fieldName: "arDays", enginePath: "workingCapitalAssumptions.arDays", semanticType: "integer" },
+    "workingCapitalAndValuation.apDays": { fieldName: "apDays", enginePath: "workingCapitalAssumptions.apDays", semanticType: "integer" },
+    "workingCapitalAndValuation.inventoryDays": { fieldName: "inventoryDays", enginePath: "workingCapitalAssumptions.inventoryDays", semanticType: "integer" },
+    "workingCapitalAndValuation.taxPaymentDelayMonths": { fieldName: "taxPaymentDelayMonths", enginePath: "taxPaymentDelayMonths", semanticType: "integer" },
+    "workingCapitalAndValuation.ebitdaMultiple": { fieldName: "ebitdaMultiple", enginePath: "ebitdaMultiple", semanticType: "decimal_number" },
+  };
+
+  const SEMANTIC_TO_FORMAT: Record<string, string> = {
+    cents: "currency",
+    decimal_pct: "percentage",
+    integer: "integer",
+    decimal_number: "decimal",
+  };
+
+  it("every INPUT_FIELD_MAP entry's format type is semantically correct for the engine's FinancialInputs type", () => {
+    const mismatches: string[] = [];
+
+    for (const [rowKey, mapping] of Object.entries(INPUT_FIELD_MAP)) {
+      const compoundKey = `${mapping.category}.${mapping.fieldName}`;
+      const semantics = ENGINE_FIELD_SEMANTICS[compoundKey];
+
+      if (!semantics) {
+        mismatches.push(
+          `${rowKey} (${compoundKey}): missing from ENGINE_FIELD_SEMANTICS map — add an entry for this field`
+        );
+        continue;
+      }
+
+      const expectedFormat = SEMANTIC_TO_FORMAT[semantics.semanticType];
+      if (mapping.inputFormat !== expectedFormat) {
+        mismatches.push(
+          `${rowKey} (${compoundKey}): INPUT_FIELD_MAP format is "${mapping.inputFormat}" but engine semantic type "${semantics.semanticType}" requires "${expectedFormat}" (engine path: ${semantics.enginePath})`
+        );
+      }
+    }
+
+    if (mismatches.length > 0) {
+      expect.fail(
+        `Engine type cross-reference mismatches:\n${mismatches.join("\n")}`
+      );
+    }
+  });
+
+  it("INPUT_FIELD_MAP completeness — every FIELD_METADATA field that is user-editable has an INPUT_FIELD_MAP entry or is explicitly excluded", () => {
+    const EXCLUDED_FIELDS = new Set([
+      "revenue.startingMonthAuvPct",            // Edited in Forms mode only, not in Reports inline editing
+      "facilitiesDecomposition.rent",            // Edited via Forms guided decomposition, not Reports
+      "facilitiesDecomposition.utilities",       // Edited via Forms guided decomposition, not Reports
+      "facilitiesDecomposition.telecomIt",       // Edited via Forms guided decomposition, not Reports
+      "facilitiesDecomposition.vehicleFleet",    // Edited via Forms guided decomposition, not Reports
+      "facilitiesDecomposition.insurance",       // Edited via Forms guided decomposition, not Reports
+      "financing.loanAmount",                    // Edited in Forms mode only
+      "financing.interestRate",                  // Edited in Forms mode only
+      "financing.loanTermMonths",                // Edited in Forms mode only
+      "financing.downPaymentPct",                // Edited in Forms mode only
+      "startupCapital.workingCapitalMonths",     // Edited in Forms mode only
+      "startupCapital.depreciationYears",        // Edited in Forms mode only
+    ]);
+
+    const inputFieldMapKeys = new Set<string>();
+    for (const mapping of Object.values(INPUT_FIELD_MAP)) {
+      inputFieldMapKeys.add(`${mapping.category}.${mapping.fieldName}`);
+    }
+
+    const coveredCategories = new Set<string>();
+    for (const mapping of Object.values(INPUT_FIELD_MAP)) {
+      coveredCategories.add(mapping.category);
+    }
+
+    const uncovered: string[] = [];
+
+    for (const [category, fields] of Object.entries(FIELD_METADATA)) {
+      if (!coveredCategories.has(category)) {
+        for (const fieldName of Object.keys(fields)) {
+          const compoundKey = `${category}.${fieldName}`;
+          if (!EXCLUDED_FIELDS.has(compoundKey)) {
+            uncovered.push(
+              `${compoundKey}: category "${category}" has INPUT_FIELD_MAP entries but this field is missing from both INPUT_FIELD_MAP and EXCLUDED_FIELDS`
+            );
+          }
+        }
+        continue;
+      }
+
+      for (const fieldName of Object.keys(fields)) {
+        const compoundKey = `${category}.${fieldName}`;
+        if (!inputFieldMapKeys.has(compoundKey) && !EXCLUDED_FIELDS.has(compoundKey)) {
+          uncovered.push(
+            `${compoundKey}: present in FIELD_METADATA but missing from both INPUT_FIELD_MAP and EXCLUDED_FIELDS — add it to one or the other`
+          );
+        }
+      }
+    }
+
+    if (uncovered.length > 0) {
+      expect.fail(
+        `INPUT_FIELD_MAP completeness gaps:\n${uncovered.join("\n")}`
+      );
+    }
+  });
+
+  it("INPUT_FIELD_MAP category values match FIELD_METADATA category keys", () => {
+    const invalidCategories: string[] = [];
+
+    for (const [rowKey, mapping] of Object.entries(INPUT_FIELD_MAP)) {
+      if (!(mapping.category in FIELD_METADATA)) {
+        invalidCategories.push(
+          `${rowKey}: category "${mapping.category}" is not a valid key in FIELD_METADATA`
+        );
+      }
+    }
+
+    if (invalidCategories.length > 0) {
+      expect.fail(
+        `Invalid INPUT_FIELD_MAP categories:\n${invalidCategories.join("\n")}`
+      );
+    }
+  });
 });
