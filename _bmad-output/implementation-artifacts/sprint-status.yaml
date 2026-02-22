@@ -40,6 +40,7 @@
 # - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
 
 generated: 2026-02-09
+updated: 2026-02-22  # Story 7H.3 context document created (Create Story workflow). 10 ACs, 5 files in change summary.
 updated: 2026-02-22  # Story 7H.2 implementation complete → review. All 10 ACs satisfied, 407 tests passing, 12 files modified.
 updated: 2026-02-22  # Story 7H.2 context document created (Create Story workflow). 10 ACs, 13+ files in change summary.
 updated: 2026-02-22  # Story 7H.1 context document created (Create Story workflow). Epic 7H status: in-progress.
@@ -59,6 +60,21 @@ story_location: _bmad-output/implementation-artifacts
 
 # CHANGE LOG:
 # ===========
+# 2026-02-22: Story 7H.3 context document created (Create Story workflow)
+#   - Full story file: 7h-3-brand-crud-completion.md (ready-for-dev)
+#   - 10 acceptance criteria covering: brand metadata editing (name, display name, slug)
+#     in Settings tab (AC-1 through AC-3), brand deletion with type-to-confirm dialog
+#     (AC-4 through AC-6), user preservation with null brandId on cascade (AC-7),
+#     auth enforcement (AC-8), list page unchanged (AC-9), slug change behavior (AC-10)
+#   - Dev notes include: FK cascade ordering (users nullified → invitations deleted →
+#     account managers deleted → brand deleted with plan cascade), uniqueness validation
+#     excluding current brand, existing DELETE plan dialog as reference pattern,
+#     7 anti-patterns, 5 gotchas, demo account handling
+#   - 5 files in change summary: brands.ts route (extend PUT + add DELETE + add stats),
+#     storage.ts (deleteBrand + getBrandStats), BrandIdentityTab.tsx (metadata section +
+#     danger zone), DeleteBrandDialog.tsx (new), admin-brand-detail.tsx (minor)
+#   - Next action: Dev Story (DS) for 7H.3 implementation
+#
 # 2026-02-22: Story 7H.2 implementation complete → review (Dev Story workflow)
 #   - All 10 acceptance criteria satisfied
 #   - 12 files modified across shared/ and client/
@@ -709,7 +725,7 @@ development_status:
   epic-7h: in-progress  # First story (7H.1) context document created 2026-02-22
   7h-1-planning-document-realignment: done                  # All 12 ACs satisfied 2026-02-22. PO review feedback applied: sidebar redesigned (Home→Dashboard pattern), HELP section expanded. Done 2026-02-22.
   7h-2-per-month-independence: review                     # Implementation complete 2026-02-22. All 10 ACs satisfied. 407 tests passing. 12 files modified. Pending adversarial code review.
-  7h-3-brand-crud-completion: backlog                   # Delete (with confirmation) + metadata editing. Closes Epic 2 gap causing active dev pain.
+  7h-3-brand-crud-completion: ready-for-dev             # Delete (with confirmation) + metadata editing. Closes Epic 2 gap causing active dev pain. Story context document created 2026-02-22.
   7h-4-input-field-map-validation: backlog              # Test-time assertion: every INPUT_FIELD_MAP entry format matches FIELD_METADATA/engine output. Build fails on mismatch.
   7h-5-e2e-testing-standards: backlog                   # Test agents auth as franchisee, no demo mode, clean up test data. Documentation + enforcement.
   epic-7h-retrospective: optional
