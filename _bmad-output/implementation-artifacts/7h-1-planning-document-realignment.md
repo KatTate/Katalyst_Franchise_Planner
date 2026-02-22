@@ -1,6 +1,6 @@
 # Story 7H.1: Planning Document Realignment
 
-Status: ready-for-dev
+Status: in-progress
 
 ## Story
 

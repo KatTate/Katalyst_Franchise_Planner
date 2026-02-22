@@ -91,7 +91,7 @@ The application provides two persistent interaction surfaces accessible via side
 - **INPUT_FIELD_MAP** (`client/src/components/planning/statements/input-field-map.ts`) is the single source of truth for which fields are editable in Reports and what format type each uses. Adding a new editable field requires an entry here with correct format type matching FIELD_METADATA.
 - **Facilities decomposition pattern:** Forms provides guided sub-field breakdown; Reports provides direct total editing. Persistent mismatch between decomposition sum and total is an accepted tradeoff (informational note only, no action buttons or proportional redistribution).
 
-**Deferred: 7.1b.1 Per-Month Independence.** 60-element arrays for revenue, COGS%, labor%, marketing% are architecturally supported (storedGranularity infrastructure exists) but UI for monthly editing is backlogged pending PO decision. No persona is actively requesting seasonality modeling.
+**7.1b.1 Per-Month Independence (Stabilization Mini-Epic).** 60-element arrays for revenue, COGS%, labor%, marketing% — extending the per-year infrastructure built in Epic 7.1a. storedGranularity infrastructure and scaleForStorage conversion functions are in place. Implementation requires: (a) schema extension from 5-element to 60-element arrays for qualifying fields, (b) engine input type updates, (c) Reports UI for per-month editing at monthly drill level. Scheduled as part of the post-Epic-7 stabilization mini-epic.
 
 **What was retired (2016-02-18 UX consolidation, updated 2026-02-21):**
 - Mode Switcher UI (segmented control for Planning Assistant / Forms / Quick Entry) — retired. No mode switcher exists anywhere in the UI.

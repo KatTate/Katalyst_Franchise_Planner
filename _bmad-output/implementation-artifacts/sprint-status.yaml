@@ -673,7 +673,7 @@ development_status:
   # PO directive: THIS EPIC IS NEXT — before any feature work (Epic 10, etc.)
   # NOTE: Epic 7H stories NOT YET in epics.md — will be added during story 7H.1 execution
   epic-7h: in-progress  # First story (7H.1) context document created 2026-02-22
-  7h-1-planning-document-realignment: ready-for-dev     # Story file created 2026-02-22. Update PRD (FR98), Architecture (per-month status), Epics (Epic 10 desc, 7.1b.1 status, FR map, Epic 7H section), UX Spec (5 issues). Documentation-only — no code changes.
+  7h-1-planning-document-realignment: in-progress        # DS workflow started 2026-02-22. Documentation-only — editing 4 planning artifacts.
   7h-2-per-month-independence: backlog                  # 7.1b.1 promoted: 60-element arrays for revenue/COGS%/labor%/marketing%, engine type updates, Reports UI for monthly editing
   7h-3-brand-crud-completion: backlog                   # Delete (with confirmation) + metadata editing. Closes Epic 2 gap causing active dev pain.
   7h-4-input-field-map-validation: backlog              # Test-time assertion: every INPUT_FIELD_MAP entry format matches FIELD_METADATA/engine output. Build fails on mismatch.

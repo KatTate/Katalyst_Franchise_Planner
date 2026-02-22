@@ -290,8 +290,9 @@ This document provides the complete epic and story breakdown for the Katalyst Gr
 | FR95 | Epic 5 | Plan completeness indicator (section-by-section status) |
 | FR96 | Epic 5 | Dashboard Document Preview widget with completeness-aware labels |
 | FR97 | Epic 5 | Bidirectional sync — edits on either surface reflected immediately |
+| FR98 | Epic 7 | Multi-plan lifecycle: create, rename, clone, delete with last-plan protection |
 
-**Coverage Summary:** 111/111 FRs mapped (58 original FR1-FR58 + 15 FR59-FR73 admin support tools + 14 FR7a-FR7n financial statement views + 10 FR74-FR83 engine extensions + 14 FR84-FR97 display standards, advisory language, Impact Strip, plan completeness, bidirectional sync — added per SCP-2026-02-20). All functional requirements covered. Stories across 11 MVP epics (+ 1 deferred Phase 2 epic + 1 admin support tools epic). *Corrected 2026-02-21 per Story 5H.4 audit — previous header said "96/96" but breakdown terms already summed to 111.*
+**Coverage Summary:** 112/112 FRs mapped (58 original FR1-FR58 + 1 FR98 multi-plan management + 15 FR59-FR73 admin support tools + 14 FR7a-FR7n financial statement views + 10 FR74-FR83 engine extensions + 14 FR84-FR97 display standards, advisory language, Impact Strip, plan completeness, bidirectional sync — added per SCP-2026-02-20). All functional requirements covered. Stories across 11 MVP epics (+ 1 stabilization mini-epic + 1 deferred Phase 2 epic + 1 admin support tools epic). *Corrected 2026-02-22 per Story 7H.1 — added FR98 (multi-plan CRUD from Epic 7.2).*
 
 ## Epic List
 
@@ -340,7 +341,19 @@ Enable Year 1-5 independent input values for all per-year financial assumptions,
 - 7.1e Balance Sheet & Valuation Inline Editing — DONE (arDays, apDays, inventoryDays, taxPaymentDelayMonths, ebitdaMultiple inline-editable in Balance Sheet and Valuation tabs)
 - 7.2 Plan CRUD & Navigation — DONE (create, rename, clone, delete with type-to-confirm, sidebar plan list with context menus, last-plan protection)
 **Dependency chain:** 7.1a → 7.1b → 7.1c + 7.1d (parallel) → 7.1e
-**Deferred:** 7.1b.1 Per-Month Independence (60-element arrays for revenue, COGS%, labor%, marketing%) — backlogged pending PO decision
+**Remaining:** 7.1b.1 Per-Month Independence (60-element arrays for revenue, COGS%, labor%, marketing%) — scheduled in stabilization mini-epic (Epic 7H). Infrastructure (storedGranularity, scaleForStorage) in place from 7.1a.
+
+### Epic 7H: Post-Epic-7 Stabilization Sprint
+Resolve accumulated gaps from Epic 7's mid-epic design pivot, complete the per-month independence feature that was the core motivation for Epic 7's data model restructuring, fix the Brand CRUD gap from Epic 2, and establish testing infrastructure standards. All planning documents (PRD, Architecture, Epics, UX Spec) are realigned in this epic to reflect what was actually built.
+
+**Stories (5):**
+- 7H.1 Planning Document Realignment — Update all 4 planning documents (PRD, Architecture, Epics, UX Spec) to reflect Epic 7 implementation decisions. Add FR98 (multi-plan CRUD). Update Epic 10 description. Remove stale pre-Epic-7 content from UX spec. Add facilities decomposition to UX spec. Update sidebar wireframe.
+- 7H.2 Per-Month Independence (7.1b.1) — Extend PlanFinancialInputs schema from 5-element per-year arrays to 60-element per-month arrays for qualifying fields (revenue, COGS%, labor%, marketing%). Update engine input types. Add Reports UI for per-month editing at monthly drill level. Forms unchanged (single-value + "Set for all years" only).
+- 7H.3 Brand CRUD Completion — Add brand deletion (with confirmation) and full metadata editing (name, display name, slug) to the brand management interface. Resolves Epic 2 gap that is actively causing development pain (test agents create junk brands requiring manual PO cleanup).
+- 7H.4 INPUT_FIELD_MAP Mechanical Validation — Add test-time assertion verifying every INPUT_FIELD_MAP entry has a format type matching FIELD_METADATA / engine output type. Build fails if a percentage field is mapped as currency. Closes the recurring display format bug (flagged in 3 consecutive retrospectives).
+- 7H.5 E2E Testing Standards & Infrastructure — Document and enforce: test agents must authenticate as franchisee (not admin), must not use demo mode, must clean up test data. Update test helpers and documentation. Prevents junk brand accumulation and wasted tokens.
+
+**Dependency chain:** 7H.1 (no code dependencies, can start immediately) → 7H.2 (extends 7.1a infrastructure) | 7H.3, 7H.4, 7H.5 (independent, can parallel)
 
 ### Epic 8: Advisory Guardrails & Smart Guidance
 System provides non-blocking advisory nudges when franchisee inputs fall outside FDD Item 7 ranges or brand averages. Identifies weak business cases with actionable guidance on which inputs to reconsider. Suggests consultant booking when appropriate. All guidance is advisory — never blocks the franchisee.
@@ -353,10 +366,10 @@ Franchisees can have a natural-language conversation with an AI advisor in a sli
 **NFRs addressed:** NFR22 (< 5s AI response), NFR23 (AI value validation), NFR24 (graceful degradation)
 
 ### Epic 10: What-If Playground (formerly "Scenario Comparison")
-Standalone sidebar destination providing interactive graphical sensitivity analysis. Franchisees adjust assumption sliders (revenue, COGS, labor, marketing, facilities) and see 6 simultaneous charts (Profitability, Cash Flow, Break-Even, ROI, Balance Sheet, Debt & Working Capital) update across Base, Conservative, and Optimistic scenarios. This is a planning sandbox — slider adjustments do NOT change the user's actual plan. Replaces the retired Story 5.7 column-splitting approach. Per SCP-2026-02-20 Decision D5/D6 and Section 3.
+Standalone sidebar destination providing interactive graphical sensitivity analysis. Franchisees adjust assumption sliders (revenue, COGS, labor, marketing, facilities) and see 6 simultaneous charts (Profitability, Cash Flow, Break-Even, ROI, Balance Sheet, Debt & Working Capital) comparing Base Case vs Your Scenario (user's live slider state). This is a planning sandbox — slider adjustments do NOT change the user's actual plan. Replaces the retired Story 5.7 column-splitting approach. Per SCP-2026-02-21: Conservative/Optimistic system-defined columns killed (D1), replaced with user-authored scenario model (D2/D3). Slider ranges: ±50%/±100% visual range, uncapped numeric input (D6).
 **FRs covered:** FR7d *(additional scenario FRs to be defined)*
-**Stories (3):** 10.1 Sensitivity Controls & Sandbox Engine, 10.2 Multi-Chart Sensitivity Dashboard, 10.3 Scenario Persistence & Sharing (optional enhancement)
-**Status:** Deferred — depends on financial statement views (Epic 5) being complete
+**Stories (4):** 10.1 Sensitivity Controls & Sandbox Engine, 10.2a Sensitivity Chart Dashboard, 10.2b Metric Delta Cards, 10.3 Scenario Persistence & Comparison
+**Status:** Ready — Epic 5 dependency satisfied. Scheduled after stabilization mini-epic.
 
 ### Epic 11: Data Sharing, Privacy & Pipeline Dashboards
 Franchisees control data sharing with their franchisor via explicit opt-in/revoke. Franchisor admins see pipeline dashboards with planning status. Katalyst admins see cross-brand operational intelligence. Privacy boundaries enforced at the API level.

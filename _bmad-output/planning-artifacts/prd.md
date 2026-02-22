@@ -901,6 +901,10 @@ _Scope: Katalyst admins only. Franchisors and franchisees never see or access th
 
 - **FR97:** Edits made on either surface (My Plan or Reports) are immediately reflected on the other surface. When a franchisee edits a decomposed sub-field in My Plan (e.g., individual facilities cost components), the consolidated value updates in the corresponding Reports inline cell. When a franchisee edits a consolidated value in Reports, the corresponding My Plan fields reflect the change. Both surfaces share a single financial input state — there is no "save and sync" step
 
+### 18. Multi-Plan Management
+
+- **FR98:** Franchisee can create, rename, clone (deep copy), and delete financial plans. Cloning creates an independent copy of all financial inputs. Deletion requires type-to-confirm and is blocked if only one plan remains (last-plan protection). Plan list is visible in the sidebar with context menus for lifecycle actions.
+
 ## Non-Functional Requirements
 
 ### Performance
