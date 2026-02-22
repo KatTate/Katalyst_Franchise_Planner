@@ -40,6 +40,7 @@
 # - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
 
 generated: 2026-02-09
+updated: 2026-02-22  # Story 7H.4 implementation complete → review. All 8 ACs satisfied, 753 tests passing (6 in target file), 1 file modified. Test-only story.
 updated: 2026-02-22  # Story 7H.4 context document created (Create Story workflow). 8 ACs, 1 file in change summary. Test-only story.
 updated: 2026-02-22  # Story 7H.3 context document created (Create Story workflow). 10 ACs, 5 files in change summary.
 updated: 2026-02-22  # Story 7H.2 implementation complete → review. All 10 ACs satisfied, 407 tests passing, 12 files modified.
@@ -743,7 +744,7 @@ development_status:
   7h-1-planning-document-realignment: done                  # All 12 ACs satisfied 2026-02-22. PO review feedback applied: sidebar redesigned (Home→Dashboard pattern), HELP section expanded. Done 2026-02-22.
   7h-2-per-month-independence: review                     # Implementation complete 2026-02-22. All 10 ACs satisfied. 407 tests passing. 12 files modified. Pending adversarial code review.
   7h-3-brand-crud-completion: done                       # Delete (with confirmation) + metadata editing. All 10 ACs satisfied. E2E tests passing. Code review completed 2026-02-22: 2H/3M/1L findings, 4 fixed (FK cleanup, transaction, fetcher convention, duplicate field). Done 2026-02-22.
-  7h-4-input-field-map-validation: ready-for-dev         # Test-time assertion: every INPUT_FIELD_MAP entry format matches FIELD_METADATA/engine output. Build fails on mismatch.
+  7h-4-input-field-map-validation: review                 # Implementation complete 2026-02-22. All 8 ACs satisfied. 753 tests passing (6 in target file). 1 file modified. Pending adversarial code review.
   7h-5-e2e-testing-standards: backlog                   # Test agents auth as franchisee, no demo mode, clean up test data. Documentation + enforcement.
   epic-7h-retrospective: optional
 
