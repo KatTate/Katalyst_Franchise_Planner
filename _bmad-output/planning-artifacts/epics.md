@@ -328,16 +328,19 @@ Generate lender-grade PDF business plan packages and maintain document history w
 **NFRs addressed:** NFR3 (< 30s PDF generation), NFR18 (immutable documents)
 **Stories (2):** 6.1 PDF Document Generation, 6.2 Document History & Downloads
 
-### Epic 7: Per-Year Inputs & Multi-Plan Management
-Enable Year 1-5 independent input values for all per-year financial assumptions, unlocking growth trajectory modeling. Add plan creation, naming, cloning, and navigation for multi-location planning. Includes PlanFinancialInputs restructuring, Facilities field alignment, and Other OpEx unit correction.
+### Epic 7: Per-Year Inputs & Multi-Plan Management — DONE
+Enable Year 1-5 independent input values for all per-year financial assumptions, unlocking growth trajectory modeling. Add plan creation, naming, cloning, and navigation for multi-location planning. Includes PlanFinancialInputs restructuring, Facilities guided decomposition, Other OpEx unit correction, Balance Sheet & Valuation inline editing.
+**Design Principle (adopted during E7):** Forms (My Plan) = onboarding wizard for less experienced personas (single-value inputs, "Set for all years" checkbox). Reports = power editing surface where all financial assumptions are editable inline with per-year independence. Expert users skip Forms entirely. Forms does NOT replicate Reports' granular per-year or per-month editing.
 **FRs covered:** FR7i, FR7j, FR15, FR16
-**Stories (5):**
-- 7.1a Data Model Restructuring & Migration (foundation — PlanFinancialInputs interface, migration, unwrapForEngine rewrite, field metadata, sensitivity/scenario engine updates)
-- 7.1b Reports Per-Year Inline Editing (independent per-year editing in Reports, linked-column removal, "Copy Year 1 to all", PerYearEditableRow component, INPUT_FIELD_MAP extensions)
-- 7.1c Forms Mode Per-Year Layout (5-column per-year editing in My Plan forms, new field sections, "Copy Year 1 to all")
-- 7.1d New Field Surfaces (Facilities decomposition, Other OpEx unit correction, Balance Sheet inline editing, Valuation inline editing)
-- 7.2 Plan CRUD & Navigation
-**Dependency chain:** 7.1a → 7.1b + 7.1c (parallel) → 7.1d
+**Stories (6):**
+- 7.1a Data Model Restructuring & Migration — DONE (foundation — PlanFinancialInputs per-year arrays, migration, unwrapForEngine rewrite, FIELD_METADATA extensions, sensitivity/scenario engine updates)
+- 7.1b Make All Financial Assumptions Editable in Reports — DONE (15+ fields inline-editable in P&L with per-year independence, INPUT_FIELD_MAP extensions, drill-down display. Per-month independence deferred to 7.1b.1)
+- 7.1c Forms Onboarding — New Field Sections & Simple Inputs — DONE (all fields in Forms with single-value inputs, "Set for all years" checkbox, brand default indicators, new sections for Profitability & Working Capital)
+- 7.1d Facilities Guided Decomposition & Other OpEx Correction — DONE (facilities sub-field breakdown in Forms with rollup, simplified mismatch handling as informational note only, Other OpEx displayed as percentage)
+- 7.1e Balance Sheet & Valuation Inline Editing — DONE (arDays, apDays, inventoryDays, taxPaymentDelayMonths, ebitdaMultiple inline-editable in Balance Sheet and Valuation tabs)
+- 7.2 Plan CRUD & Navigation — DONE (create, rename, clone, delete with type-to-confirm, sidebar plan list with context menus, last-plan protection)
+**Dependency chain:** 7.1a → 7.1b → 7.1c + 7.1d (parallel) → 7.1e
+**Deferred:** 7.1b.1 Per-Month Independence (60-element arrays for revenue, COGS%, labor%, marketing%) — backlogged pending PO decision
 
 ### Epic 8: Advisory Guardrails & Smart Guidance
 System provides non-blocking advisory nudges when franchisee inputs fall outside FDD Item 7 ranges or brand averages. Identifies weak business cases with actionable guidance on which inputs to reconsider. Suggests consultant booking when appropriate. All guidance is advisory — never blocks the franchisee.
