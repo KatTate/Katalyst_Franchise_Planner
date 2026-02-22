@@ -1,4 +1,5 @@
 # generated: 2026-02-09
+# updated: 2026-02-22 (Sprint Planning regenerated — full inventory verification)
 # updated: 2026-02-22 (SCP-2026-02-22 approved — Post-Epic-7 Course Correction & Stabilization)
 # updated: 2026-02-21 (Epic 7 retrospective completed — sprint planning reset required)
 # updated: 2026-02-21 (Epic 7 Party Mode review: 7.1a→done, 7.1b-7.1d rewritten, 7.1e created)
@@ -25,6 +26,7 @@
 #   - in-progress: Developer actively working on implementation
 #   - review: Ready for code review (via Dev's code-review workflow)
 #   - done: Story completed
+#   - needs-revision: Story ACs require rewrite per Sprint Change Proposal before implementation
 #
 # Retrospective Status:
 #   - optional: Can be completed but not required
@@ -38,6 +40,7 @@
 # - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
 
 generated: 2026-02-09
+updated: 2026-02-22  # Sprint Planning regenerated: 15 epics, 69 stories (incl. 2 orphans, 1 retired). Epic 7H verified. All statuses preserved — no downgrades.
 updated: 2026-02-22  # SCP-2026-02-22 approved: Post-Epic-7 Course Correction & Stabilization. Epic 7H created. Epic sequencing reset. 7.1b.1 promoted from deferred to required.
 updated: 2026-02-21  # Story 7.2 adversarial code review completed → done. 9 findings fixed (3H/4M/2L). E2E re-verified.
 updated: 2026-02-21  # Story 7.1e adversarial code review completed — done (0H/3M/3L, all resolved)
@@ -53,6 +56,22 @@ story_location: _bmad-output/implementation-artifacts
 
 # CHANGE LOG:
 # ===========
+# 2026-02-22: Sprint Planning REGENERATED (full workflow execution)
+#   - Full epic file parse: 14 epics with stories in epics.md
+#   - Epic 7H (5 stories) from SCP-2026-02-22 — NOT YET in epics.md (pending story 7H.1 execution)
+#   - 2 documented orphans preserved: 4-7-integration-gaps-startup-cost-mounting (mid-epic add),
+#     5-cp11-border-radius-polish (SCP CP item). Both done — historical artifacts.
+#   - Totals: 15 epics, 69 stories, 15 retrospective entries
+#   - Completed: 7 epics done (1, 2, 3, 4, 5, 5H, 7)
+#   - In-progress: 1 epic (ST — 3/4 stories done, ST-4 blocked on 11.2)
+#   - Backlog: 7 epics (6, 7H, 8, 9, 10, 11, 12)
+#   - Stories done: 49 | needs-revision: 3 | ready-for-dev: 1 | backlog: 16
+#   - All statuses preserved from existing file — no downgrades
+#   - PO-directed epic sequencing (from SCP-2026-02-22):
+#     NEXT: Epic 7H → Epic 10 → Epic 8 → Epic 11 → Epic ST (ST-4) →
+#     Epic 6 → Epic 9 → Epic 12 (Phase 2)
+#   - Validation: PASS with 1 finding (Epic 7H not in epics.md — expected, 7H.1 will add it)
+#
 # 2026-02-22: SCP-2026-02-22 APPROVED — Post-Epic-7 Course Correction & Stabilization
 #   - Sprint planning reset executed per PO direction
 #   - Epic 7 status: DONE (all 6 original stories complete)
@@ -556,7 +575,7 @@ development_status:
   4-4-quick-entry-mode-keyboard-navigation-formatting: done
   4-5-auto-save-session-recovery: done
   4-6-consultant-booking-link-workspace-chrome: done
-  4-7-integration-gaps-startup-cost-mounting: done
+  4-7-integration-gaps-startup-cost-mounting: done  # Orphan: added mid-epic, not in epics.md
   epic-4-retrospective: done
 
   # ==========================================================================
@@ -591,16 +610,12 @@ development_status:
   5-8-guardian-bar-dynamic-interpretation: done
   5-9-document-preview-pdf-generation-trigger: done
   5-10-glossary-contextual-help: done
-  5-cp11-border-radius-polish: done  # SCP-2026-02-20 CP-11 — confirmed already applied
+  5-cp11-border-radius-polish: done  # Orphan: SCP-2026-02-20 CP-11 — confirmed already applied
   epic-5-retrospective: done  # FINALIZED 2026-02-20 — action items (AI-1 through AI-10) captured for Sprint Planning
 
   # Epic 5H: Post-Epic-5 Hardening Sprint [NEW — from Epic 5 Retrospective]
   # Validation & remediation work gating Epic 6. Origin: AI-1, AI-2, AI-3, AI-5.
-  # Must complete ALL 4 stories before Epic 6 implementation begins.
-  # AI-7 (content authoring) → dev note on 6.1
-  # AI-8 (dead code cleanup) → pre-Epic-6 checklist item
-  # AI-9 (large file decision) → architecture note during Epic 6 planning
-  # AI-10 (taxRate TODO) → absorbed into 5H.1 engine validation
+  # All 4 stories complete + retrospective done. Epic 5H COMPLETE.
   epic-5h: done
   5h-1-financial-engine-reference-validation: done  # AI-1: cell-by-cell vs reference spreadsheets. CORRECTED RECORD: Initially closed with 99 tests covering dollar values only. Post-retro audit found 4 CRITICAL engine bugs (inverted labor efficiency, after-tax ROIC, salary adj sign, ROIC sync) because tests skipped ratios/percentages/cross-sections. Fixed 2026-02-21, now 104 tests including ratio/pct coverage. See retrospective addendum.
   5h-2-report-tab-ui-audit-remediation: done    # AI-2: Implementation complete. 5 per-tab callout bars removed, parent CalloutBar enriched (BS identity check + Valuation net proceeds), comparison mode visibility fixed, column width reduced. Adversarial code review completed 2026-02-21 (H1 BS identity fix, all findings resolved).
@@ -611,6 +626,7 @@ development_status:
   # Epic 6: Document Generation & Vault [ELEVATED from old Epic 7]
   # PDF export + document history
   # Dependencies: Epic 5 (statement views must exist to export), Epic 5H (hardening must complete first)
+  # PO SEQUENCING (SCP-2026-02-22): LAST — presentation layer, wait for core to stabilize
   epic-6: backlog
   6-1-pdf-document-generation: backlog
   6-2-document-history-downloads: backlog
@@ -621,6 +637,7 @@ development_status:
   # Expert users skip Forms entirely and edit directly in Reports
   # Story 7.1 split into 7.1a–7.1e per Party Mode review (2026-02-21)
   # NOTE: 7.1b.1 (per-month independence) promoted to Epic 7H per SCP-2026-02-22
+  # All 6 stories complete + retrospective done. Epic 7 COMPLETE.
   epic-7: done
   7-1a-data-model-restructuring-migration: done
   7-1b-all-fields-editable-reports: done
@@ -636,6 +653,7 @@ development_status:
   # All planning documents realigned in this epic.
   # Dependency: 7H.1 first (no code deps), then 7H.2-7H.5 can parallel
   # PO directive: THIS EPIC IS NEXT — before any feature work (Epic 10, etc.)
+  # NOTE: Epic 7H stories NOT YET in epics.md — will be added during story 7H.1 execution
   epic-7h: backlog
   7h-1-planning-document-realignment: backlog           # Update PRD (FR98), Architecture (per-month status), Epics (Epic 10 desc, 7.1b.1 status, FR map), UX Spec (5 issues)
   7h-2-per-month-independence: backlog                  # 7.1b.1 promoted: 60-element arrays for revenue/COGS%/labor%/marketing%, engine type updates, Reports UI for monthly editing
@@ -649,12 +667,14 @@ development_status:
   # ==========================================================================
 
   # Epic 8: Advisory Guardrails & Smart Guidance [was Epic 5]
+  # PO SEQUENCING (SCP-2026-02-22): AFTER Epic 10
   epic-8: backlog
   8-1-input-range-validation-advisory-nudges: backlog
   8-2-weak-business-case-detection-actionable-guidance: backlog
   epic-8-retrospective: optional
 
   # Epic 9: AI Planning Advisor (Planning Assistant) [was Epic 6]
+  # PO SEQUENCING (SCP-2026-02-22): LAST — intelligence layer, wait for core to stabilize
   epic-9: backlog
   9-1-llm-integration-conversation-api: backlog
   9-2-split-screen-planning-assistant-interface: backlog
@@ -677,6 +697,7 @@ development_status:
 
   # Epic ST: Admin Support Tools — Impersonation & Demo Modes
   # Added via Sprint Change Proposal 2026-02-11
+  # PO SEQUENCING (SCP-2026-02-22): LATER — ST-4 blocked on Epic 11.2
   epic-st: in-progress
   st-1-view-as-infrastructure-read-only-mode: done
   st-2-view-as-edit-mode-audit-logging: done
@@ -685,6 +706,7 @@ development_status:
   epic-st-retrospective: optional
 
   # Epic 11: Data Sharing, Privacy & Pipeline Dashboards [was Epic 8]
+  # PO SEQUENCING (SCP-2026-02-22): AFTER Epic 8
   epic-11: backlog
   11-1-franchisee-data-sharing-controls: backlog
   11-2-franchisor-pipeline-dashboard: backlog
@@ -692,5 +714,6 @@ development_status:
   epic-11-retrospective: optional
 
   # Epic 12: Advisory Board Meeting (Phase 2 — Deferred) [was Epic 9]
+  # PO SEQUENCING (SCP-2026-02-22): PHASE 2
   epic-12: backlog
   epic-12-retrospective: optional
