@@ -40,6 +40,7 @@
 # - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
 
 generated: 2026-02-09
+updated: 2026-02-22  # Story 7H.1 context document created (Create Story workflow). Epic 7H status: in-progress.
 updated: 2026-02-22  # Sprint Planning regenerated: 15 epics, 69 stories (incl. 2 orphans, 1 retired). Epic 7H verified. All statuses preserved — no downgrades.
 updated: 2026-02-22  # SCP-2026-02-22 approved: Post-Epic-7 Course Correction & Stabilization. Epic 7H created. Epic sequencing reset. 7.1b.1 promoted from deferred to required.
 updated: 2026-02-21  # Story 7.2 adversarial code review completed → done. 9 findings fixed (3H/4M/2L). E2E re-verified.
@@ -56,6 +57,23 @@ story_location: _bmad-output/implementation-artifacts
 
 # CHANGE LOG:
 # ===========
+# 2026-02-22: Story 7H.1 context document created (Create Story workflow)
+#   - Full story file: 7h-1-planning-document-realignment.md (ready-for-dev)
+#   - 12 acceptance criteria covering: FR98 addition to PRD (AC-1), architecture per-month
+#     status update (AC-2), Epic 10 description fix (AC-3), 7.1b.1 status change (AC-4),
+#     Epic 7H section addition to epics.md (AC-5), FR Coverage Map update to 112/112 (AC-6),
+#     UX spec two-surface boundary (AC-7), pre-Epic-7 section marked historical (AC-8),
+#     facilities decomposition pattern added (AC-9), story rewrite section marked historical
+#     (AC-10), sidebar wireframe updated (AC-11), UX spec change log entry (AC-12)
+#   - Dev notes include: exact file locations with line numbers, SCP CP-1 through CP-7
+#     text specifications, anti-patterns (no code changes, no content deletion, no tier
+#     confusion), gotchas (line number shifts, FR coverage math, sidebar naming changes,
+#     Part 19 deferred items now delivered)
+#   - Documentation-only story — no application source code changes
+#   - Edits 4 planning artifacts: prd.md, architecture.md, epics.md, ux-design-specification-consolidated.md
+#   - Epic 7H status: in-progress (first story ready-for-dev)
+#   - Next action: Dev Story (DS) for 7H.1 document realignment execution
+#
 # 2026-02-22: Sprint Planning REGENERATED (full workflow execution)
 #   - Full epic file parse: 14 epics with stories in epics.md
 #   - Epic 7H (5 stories) from SCP-2026-02-22 — NOT YET in epics.md (pending story 7H.1 execution)
@@ -654,8 +672,8 @@ development_status:
   # Dependency: 7H.1 first (no code deps), then 7H.2-7H.5 can parallel
   # PO directive: THIS EPIC IS NEXT — before any feature work (Epic 10, etc.)
   # NOTE: Epic 7H stories NOT YET in epics.md — will be added during story 7H.1 execution
-  epic-7h: backlog
-  7h-1-planning-document-realignment: backlog           # Update PRD (FR98), Architecture (per-month status), Epics (Epic 10 desc, 7.1b.1 status, FR map), UX Spec (5 issues)
+  epic-7h: in-progress  # First story (7H.1) context document created 2026-02-22
+  7h-1-planning-document-realignment: ready-for-dev     # Story file created 2026-02-22. Update PRD (FR98), Architecture (per-month status), Epics (Epic 10 desc, 7.1b.1 status, FR map, Epic 7H section), UX Spec (5 issues). Documentation-only — no code changes.
   7h-2-per-month-independence: backlog                  # 7.1b.1 promoted: 60-element arrays for revenue/COGS%/labor%/marketing%, engine type updates, Reports UI for monthly editing
   7h-3-brand-crud-completion: backlog                   # Delete (with confirmation) + metadata editing. Closes Epic 2 gap causing active dev pain.
   7h-4-input-field-map-validation: backlog              # Test-time assertion: every INPUT_FIELD_MAP entry format matches FIELD_METADATA/engine output. Build fails on mismatch.
