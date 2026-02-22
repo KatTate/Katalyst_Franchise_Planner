@@ -17,6 +17,7 @@ import {
 } from "@/lib/sensitivity-engine";
 import type { PlanFinancialInputs } from "@shared/financial-engine";
 import type { StartupCostLineItem } from "@shared/financial-engine";
+import { SensitivityCharts } from "@/components/planning/sensitivity-charts";
 
 interface WhatIfPlaygroundProps {
   planId: string;
@@ -440,6 +441,13 @@ export function WhatIfPlayground({ planId }: WhatIfPlaygroundProps) {
                 />
               ))}
           </div>
+        </div>
+
+        <div>
+          <h2 className="text-base font-semibold mb-3" data-testid="charts-heading">
+            Business Impact — Base vs Your Scenario
+          </h2>
+          <SensitivityCharts scenarioOutputs={scenarioOutputs} />
         </div>
       </div>
     </div>
