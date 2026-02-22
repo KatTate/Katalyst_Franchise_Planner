@@ -11,6 +11,7 @@ so that I can quickly grasp the impact without reading every chart in detail.
 ## Dependencies
 
 - Story 10.2a (Sensitivity Chart Dashboard) must be complete before this story begins. The delta card strip is rendered within the same `SensitivityCharts` component (or as a sibling component within `WhatIfPlayground`) and relies on the chart dashboard layout being in place.
+- Story 10.1 already delivers 4 metric cards (Break-Even Month, Year-1 Revenue, 5-Year ROI %, Year-5 Cash) in a basic two-column layout. **This story redesigns those cards** — it does NOT add new cards. The scope is: arrow format ("Mo 14 → Mo 18 (+4 mo)"), desirability-based delta coloring, visual hierarchy band, and helper text lifecycle. The 10.1 metric cards are replaced by the 10.2b delta card strip.
 
 ## Acceptance Criteria
 
@@ -58,7 +59,7 @@ so that I can quickly grasp the impact without reading every chart in detail.
   - 5-Year ROI: `output.roiMetrics.fiveYearROIPct` (base vs current) — decimal fraction, multiply by 100 for percentage display. Same convention as `roicExtended[].roicPct` — confirmed by `callout-bar.tsx` line 105 and `roic-tab.tsx` line 212.
   - Year 5 Cash: `output.annualSummaries[4].endingCash` (base vs current) — in cents, divide by 100
 
-- **Helper text lifecycle:** The contextual note ("Move a slider to see how it changes your metrics") should be controlled by a state variable (e.g., `hasInteractedWithSlider`). This state should be lifted to `WhatIfPlayground` (10.1's component) and passed down as a prop. When any slider fires its first `onChange`, set the flag to `true` and the note disappears. This requires a minor interface addition to what Story 10.1 provides — coordinate with 10.1's component contract.
+- **Helper text lifecycle:** The contextual note ("Move a slider to see how it changes your metrics") should be controlled by a state variable (e.g., `hasInteractedWithSlider`). This state should be lifted to `WhatIfPlayground` (10.1's component) and passed down as a prop. When any slider fires its first `onChange`, set the flag to `true` and the note disappears. Story 10.1's component contract exposes `hasInteractedWithSlider` as a boolean for this purpose (added per Party Mode review 2026-02-22).
 
 - **Formatting patterns:**
   - Dollar values: `$${Math.round(valueInCents / 100 / 1000)}K` for compact display

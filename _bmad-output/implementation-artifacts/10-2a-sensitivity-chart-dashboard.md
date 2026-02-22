@@ -179,6 +179,10 @@ Each chart card uses a plain-language primary title (in `CardTitle`) with the te
 
 - **DO NOT add a Tasks/Subtasks section to this story file.** The dev agent plans its own implementation.
 
+### 7H.2 Per-Month Independence Dependency
+
+- **If Story 7H.2 has been completed**, the `PlanFinancialInputs` schema may now support 60-element per-month arrays for qualifying fields (revenue, COGS%, labor%, marketing%) alongside the existing 5-element per-year arrays. The sensitivity engine's `applySensitivityFactors()` function in `sensitivity-engine.ts` currently iterates 5 elements (`for (let i = 0; i < 5; i++)`). If 7H.2 has extended these arrays, the sensitivity engine must be updated to iterate over all array elements. Verify the current array structure in `FinancialInputs` before implementation. `SliderValues` (percentage adjustments) are unaffected — they are scenario-agnostic and applied at computation time.
+
 ### Gotchas & Integration Warnings
 
 - **Story 10.1 must complete before 10.2a can begin.** Story 10.2a's `SensitivityCharts` component is rendered inside `WhatIfPlayground` created in Story 10.1. The interface contract: `WhatIfPlayground` computes `SensitivityOutputs` (from `computeSensitivityOutputs`) and passes them to `SensitivityCharts` as a prop. If 10.1 is not done, there is no host component for 10.2a's charts.

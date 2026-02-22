@@ -1078,7 +1078,7 @@ The Document Preview widget shows "DRAFT" watermark diagonally across the previe
 
 **Phase 4: Scenarios & Document Generation**
 
-18. Sam clicks "Scenarios" in the sidebar. He sees the What-If Playground (or, pre-Epic 10, the scenario comparison view). He compares his Base Case against Conservative and Optimistic scenarios. Even the conservative case shows break-even by Month 22 — "it still works."
+18. Sam clicks "What-If" in the sidebar. He sees the What-If Playground (Epic 10). He adjusts sensitivity sliders to compare his Base Case against his own "what-if" scenarios. He drags revenue down 10% and sees break-even shift from Month 14 to Month 22 — "it still works even with lower revenue."
 19. Sam returns to the Dashboard. The Document Preview widget now shows a miniature of his lender package with his name prominently displayed — "Sam's PostNet Business Plan." A "DRAFT" watermark appears because he hasn't hit 90% completeness yet.
 20. Sam finishes customizing his remaining inputs (completeness passes 90%). The DRAFT watermark disappears. The Generate button label changes to "Generate Lender Package."
 21. Sam clicks "Generate Lender Package." A professional PDF downloads — his name, his numbers, his plan. He feels ready for his bank meeting.
@@ -1132,7 +1132,7 @@ The Document Preview widget shows "DRAFT" watermark diagonally across the previe
 > **Persona:** Chris, scaling operator with 2 locations. She's completed her plan for Location #2 and wants to stress-test her assumptions before committing. Note: Full What-If Playground ships in Epic 10. This journey describes the target experience.
 
 1. Chris logs in and lands on the Dashboard. She sees her two plans: Location #1 (operating, has actuals) and Location #2 (in planning, 92% complete).
-2. She opens Location #2's plan. She clicks "Scenarios" in the sidebar.
+2. She opens Location #2's plan. She clicks "What-If" in the sidebar.
 3. The What-If Playground opens. At the top, she sees a row of sensitivity sliders — one for each key assumption (with practical visual ranges but uncapped numeric input):
    - Revenue: -50% ←——●——→ +100%
    - COGS: -20pp ←——●——→ +20pp

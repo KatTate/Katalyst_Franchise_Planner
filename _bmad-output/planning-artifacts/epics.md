@@ -999,7 +999,7 @@ So that I can quickly assess my business plan across all 5 years and drill into 
 
 **Given** I am logged in with an active plan
 **When** the sidebar renders
-**Then** the sidebar navigation includes these items under the active plan: **My Plan**, **Reports**, **Scenarios**, **Settings**
+**Then** the sidebar navigation includes these items under the active plan: **My Plan**, **Reports**, **What-If**, **Settings**
 **And** a "HELP" section includes **Planning Assistant**
 **And** a "MY LOCATIONS" section includes **All Plans** (portfolio view)
 **And** any existing mode switcher UI (Planning Assistant | Forms | Quick Entry segmented control) from Epic 4 is removed — there are no user-facing modes
@@ -2188,7 +2188,7 @@ So that I can explore "what-if" scenarios of my own design — without modifying
 
 **Given** I have a plan with financial inputs and am on the dashboard or any planning surface
 **When** I click the "What-If" sidebar navigation item
-**Then** I see a standalone What-If Playground page (route: `/plans/:planId/what-if`)
+**Then** I see the What-If Playground view replace the main content area (rendered as the "scenarios" workspace view via `WorkspaceViewContext` — not a separate URL route)
 **And** the page header explains the purpose: "What happens to my WHOLE business if things change?"
 **And** a sticky/collapsible Sensitivity Controls panel is displayed at the top with sliders for key assumptions:
   - Revenue adjustment: -50% ←——●——→ +100%
@@ -2201,7 +2201,7 @@ So that I can explore "what-if" scenarios of my own design — without modifying
 **And** sliders can be supplemented by editable numeric fields for precise input
 **And** slider adjustments do NOT modify the user's actual plan — this is a sandbox (base case always reflects saved plan inputs)
 **And** the financial engine computes two scenarios client-side: Base Case (saved plan inputs, unmodified) and Your Scenario (base inputs with current slider adjustments applied)
-**And** metric cards show Base Case vs Your Scenario with delta indicators
+**And** metric cards (4 cards: Break-Even Month, Year-1 Revenue, 5-Year ROI %, Year-5 Cash) show Base Case vs Your Scenario with delta indicators
 **And** a "Reset Sliders" button returns all sliders to 0% (Your Scenario = Base Case)
 **And** each computation completes in < 2 seconds (NFR1)
 **And** slider input is debounced for an instant, responsive feel
@@ -2210,6 +2210,8 @@ So that I can explore "what-if" scenarios of my own design — without modifying
 - Financial engine already supports this — pass modified inputs, get full projection
 - Engine runs twice: base (no adjustments) and current (slider adjustments applied). If sliders are all at zero, skip the second run — Your Scenario equals Base Case. Client-side computation with debounced slider input.
 - Base case always reflects the user's actual saved plan inputs — not slider-modified values
+- Sidebar button label: "What-If" (internal `WorkspaceView` identifier stays `"scenarios"`, `data-testid="nav-scenarios"`)
+- Expose `hasInteractedWithSlider` boolean state for Story 10.2b's helper text lifecycle
 
 ### Story 10.2a: Sensitivity Chart Dashboard
 
@@ -2223,7 +2225,7 @@ So that I can understand the full impact of changing assumptions across every di
 **When** I adjust any slider
 **Then** all 6 charts update simultaneously with two scenario curves: Base Case (solid line) and Your Scenario (dashed line). If a saved scenario is loaded for comparison (Story 10.3), a third curve (dotted line) shows the saved scenario.
 **And** Chart 1 — **Profitability (P&L Summary)**: 5-year line/area chart showing Annual Revenue, COGS, Gross Profit, EBITDA, Pre-Tax Income
-**And** Chart 2 — **Cash Flow**: 5-year line chart showing Net Operating Cash Flow, Net Cash Flow, Ending Cash Balance. Months where any scenario goes cash-negative are highlighted with an amber advisory zone
+**And** Chart 2 — **Cash Flow**: 60-month line chart showing Ending Cash Balance at monthly granularity (required for amber advisory zone precision — checking only year-end values would miss mid-year cash-negative months). Months where any scenario goes cash-negative are highlighted with an amber advisory zone
 **And** Chart 3 — **Break-Even Analysis**: Visual showing months to break-even for Base Case + Your Scenario (+ optional saved scenario) as horizontal bars
 **And** Chart 4 — **ROI & Returns**: 5-year cumulative ROIC chart with Base + Your Scenario curves. Callout card: "Your scenario: [X]% ROIC at Year 5"
 **And** Chart 5 — **Balance Sheet Health**: Total Assets vs Total Liabilities over 5 years. Equity growth visible as the gap between the lines

@@ -243,10 +243,10 @@ export function AppSidebar() {
                       isActive={workspaceView === "scenarios"}
                       onClick={navigateToScenarios}
                       data-testid="nav-scenarios"
-                      tooltip="Scenarios"
+                      tooltip="What-If"
                     >
                       <FlaskConical />
-                      <span>Scenarios</span>
+                      <span>What-If</span>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
                   <SidebarMenuItem>
