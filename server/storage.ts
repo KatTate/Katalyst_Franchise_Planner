@@ -674,10 +674,14 @@ export class DatabaseStorage implements IStorage {
   }
 
   async deleteBrand(brandId: string): Promise<void> {
-    await db.update(users).set({ brandId: null }).where(eq(users.brandId, brandId));
-    await db.delete(invitations).where(eq(invitations.brandId, brandId));
-    await db.delete(brandAccountManagers).where(eq(brandAccountManagers.brandId, brandId));
-    await db.delete(brands).where(eq(brands.id, brandId));
+    await db.transaction(async (tx) => {
+      await tx.update(users).set({ brandId: null }).where(eq(users.brandId, brandId));
+      await tx.delete(invitations).where(eq(invitations.brandId, brandId));
+      await tx.delete(brandAccountManagers).where(eq(brandAccountManagers.brandId, brandId));
+      await tx.delete(brandValidationRuns).where(eq(brandValidationRuns.brandId, brandId));
+      await tx.delete(fddIngestionRuns).where(eq(fddIngestionRuns.brandId, brandId));
+      await tx.delete(brands).where(eq(brands.id, brandId));
+    });
   }
 }
 

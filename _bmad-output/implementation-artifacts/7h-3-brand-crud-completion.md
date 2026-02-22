@@ -1,6 +1,6 @@
 # Story 7H.3: Brand CRUD Completion
 
-Status: review
+Status: done
 
 ## Story
 
@@ -188,8 +188,22 @@ Implemented brand metadata editing (name, display_name, slug) and brand deletion
 - `server/routes/brands.ts` — MODIFIED: Extended PUT update schema with `slug`, added GET /:brandId/stats, added DELETE /:brandId
 - `client/src/components/brand/BrandIdentityTab.tsx` — MODIFIED: Added Brand Metadata Card (top), Danger Zone Card (bottom)
 - `client/src/components/brand/DeleteBrandDialog.tsx` — CREATED: Type-to-confirm delete dialog with affected counts
+- `e2e/story-7h3-brand-crud-completion.spec.ts` — CREATED: E2E test for brand CRUD completion
+- `server/routes/brands.test.ts` — MODIFIED: Unit tests for brand routes
 - `_bmad-output/implementation-artifacts/7h-3-brand-crud-completion.md` — MODIFIED: Status tracking
 - `_bmad-output/implementation-artifacts/sprint-status.yaml` — MODIFIED: Status tracking
+
+### Code Review Notes
+**Reviewed by:** Adversarial code review (BMAD CR workflow)
+**Issues found:** 2 HIGH, 3 MEDIUM, 1 LOW
+**Issues fixed:** 4 (2 HIGH, 2 MEDIUM)
+**Fixes applied:**
+- HIGH-1: Added `brandValidationRuns` and `fddIngestionRuns` cleanup to `deleteBrand()` — both tables have NOT NULL FK on brandId with no cascade, so delete would fail without cleanup
+- HIGH-2: Wrapped `deleteBrand()` in a database transaction for atomicity — prevents partial state if any step fails
+- MEDIUM-2: Replaced custom `queryFn` in DeleteBrandDialog stats query with default fetcher (project convention)
+- MEDIUM-3: Removed duplicate Display Name field from Brand Metadata section — Display Name is already editable in the Visual Identity card via the identity endpoint
+**Remaining (LOW):**
+- LOW-1: Stats count doesn't distinguish demo vs real users (acceptable — total count is accurate)
 
 ### Testing Summary
 - **E2E (Playwright):** Full end-to-end test covering: brand creation, metadata editing (name + slug change), save confirmation toast, page header update, Danger Zone visibility, delete dialog type-to-confirm behavior (wrong name disables, correct name enables), successful deletion with toast + redirect, API verification of 404 after deletion. All 22 test steps passed.

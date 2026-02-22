@@ -36,11 +36,6 @@ export function DeleteBrandDialog({
 
   const { data: stats, isLoading: statsLoading } = useQuery<{ planCount: number; userCount: number }>({
     queryKey: ["/api/brands", brandId, "stats"],
-    queryFn: async () => {
-      const res = await fetch(`/api/brands/${brandId}/stats`, { credentials: "include" });
-      if (!res.ok) throw new Error("Failed to load brand stats");
-      return res.json();
-    },
     enabled: open,
   });
 

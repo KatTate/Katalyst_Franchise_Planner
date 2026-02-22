@@ -34,7 +34,6 @@ export function BrandIdentityTab({ brand }: { brand: Brand }) {
   const [colorError, setColorError] = useState("");
 
   const [metaName, setMetaName] = useState(brand.name);
-  const [metaDisplayName, setMetaDisplayName] = useState(brand.displayName || "");
   const [metaSlug, setMetaSlug] = useState(brand.slug);
   const [slugError, setSlugError] = useState("");
 
@@ -54,7 +53,6 @@ export function BrandIdentityTab({ brand }: { brand: Brand }) {
     mutationFn: async () => {
       const res = await apiRequest("PUT", `/api/brands/${brand.id}`, {
         name: metaName,
-        display_name: metaDisplayName || metaName,
         slug: metaSlug,
       });
       return res.json();
@@ -139,16 +137,6 @@ export function BrandIdentityTab({ brand }: { brand: Brand }) {
               onChange={(e) => setMetaName(e.target.value)}
               placeholder="e.g., PostNet"
               data-testid="input-meta-brand-name"
-            />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="meta-display-name">Display Name</Label>
-            <Input
-              id="meta-display-name"
-              value={metaDisplayName}
-              onChange={(e) => setMetaDisplayName(e.target.value)}
-              placeholder="e.g., PostNet Franchise"
-              data-testid="input-meta-display-name"
             />
           </div>
           <div className="space-y-2">
