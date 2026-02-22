@@ -121,6 +121,9 @@ export interface IStorage {
   getFddIngestionRuns(brandId: string): Promise<FddIngestionRun[]>;
   getFddIngestionRun(runId: string): Promise<FddIngestionRun | undefined>;
   updateFddIngestionRun(runId: string, data: Partial<Pick<FddIngestionRun, "status" | "extractedData" | "errorMessage" | "appliedAt">>): Promise<FddIngestionRun>;
+
+  getBrandStats(brandId: string): Promise<{ planCount: number; userCount: number }>;
+  deleteBrand(brandId: string): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -653,6 +656,28 @@ export class DatabaseStorage implements IStorage {
     if (data.appliedAt !== undefined) updateData.appliedAt = data.appliedAt;
     const [updated] = await db.update(fddIngestionRuns).set(updateData).where(eq(fddIngestionRuns.id, runId)).returning();
     return updated;
+  }
+
+  async getBrandStats(brandId: string): Promise<{ planCount: number; userCount: number }> {
+    const [planResult] = await db
+      .select({ count: sql<number>`count(*)::int` })
+      .from(plans)
+      .where(eq(plans.brandId, brandId));
+    const [userResult] = await db
+      .select({ count: sql<number>`count(*)::int` })
+      .from(users)
+      .where(eq(users.brandId, brandId));
+    return {
+      planCount: planResult?.count ?? 0,
+      userCount: userResult?.count ?? 0,
+    };
+  }
+
+  async deleteBrand(brandId: string): Promise<void> {
+    await db.update(users).set({ brandId: null }).where(eq(users.brandId, brandId));
+    await db.delete(invitations).where(eq(invitations.brandId, brandId));
+    await db.delete(brandAccountManagers).where(eq(brandAccountManagers.brandId, brandId));
+    await db.delete(brands).where(eq(brands.id, brandId));
   }
 }
 
