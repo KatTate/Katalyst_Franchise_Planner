@@ -3,11 +3,11 @@ title: 'Plan Confirmation Model & Franchisee Plan Settings'
 slug: 'plan-confirmation-and-settings'
 created: '2026-02-23'
 status: 'in-progress'
-stepsCompleted: [1]
-tech_stack: ['React 18.3', 'TypeScript 5.6', 'Tailwind CSS 3.4', 'shadcn/ui (Radix)', 'Wouter 3.3', 'TanStack Query v5', 'Lucide React', 'Express 5', 'Drizzle ORM 0.39', 'PostgreSQL']
-files_to_modify: []
-code_patterns: []
-test_patterns: []
+stepsCompleted: [1, 2]
+tech_stack: ['React 18.3', 'TypeScript 5.6', 'Tailwind CSS 3.4', 'shadcn/ui (Radix)', 'Wouter 3.3', 'TanStack Query v5', 'Lucide React', 'Express 5', 'Drizzle ORM 0.39', 'PostgreSQL', 'Drizzle-Zod 0.7', 'Zod 3.24', 'Framer Motion 11.13']
+files_to_modify: ['shared/financial-engine.ts', 'shared/schema.ts', 'shared/plan-initialization.ts', 'client/src/lib/plan-completeness.ts', 'client/src/components/planning/plan-completeness-bar.tsx', 'client/src/components/shared/financial-input-editor.tsx', 'client/src/hooks/use-field-editing.ts', 'client/src/components/shared/source-badge.tsx', 'client/src/components/planning/document-preview-widget.tsx', 'client/src/components/planning/financial-statements.tsx', 'client/src/pages/dashboard.tsx', 'client/src/pages/planning-workspace.tsx', 'client/src/components/planning/data-sharing-settings.tsx', 'server/routes/plans.ts', 'server/storage.ts']
+code_patterns: ['FinancialFieldValue wrapper pattern', 'updateFieldValue/resetFieldToDefault helpers', 'makeField/makeFieldArray5/makeFieldArray60 factories', 'WorkspaceView state machine (my-plan|reports|scenarios|settings)', 'queueSave auto-save pipeline', 'useFieldEditing hook with handleEditStart/handleEditCommit/handleEditCancel', 'SectionProgress completeness tracking', 'PATCH /api/plans/:planId with updatePlanSchema validation', 'CategorySection/FieldRow component hierarchy in Forms', 'TanStack Query v5 object-form with staleTime: Infinity']
+test_patterns: ['Vitest for shared/ and server/ unit tests', 'Playwright E2E in e2e/ directory', 'Mock-based route tests with vi.mock and supertest', 'run_test tool for browser interaction validation']
 ---
 
 # Tech-Spec: Plan Confirmation Model & Franchisee Plan Settings
@@ -58,23 +58,77 @@ Two related gaps prevent franchisees from communicating their plan readiness and
 
 ### Codebase Patterns
 
-{codebase_patterns — to be filled in Step 2}
+**Data Layer — FinancialFieldValue Wrapper Pattern:**
+- `FinancialFieldValue` (shared/financial-engine.ts:25-32) wraps every user-editable financial number with 6 metadata fields: `currentValue`, `source`, `brandDefault`, `item7Range`, `lastModifiedAt`, `isCustom`. The new `confirmed` boolean will be the 7th.
+- Factory functions `makeField()`, `makeFieldArray5()`, `makeFieldArray60()` in shared/plan-initialization.ts create new fields — all must emit `confirmed: false`.
+- `updateFieldValue()` stamps `source: "user_entry"`, `isCustom: true` — must NOT auto-set `confirmed: true` (per user decision: editing and confirming are separate).
+- `resetFieldToDefault()` returns to brand default — must reset `confirmed: false` (field was un-confirmed by resetting).
+- Zod schema `financialFieldValueSchema` in shared/schema.ts validates at API boundary — needs `confirmed: z.boolean().optional().default(false)` for backward compatibility with existing stored data.
+
+**Completeness Engine:**
+- `plan-completeness.ts` has `isEdited()` → checks `source !== "brand_default"`. Replace with `isConfirmed()` → checks `field.confirmed === true`.
+- `SectionProgress` interface has `edited: number` → rename to `confirmed: number`.
+- `computeCompleteness()` aggregates across sections → automatically shifts when `isEdited()` becomes `isConfirmed()`.
+- `hasAnyUserEdits()` used by guardian engine — keep as-is (separate concern from confirmation).
+- `PlanCompletenessBar` shows "{edited}/{total} fields customized" → "{confirmed}/{total} fields confirmed".
+
+**Forms View — Field Editing Pipeline:**
+- `FinancialInputEditor` renders `CategorySection` → `FieldRow` hierarchy.
+- `FieldRow` currently has: display value (click to edit), `SourceBadge`, and reset button (for user_entry only).
+- New: Add lock/confirm icon button in the action column. After editing (source changes to user_entry), lock icon pulses as a nudge. For brand_default fields, lock icon is always available (confirm without changing value). For already-confirmed fields, show filled lock.
+- `useFieldEditing` hook manages edit state — needs new `handleConfirmField(category, fieldName)` that sets `confirmed: true` on the field and triggers `onSave`.
+
+**Reports View — Section-Level Batch Confirm:**
+- `FinancialStatements` component (financial-statements.tsx) receives `plan`, `queueSave`, `isSaving`.
+- Currently has `PlanCompletenessBar` integration via imports. Add section-level "Confirm All" buttons to the progress bar or as a new strip below the tab header.
+- Batch confirm iterates all fields in a section, sets `confirmed: true`, and calls `queueSave`.
+
+**Workspace View State Machine:**
+- `WorkspaceViewContext` manages 4 views: `my-plan | reports | scenarios | settings`. Settings view currently renders only `DataSharingSettings`.
+- Plan Settings ("My Status") will be a new component rendered alongside `DataSharingSettings` in the settings workspace view.
+- `navigateToSettings()` already exists — dashboard CTA can use it via plan link + context.
+
+**Auto-Save Pipeline:**
+- All plan modifications go through `usePlanAutoSave.queueSave()` — field confirmation saves follow this path.
+- `queueSave({ financialInputs: updatedInputs })` triggers debounced PATCH.
+
+**Plans API:**
+- `PATCH /api/plans/:planId` accepts partial updates via `updatePlanSchema`. New plan settings fields (pipelineStage, targetOpenDate, targetMarket, locationAddress, financingStatus) flow through this endpoint.
+- Pipeline projection `projectPlanForFranchisor()` already includes `pipelineStage`, `targetMarket`, `targetOpenQuarter` — will need to include new fields.
 
 ### Files to Reference
 
 | File | Purpose |
 | ---- | ------- |
-
-{files_table — to be filled in Step 2}
+| `shared/financial-engine.ts` | `FinancialFieldValue` interface definition (lines 25-32), `PlanFinancialInputs` interface |
+| `shared/schema.ts` | `financialFieldValueSchema` Zod schema (line 228), `plans` table definition (pipelineStage, targetMarket, targetOpenQuarter columns), `updatePlanSchema` |
+| `shared/plan-initialization.ts` | `makeField()`, `makeFieldArray5()`, `makeFieldArray60()` factories; `updateFieldValue()`, `resetFieldToDefault()` helpers; `migratePlanFinancialInputs()` |
+| `client/src/lib/plan-completeness.ts` | `isEdited()` → must become `isConfirmed()`, `SectionProgress`, `computeCompleteness()`, `computeSectionProgress()` |
+| `client/src/components/planning/plan-completeness-bar.tsx` | Progress bar UI showing "fields customized" → "fields confirmed" |
+| `client/src/components/shared/financial-input-editor.tsx` | `CategorySection`, `FieldRow` — where per-field confirm button lives |
+| `client/src/hooks/use-field-editing.ts` | Edit state management — needs `handleConfirmField()` |
+| `client/src/components/shared/source-badge.tsx` | Source indicator badges — may need "Confirmed" visual state |
+| `client/src/components/planning/document-preview-widget.tsx` | DRAFT watermark logic (`completeness < 50`) — automatically shifts with engine change |
+| `client/src/components/planning/financial-statements.tsx` | Reports view — needs section-level batch confirm integration |
+| `client/src/pages/dashboard.tsx` | Plan cards — needs "Update" CTA button |
+| `client/src/pages/planning-workspace.tsx` | Settings workspace view routing — renders `DataSharingSettings`, will add Plan Status section |
+| `client/src/components/planning/data-sharing-settings.tsx` | Current settings component — Plan Status settings will be added alongside |
+| `server/routes/plans.ts` | PATCH endpoint, `projectPlanForFranchisor()` — needs new fields in projection |
+| `server/storage.ts` | Storage interface — `updatePlan()` already handles partial updates |
+| `client/src/contexts/WorkspaceViewContext.tsx` | `navigateToSettings()` function for dashboard CTA |
+| `_bmad-output/project-context.md` | AI agent rules: auto-save pipeline, field editing patterns, query key conventions |
 
 ### Technical Decisions
 
 - Confirmation and editing are always separate explicit actions — editing does NOT auto-confirm
-- A pulsing lock icon after editing provides a subtle nudge to confirm
-- Target opening date uses month/year precision (not just quarter) — existing `targetOpenQuarter` column may need replacement or renaming
+- A pulsing lock icon after editing provides a subtle nudge to confirm (Framer Motion `animate` pulse on the lock icon when field is edited but not yet confirmed)
+- `confirmed` field uses `z.boolean().optional().default(false)` in Zod for backward compatibility — existing stored plans without `confirmed` will deserialize as `confirmed: false`
+- Target opening date uses month/year precision (not just quarter) — existing `targetOpenQuarter` text column will be replaced/renamed to `targetOpenDate` (text, format "YYYY-MM")
 - Market area and location address are connected but separate fields — market is known early, address comes later
 - Section-level batch confirmation in Reports (v1) — inline cell locks deferred
 - Brand default fields that haven't been touched start as `confirmed: false`
+- New DB columns: `locationAddress` (text, nullable), `financingStatus` (text, nullable, enum: "not_started" | "exploring" | "pre_approved" | "approved" | "funded")
+- Dashboard CTA navigates to `/plans/{planId}` with settings view active — uses `Link` to plan + workspace view context
 
 ## Acceptance Criteria
 
