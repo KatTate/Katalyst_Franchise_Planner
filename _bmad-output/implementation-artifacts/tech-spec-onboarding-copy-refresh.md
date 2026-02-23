@@ -2,8 +2,8 @@
 title: 'Onboarding Copy Refresh'
 slug: 'onboarding-copy-refresh'
 created: '2026-02-23'
-status: 'review'
-stepsCompleted: [1, 2, 3]
+status: 'ready-for-dev'
+stepsCompleted: [1, 2, 3, 4]
 tech_stack: ['React 18.3', 'TypeScript 5.6', 'Tailwind CSS 3.4', 'shadcn/ui (Radix)', 'Wouter 3.3', 'TanStack Query v5', 'Lucide React']
 files_to_modify: ['client/src/pages/onboarding.tsx']
 code_patterns: ['TIER_INFO static Record constant', 'isRecommended boolean conditional rendering', 'data-testid on all interactive/display elements', 'JSX auto-transform (no React import)']
