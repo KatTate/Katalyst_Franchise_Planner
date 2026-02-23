@@ -910,8 +910,8 @@ development_status:
 
   # Epic 11: Data Sharing, Privacy & Pipeline Dashboards [was Epic 8]
   # PO SEQUENCING (SCP-2026-02-22): AFTER Epic 8
-  epic-11: backlog
-  11-1-franchisee-data-sharing-controls: backlog
+  epic-11: in-progress
+  11-1-franchisee-data-sharing-controls: in-progress
   11-2-franchisor-pipeline-dashboard: ready-for-dev
   11-3-katalyst-admin-cross-brand-dashboard: backlog
   epic-11-retrospective: optional

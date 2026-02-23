@@ -1,6 +1,6 @@
 # Story 11.1: Franchisee Data Sharing Controls
 
-Status: ready-for-dev
+Status: in-progress
 
 ## Story
 

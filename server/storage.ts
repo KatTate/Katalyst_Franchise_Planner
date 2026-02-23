@@ -21,6 +21,9 @@ import {
   type FddIngestionRun,
   type InsertFddIngestionRun,
   type FddExtractionResult,
+  type DataSharingConsent,
+  type InsertDataSharingConsent,
+  type ConsentStatus,
   users,
   invitations,
   brands,
@@ -29,6 +32,7 @@ import {
   impersonationAuditLogs,
   brandValidationRuns,
   fddIngestionRuns,
+  dataSharingConsents,
 } from "@shared/schema";
 import type { StartupCostLineItem } from "@shared/financial-engine";
 import { buildPlanFinancialInputs, buildPlanStartupCosts, migrateStartupCosts, migratePlanFinancialInputs } from "@shared/plan-initialization";
@@ -124,6 +128,10 @@ export interface IStorage {
 
   getBrandStats(brandId: string): Promise<{ planCount: number; userCount: number }>;
   deleteBrand(brandId: string): Promise<void>;
+
+  getConsentStatus(planId: string, userId: string): Promise<ConsentStatus>;
+  grantConsent(planId: string, userId: string): Promise<DataSharingConsent>;
+  revokeConsent(planId: string, userId: string): Promise<DataSharingConsent>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -693,6 +701,35 @@ export class DatabaseStorage implements IStorage {
       planCount: planResult?.count ?? 0,
       userCount: userResult?.count ?? 0,
     };
+  }
+
+  async getConsentStatus(planId: string, userId: string): Promise<ConsentStatus> {
+    const [latest] = await db
+      .select()
+      .from(dataSharingConsents)
+      .where(and(eq(dataSharingConsents.planId, planId), eq(dataSharingConsents.userId, userId)))
+      .orderBy(sql`created_at DESC`)
+      .limit(1);
+    if (!latest || latest.action === "revoke") {
+      return { hasConsent: false, grantedAt: null };
+    }
+    return { hasConsent: true, grantedAt: latest.createdAt.toISOString() };
+  }
+
+  async grantConsent(planId: string, userId: string): Promise<DataSharingConsent> {
+    const [created] = await db
+      .insert(dataSharingConsents)
+      .values({ planId, userId, action: "grant" } as any)
+      .returning();
+    return created;
+  }
+
+  async revokeConsent(planId: string, userId: string): Promise<DataSharingConsent> {
+    const [created] = await db
+      .insert(dataSharingConsents)
+      .values({ planId, userId, action: "revoke" } as any)
+      .returning();
+    return created;
   }
 
   async deleteBrand(brandId: string): Promise<void> {

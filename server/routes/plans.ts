@@ -61,6 +61,24 @@ async function requirePlanAccess(req: Request, res: Response): Promise<Plan | nu
   return plan;
 }
 
+/** Pipeline-only projection: strips financial details for non-opted-in franchisor access */
+function projectPlanForFranchisor(plan: Plan): Partial<Plan> {
+  return {
+    id: plan.id,
+    userId: plan.userId,
+    brandId: plan.brandId,
+    name: plan.name,
+    status: plan.status,
+    pipelineStage: plan.pipelineStage,
+    targetMarket: plan.targetMarket,
+    targetOpenQuarter: plan.targetOpenQuarter,
+    quickStartCompleted: plan.quickStartCompleted,
+    createdAt: plan.createdAt,
+    updatedAt: plan.updatedAt,
+    lastAutoSave: plan.lastAutoSave,
+  };
+}
+
 // GET /api/plans — list plans for current effective user
 router.get(
   "/",
@@ -71,9 +89,21 @@ router.get(
     if (effectiveUser.role === "katalyst_admin") {
       plans = [];
     } else if (effectiveUser.role === "franchisor") {
-      plans = effectiveUser.brandId
-        ? await storage.getPlansByBrand(effectiveUser.brandId)
-        : [];
+      if (effectiveUser.brandId) {
+        const allPlans = await storage.getPlansByBrand(effectiveUser.brandId);
+        const projectedPlans = await Promise.all(
+          allPlans.map(async (plan) => {
+            const consent = await storage.getConsentStatus(plan.id, plan.userId);
+            if (consent.hasConsent) {
+              return plan;
+            }
+            return projectPlanForFranchisor(plan);
+          })
+        );
+        plans = projectedPlans as Plan[];
+      } else {
+        plans = [];
+      }
     } else {
       plans = await storage.getPlansByUser(effectiveUser.id);
     }
@@ -133,6 +163,14 @@ router.get(
   async (req: Request<{ planId: string }>, res: Response) => {
     const plan = await requirePlanAccess(req, res);
     if (plan === null) return;
+
+    const effectiveUser = await getEffectiveUser(req);
+    if (effectiveUser.role === "franchisor") {
+      const consent = await storage.getConsentStatus(plan.id, plan.userId);
+      if (!consent.hasConsent) {
+        return res.json({ data: projectPlanForFranchisor(plan) });
+      }
+    }
 
     return res.json({ data: plan });
   }

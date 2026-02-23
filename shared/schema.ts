@@ -424,3 +424,28 @@ export const insertFddIngestionRunSchema = createInsertSchema(fddIngestionRuns).
 });
 export type InsertFddIngestionRun = z.infer<typeof insertFddIngestionRunSchema>;
 export type FddIngestionRun = typeof fddIngestionRuns.$inferSelect;
+
+// ─── Data Sharing Consents (Story 11.1 — append-only audit trail) ─────
+
+export const dataSharingConsents = pgTable("data_sharing_consents", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  planId: varchar("plan_id").notNull().references(() => plans.id, { onDelete: "cascade" }),
+  userId: varchar("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  action: text("action").notNull().$type<"grant" | "revoke">(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+}, (table) => [
+  index("idx_data_sharing_consents_plan").on(table.planId),
+  index("idx_data_sharing_consents_user").on(table.userId),
+]);
+
+export const insertDataSharingConsentSchema = createInsertSchema(dataSharingConsents).omit({
+  id: true,
+  createdAt: true,
+});
+export type InsertDataSharingConsent = z.infer<typeof insertDataSharingConsentSchema>;
+export type DataSharingConsent = typeof dataSharingConsents.$inferSelect;
+
+export type ConsentStatus = {
+  hasConsent: boolean;
+  grantedAt: string | null;
+};
