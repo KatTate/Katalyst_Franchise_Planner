@@ -17,20 +17,23 @@ interface TierRecommendation {
   tierDescription: string;
 }
 
-const TIER_INFO: Record<string, { label: string; description: string; icon: typeof MessageSquare }> = {
+const TIER_INFO: Record<string, { label: string; shortDescription: string; recommendedCopy: JSX.Element; icon: typeof MessageSquare }> = {
   planning_assistant: {
     label: "Planning Assistant",
-    description: "We'll guide you through your plan with a conversational advisor. Perfect for first-time planners.",
+    shortDescription: "A conversational guide that walks you through your plan step by step.",
+    recommendedCopy: <>We recommend starting with the <strong>Planning Assistant</strong> — it'll guide you through your plan conversationally, explaining things as you go. You can always switch to forms anytime.</>,
     icon: MessageSquare,
   },
   forms: {
     label: "Forms",
-    description: "Build your plan section by section with structured input forms. Great for people who know their numbers.",
+    shortDescription: "Build your plan section by section with structured input forms.",
+    recommendedCopy: <>You're in good shape to dive into <strong>My Plan</strong> forms. Fill in your numbers section by section. The Planning Assistant is always available if you want a second opinion.</>,
     icon: FileText,
   },
   quick_entry: {
     label: "Quick Entry",
-    description: "Jump right into a spreadsheet-style view for maximum speed. Ideal for experienced planners.",
+    shortDescription: "Jump right into the data. Everything's editable inline.",
+    recommendedCopy: <>You've got this. Head straight to <strong>Reports</strong> and build your plan inline — everything's editable. No hand-holding required.</>,
     icon: Zap,
   },
 };
@@ -187,7 +190,7 @@ export default function OnboardingPage() {
                           </span>
                         )}
                       </div>
-                      <p className="text-sm text-muted-foreground mt-1">{tier.description}</p>
+                      <p className="text-sm text-muted-foreground mt-1" data-testid={`text-tier-description-${tierKey}`}>{isRecommended ? tier.recommendedCopy : tier.shortDescription}</p>
                     </div>
                     {isSelected && (
                       <Check className="h-5 w-5 text-primary shrink-0 mt-0.5" />
