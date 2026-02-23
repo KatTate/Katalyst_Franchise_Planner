@@ -40,6 +40,7 @@
 # - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
 
 generated: 2026-02-09
+updated: 2026-02-23  # Story 10.3 context document created (Create Story workflow). 10 ACs, 6 files in change summary. JSONB column storage decision documented.
 updated: 2026-02-23  # Story 10.2b adversarial code review completed → done. 3M/1L found, all fixed. AC3 positioning (M1), useMemo effectiveness (M2), evidence table (M3), redundant check (L1). All 5 ACs satisfied.
 updated: 2026-02-22  # Story 10.1 adversarial code review completed → done. 2H fixed (COGS unit "pp", input clamping), 2M/2L documented. All 5 ACs satisfied.
 updated: 2026-02-22  # Story 7H.4 adversarial code review completed → done. 4 findings fixed (2M/2L). All 8 ACs satisfied. 753 tests passing.
@@ -65,6 +66,26 @@ story_location: _bmad-output/implementation-artifacts
 
 # CHANGE LOG:
 # ===========
+# 2026-02-23: Story 10.3 context document created (Create Story workflow)
+#   - Full story file: 10-3-scenario-persistence-comparison.md (ready-for-dev)
+#   - 10 acceptance criteria covering: save scenario with name validation and 10-cap
+#     (AC-1, AC-2), load scenario into sliders from dropdown (AC-3), loaded scenario
+#     name display + unsaved changes indicator (AC-4), update existing / save as new
+#     (AC-5), delete with confirmation and state cleanup (AC-6), comparison overlay
+#     with third engine run and dotted chart lines (AC-7, AC-8), sandbox invariant
+#     (AC-9), data-testid coverage (AC-10)
+#   - Storage decision: JSONB column `what_if_scenarios` on plans table (recommended
+#     over separate table — simpler, free clone/cascade, no join overhead at ≤10 items)
+#   - Dev notes include: WhatIfScenario interface, 3 API endpoints (POST/PUT/DELETE
+#     under /api/plans/:planId/scenarios), Zod validation schemas, comparison overlay
+#     engine pattern, TanStack Query cache invalidation, SensitivityCharts prop
+#     extension for third dotted line, MetricDeltaCard third column
+#   - Anti-patterns: no financialInputs mutation, no EngineOutput storage, no separate
+#     table, no zero-slider scenario saves, no dead-code integration
+#   - 6 files in change summary: schema.ts, plans.ts route, sensitivity-engine.ts,
+#     what-if-playground.tsx, sensitivity-charts.tsx, Drizzle migration
+#   - Next action: Dev Story (DS) for 10.3 implementation
+#
 # 2026-02-22: Story 7H.4 context document created (Create Story workflow)
 #   - Full story file: 7h-4-input-field-map-validation.md (ready-for-dev)
 #   - 8 acceptance criteria covering: existing test preservation (AC-1), engine type
