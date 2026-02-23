@@ -48,6 +48,14 @@ When the user triggers an agent or workflow, the AI MUST load the referenced fil
 - **New Files:** `client/src/lib/planning-assistant-simulation.ts`, `client/src/contexts/PlanningAssistantContext.tsx`, `client/src/hooks/use-conversation.ts`, `client/src/components/shared/error-boundary.tsx`, `client/src/components/planning/conversation-panel.tsx`, `client/src/components/planning/live-dashboard-panel.tsx`, `client/src/components/planning/planning-assistant-panel.tsx`, `client/src/components/planning/planning-assistant-fab.tsx`
 - **Modified:** `client/src/pages/planning-workspace.tsx` (FAB + panel integration), `client/src/components/app-sidebar.tsx` (HELP section item)
 
+## Story 11.1: Franchisee Data Sharing Controls (Feb 2026)
+- **Consent Management:** Franchisees can grant/revoke consent for franchisors to view financial plan details via Settings → Data Sharing in the plan workspace.
+- **Append-Only Audit Trail:** `data_sharing_consents` table (INSERT-only) tracks all grant/revoke actions with timestamps.
+- **Response Projection:** `projectPlanForFranchisor()` helper in `server/routes/plans.ts` strips `financialInputs`, `startupCosts`, `whatIfScenarios` from API responses when consent is not granted. Pipeline fields (name, pipelineStage, targetMarket, targetOpenQuarter) always visible.
+- **API Endpoints:** `GET/POST /api/plans/:planId/consent`, `/consent/grant`, `/consent/revoke` in `server/routes/consent.ts`.
+- **UI Component:** `client/src/components/planning/data-sharing-settings.tsx` with AlertDialog confirmations, status badge, and toast notifications.
+- **RBAC Enforcement:** Only franchisee plan owners can grant/revoke. Franchisors get 403. Katalyst admins see all data regardless.
+
 ## Story 10.3: Scenario Persistence & Comparison (Feb 2026)
 - **Scenario CRUD:** Franchisees can save slider configurations as named scenarios (max 10 per plan), load them, update/rename, and delete via `whatIfScenarios` JSONB column on `plans` table.
 - **API Endpoints:** `POST/PUT/DELETE /api/plans/:planId/scenarios` with Zod validation (unique names, max 10, non-zero sliders).

@@ -1,4 +1,5 @@
 # generated: 2026-02-09
+# updated: 2026-02-23 (Story 11.1 implementation complete → review. All 9 ACs verified via Playwright E2E. 7 files created/modified. Append-only audit trail, consent-based response projection, Settings UI.)
 # updated: 2026-02-23 (Story 11.2 Party Mode review completed — 8 findings, 5 applied)
 # updated: 2026-02-23 (Story 9.2 implementation complete → review. All 12 ACs verified via Playwright E2E. 9 files created/modified. Demo-first simulation architecture.)
 # updated: 2026-02-23 (Story 9.2 context document created — Split-Screen Planning Assistant Interface)
@@ -911,7 +912,7 @@ development_status:
   # Epic 11: Data Sharing, Privacy & Pipeline Dashboards [was Epic 8]
   # PO SEQUENCING (SCP-2026-02-22): AFTER Epic 8
   epic-11: in-progress
-  11-1-franchisee-data-sharing-controls: in-progress
+  11-1-franchisee-data-sharing-controls: review
   11-2-franchisor-pipeline-dashboard: ready-for-dev
   11-3-katalyst-admin-cross-brand-dashboard: backlog
   epic-11-retrospective: optional

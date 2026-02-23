@@ -1,6 +1,6 @@
 # Story 11.1: Franchisee Data Sharing Controls
 
-Status: in-progress
+Status: review
 
 ## Story
 
@@ -153,16 +153,27 @@ so that I share details only when I'm comfortable doing so.
 
 ### Agent Model Used
 
-(pending)
+Claude 4.6 Opus (Replit Agent)
 
 ### Completion Notes
 
-(pending)
+All 9 acceptance criteria implemented and verified via E2E Playwright testing. Implementation follows the three-layer RBAC enforcement pattern: route authorization, storage scoping, and consent-based response projection. Append-only audit trail uses INSERT-only operations on `data_sharing_consents` table. Pipeline fields remain visible to franchisors regardless of consent status.
 
 ### File List
 
-(pending)
+| File | Action | Description |
+|------|--------|-------------|
+| `shared/schema.ts` | MODIFIED | Added `dataSharingConsents` table, `insertDataSharingConsentSchema`, `DataSharingConsent` type, `ConsentStatus` type |
+| `server/storage.ts` | MODIFIED | Added `getConsentStatus()`, `grantConsent()`, `revokeConsent()`, `hasActiveConsent()` to IStorage interface and DatabaseStorage |
+| `server/routes/consent.ts` | CREATED | Consent router with GET status, POST grant, POST revoke endpoints |
+| `server/routes.ts` | MODIFIED | Registered consent router at `/api/plans` prefix |
+| `server/routes/plans.ts` | MODIFIED | Added `projectPlanForFranchisor()` helper and consent-based response projection for franchisor role in GET /api/plans and GET /api/plans/:planId |
+| `client/src/components/planning/data-sharing-settings.tsx` | CREATED | Data sharing settings component with consent status display, grant/revoke with AlertDialog confirmation, toast notifications |
+| `client/src/pages/planning-workspace.tsx` | MODIFIED | Replaced settings placeholder with DataSharingSettings component, cleaned up unused imports |
 
 ### Testing Summary
 
-(pending)
+E2E Playwright tests passed across 3 test contexts:
+- **Test 1 (API consent cycle):** Grant/revoke consent via API, verified status transitions and append-only behavior
+- **Test 2 (Franchisor projection):** Verified franchisor sees stripped financial data without consent, gets 403 when attempting to grant/revoke
+- **Test 3 (UI grant/revoke flow):** Full Settings UI interaction — verified grant dialog, revoke dialog, badge status updates, timestamp display, button state transitions
