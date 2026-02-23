@@ -1,5 +1,21 @@
-import { useCallback } from "react";
+import { useCallback, useMemo } from "react";
 import { TrendingUp, TrendingDown } from "lucide-react";
+import {
+  Area,
+  AreaChart,
+  Line,
+  LineChart,
+  CartesianGrid,
+  XAxis,
+  YAxis,
+  ReferenceLine,
+} from "recharts";
+import {
+  ChartContainer,
+  ChartTooltip,
+  ChartTooltipContent,
+  type ChartConfig,
+} from "@/components/ui/chart";
 import { formatFinancialValue } from "@/components/shared/financial-value";
 import { formatROI, formatBreakEven } from "@/components/shared/summary-metrics";
 import { StatementSection } from "./statement-section";
@@ -138,6 +154,27 @@ function computeEnrichedSummaries(annualSummaries: EngineOutput["annualSummaries
   }));
 }
 
+function dollarTickFormatter(v: number): string {
+  if (Math.abs(v) >= 1_000_000) return `$${(v / 1_000_000).toFixed(1)}M`;
+  if (Math.abs(v) >= 1000) return `$${(v / 1000).toFixed(0)}K`;
+  return `$${v.toFixed(0)}`;
+}
+
+function dollarTooltipFormatter(value: unknown): string {
+  const num = Number(value);
+  return `$${num.toLocaleString("en-US", { maximumFractionDigits: 0 })}`;
+}
+
+const paybackChartConfig: ChartConfig = {
+  cumulativeCashFlow: { label: "Cumulative Cash Position", color: "hsl(var(--chart-1))" },
+};
+
+const breakevenChartConfig: ChartConfig = {
+  revenue: { label: "Revenue", color: "hsl(142 71% 45%)" },
+  expenses: { label: "Total Expenses", color: "hsl(0 72% 51%)" },
+  operatingCashFlow: { label: "Operating Cash Flow", color: "hsl(217 91% 60%)" },
+};
+
 export function SummaryTab({ output, onNavigateToTab, scenarioOutputs }: SummaryTabProps) {
   const { annualSummaries, monthlyProjections, roiMetrics, plAnalysis, identityChecks } = output;
   const enrichedSummaries = computeEnrichedSummaries(annualSummaries);
@@ -233,7 +270,7 @@ export function SummaryTab({ output, onNavigateToTab, scenarioOutputs }: Summary
         defaultExpanded={true}
         testId="section-break-even"
       >
-        <div className="space-y-3">
+        <div className="space-y-6">
           {scenarioOutputs ? (
             <ScenarioBreakEvenComparison scenarioOutputs={scenarioOutputs} />
           ) : (
@@ -255,13 +292,47 @@ export function SummaryTab({ output, onNavigateToTab, scenarioOutputs }: Summary
                     {breakEvenDate()}
                   </p>
                 </div>
+                <div>
+                  <p className="text-xs text-muted-foreground font-medium uppercase tracking-wide">
+                    Total Investment
+                  </p>
+                  <p className="text-lg font-semibold font-mono" data-testid="value-total-investment-summary">
+                    {formatFinancialValue(roiMetrics.totalStartupInvestment, "currency")}
+                  </p>
+                </div>
               </div>
               {roiMetrics.breakEvenMonth !== null && (
                 <p className="text-sm text-muted-foreground" data-testid="text-breakeven-interp">
                   You'd start making money by {breakEvenDate()}
                 </p>
               )}
-              <BreakEvenSparkline monthlyProjections={monthlyProjections} />
+              <BreakevenRevenueExpenseChart monthlyProjections={monthlyProjections} />
+            </>
+          )}
+        </div>
+      </StatementSection>
+
+      <StatementSection
+        title="Payback Period"
+        defaultExpanded={true}
+        testId="section-payback-period"
+      >
+        <div className="space-y-4">
+          {scenarioOutputs ? (
+            <ScenarioKeyMetrics scenarioOutputs={scenarioOutputs} />
+          ) : (
+            <>
+              <div className="flex flex-wrap items-center gap-6">
+                <div>
+                  <p className="text-xs text-muted-foreground font-medium uppercase tracking-wide">
+                    5-Year Cumulative Cash Flow
+                  </p>
+                  <p className="text-lg font-semibold font-mono" data-testid="value-5yr-cum-cf">
+                    {formatFinancialValue(roiMetrics.fiveYearCumulativeCashFlow, "currency")}
+                  </p>
+                </div>
+              </div>
+              <PaybackPeriodChart monthlyProjections={monthlyProjections} breakEvenMonth={roiMetrics.breakEvenMonth} />
             </>
           )}
         </div>
@@ -280,7 +351,7 @@ export function SummaryTab({ output, onNavigateToTab, scenarioOutputs }: Summary
               <p className="text-xs text-muted-foreground font-medium uppercase tracking-wide">
                 Total Investment
               </p>
-              <p className="text-lg font-semibold font-mono" data-testid="value-total-investment-summary">
+              <p className="text-lg font-semibold font-mono" data-testid="value-total-investment-startup">
                 {formatFinancialValue(roiMetrics.totalStartupInvestment, "currency")}
               </p>
             </div>
@@ -288,7 +359,7 @@ export function SummaryTab({ output, onNavigateToTab, scenarioOutputs }: Summary
               <p className="text-xs text-muted-foreground font-medium uppercase tracking-wide">
                 5-Year Cumulative Cash Flow
               </p>
-              <p className="text-lg font-semibold font-mono" data-testid="value-5yr-cum-cf">
+              <p className="text-lg font-semibold font-mono" data-testid="value-5yr-cum-cf-startup">
                 {formatFinancialValue(roiMetrics.fiveYearCumulativeCashFlow, "currency")}
               </p>
             </div>
@@ -399,44 +470,211 @@ function ScenarioKeyMetrics({ scenarioOutputs }: { scenarioOutputs: ScenarioOutp
   );
 }
 
-function BreakEvenSparkline({ monthlyProjections }: { monthlyProjections: EngineOutput["monthlyProjections"] }) {
-  if (monthlyProjections.length === 0) return null;
+function BreakevenRevenueExpenseChart({ monthlyProjections }: { monthlyProjections: EngineOutput["monthlyProjections"] }) {
+  const data = useMemo(() => {
+    if (monthlyProjections.length === 0) return [];
+    return monthlyProjections.map((m) => {
+      const totalExpenses = Math.abs(m.totalCogs + m.totalOpex + m.depreciation + m.interestExpense) / 100;
+      return {
+        label: `M${m.month}`,
+        month: m.month,
+        revenue: m.revenue / 100,
+        expenses: totalExpenses,
+        operatingCashFlow: m.operatingCashFlow / 100,
+      };
+    });
+  }, [monthlyProjections]);
 
-  const values = monthlyProjections.map((m) => m.cumulativeNetCashFlow);
-  const minVal = Math.min(...values);
-  const maxVal = Math.max(...values);
-  const range = maxVal - minVal || 1;
-  const width = 400;
-  const height = 60;
-  const padding = 4;
+  if (data.length === 0) return null;
 
-  const points = values.map((v, i) => {
-    const x = padding + (i / (values.length - 1)) * (width - padding * 2);
-    const y = height - padding - ((v - minVal) / range) * (height - padding * 2);
-    return `${x},${y}`;
-  }).join(" ");
-
-  const zeroY = height - padding - ((0 - minVal) / range) * (height - padding * 2);
+  const xTicks = [1, 12, 24, 36, 48, 60].filter((t) => t <= data.length);
 
   return (
-    <div data-testid="chart-breakeven-sparkline" className="mt-2">
-      <svg viewBox={`0 0 ${width} ${height}`} className="w-full max-w-[400px] h-[60px]">
-        <line
-          x1={padding}
-          y1={zeroY}
-          x2={width - padding}
-          y2={zeroY}
-          stroke="hsl(var(--muted-foreground))"
-          strokeWidth="0.5"
-          strokeDasharray="4,4"
-        />
-        <polyline
-          fill="none"
-          stroke="hsl(var(--primary))"
-          strokeWidth="2"
-          points={points}
-        />
-      </svg>
+    <div data-testid="chart-breakeven-revenue-expense" className="w-full">
+      <p className="text-xs text-muted-foreground font-medium uppercase tracking-wide mb-3">
+        Monthly Revenue vs. Expenses
+      </p>
+      <ChartContainer config={breakevenChartConfig} className="h-[280px] w-full">
+        <AreaChart data={data} margin={{ top: 8, right: 12, bottom: 4, left: 12 }}>
+          <defs>
+            <linearGradient id="fillRevenue" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="5%" stopColor="hsl(142 71% 45%)" stopOpacity={0.3} />
+              <stop offset="95%" stopColor="hsl(142 71% 45%)" stopOpacity={0.05} />
+            </linearGradient>
+            <linearGradient id="fillExpenses" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="5%" stopColor="hsl(0 72% 51%)" stopOpacity={0.3} />
+              <stop offset="95%" stopColor="hsl(0 72% 51%)" stopOpacity={0.05} />
+            </linearGradient>
+          </defs>
+          <CartesianGrid vertical={false} strokeDasharray="3 3" stroke="hsl(var(--border))" />
+          <XAxis
+            dataKey="month"
+            tickLine={false}
+            axisLine={false}
+            ticks={xTicks}
+            tickFormatter={(v) => {
+              const yr = Math.ceil(v / 12);
+              const mo = v % 12 || 12;
+              return mo === 1 || v === 1 ? `Y${yr}` : `M${v}`;
+            }}
+            tick={{ fontSize: 11 }}
+          />
+          <YAxis
+            tickLine={false}
+            axisLine={false}
+            tickFormatter={dollarTickFormatter}
+            tick={{ fontSize: 11 }}
+            width={60}
+          />
+          <ChartTooltip
+            content={
+              <ChartTooltipContent
+                formatter={(value, name) => {
+                  const label = name === "revenue" ? "Revenue" : name === "expenses" ? "Total Expenses" : "Operating CF";
+                  return [dollarTooltipFormatter(value), label];
+                }}
+                labelFormatter={(label, payload) => {
+                  const month = payload?.[0]?.payload?.month;
+                  if (!month) return label;
+                  const yr = Math.ceil(month / 12);
+                  const mo = ((month - 1) % 12) + 1;
+                  return `Year ${yr}, Month ${mo}`;
+                }}
+              />
+            }
+          />
+          <Area
+            type="monotone"
+            dataKey="revenue"
+            stroke="hsl(142 71% 45%)"
+            strokeWidth={2}
+            fill="url(#fillRevenue)"
+          />
+          <Area
+            type="monotone"
+            dataKey="expenses"
+            stroke="hsl(0 72% 51%)"
+            strokeWidth={2}
+            fill="url(#fillExpenses)"
+          />
+          <Line
+            type="monotone"
+            dataKey="operatingCashFlow"
+            stroke="hsl(217 91% 60%)"
+            strokeWidth={2}
+            dot={false}
+          />
+        </AreaChart>
+      </ChartContainer>
+      <div className="flex items-center justify-center gap-6 mt-2">
+        <div className="flex items-center gap-1.5">
+          <span className="inline-block h-2.5 w-2.5 rounded-sm" style={{ background: "hsl(142 71% 45%)" }} />
+          <span className="text-xs text-muted-foreground">Revenue</span>
+        </div>
+        <div className="flex items-center gap-1.5">
+          <span className="inline-block h-2.5 w-2.5 rounded-sm" style={{ background: "hsl(0 72% 51%)" }} />
+          <span className="text-xs text-muted-foreground">Total Expenses</span>
+        </div>
+        <div className="flex items-center gap-1.5">
+          <span className="inline-block h-2.5 w-2.5 rounded-sm" style={{ background: "hsl(217 91% 60%)" }} />
+          <span className="text-xs text-muted-foreground">Operating Cash Flow</span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function PaybackPeriodChart({ monthlyProjections, breakEvenMonth }: { monthlyProjections: EngineOutput["monthlyProjections"]; breakEvenMonth: number | null }) {
+  const data = useMemo(() => {
+    if (monthlyProjections.length === 0) return [];
+    return monthlyProjections.map((m) => ({
+      label: `M${m.month}`,
+      month: m.month,
+      cumulativeCashFlow: m.cumulativeNetCashFlow / 100,
+    }));
+  }, [monthlyProjections]);
+
+  if (data.length === 0) return null;
+
+  const xTicks = [1, 12, 24, 36, 48, 60].filter((t) => t <= data.length);
+
+  return (
+    <div data-testid="chart-payback-period" className="w-full">
+      <p className="text-xs text-muted-foreground font-medium uppercase tracking-wide mb-3">
+        Cumulative Cash Position
+      </p>
+      <ChartContainer config={paybackChartConfig} className="h-[280px] w-full">
+        <AreaChart data={data} margin={{ top: 8, right: 12, bottom: 4, left: 12 }}>
+          <defs>
+            <linearGradient id="fillCumCash" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="5%" stopColor="hsl(var(--chart-1))" stopOpacity={0.3} />
+              <stop offset="95%" stopColor="hsl(var(--chart-1))" stopOpacity={0.05} />
+            </linearGradient>
+          </defs>
+          <CartesianGrid vertical={false} strokeDasharray="3 3" stroke="hsl(var(--border))" />
+          <XAxis
+            dataKey="month"
+            tickLine={false}
+            axisLine={false}
+            ticks={xTicks}
+            tickFormatter={(v) => {
+              const yr = Math.ceil(v / 12);
+              return `Year ${yr}`;
+            }}
+            tick={{ fontSize: 11 }}
+          />
+          <YAxis
+            tickLine={false}
+            axisLine={false}
+            tickFormatter={dollarTickFormatter}
+            tick={{ fontSize: 11 }}
+            width={60}
+          />
+          <ReferenceLine y={0} stroke="hsl(var(--muted-foreground))" strokeDasharray="4 4" strokeWidth={1} />
+          {breakEvenMonth !== null && breakEvenMonth <= data.length && (
+            <ReferenceLine
+              x={breakEvenMonth}
+              stroke="hsl(142 71% 45%)"
+              strokeDasharray="4 4"
+              strokeWidth={1.5}
+              label={{ value: `Break-even`, position: "top", fontSize: 11, fill: "hsl(142 71% 45%)" }}
+            />
+          )}
+          <ChartTooltip
+            content={
+              <ChartTooltipContent
+                formatter={(value) => [dollarTooltipFormatter(value), "Cumulative Cash"]}
+                labelFormatter={(label, payload) => {
+                  const month = payload?.[0]?.payload?.month;
+                  if (!month) return label;
+                  const yr = Math.ceil(month / 12);
+                  const mo = ((month - 1) % 12) + 1;
+                  return `Year ${yr}, Month ${mo}`;
+                }}
+              />
+            }
+          />
+          <Area
+            type="monotone"
+            dataKey="cumulativeCashFlow"
+            stroke="hsl(var(--chart-1))"
+            strokeWidth={2.5}
+            fill="url(#fillCumCash)"
+          />
+        </AreaChart>
+      </ChartContainer>
+      <div className="flex items-center justify-center gap-6 mt-2">
+        <div className="flex items-center gap-1.5">
+          <span className="inline-block h-2.5 w-2.5 rounded-sm" style={{ background: "hsl(var(--chart-1))" }} />
+          <span className="text-xs text-muted-foreground">Cumulative Cash Position</span>
+        </div>
+        {breakEvenMonth !== null && (
+          <div className="flex items-center gap-1.5">
+            <span className="inline-block h-0.5 w-4" style={{ background: "hsl(142 71% 45%)", borderTop: "1px dashed" }} />
+            <span className="text-xs text-muted-foreground">Break-even (Month {breakEvenMonth})</span>
+          </div>
+        )}
+      </div>
     </div>
   );
 }
