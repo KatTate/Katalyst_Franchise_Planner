@@ -174,6 +174,23 @@ export const insertInvitationSchema = createInsertSchema(invitations).omit({
 export type InsertInvitation = z.infer<typeof insertInvitationSchema>;
 export type Invitation = typeof invitations.$inferSelect;
 
+// ─── What-If Scenario (Story 10.3 — JSONB column on plans) ───────────────
+
+export interface WhatIfScenarioSliderValues {
+  revenue: number;
+  cogs: number;
+  labor: number;
+  marketing: number;
+  facilities: number;
+}
+
+export interface WhatIfScenario {
+  id: string;
+  name: string;
+  sliderValues: WhatIfScenarioSliderValues;
+  createdAt: string;
+}
+
 export const plans = pgTable("plans", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   userId: varchar("user_id").references(() => users.id, { onDelete: "cascade" }).notNull(),
@@ -181,6 +198,7 @@ export const plans = pgTable("plans", {
   name: text("name").notNull(),
   financialInputs: jsonb("financial_inputs").$type<import("./financial-engine").PlanFinancialInputs>(),
   startupCosts: jsonb("startup_costs").$type<import("./financial-engine").StartupCostLineItem[]>(),
+  whatIfScenarios: jsonb("what_if_scenarios").$type<WhatIfScenario[]>().default([]),
   status: text("status").notNull().$type<"draft" | "in_progress" | "completed">().default("draft"),
   pipelineStage: text("pipeline_stage").$type<"planning" | "site_evaluation" | "financing" | "construction" | "open">().default("planning"),
   quickStartCompleted: boolean("quick_start_completed").default(false).notNull(),

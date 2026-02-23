@@ -98,6 +98,8 @@ export interface SensitivityOutputs {
   current: ReturnType<typeof calculateProjections>;
 }
 
+export type EngineOutput = ReturnType<typeof calculateProjections>;
+
 export function computeSensitivityOutputs(
   planInputs: PlanFinancialInputs,
   startupCosts: StartupCostLineItem[],
@@ -120,4 +122,20 @@ export function computeSensitivityOutputs(
   }
 
   return { base: baseOutput, current: currentOutput };
+}
+
+export function computeComparisonOutput(
+  planInputs: PlanFinancialInputs,
+  startupCosts: StartupCostLineItem[],
+  comparisonSliders: SliderValues,
+): EngineOutput {
+  const baseEngineInput: EngineInput = unwrapForEngine(planInputs, startupCosts);
+  const comparisonInputs = applySensitivityFactors(
+    cloneFinancialInputs(baseEngineInput.financialInputs),
+    comparisonSliders,
+  );
+  return calculateProjections({
+    financialInputs: comparisonInputs,
+    startupCosts: baseEngineInput.startupCosts,
+  });
 }

@@ -21,12 +21,15 @@ import {
 } from "@/components/ui/chart";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import type { SensitivityOutputs } from "@/lib/sensitivity-engine";
-import type { EngineOutput } from "@shared/financial-engine";
+import type { SensitivityOutputs, EngineOutput } from "@/lib/sensitivity-engine";
 
 interface SensitivityChartsProps {
   scenarioOutputs: SensitivityOutputs | null;
+  comparisonOutput?: EngineOutput | null;
+  comparisonName?: string | null;
 }
+
+const COMPARISON_COLOR = "hsl(var(--chart-4))";
 
 const YEAR_INDICES = [0, 1, 2, 3, 4] as const;
 const YEAR_END_MONTH_INDICES = [11, 23, 35, 47, 59] as const;
@@ -62,7 +65,7 @@ const profitabilityConfig: ChartConfig = {
   currentPreTaxIncome: { label: "Pre-Tax Income (Your Scenario)", color: "hsl(var(--chart-5))" },
 };
 
-function ProfitabilityChart({ base, current }: { base: EngineOutput; current: EngineOutput }) {
+function ProfitabilityChart({ base, current, comparison }: { base: EngineOutput; current: EngineOutput; comparison?: EngineOutput | null }) {
   const data = useMemo(() => {
     return YEAR_INDICES.map((i) => ({
       year: `Year ${i + 1}`,
@@ -76,8 +79,12 @@ function ProfitabilityChart({ base, current }: { base: EngineOutput; current: En
       currentGrossProfit: current.annualSummaries[i].grossProfit / 100,
       currentEbitda: current.annualSummaries[i].ebitda / 100,
       currentPreTaxIncome: current.annualSummaries[i].preTaxIncome / 100,
+      ...(comparison ? {
+        compRevenue: comparison.annualSummaries[i].revenue / 100,
+        compPreTaxIncome: comparison.annualSummaries[i].preTaxIncome / 100,
+      } : {}),
     }));
-  }, [base, current]);
+  }, [base, current, comparison]);
 
   return (
     <Card data-testid="sensitivity-chart-profitability">
@@ -141,6 +148,8 @@ function ProfitabilityChart({ base, current }: { base: EngineOutput; current: En
             <Line type="monotone" dataKey="currentEbitda" stroke="hsl(var(--chart-4))" strokeWidth={2} strokeDasharray="5 5" dot={false} name="EBITDA (Yours)" />
             <Line type="monotone" dataKey="basePreTaxIncome" stroke="hsl(var(--chart-5))" strokeWidth={2} dot={false} name="Pre-Tax (Base)" />
             <Line type="monotone" dataKey="currentPreTaxIncome" stroke="hsl(var(--chart-5))" strokeWidth={2} strokeDasharray="5 5" dot={false} name="Pre-Tax (Yours)" />
+            {comparison && <Line type="monotone" dataKey="compRevenue" stroke={COMPARISON_COLOR} strokeWidth={2} strokeDasharray="2 3" dot={false} name="Revenue (Comp)" />}
+            {comparison && <Line type="monotone" dataKey="compPreTaxIncome" stroke={COMPARISON_COLOR} strokeWidth={2} strokeDasharray="2 3" dot={false} name="Pre-Tax (Comp)" opacity={0.7} />}
           </AreaChart>
         </ChartContainer>
         <div className="flex flex-wrap gap-x-4 gap-y-1 mt-2 text-[10px] text-muted-foreground">
@@ -164,7 +173,7 @@ const cashFlowConfig: ChartConfig = {
   currentCash: { label: "Your Scenario", color: "hsl(var(--chart-4))" },
 };
 
-function CashFlowChart({ base, current }: { base: EngineOutput; current: EngineOutput }) {
+function CashFlowChart({ base, current, comparison }: { base: EngineOutput; current: EngineOutput; comparison?: EngineOutput | null }) {
   const { data, hasNegativeCash, negativeRanges } = useMemo(() => {
     if (base.monthlyProjections.length !== 60) {
       return { data: [], hasNegativeCash: false, negativeRanges: [] as { start: number; end: number }[] };
@@ -175,6 +184,7 @@ function CashFlowChart({ base, current }: { base: EngineOutput; current: EngineO
       label: `M${i + 1}`,
       baseCash: mp.endingCash / 100,
       currentCash: current.monthlyProjections[i].endingCash / 100,
+      ...(comparison ? { compCash: comparison.monthlyProjections[i].endingCash / 100 } : {}),
     }));
 
     let anyNegative = false;
@@ -238,6 +248,7 @@ function CashFlowChart({ base, current }: { base: EngineOutput; current: EngineO
             />
             <Line type="monotone" dataKey="baseCash" stroke="hsl(var(--primary))" strokeWidth={2} dot={false} name="Base Case" />
             <Line type="monotone" dataKey="currentCash" stroke="hsl(var(--chart-4))" strokeWidth={2} strokeDasharray="5 5" dot={false} name="Your Scenario" />
+            {comparison && <Line type="monotone" dataKey="compCash" stroke={COMPARISON_COLOR} strokeWidth={2} strokeDasharray="2 3" dot={false} name="Comparison" />}
           </LineChart>
         </ChartContainer>
         {hasNegativeCash && (
@@ -260,9 +271,9 @@ const breakEvenConfig: ChartConfig = {
   months: { label: "Months to Break-Even", color: "hsl(var(--primary))" },
 };
 
-function BreakEvenChart({ base, current }: { base: EngineOutput; current: EngineOutput }) {
+function BreakEvenChart({ base, current, comparison }: { base: EngineOutput; current: EngineOutput; comparison?: EngineOutput | null }) {
   const data = useMemo(() => {
-    return [
+    const result = [
       {
         scenario: "Base Case",
         months: base.roiMetrics.breakEvenMonth,
@@ -274,7 +285,15 @@ function BreakEvenChart({ base, current }: { base: EngineOutput; current: Engine
         fill: "hsl(var(--chart-4))",
       },
     ];
-  }, [base, current]);
+    if (comparison) {
+      result.push({
+        scenario: "Comparison",
+        months: comparison.roiMetrics.breakEvenMonth,
+        fill: COMPARISON_COLOR,
+      });
+    }
+    return result;
+  }, [base, current, comparison]);
 
   return (
     <Card data-testid="sensitivity-chart-break-even">
@@ -342,14 +361,15 @@ const roiConfig: ChartConfig = {
   currentRoic: { label: "Your Scenario ROIC", color: "hsl(var(--chart-4))" },
 };
 
-function ROIChart({ base, current }: { base: EngineOutput; current: EngineOutput }) {
+function ROIChart({ base, current, comparison }: { base: EngineOutput; current: EngineOutput; comparison?: EngineOutput | null }) {
   const data = useMemo(() => {
     return YEAR_INDICES.map((i) => ({
       year: `Year ${i + 1}`,
       baseRoic: (base.roicExtended[i]?.roicPct ?? 0) * 100,
       currentRoic: (current.roicExtended[i]?.roicPct ?? 0) * 100,
+      ...(comparison ? { compRoic: (comparison.roicExtended[i]?.roicPct ?? 0) * 100 } : {}),
     }));
-  }, [base, current]);
+  }, [base, current, comparison]);
 
   const year5Roic = current.roicExtended[4]?.roicPct ?? 0;
 
@@ -368,6 +388,7 @@ function ROIChart({ base, current }: { base: EngineOutput; current: EngineOutput
             <ChartTooltip content={<ChartTooltipContent formatter={(value) => pctTooltipFormatter(value)} />} />
             <Line type="monotone" dataKey="baseRoic" stroke="hsl(var(--primary))" strokeWidth={2} dot={false} name="Base Case" />
             <Line type="monotone" dataKey="currentRoic" stroke="hsl(var(--chart-4))" strokeWidth={2} strokeDasharray="5 5" dot={false} name="Your Scenario" />
+            {comparison && <Line type="monotone" dataKey="compRoic" stroke={COMPARISON_COLOR} strokeWidth={2} strokeDasharray="2 3" dot={false} name="Comparison" />}
           </LineChart>
         </ChartContainer>
         <div className="mt-2 rounded-md bg-muted/50 p-2" data-testid="roi-callout">
@@ -393,7 +414,7 @@ const balanceSheetConfig: ChartConfig = {
   currentLiabilities: { label: "Liabilities (Your Scenario)", color: "hsl(var(--chart-2))" },
 };
 
-function BalanceSheetChart({ base, current }: { base: EngineOutput; current: EngineOutput }) {
+function BalanceSheetChart({ base, current, comparison }: { base: EngineOutput; current: EngineOutput; comparison?: EngineOutput | null }) {
   const data = useMemo(() => {
     return YEAR_INDICES.map((i) => ({
       year: `Year ${i + 1}`,
@@ -401,8 +422,12 @@ function BalanceSheetChart({ base, current }: { base: EngineOutput; current: Eng
       baseLiabilities: base.annualSummaries[i].totalLiabilities / 100,
       currentAssets: current.annualSummaries[i].totalAssets / 100,
       currentLiabilities: current.annualSummaries[i].totalLiabilities / 100,
+      ...(comparison ? {
+        compAssets: comparison.annualSummaries[i].totalAssets / 100,
+        compLiabilities: comparison.annualSummaries[i].totalLiabilities / 100,
+      } : {}),
     }));
-  }, [base, current]);
+  }, [base, current, comparison]);
 
   return (
     <Card data-testid="sensitivity-chart-balance-sheet">
@@ -421,6 +446,8 @@ function BalanceSheetChart({ base, current }: { base: EngineOutput; current: Eng
             <Line type="monotone" dataKey="currentAssets" stroke="hsl(var(--chart-1))" strokeWidth={2} strokeDasharray="5 5" dot={false} name="Assets (Yours)" />
             <Line type="monotone" dataKey="baseLiabilities" stroke="hsl(var(--chart-2))" strokeWidth={2} dot={false} name="Liabilities (Base)" />
             <Line type="monotone" dataKey="currentLiabilities" stroke="hsl(var(--chart-2))" strokeWidth={2} strokeDasharray="5 5" dot={false} name="Liabilities (Yours)" />
+            {comparison && <Line type="monotone" dataKey="compAssets" stroke={COMPARISON_COLOR} strokeWidth={2} strokeDasharray="2 3" dot={false} name="Assets (Comp)" />}
+            {comparison && <Line type="monotone" dataKey="compLiabilities" stroke={COMPARISON_COLOR} strokeWidth={2} strokeDasharray="2 3" dot={false} name="Liabilities (Comp)" opacity={0.7} />}
           </LineChart>
         </ChartContainer>
         <div className="flex flex-wrap gap-x-4 gap-y-1 mt-2 text-[10px] text-muted-foreground">
@@ -443,7 +470,7 @@ const debtConfig: ChartConfig = {
   currentWorkingCapital: { label: "Working Capital (Your Scenario)", color: "hsl(var(--chart-3))" },
 };
 
-function DebtWorkingCapitalChart({ base, current }: { base: EngineOutput; current: EngineOutput }) {
+function DebtWorkingCapitalChart({ base, current, comparison }: { base: EngineOutput; current: EngineOutput; comparison?: EngineOutput | null }) {
   const data = useMemo(() => {
     if (base.monthlyProjections.length !== 60 || current.monthlyProjections.length !== 60) {
       return [];
@@ -457,9 +484,13 @@ function DebtWorkingCapitalChart({ base, current }: { base: EngineOutput; curren
         baseWorkingCapital: (bmp.totalCurrentAssets - bmp.totalCurrentLiabilities) / 100,
         currentDebt: cmp.loanClosingBalance / 100,
         currentWorkingCapital: (cmp.totalCurrentAssets - cmp.totalCurrentLiabilities) / 100,
+        ...(comparison ? {
+          compDebt: comparison.monthlyProjections[mi].loanClosingBalance / 100,
+          compWorkingCapital: (comparison.monthlyProjections[mi].totalCurrentAssets - comparison.monthlyProjections[mi].totalCurrentLiabilities) / 100,
+        } : {}),
       };
     });
-  }, [base, current]);
+  }, [base, current, comparison]);
 
   return (
     <Card data-testid="sensitivity-chart-debt-working-capital">
@@ -478,6 +509,8 @@ function DebtWorkingCapitalChart({ base, current }: { base: EngineOutput; curren
             <Line type="monotone" dataKey="currentDebt" stroke="hsl(var(--chart-1))" strokeWidth={2} strokeDasharray="5 5" dot={false} name="Debt (Yours)" />
             <Line type="monotone" dataKey="baseWorkingCapital" stroke="hsl(var(--chart-3))" strokeWidth={2} dot={false} name="Working Cap (Base)" />
             <Line type="monotone" dataKey="currentWorkingCapital" stroke="hsl(var(--chart-3))" strokeWidth={2} strokeDasharray="5 5" dot={false} name="Working Cap (Yours)" />
+            {comparison && <Line type="monotone" dataKey="compDebt" stroke={COMPARISON_COLOR} strokeWidth={2} strokeDasharray="2 3" dot={false} name="Debt (Comp)" />}
+            {comparison && <Line type="monotone" dataKey="compWorkingCapital" stroke={COMPARISON_COLOR} strokeWidth={2} strokeDasharray="2 3" dot={false} name="Working Cap (Comp)" opacity={0.7} />}
           </LineChart>
         </ChartContainer>
         <div className="flex flex-wrap gap-x-4 gap-y-1 mt-2 text-[10px] text-muted-foreground">
@@ -524,8 +557,9 @@ class ChartErrorBoundary extends Component<{ children: ReactNode }, ErrorBoundar
 
 // ─── Main Component ─────────────────────────────────────────────────────
 
-function SensitivityChartsInner({ scenarioOutputs }: { scenarioOutputs: SensitivityOutputs }) {
+function SensitivityChartsInner({ scenarioOutputs, comparisonOutput }: { scenarioOutputs: SensitivityOutputs; comparisonOutput?: EngineOutput | null }) {
   const { base, current } = scenarioOutputs;
+  const comp = comparisonOutput ?? null;
 
   if (
     !base.annualSummaries || base.annualSummaries.length < 5 ||
@@ -550,17 +584,17 @@ function SensitivityChartsInner({ scenarioOutputs }: { scenarioOutputs: Sensitiv
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-4" data-testid="sensitivity-charts-grid">
-      <ProfitabilityChart base={base} current={current} />
-      <CashFlowChart base={base} current={current} />
-      <BreakEvenChart base={base} current={current} />
-      <ROIChart base={base} current={current} />
-      <BalanceSheetChart base={base} current={current} />
-      <DebtWorkingCapitalChart base={base} current={current} />
+      <ProfitabilityChart base={base} current={current} comparison={comp} />
+      <CashFlowChart base={base} current={current} comparison={comp} />
+      <BreakEvenChart base={base} current={current} comparison={comp} />
+      <ROIChart base={base} current={current} comparison={comp} />
+      <BalanceSheetChart base={base} current={current} comparison={comp} />
+      <DebtWorkingCapitalChart base={base} current={current} comparison={comp} />
     </div>
   );
 }
 
-export const SensitivityCharts = memo(function SensitivityCharts({ scenarioOutputs }: SensitivityChartsProps) {
+export const SensitivityCharts = memo(function SensitivityCharts({ scenarioOutputs, comparisonOutput, comparisonName }: SensitivityChartsProps) {
   if (!scenarioOutputs) {
     return (
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4" data-testid="sensitivity-charts-grid">
@@ -581,7 +615,7 @@ export const SensitivityCharts = memo(function SensitivityCharts({ scenarioOutpu
 
   return (
     <ChartErrorBoundary>
-      <SensitivityChartsInner scenarioOutputs={scenarioOutputs} />
+      <SensitivityChartsInner scenarioOutputs={scenarioOutputs} comparisonOutput={comparisonOutput} />
     </ChartErrorBoundary>
   );
 });

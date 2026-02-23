@@ -1,6 +1,6 @@
 # Story 10.3: Scenario Persistence & Comparison
 
-Status: ready-for-dev
+Status: in-progress
 
 ## Story
 

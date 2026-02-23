@@ -4,19 +4,39 @@ import { Slider } from "@/components/ui/slider";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { AlertCircle, ArrowRight, Minus, RotateCcw } from "lucide-react";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { AlertCircle, ArrowRight, Minus, RotateCcw, Save, Trash2, Eye, EyeOff, Upload, Pencil } from "lucide-react";
 import { usePlan } from "@/hooks/use-plan";
 import { formatCents } from "@/lib/format-currency";
+import { useToast } from "@/hooks/use-toast";
+import { apiRequest, queryClient } from "@/lib/queryClient";
 import {
   computeSensitivityOutputs,
+  computeComparisonOutput,
   SLIDER_CONFIGS,
   DEFAULT_SLIDER_VALUES,
   type SliderValues,
   type SliderConfig,
   type SensitivityOutputs,
+  type EngineOutput,
 } from "@/lib/sensitivity-engine";
 import type { PlanFinancialInputs } from "@shared/financial-engine";
 import type { StartupCostLineItem } from "@shared/financial-engine";
+import type { WhatIfScenario } from "@shared/schema";
 import { SensitivityCharts } from "@/components/planning/sensitivity-charts";
 
 interface WhatIfPlaygroundProps {
@@ -176,9 +196,13 @@ function MetricDeltaCard({ metric }: { metric: ComputedDeltaMetric }) {
 function MetricDeltaCardStrip({
   outputs,
   hasInteractedWithSlider,
+  comparisonOutput,
+  comparisonName,
 }: {
   outputs: SensitivityOutputs;
   hasInteractedWithSlider: boolean;
+  comparisonOutput?: EngineOutput | null;
+  comparisonName?: string | null;
 }) {
   const computedMetrics = useMemo<ComputedDeltaMetric[]>(() => {
     return DELTA_METRICS.map((config) => {
@@ -196,11 +220,39 @@ function MetricDeltaCardStrip({
     });
   }, [outputs]);
 
+  const comparisonMetricValues = useMemo(() => {
+    if (!comparisonOutput) return null;
+    return DELTA_METRICS.map((config) => {
+      const fakeOutputs: SensitivityOutputs = { base: outputs.base, current: comparisonOutput };
+      const val = config.getCurrent(fakeOutputs);
+      return {
+        key: config.key,
+        formatted: config.formatValue(val),
+        deltaStr: config.formatDelta(config.getBase(outputs), val),
+        color: getDeltaColor(config.getBase(outputs), val, config.higherIsBetter),
+      };
+    });
+  }, [comparisonOutput, outputs]);
+
   return (
     <div className="rounded-xl bg-muted/30 p-4 space-y-3" data-testid="sensitivity-delta-strip">
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-        {computedMetrics.map((metric) => (
-          <MetricDeltaCard key={metric.config.key} metric={metric} />
+        {computedMetrics.map((metric, i) => (
+          <div key={metric.config.key}>
+            <MetricDeltaCard metric={metric} />
+            {comparisonMetricValues && (
+              <div
+                className="mt-1 px-3 py-1.5 rounded-md border border-dashed border-chart-4/40 bg-chart-4/5 text-xs"
+                data-testid={`comparison-metric-${metric.config.key}`}
+              >
+                <span className="text-muted-foreground">{comparisonName ?? "Comparison"}: </span>
+                <span className="font-mono tabular-nums font-semibold">{comparisonMetricValues[i].formatted}</span>
+                <span className={`ml-1 font-mono tabular-nums ${deltaColorClasses[comparisonMetricValues[i].color]}`}>
+                  ({comparisonMetricValues[i].deltaStr})
+                </span>
+              </div>
+            )}
+          </div>
         ))}
       </div>
       {!hasInteractedWithSlider && (
@@ -343,11 +395,33 @@ function SensitivitySliderRow({
   );
 }
 
+// ─── Scenario Helpers ────────────────────────────────────────────────────
+
+function slidersMatch(a: SliderValues, b: SliderValues): boolean {
+  return (
+    a.revenue === b.revenue &&
+    a.cogs === b.cogs &&
+    a.labor === b.labor &&
+    a.marketing === b.marketing &&
+    a.facilities === b.facilities
+  );
+}
+
 export function WhatIfPlayground({ planId }: WhatIfPlaygroundProps) {
   const { plan, isLoading, error } = usePlan(planId);
+  const { toast } = useToast();
   const [sliderValues, setSliderValues] = useState<SliderValues>({ ...DEFAULT_SLIDER_VALUES });
   const [debouncedSliders, setDebouncedSliders] = useState<SliderValues>({ ...DEFAULT_SLIDER_VALUES });
   const [hasInteractedWithSlider, setHasInteractedWithSlider] = useState(false);
+
+  const [activeScenarioId, setActiveScenarioId] = useState<string | null>(null);
+  const [saveDialogOpen, setSaveDialogOpen] = useState(false);
+  const [saveDialogName, setSaveDialogName] = useState("");
+  const [saveDialogMode, setSaveDialogMode] = useState<"create" | "rename">("create");
+  const [isSaving, setIsSaving] = useState(false);
+  const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
+
+  const [comparisonScenarioId, setComparisonScenarioId] = useState<string | null>(null);
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -363,17 +437,131 @@ export function WhatIfPlayground({ planId }: WhatIfPlaygroundProps) {
 
   const handleResetSliders = useCallback(() => {
     setSliderValues({ ...DEFAULT_SLIDER_VALUES });
+    setActiveScenarioId(null);
   }, []);
 
   const financialInputs = plan?.financialInputs as PlanFinancialInputs | null | undefined;
   const startupCostsData = (plan?.startupCosts ?? []) as StartupCostLineItem[];
+  const scenarios: WhatIfScenario[] = (plan?.whatIfScenarios as WhatIfScenario[] | null) ?? [];
 
   const hasAdjustment = Object.values(sliderValues).some((v) => v !== 0);
+
+  const activeScenario = activeScenarioId
+    ? scenarios.find((s) => s.id === activeScenarioId) ?? null
+    : null;
+
+  const hasUnsavedChanges = activeScenario
+    ? !slidersMatch(sliderValues, activeScenario.sliderValues as SliderValues)
+    : hasAdjustment;
+
+  const comparisonScenario = comparisonScenarioId
+    ? scenarios.find((s) => s.id === comparisonScenarioId) ?? null
+    : null;
 
   const scenarioOutputs = useMemo<SensitivityOutputs | null>(() => {
     if (!financialInputs) return null;
     return computeSensitivityOutputs(financialInputs, startupCostsData, debouncedSliders);
   }, [financialInputs, startupCostsData, debouncedSliders]);
+
+  const comparisonOutput = useMemo<EngineOutput | null>(() => {
+    if (!financialInputs || !comparisonScenario) return null;
+    return computeComparisonOutput(
+      financialInputs,
+      startupCostsData,
+      comparisonScenario.sliderValues as SliderValues,
+    );
+  }, [financialInputs, startupCostsData, comparisonScenario]);
+
+  const invalidatePlan = useCallback(() => {
+    queryClient.invalidateQueries({ queryKey: ["/api/plans", planId] });
+  }, [planId]);
+
+  const handleLoadScenario = useCallback((scenarioId: string) => {
+    const scenario = scenarios.find((s) => s.id === scenarioId);
+    if (!scenario) return;
+    setSliderValues({ ...(scenario.sliderValues as SliderValues) });
+    setActiveScenarioId(scenarioId);
+    setHasInteractedWithSlider(true);
+  }, [scenarios]);
+
+  const handleSaveNew = useCallback(() => {
+    setSaveDialogMode("create");
+    setSaveDialogName("");
+    setSaveDialogOpen(true);
+  }, []);
+
+  const handleRenameScenario = useCallback(() => {
+    if (!activeScenario) return;
+    setSaveDialogMode("rename");
+    setSaveDialogName(activeScenario.name);
+    setSaveDialogOpen(true);
+  }, [activeScenario]);
+
+  const handleSaveDialogConfirm = useCallback(async () => {
+    const name = saveDialogName.trim();
+    if (!name) return;
+    setIsSaving(true);
+    try {
+      if (saveDialogMode === "create") {
+        const res = await apiRequest("POST", `/api/plans/${planId}/scenarios`, {
+          name,
+          sliderValues,
+        });
+        const created: WhatIfScenario = await res.json();
+        setActiveScenarioId(created.id);
+        toast({ title: "Scenario saved", description: `"${name}" has been saved.` });
+      } else if (saveDialogMode === "rename" && activeScenarioId) {
+        await apiRequest("PUT", `/api/plans/${planId}/scenarios/${activeScenarioId}`, {
+          name,
+        });
+        toast({ title: "Scenario renamed", description: `Renamed to "${name}".` });
+      }
+      invalidatePlan();
+      setSaveDialogOpen(false);
+    } catch (err: any) {
+      toast({ title: "Error", description: err.message || "Failed to save scenario", variant: "destructive" });
+    } finally {
+      setIsSaving(false);
+    }
+  }, [saveDialogName, saveDialogMode, planId, sliderValues, activeScenarioId, invalidatePlan, toast]);
+
+  const handleUpdateScenario = useCallback(async () => {
+    if (!activeScenarioId) return;
+    setIsSaving(true);
+    try {
+      await apiRequest("PUT", `/api/plans/${planId}/scenarios/${activeScenarioId}`, {
+        sliderValues,
+      });
+      toast({ title: "Scenario updated", description: "Slider values have been saved." });
+      invalidatePlan();
+    } catch (err: any) {
+      toast({ title: "Error", description: err.message || "Failed to update scenario", variant: "destructive" });
+    } finally {
+      setIsSaving(false);
+    }
+  }, [activeScenarioId, planId, sliderValues, invalidatePlan, toast]);
+
+  const handleDeleteScenario = useCallback(async (scenarioId: string) => {
+    try {
+      await apiRequest("DELETE", `/api/plans/${planId}/scenarios/${scenarioId}`);
+      if (activeScenarioId === scenarioId) {
+        setActiveScenarioId(null);
+        setSliderValues({ ...DEFAULT_SLIDER_VALUES });
+      }
+      if (comparisonScenarioId === scenarioId) {
+        setComparisonScenarioId(null);
+      }
+      invalidatePlan();
+      toast({ title: "Scenario deleted" });
+    } catch (err: any) {
+      toast({ title: "Error", description: err.message || "Failed to delete scenario", variant: "destructive" });
+    }
+    setDeleteConfirmId(null);
+  }, [planId, activeScenarioId, comparisonScenarioId, invalidatePlan, toast]);
+
+  const handleToggleComparison = useCallback((scenarioId: string) => {
+    setComparisonScenarioId((prev) => (prev === scenarioId ? null : scenarioId));
+  }, []);
 
   if (isLoading) {
     return (
@@ -441,14 +629,76 @@ export function WhatIfPlayground({ planId }: WhatIfPlaygroundProps) {
           <MetricDeltaCardStrip
             outputs={scenarioOutputs}
             hasInteractedWithSlider={hasInteractedWithSlider}
+            comparisonOutput={comparisonOutput}
+            comparisonName={comparisonScenario?.name ?? null}
           />
         )}
 
         <Card data-testid="sensitivity-controls-panel">
           <CardHeader className="pb-3">
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between flex-wrap gap-2">
               <CardTitle className="text-base">Sensitivity Controls</CardTitle>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 flex-wrap">
+                {scenarios.length > 0 && (
+                  <Select
+                    value={activeScenarioId ?? ""}
+                    onValueChange={(v) => {
+                      if (v) handleLoadScenario(v);
+                    }}
+                  >
+                    <SelectTrigger
+                      className="h-8 w-[180px] text-xs"
+                      data-testid="select-load-scenario"
+                    >
+                      <SelectValue placeholder="Load scenario…" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {scenarios.map((s) => (
+                        <SelectItem key={s.id} value={s.id} data-testid={`scenario-option-${s.id}`}>
+                          {s.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
+
+                {activeScenario && hasUnsavedChanges && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleUpdateScenario}
+                    disabled={isSaving}
+                    data-testid="button-update-scenario"
+                  >
+                    <Upload className="h-3.5 w-3.5 mr-1.5" />
+                    Update
+                  </Button>
+                )}
+
+                {activeScenario && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleRenameScenario}
+                    data-testid="button-rename-scenario"
+                  >
+                    <Pencil className="h-3.5 w-3.5 mr-1.5" />
+                    Rename
+                  </Button>
+                )}
+
+                {hasAdjustment && scenarios.length < 10 && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleSaveNew}
+                    data-testid="button-save-scenario"
+                  >
+                    <Save className="h-3.5 w-3.5 mr-1.5" />
+                    Save As…
+                  </Button>
+                )}
+
                 {hasAdjustment && (
                   <Button
                     variant="outline"
@@ -457,11 +707,21 @@ export function WhatIfPlayground({ planId }: WhatIfPlaygroundProps) {
                     data-testid="button-reset-sliders"
                   >
                     <RotateCcw className="h-3.5 w-3.5 mr-1.5" />
-                    Reset Sliders
+                    Reset
                   </Button>
                 )}
+
+                <span className="text-xs text-muted-foreground tabular-nums" data-testid="text-scenario-count">
+                  {scenarios.length}/10 saved
+                </span>
               </div>
             </div>
+
+            {activeScenario && hasUnsavedChanges && (
+              <p className="text-xs text-amber-500 mt-1" data-testid="text-unsaved-changes">
+                Unsaved changes — sliders differ from "{activeScenario.name}"
+              </p>
+            )}
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="grid grid-cols-[140px_1fr_60px_120px_80px] gap-3 items-center text-[10px] text-muted-foreground uppercase tracking-wider mb-1">
@@ -484,13 +744,147 @@ export function WhatIfPlayground({ planId }: WhatIfPlaygroundProps) {
           </CardContent>
         </Card>
 
+        {scenarios.length > 0 && (
+          <Card data-testid="saved-scenarios-panel">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base">Saved Scenarios</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-2">
+                {scenarios.map((s) => (
+                  <div
+                    key={s.id}
+                    className={`flex items-center justify-between rounded-lg border px-3 py-2 ${
+                      activeScenarioId === s.id ? "border-primary bg-primary/5" : ""
+                    }`}
+                    data-testid={`scenario-row-${s.id}`}
+                  >
+                    <button
+                      className="text-sm font-medium text-left flex-1 hover:underline"
+                      onClick={() => handleLoadScenario(s.id)}
+                      data-testid={`button-load-scenario-${s.id}`}
+                    >
+                      {s.name}
+                      {activeScenarioId === s.id && (
+                        <span className="ml-2 text-xs text-muted-foreground">(active)</span>
+                      )}
+                    </button>
+                    <div className="flex items-center gap-1">
+                      <Button
+                        variant={comparisonScenarioId === s.id ? "default" : "ghost"}
+                        size="icon"
+                        className="h-7 w-7"
+                        onClick={() => handleToggleComparison(s.id)}
+                        title={comparisonScenarioId === s.id ? "Hide comparison" : "Compare on charts"}
+                        data-testid={`button-compare-scenario-${s.id}`}
+                      >
+                        {comparisonScenarioId === s.id ? (
+                          <EyeOff className="h-3.5 w-3.5" />
+                        ) : (
+                          <Eye className="h-3.5 w-3.5" />
+                        )}
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-7 w-7 text-destructive hover:text-destructive"
+                        onClick={() => setDeleteConfirmId(s.id)}
+                        title="Delete scenario"
+                        data-testid={`button-delete-scenario-${s.id}`}
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {comparisonScenario && (
+          <div className="rounded-lg border border-dashed border-chart-4 bg-chart-4/5 px-4 py-2 flex items-center gap-2" data-testid="comparison-banner">
+            <Eye className="h-4 w-4 text-chart-4 shrink-0" />
+            <span className="text-sm">
+              Comparing against <strong>"{comparisonScenario.name}"</strong> — shown as dotted gold line on charts
+            </span>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="ml-auto"
+              onClick={() => setComparisonScenarioId(null)}
+              data-testid="button-dismiss-comparison"
+            >
+              Dismiss
+            </Button>
+          </div>
+        )}
+
         <div>
           <h2 className="text-base font-semibold mb-3" data-testid="charts-heading">
-            Business Impact — Base vs Your Scenario
+            Business Impact — Base vs Your Scenario{comparisonScenario ? ` vs "${comparisonScenario.name}"` : ""}
           </h2>
-          <SensitivityCharts scenarioOutputs={scenarioOutputs} />
+          <SensitivityCharts scenarioOutputs={scenarioOutputs} comparisonOutput={comparisonOutput} comparisonName={comparisonScenario?.name ?? null} />
         </div>
       </div>
+
+      <Dialog open={saveDialogOpen} onOpenChange={setSaveDialogOpen}>
+        <DialogContent className="sm:max-w-md" data-testid="dialog-save-scenario">
+          <DialogHeader>
+            <DialogTitle>{saveDialogMode === "create" ? "Save Scenario" : "Rename Scenario"}</DialogTitle>
+            <DialogDescription>
+              {saveDialogMode === "create"
+                ? "Give this slider configuration a name so you can load it later."
+                : "Enter a new name for this scenario."}
+            </DialogDescription>
+          </DialogHeader>
+          <Input
+            value={saveDialogName}
+            onChange={(e) => setSaveDialogName(e.target.value)}
+            placeholder="e.g. Optimistic Revenue"
+            maxLength={60}
+            data-testid="input-scenario-name"
+            onKeyDown={(e) => {
+              if (e.key === "Enter" && saveDialogName.trim()) handleSaveDialogConfirm();
+            }}
+          />
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setSaveDialogOpen(false)} data-testid="button-cancel-save">
+              Cancel
+            </Button>
+            <Button
+              onClick={handleSaveDialogConfirm}
+              disabled={!saveDialogName.trim() || isSaving}
+              data-testid="button-confirm-save"
+            >
+              {isSaving ? "Saving…" : saveDialogMode === "create" ? "Save" : "Rename"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={!!deleteConfirmId} onOpenChange={(open) => !open && setDeleteConfirmId(null)}>
+        <DialogContent className="sm:max-w-md" data-testid="dialog-delete-scenario">
+          <DialogHeader>
+            <DialogTitle>Delete Scenario</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to delete "{scenarios.find((s) => s.id === deleteConfirmId)?.name}"? This cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDeleteConfirmId(null)} data-testid="button-cancel-delete">
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={() => deleteConfirmId && handleDeleteScenario(deleteConfirmId)}
+              data-testid="button-confirm-delete"
+            >
+              Delete
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
