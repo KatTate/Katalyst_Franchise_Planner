@@ -51,6 +51,16 @@ export function computeCompleteness(financialInputs: PlanFinancialInputs, startu
   return Math.round((totalConfirmed / totalFields) * 100);
 }
 
+function isEdited(field: unknown): boolean {
+  if (!field) return false;
+  if (Array.isArray(field)) {
+    const first = field[0] as FinancialFieldValue | undefined;
+    return first != null && first.source !== "brand_default";
+  }
+  const f = field as FinancialFieldValue;
+  return f.source !== "brand_default";
+}
+
 export function hasAnyUserEdits(financialInputs: PlanFinancialInputs): boolean {
   return CATEGORY_ORDER.some((category) => {
     const fields = FIELD_METADATA[category];
