@@ -40,6 +40,7 @@
 # - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
 
 generated: 2026-02-09
+updated: 2026-02-23  # Story 10.2b implementation complete → review. All 5 ACs satisfied. 1 file modified. E2E Playwright testing passed.
 updated: 2026-02-22  # Story 10.1 adversarial code review completed → done. 2H fixed (COGS unit "pp", input clamping), 2M/2L documented. All 5 ACs satisfied.
 updated: 2026-02-22  # Story 7H.4 adversarial code review completed → done. 4 findings fixed (2M/2L). All 8 ACs satisfied. 753 tests passing.
 updated: 2026-02-22  # Story 7H.4 implementation complete → review. All 8 ACs satisfied, 753 tests passing (6 in target file), 1 file modified. Test-only story.
@@ -779,7 +780,7 @@ development_status:
   epic-10: backlog  # Was in-progress. Reset to backlog per SCP-2026-02-22 — Epic 7H is next.
   10-1-sensitivity-controls-sandbox-engine: done  # Adversarial code review completed — 2H fixed (COGS unit display, dead conditional), 2M/2L documented. All 5 ACs satisfied.
   10-2a-sensitivity-chart-dashboard: done  # Adversarial code review completed — 3H/2M/3L found, all HIGH+MEDIUM fixed. Grid breakpoint (H1), custom tooltip (H2), data validation (H3), Cell component (M2). All 17 ACs satisfied.
-  10-2b-metric-delta-cards: in-progress  # AC rewrite per SCP-2026-02-21 CP-4 (split from 10-2)
+  10-2b-metric-delta-cards: review  # Implementation complete. All 5 ACs satisfied. 1 file modified. E2E Playwright testing passed.
   10-3-scenario-persistence-comparison: ready-for-dev  # Promoted from optional to essential per SCP-2026-02-21 CP-5
   epic-10-retrospective: optional
 

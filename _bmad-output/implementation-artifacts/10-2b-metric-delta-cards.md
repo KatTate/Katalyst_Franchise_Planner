@@ -1,6 +1,6 @@
 # Story 10.2b: Metric Delta Cards & Dashboard Polish
 
-Status: in-progress
+Status: review
 
 ## Story
 
@@ -111,3 +111,16 @@ so that I can quickly grasp the impact without reading every chart in detail.
 - **`annualSummaries` has exactly 5 entries (index 0-4).** Year 1 Revenue = index 0, Year 5 Cash = index 4.
 
 - **Dark mode:** Use Tailwind's `dark:` variants for any custom styling. CSS token colors (`--chart-*`, `--primary`) automatically adapt via `index.css` overrides.
+
+## Dev Agent Record
+
+- **Agent Model Used:** Claude 4.6 Opus
+- **Completion Notes:** Implemented MetricDeltaCardStrip component replacing old MetricCard/ScenarioColumn system. Arrow format ("base → current (delta)") with desirability-based coloring (green=better, amber=worse; Break-Even inverts since lower months = better). Helper text lifecycle controlled by hasInteractedWithSlider prop from WhatIfPlayground. Responsive 2×2 mobile / 4-col desktop grid. All 4 null Break-Even combinations handled. Dollar formatting uses compact $XK notation with negative sign prefix (-$5K).
+- **File List:**
+  - Modified: `client/src/components/planning/what-if-playground.tsx` (MetricDeltaCardStrip component added, old MetricCard/ScenarioColumn removed, hasInteractedWithSlider state lifted)
+- **Testing Summary:**
+  - Test approach: E2E Playwright testing
+  - ACs covered: AC1 (delta card format + coloring), AC2 (helper text lifecycle), AC3 (visual hierarchy), AC4 (data-testid coverage), AC5 (sandbox invariant — no PATCH requests)
+  - All tests passing: yes
+- **LSP Status:** 0 errors, 0 warnings
+- **Visual Verification:** yes (Playwright screenshots captured)
