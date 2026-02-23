@@ -39,6 +39,16 @@ When the user triggers an agent or workflow, the AI MUST load the referenced fil
 
 # Recent Changes
 
+## Plan Confirmation Model & Franchisee Plan Settings (Feb 2026)
+- **Field Confirmation (Feature A):** Added `confirmed: boolean` to `FinancialFieldValue` interface (required in TS, optional with `default(false)` in Zod for backward compat). Plan completeness now tracks confirmed fields, not edited fields. Progress bar labels show "fields confirmed."
+- **Three-State Lock Icon (Forms View):** Outline lock = unconfirmed brand default, pulsing amber lock = edited but unconfirmed (nudge state), filled green lock+check = confirmed. Click to confirm. `confirmFieldValue()` helper in `use-field-editing.ts`.
+- **Batch Confirm (Reports View):** "Confirm All" button per section in financial statements header shows unconfirmed count. Confirms all fields in the active section.
+- **Reset Clears Confirmation:** `resetFieldToDefault()` sets `confirmed: false`. Editing after confirming keeps confirmed true (AC-E1, AC-E2).
+- **DRAFT Watermark:** Document preview shows DRAFT watermark when confirmed completeness < 90%.
+- **Plan Status Settings (Feature B):** New DB columns `targetOpenDate` (date), `locationAddress` (text), `financingStatus` (text) on plans table. Migration script converts deprecated `targetOpenQuarter` to `targetOpenDate`. `PlanStatusSettings` component with pipeline stage selector, target open date, location address, financing status dropdown. Integrated into Settings view.
+- **Pipeline Projection Updated:** `projectPlanForFranchisor()` includes new fields for franchisor pipeline view.
+- **Key Files:** `shared/financial-engine.ts` (FinancialFieldValue), `client/src/lib/plan-completeness.ts`, `client/src/hooks/use-field-editing.ts`, `client/src/components/planning/plan-status-settings.tsx`, `server/migrations/migrate-target-open-date.ts`
+
 ## Story 9.2: Split-Screen Planning Assistant Interface (Feb 2026)
 - **Planning Assistant Panel:** Split-screen layout (ResizablePanelGroup 50/50) replaces My Plan content when open. Conversation panel left, live dashboard right. Opened via FAB button or sidebar HELP item.
 - **Simulation Service:** Client-side `planning-assistant-simulation.ts` provides 5 conversation topics (location/rent, revenue, staffing, marketing, summary) with keyword matching, typing delays, and character-by-character streaming — no LLM backend required.
