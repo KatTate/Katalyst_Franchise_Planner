@@ -88,8 +88,8 @@ export default function DashboardPage() {
                   className="grid grid-cols-1 md:grid-cols-2 gap-3"
                   data-testid={`plan-station-${plan.id}`}
                 >
-                  <Card className="hover-elevate cursor-pointer group relative" data-testid={`card-plan-${plan.id}`}>
-                    <Link href={`/plans/${plan.id}`}>
+                  <Card className="hover-elevate group relative" data-testid={`card-plan-${plan.id}`}>
+                    <Link href={`/plans/${plan.id}`} className="block cursor-pointer">
                       <CardContent className="flex items-center gap-3 py-4">
                         <FileText className="h-5 w-5 text-muted-foreground flex-shrink-0" />
                         <div className="flex-1 min-w-0">
@@ -102,13 +102,13 @@ export default function DashboardPage() {
                         </div>
                         <ArrowRight className="h-4 w-4 text-muted-foreground flex-shrink-0" />
                       </CardContent>
+                      <div className="px-4 pb-4">
+                        <PlanCompletenessBar
+                          financialInputs={plan.financialInputs}
+                          startupCostCount={plan.startupCosts?.length ?? 0}
+                        />
+                      </div>
                     </Link>
-                    <div className="px-4 pb-4">
-                      <PlanCompletenessBar
-                        financialInputs={plan.financialInputs}
-                        startupCostCount={plan.startupCosts?.length ?? 0}
-                      />
-                    </div>
                     <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
                       <PlanContextMenu
                         planId={plan.id}

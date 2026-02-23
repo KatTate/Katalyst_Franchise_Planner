@@ -2,7 +2,7 @@
 title: 'Dashboard Enrichment — Completeness, Document Preview, and Empty State'
 slug: 'dashboard-enrichment'
 created: '2026-02-23'
-status: 'implementation-complete'
+status: 'completed'
 stepsCompleted: [1, 2, 3, 4]
 tech_stack: ['React 18', 'TypeScript', 'TanStack Query v5', 'shadcn/ui', 'Express 5', 'PostgreSQL', 'Drizzle ORM']
 files_to_modify: ['client/src/pages/dashboard.tsx']
@@ -170,3 +170,11 @@ Enrich the Dashboard by (1) adding completeness progress bars to every plan card
 - **Engine performance:** Each `DocumentPreviewWidget` triggers `calculateProjections()` per plan via `usePlanOutputs`. For 1-3 plans this is negligible. Monitor if plan counts grow significantly.
 - **Franchisor view:** Franchisors with plans also see these widgets (gated by existing `showPlans` logic). If a franchisor's plan data was projected (consent-stripped), the `financialInputs` field will be `null/undefined`, and both widgets gracefully handle this (completeness bar returns null, document preview shows empty state).
 - **Brand query deduplication:** TanStack Query deduplicates — if the sidebar or other components already query the same brand, no additional network request is made.
+
+## Review Notes
+- Code review completed
+- Findings: 3 total, 1 fixed, 2 skipped (noise)
+- Resolution approach: auto-fix
+- F1 (MEDIUM, fixed): Plan card clickability — moved PlanCompletenessBar inside Link wrapper so entire card navigates
+- F2 (LOW, skipped): Brand query edge case with empty plans — correctly handled by enabled guard
+- F3 (LOW, skipped): Skeleton count hardcoded to 2 — standard UX practice
