@@ -3,6 +3,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import { formatCents } from "@/lib/format-currency";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -103,17 +104,8 @@ const STAGE_COLORS: Record<string, string> = {
   open: "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200",
 };
 
-type SortField = "displayName" | "pipelineStage" | "lastActivityDate" | "planStatus";
+type SortField = "displayName" | "pipelineStage" | "lastActivityDate" | "planStatus" | "targetOpenQuarter";
 type SortDirection = "asc" | "desc";
-
-function formatCurrency(value: number): string {
-  return new Intl.NumberFormat("en-US", {
-    style: "currency",
-    currency: "USD",
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0,
-  }).format(value);
-}
 
 function formatDate(dateStr: string): string {
   return new Date(dateStr).toLocaleDateString("en-US", {
@@ -195,6 +187,9 @@ export default function PipelinePage() {
         case "planStatus":
           cmp = (a.planStatus || "").localeCompare(b.planStatus || "");
           break;
+        case "targetOpenQuarter":
+          cmp = (a.targetOpenQuarter || "").localeCompare(b.targetOpenQuarter || "");
+          break;
       }
       return sortDirection === "asc" ? cmp : -cmp;
     });
@@ -212,6 +207,17 @@ export default function PipelinePage() {
   };
 
   if (!user) return null;
+
+  if (user.role !== "franchisor") {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]" data-testid="pipeline-access-denied">
+        <div className="text-center space-y-2">
+          <Users className="h-8 w-8 mx-auto text-muted-foreground" />
+          <p className="text-muted-foreground">This page is for franchisor admins. Please use the admin dashboard.</p>
+        </div>
+      </div>
+    );
+  }
 
   if (isLoading) {
     return (
@@ -357,6 +363,11 @@ export default function PipelinePage() {
                     </TableHead>
                     <TableHead>Target Market</TableHead>
                     <TableHead>
+                      <Button variant="ghost" size="sm" onClick={() => toggleSort("targetOpenQuarter")} data-testid="sort-open-quarter">
+                        Open Quarter <ArrowUpDown className="ml-1 h-3 w-3 inline" />
+                      </Button>
+                    </TableHead>
+                    <TableHead>
                       <Button variant="ghost" size="sm" onClick={() => toggleSort("lastActivityDate")} data-testid="sort-activity">
                         Last Activity <ArrowUpDown className="ml-1 h-3 w-3 inline" />
                       </Button>
@@ -395,6 +406,9 @@ export default function PipelinePage() {
                       </TableCell>
                       <TableCell data-testid={`text-market-${f.planId}`}>
                         {f.targetMarket || "—"}
+                      </TableCell>
+                      <TableCell data-testid={`text-open-quarter-${f.planId}`}>
+                        {f.targetOpenQuarter || "—"}
                       </TableCell>
                       <TableCell data-testid={`text-activity-${f.planId}`}>
                         <div className="flex items-center gap-1">
@@ -557,11 +571,11 @@ function FinancialCell({
       <div className="space-y-1" data-testid={`financial-summary-${franchisee.planId}`}>
         <div className="flex justify-between">
           <span className="text-muted-foreground">Revenue (Y1)</span>
-          <span className="font-medium">{formatCurrency(fs.projectedAnnualRevenue)}</span>
+          <span className="font-medium">{formatCents(fs.projectedAnnualRevenue)}</span>
         </div>
         <div className="flex justify-between">
           <span className="text-muted-foreground">Startup Cost</span>
-          <span>{formatCurrency(fs.totalStartupInvestment)}</span>
+          <span>{formatCents(fs.totalStartupInvestment)}</span>
         </div>
         <div className="flex justify-between">
           <span className="text-muted-foreground">Break-even</span>
@@ -569,7 +583,7 @@ function FinancialCell({
         </div>
         <div className="flex justify-between">
           <span className="text-muted-foreground">5Y ROI</span>
-          <span className={fs.roiPct >= 0 ? "text-green-600" : "text-red-600"}>{fs.roiPct.toFixed(1)}%</span>
+          <span className={fs.roiPct >= 0 ? "text-green-600" : "text-red-600"}>{(fs.roiPct * 100).toFixed(1)}%</span>
         </div>
       </div>
     );
@@ -580,14 +594,14 @@ function FinancialCell({
       <TooltipTrigger>
         <div className="flex items-center gap-1" data-testid={`financial-summary-${franchisee.planId}`}>
           <ShieldCheck className="h-3.5 w-3.5 text-green-500" />
-          <span className="text-xs font-medium">{formatCurrency(fs.projectedAnnualRevenue)}</span>
+          <span className="text-xs font-medium">{formatCents(fs.projectedAnnualRevenue)}</span>
         </div>
       </TooltipTrigger>
       <TooltipContent side="left" className="space-y-1 text-xs">
-        <p>Revenue (Y1): {formatCurrency(fs.projectedAnnualRevenue)}</p>
-        <p>Startup: {formatCurrency(fs.totalStartupInvestment)}</p>
+        <p>Revenue (Y1): {formatCents(fs.projectedAnnualRevenue)}</p>
+        <p>Startup: {formatCents(fs.totalStartupInvestment)}</p>
         <p>Break-even: {fs.breakEvenMonth ? `Month ${fs.breakEvenMonth}` : "N/A"}</p>
-        <p>5Y ROI: {fs.roiPct.toFixed(1)}%</p>
+        <p>5Y ROI: {(fs.roiPct * 100).toFixed(1)}%</p>
       </TooltipContent>
     </Tooltip>
   );
