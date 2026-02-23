@@ -2,6 +2,7 @@ import { useState, useCallback, useRef } from "react";
 import {
   updateFieldValue,
   resetFieldToDefault,
+  confirmFieldValue,
 } from "@shared/plan-initialization";
 import type {
   PlanFinancialInputs,
@@ -43,7 +44,7 @@ function recomputeFacilitiesAnnual(
     if (existing) {
       return { ...existing, currentValue: total, source: "user_entry" as const, isCustom: true, lastModifiedAt: now };
     }
-    return { currentValue: total, source: "user_entry" as const, brandDefault: null, item7Range: null, lastModifiedAt: now, isCustom: true };
+    return { currentValue: total, source: "user_entry" as const, brandDefault: null, item7Range: null, lastModifiedAt: now, isCustom: true, confirmed: false };
   });
 }
 
@@ -230,6 +231,38 @@ export function useFieldEditing({ financialInputs, isSaving, onSave }: UseFieldE
     [financialInputs, isSaving, onSave]
   );
 
+  const handleConfirmField = useCallback(
+    (category: string, fieldName: string) => {
+      if (!financialInputs || isSaving) return;
+      const categoryObj = resolveCategoryObj(financialInputs, category);
+      if (!categoryObj) return;
+      const raw = categoryObj[fieldName];
+      if (!raw) return;
+      if (Array.isArray(raw)) {
+        const confirmedArr = raw.map((item: FinancialFieldValue) =>
+          confirmFieldValue(item)
+        );
+        const updatedCategoryObj = { ...categoryObj, [fieldName]: confirmedArr };
+        let updatedInputs: PlanFinancialInputs;
+        if (category === "facilitiesDecomposition") {
+          updatedInputs = applyDecompUpdate(financialInputs, updatedCategoryObj);
+        } else {
+          updatedInputs = {
+            ...financialInputs,
+            [category]: updatedCategoryObj,
+          };
+        }
+        onSave(updatedInputs);
+      } else {
+        const field = raw as FinancialFieldValue;
+        const confirmedField = confirmFieldValue(field);
+        const updatedInputs = buildUpdatedInputs(financialInputs, category, categoryObj, fieldName, confirmedField);
+        onSave(updatedInputs);
+      }
+    },
+    [financialInputs, isSaving, onSave]
+  );
+
   return {
     editingField,
     editValue,
@@ -241,5 +274,6 @@ export function useFieldEditing({ financialInputs, isSaving, onSave }: UseFieldE
     handleEditCancel,
     handleFieldUpdate,
     handleReset,
+    handleConfirmField,
   };
 }

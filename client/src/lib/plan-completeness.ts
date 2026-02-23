@@ -4,7 +4,7 @@ import { FIELD_METADATA, CATEGORY_ORDER, CATEGORY_LABELS } from "@/lib/field-met
 export interface SectionProgress {
   category: string;
   label: string;
-  edited: number;
+  confirmed: number;
   total: number;
 }
 
@@ -16,39 +16,39 @@ function resolveCategoryData(financialInputs: PlanFinancialInputs, category: str
   return data as unknown as Record<string, unknown> | undefined;
 }
 
-function isEdited(field: unknown): boolean {
+function isConfirmed(field: unknown): boolean {
   if (!field) return false;
   if (Array.isArray(field)) {
     const first = field[0] as FinancialFieldValue | undefined;
-    return first != null && first.source !== "brand_default";
+    return first != null && first.confirmed === true;
   }
   const f = field as FinancialFieldValue;
-  return f.source !== "brand_default";
+  return f.confirmed === true;
 }
 
 export function computeSectionProgress(financialInputs: PlanFinancialInputs): SectionProgress[] {
   return CATEGORY_ORDER.map((category) => {
     const fields = FIELD_METADATA[category];
-    if (!fields) return { category, label: CATEGORY_LABELS[category] || category, edited: 0, total: 0 };
+    if (!fields) return { category, label: CATEGORY_LABELS[category] || category, confirmed: 0, total: 0 };
     const categoryData = resolveCategoryData(financialInputs, category);
-    if (!categoryData) return { category, label: CATEGORY_LABELS[category] || category, edited: 0, total: Object.keys(fields).length };
+    if (!categoryData) return { category, label: CATEGORY_LABELS[category] || category, confirmed: 0, total: Object.keys(fields).length };
     const fieldNames = Object.keys(fields);
     const total = fieldNames.length;
-    const edited = fieldNames.filter((name) => {
+    const confirmed = fieldNames.filter((name) => {
       const fieldData = categoryData[name];
       if (!fieldData) return false;
-      return isEdited(fieldData);
+      return isConfirmed(fieldData);
     }).length;
-    return { category, label: CATEGORY_LABELS[category] || category, edited, total };
+    return { category, label: CATEGORY_LABELS[category] || category, confirmed, total };
   });
 }
 
 export function computeCompleteness(financialInputs: PlanFinancialInputs, startupCostCount = 0): number {
   const sections = computeSectionProgress(financialInputs);
-  const totalEdited = sections.reduce((sum, s) => sum + s.edited, 0) + startupCostCount;
+  const totalConfirmed = sections.reduce((sum, s) => sum + s.confirmed, 0) + startupCostCount;
   const totalFields = sections.reduce((sum, s) => sum + s.total, 0) + Math.max(startupCostCount, 0);
   if (totalFields === 0) return 0;
-  return Math.round((totalEdited / totalFields) * 100);
+  return Math.round((totalConfirmed / totalFields) * 100);
 }
 
 export function hasAnyUserEdits(financialInputs: PlanFinancialInputs): boolean {

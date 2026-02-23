@@ -29,6 +29,7 @@ export interface FinancialFieldValue {
   item7Range: { min: number; max: number } | null;
   lastModifiedAt: string | null;
   isCustom: boolean;
+  confirmed: boolean;
 }
 
 /** Wrapped financial inputs for plan JSONB persistence. Each user-editable field

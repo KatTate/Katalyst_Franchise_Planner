@@ -204,6 +204,9 @@ export const plans = pgTable("plans", {
   quickStartCompleted: boolean("quick_start_completed").default(false).notNull(),
   targetMarket: text("target_market"),
   targetOpenQuarter: text("target_open_quarter"),
+  targetOpenDate: text("target_open_date"),
+  locationAddress: text("location_address"),
+  financingStatus: text("financing_status").$type<"not_started" | "exploring" | "applied" | "pre_approved" | "approved" | "funded">(),
   lastAutoSave: timestamp("last_auto_save"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
@@ -235,6 +238,7 @@ export const financialFieldValueSchema = z.object({
   item7Range: z.object({ min: z.number(), max: z.number() }).nullable(),
   lastModifiedAt: z.string().nullable(),
   isCustom: z.boolean(),
+  confirmed: z.boolean().optional().default(false),
 });
 
 const financialFieldValueArraySchema = z.array(financialFieldValueSchema);

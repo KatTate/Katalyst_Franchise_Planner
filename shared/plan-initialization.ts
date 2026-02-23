@@ -59,6 +59,7 @@ function makeField(
     item7Range,
     lastModifiedAt: null,
     isCustom: false,
+    confirmed: false,
   };
 }
 
@@ -576,6 +577,15 @@ export function updateFieldValue(
   };
 }
 
+export function confirmFieldValue(
+  field: FinancialFieldValue,
+): FinancialFieldValue {
+  return {
+    ...field,
+    confirmed: true,
+  };
+}
+
 export function resetFieldToDefault(
   field: FinancialFieldValue,
   timestamp: string
@@ -588,6 +598,7 @@ export function resetFieldToDefault(
     currentValue: field.brandDefault,
     source: "brand_default",
     isCustom: false,
+    confirmed: false,
     lastModifiedAt: timestamp,
   };
 }

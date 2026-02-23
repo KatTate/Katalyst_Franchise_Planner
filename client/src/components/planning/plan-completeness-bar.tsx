@@ -16,7 +16,7 @@ export function PlanCompletenessBar({ financialInputs, startupCostCount }: PlanC
 
   if (!financialInputs) return null;
 
-  const totalEdited = sections.reduce((sum, s) => sum + s.edited, 0);
+  const totalConfirmed = sections.reduce((sum, s) => sum + s.confirmed, 0);
   const totalFields = sections.reduce((sum, s) => sum + s.total, 0);
 
   return (
@@ -24,12 +24,12 @@ export function PlanCompletenessBar({ financialInputs, startupCostCount }: PlanC
       <div className="flex items-center justify-between mb-2">
         <span className="text-sm font-medium text-foreground">Plan Progress</span>
         <span className="text-xs text-muted-foreground">
-          {totalEdited}/{totalFields} fields customized
+          {totalConfirmed}/{totalFields} fields confirmed
         </span>
       </div>
       <div className="grid grid-cols-2 gap-2 sm:grid-cols-5">
         {sections.map((section) => {
-          const pct = section.total > 0 ? (section.edited / section.total) * 100 : 0;
+          const pct = section.total > 0 ? (section.confirmed / section.total) * 100 : 0;
           return (
             <div
               key={section.category}
@@ -39,7 +39,7 @@ export function PlanCompletenessBar({ financialInputs, startupCostCount }: PlanC
               <div className="flex items-center justify-between">
                 <span className="text-xs text-muted-foreground truncate">{section.label}</span>
                 <span className="text-xs font-medium tabular-nums">
-                  {section.edited}/{section.total}
+                  {section.confirmed}/{section.total}
                 </span>
               </div>
               <div className="h-1.5 rounded-full bg-muted overflow-hidden">
