@@ -614,37 +614,40 @@ The AI Planning Assistant is accessible from three places:
 
 | Entry Point | Location | Behavior | Primary Persona |
 |-------------|----------|----------|-----------------|
-| **Floating action button** | Bottom-right corner of My Plan | Opens the AI panel as a slide-in from the right edge | Sam, Chris |
-| **Header icon** | My Plan header bar | Same slide-in panel behavior | Sam, Chris |
-| **"Planning Assistant"** | Sidebar Help section | Opens the AI panel with a conversational greeting as the starting point — useful for first-time users who want guidance before diving into forms | Sam |
+| **Floating action button** | Bottom-right corner of My Plan | Opens the split-screen Planning Assistant view, replacing My Plan content | Sam, Chris |
+| **"Planning Assistant"** | Sidebar Help section | Opens the same split-screen view with a conversational greeting as the starting point — useful for first-time users who want guidance before diving into forms | Sam |
 
-All three entry points open the **same AI panel component** — they differ only in the initial context and greeting.
+Both entry points open the **same AI panel component** — they differ only in the initial context and greeting.
 
 ### Panel Behavior
 
-The AI Planning Assistant renders as a **slide-in panel** from the right edge of the viewport:
+> **Updated 2026-02-23.** The original spec described a slide-in panel from the right edge. The implemented design uses a **split-screen layout** (ResizablePanelGroup, 50/50) that replaces the My Plan content area when the Planning Assistant is active. This was found to be a better design during implementation (Story 9.2) — the conversation panel and live dashboard are both fully visible without overlay complexity.
+
+When the Planning Assistant is activated, the My Plan content area is replaced by a **split-screen layout:**
 
 ```
-+-- My Plan Content ---------+-- AI Planning Assistant Panel --+
++-- Conversation Panel ------+-- Live Dashboard Panel ---------+
 |                             |                                  |
-|  [Form sections]            |  [Conversation history]          |
-|  Revenue: $30,000           |                                  |
-|  COGS: 30%                  |  AI: "Hi Sam, I see you're       |
-|  ...                        |  working on your revenue          |
-|                             |  section. Tell me about your      |
-|                             |  expected customer traffic."      |
+|  AI: "Hi Sam, I see you're  |  [Real-time financial summary]  |
+|  working on your PostNet     |  Pre-Tax Income: $42,000       |
+|  plan. Tell me about your    |  Break-even: Month 14          |
+|  location."                  |  5yr ROI: 127%                 |
 |                             |                                  |
-|  [Impact Strip]             |  [Message input]                 |
+|  Sam: "I'm looking at a     |  [Key metrics update as AI     |
+|  1,200 sq ft space..."      |   populates values]             |
+|                             |                                  |
+|  [Message input]            |  [Impact indicators]            |
 +-----------------------------+----------------------------------+
 ```
 
 **Panel specifications:**
 
-- **Width:** 400px (fixed) on viewports >= 1280px. On viewports 1024-1279px, the panel overlays the content area at 380px width with a semi-transparent backdrop.
-- **Animation:** Slides in from right edge, 200-300ms ease-out transition. Respects `prefers-reduced-motion` (instant transition, no animation).
-- **Dismissal:** Close button (X) in panel header, click outside the panel (overlay mode), or Escape key.
-- **Persistence:** The panel remains open as Sam navigates between My Plan form sections. Navigating away from My Plan (e.g., clicking Reports in sidebar) closes the panel. The conversation state is preserved — reopening the panel restores the conversation where it left off.
-- **Content push vs. overlay:** On wide viewports (>= 1280px), the panel pushes the My Plan content to the left (content area narrows). On narrower viewports (1024-1279px), the panel overlays with a backdrop. Below 1024px, the panel becomes a full-screen sheet.
+- **Layout:** 50/50 resizable split (ResizablePanelGroup). Left panel = conversation, right panel = live dashboard showing real-time financial impact.
+- **Activation:** When opened, replaces the My Plan forms content entirely. The workspace header remains visible.
+- **Dismissal:** Close button (X) in panel header or Escape key. Closing restores the My Plan forms view.
+- **Persistence:** The conversation state is preserved — closing and reopening the panel restores the conversation where Sam left off. Navigating away from My Plan (e.g., clicking Reports in sidebar) closes the panel.
+- **Mobile/Responsive:** At viewports below 1024px, the split-screen converts to a **tabbed interface** (Chat tab / Dashboard tab) with an accent dot indicator when the dashboard has new data from AI-populated values.
+- **Sidebar behavior:** When the Planning Assistant opens, the sidebar collapses automatically to maximize content space. The sidebar state is restored when the panel closes.
 
 ### Conversation Interaction Model
 
@@ -1054,8 +1057,8 @@ The Document Preview widget shows "DRAFT" watermark diagonally across the previe
 
 1. Sam receives an email from Katalyst: "Denise invited you to plan your PostNet franchise." The email contains a branded call-to-action button with the PostNet logo.
 2. Sam clicks the link. He lands on a branded sign-up page — PostNet colors, PostNet logo. He creates his account with email and password.
-3. Onboarding asks three brief questions to detect his experience tier. Sam's answers indicate first-time franchisee — the system recommends Story tier, but Sam can proceed as Normal tier (forms-only, no AI assistant). For this journey, Sam proceeds as Normal.
-4. Quick ROI screen: Sam enters 5 numbers — location type, estimated investment, expected monthly revenue, and two cost percentages. In about 90 seconds, he sees a preliminary ROI range: "Based on these inputs, your estimated annual return is 12–18%." A note explains this is a rough range that his full plan will refine.
+3. Onboarding asks three brief questions to understand Sam's experience level. Sam's answers indicate first-time franchisee — the system recommends starting with the Planning Assistant for guided support, but Sam can choose to start with forms instead. For this journey, Sam opts to start with My Plan forms.
+4. Quick ROI / Quick Start: When Sam opens his first plan, a Quick Start overlay collects 5 key numbers — location type, estimated investment, expected monthly revenue, and two cost percentages. In about 90 seconds, he sees a preliminary ROI range: "Based on these inputs, your estimated annual return is 12–18%." A note explains this is a rough range that his full plan will refine. *(Implementation note: Quick ROI is delivered as a Quick Start Overlay within the plan workspace, providing immediate context for the numbers Sam enters.)*
 5. Sam sees a consultant booking link in the sidebar Help section — "Book time with Denise" — and clicks it to schedule a Thursday session.
 6. Sam lands on the Dashboard. He sees a welcome message, his plan card ("Sam's PostNet Plan"), a Document Preview widget showing an empty state ("Complete your plan to preview your lender package"), and the Plan Completeness summary showing all sections at brand defaults.
 
