@@ -1,6 +1,6 @@
 # Story 11.2: Franchisor Pipeline Dashboard
 
-Status: ready-for-dev
+Status: in-progress
 
 ## Story
 

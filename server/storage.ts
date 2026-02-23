@@ -24,6 +24,7 @@ import {
   type DataSharingConsent,
   type InsertDataSharingConsent,
   type ConsentStatus,
+  type PlanAcknowledgment,
   users,
   invitations,
   brands,
@@ -33,6 +34,7 @@ import {
   brandValidationRuns,
   fddIngestionRuns,
   dataSharingConsents,
+  planAcknowledgments,
 } from "@shared/schema";
 import type { StartupCostLineItem } from "@shared/financial-engine";
 import { buildPlanFinancialInputs, buildPlanStartupCosts, migrateStartupCosts, migratePlanFinancialInputs } from "@shared/plan-initialization";
@@ -133,6 +135,10 @@ export interface IStorage {
   getConsentStatusBatch(planIds: string[]): Promise<Map<string, ConsentStatus>>;
   grantConsent(planId: string, userId: string): Promise<DataSharingConsent>;
   revokeConsent(planId: string, userId: string): Promise<DataSharingConsent>;
+
+  getAcknowledgmentsByPlanIds(planIds: string[], franchisorUserId: string): Promise<Map<string, PlanAcknowledgment>>;
+  acknowledgePlan(planId: string, franchisorUserId: string, planUpdatedAtSnapshot: Date): Promise<PlanAcknowledgment>;
+  removeAcknowledgment(planId: string, franchisorUserId: string): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -761,6 +767,48 @@ export class DatabaseStorage implements IStorage {
       .values({ planId, userId, action: "revoke" } as any)
       .returning();
     return created;
+  }
+
+  async getAcknowledgmentsByPlanIds(planIds: string[], franchisorUserId: string): Promise<Map<string, PlanAcknowledgment>> {
+    const result = new Map<string, PlanAcknowledgment>();
+    if (planIds.length === 0) return result;
+
+    const rows = await db
+      .select()
+      .from(planAcknowledgments)
+      .where(and(
+        sql`${planAcknowledgments.planId} IN (${sql.join(planIds.map(id => sql`${id}`), sql`, `)})`,
+        eq(planAcknowledgments.franchisorUserId, franchisorUserId)
+      ));
+
+    for (const row of rows) {
+      result.set(row.planId, row);
+    }
+    return result;
+  }
+
+  async acknowledgePlan(planId: string, franchisorUserId: string, planUpdatedAtSnapshot: Date): Promise<PlanAcknowledgment> {
+    await db
+      .delete(planAcknowledgments)
+      .where(and(
+        eq(planAcknowledgments.planId, planId),
+        eq(planAcknowledgments.franchisorUserId, franchisorUserId)
+      ));
+
+    const [created] = await db
+      .insert(planAcknowledgments)
+      .values({ planId, franchisorUserId, planUpdatedAtSnapshot } as any)
+      .returning();
+    return created;
+  }
+
+  async removeAcknowledgment(planId: string, franchisorUserId: string): Promise<void> {
+    await db
+      .delete(planAcknowledgments)
+      .where(and(
+        eq(planAcknowledgments.planId, planId),
+        eq(planAcknowledgments.franchisorUserId, franchisorUserId)
+      ));
   }
 
   async deleteBrand(brandId: string): Promise<void> {

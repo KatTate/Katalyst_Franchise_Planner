@@ -915,7 +915,7 @@ development_status:
   # PO SEQUENCING (SCP-2026-02-22): AFTER Epic 8
   epic-11: in-progress
   11-1-franchisee-data-sharing-controls: done
-  11-2-franchisor-pipeline-dashboard: ready-for-dev
+  11-2-franchisor-pipeline-dashboard: in-progress
   11-3-katalyst-admin-cross-brand-dashboard: backlog
   epic-11-retrospective: optional
 

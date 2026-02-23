@@ -449,3 +449,23 @@ export type ConsentStatus = {
   hasConsent: boolean;
   grantedAt: string | null;
 };
+
+// ─── Plan Acknowledgments (Story 11.2 — franchisor pipeline tracking) ──
+
+export const planAcknowledgments = pgTable("plan_acknowledgments", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  planId: varchar("plan_id").notNull().references(() => plans.id, { onDelete: "cascade" }),
+  franchisorUserId: varchar("franchisor_user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  acknowledgedAt: timestamp("acknowledged_at").defaultNow().notNull(),
+  planUpdatedAtSnapshot: timestamp("plan_updated_at_snapshot").notNull(),
+}, (table) => [
+  index("idx_plan_acknowledgments_plan").on(table.planId),
+  index("idx_plan_acknowledgments_user").on(table.franchisorUserId),
+]);
+
+export const insertPlanAcknowledgmentSchema = createInsertSchema(planAcknowledgments).omit({
+  id: true,
+  acknowledgedAt: true,
+});
+export type InsertPlanAcknowledgment = z.infer<typeof insertPlanAcknowledgmentSchema>;
+export type PlanAcknowledgment = typeof planAcknowledgments.$inferSelect;
