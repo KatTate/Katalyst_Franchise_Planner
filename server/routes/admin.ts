@@ -214,6 +214,10 @@ router.post(
       return res.status(404).json({ message: "Brand not found" });
     }
 
+    if (!brand.brandParameters) {
+      return res.status(400).json({ message: "Brand has no financial parameters configured. Configure brand parameters before entering demo mode." });
+    }
+
     if (req.session.impersonating_user_id) {
       await endActiveEditSession(req);
       clearImpersonationSession(req);

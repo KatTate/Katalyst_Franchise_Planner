@@ -29,7 +29,7 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/use-auth";
 import { useDemoMode } from "@/contexts/DemoModeContext";
-import { Plus, Building2, ChevronRight, Monitor } from "lucide-react";
+import { Plus, Building2, ChevronRight, Monitor, Loader2 } from "lucide-react";
 
 const createBrandFormSchema = z.object({
   name: z.string().min(1, "Brand name is required").max(100),
@@ -54,6 +54,7 @@ export default function AdminBrandsPage() {
   const { user } = useAuth();
   const { enterDemoMode } = useDemoMode();
   const isKatalystAdmin = user?.role === "katalyst_admin";
+  const [enteringDemoBrandId, setEnteringDemoBrandId] = useState<string | null>(null);
 
   const { data: brands, isLoading } = useQuery<Brand[]>({
     queryKey: ["/api/brands"],
@@ -153,13 +154,23 @@ export default function AdminBrandsPage() {
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={(e) => {
+                      disabled={enteringDemoBrandId === brand.id}
+                      onClick={async (e) => {
                         e.stopPropagation();
-                        enterDemoMode(brand.id);
+                        setEnteringDemoBrandId(brand.id);
+                        try {
+                          await enterDemoMode(brand.id);
+                        } finally {
+                          setEnteringDemoBrandId(null);
+                        }
                       }}
                       data-testid={`button-demo-mode-${brand.id}`}
                     >
-                      <Monitor className="h-4 w-4 mr-1" />
+                      {enteringDemoBrandId === brand.id ? (
+                        <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                      ) : (
+                        <Monitor className="h-4 w-4 mr-1" />
+                      )}
                       Demo
                     </Button>
                   )}

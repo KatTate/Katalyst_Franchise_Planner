@@ -596,10 +596,18 @@ export class DatabaseStorage implements IStorage {
     const [updated] = await db
       .update(plans)
       .set({
+        name: `${brand.name} Demo Plan`,
+        status: "in_progress" as const,
+        pipelineStage: "planning" as const,
         financialInputs: financialInputs as any,
         startupCosts: startupCosts as any,
+        targetMarket: null,
+        locationAddress: null,
+        financingStatus: null,
+        quickStartCompleted: false,
+        whatIfScenarios: null,
         updatedAt: new Date(),
-      })
+      } as any)
       .where(eq(plans.id, planId))
       .returning();
     return updated;
