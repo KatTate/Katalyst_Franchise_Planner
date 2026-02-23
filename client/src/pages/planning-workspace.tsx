@@ -16,20 +16,34 @@ import { ImpactStrip } from "@/components/planning/impact-strip";
 import { DocumentPreviewModal } from "@/components/planning/document-preview-modal";
 import { PlanCompletenessBar } from "@/components/planning/plan-completeness-bar";
 import { WhatIfPlayground } from "@/components/planning/what-if-playground";
+import { PlanningAssistantPanel } from "@/components/planning/planning-assistant-panel";
+import { PlanningAssistantFAB } from "@/components/planning/planning-assistant-fab";
+import { PlanningAssistantProvider, usePlanningAssistant } from "@/contexts/PlanningAssistantContext";
 
 import { QuickStartOverlay } from "@/components/shared/quick-start-overlay";
 import { SummaryMetrics } from "@/components/shared/summary-metrics";
 import { useWorkspaceView } from "@/contexts/WorkspaceViewContext";
+import { useAuth } from "@/hooks/use-auth";
 import type { Brand, Plan } from "@shared/schema";
 import type { PlanFinancialInputs } from "@shared/financial-engine";
 import type { StartupCostLineItem } from "@shared/financial-engine";
 
 export default function PlanningWorkspace() {
+  return (
+    <PlanningAssistantProvider>
+      <PlanningWorkspaceInner />
+    </PlanningAssistantProvider>
+  );
+}
+
+function PlanningWorkspaceInner() {
   const params = useParams<{ planId: string }>();
   const planId = params.planId!;
   const { plan, isLoading: planLoading, error: planError, saveStatus, queueSave, retrySave, flushSave, isSaving, hasUnsavedChanges } = usePlanAutoSave(planId);
   const { setOpen } = useSidebar();
   const { workspaceView, statementsDefaultTab, navigateToStatements, setActivePlanName, resetWorkspaceView, navigateToMyPlan } = useWorkspaceView();
+  const { isOpen: isPlanningAssistantOpen } = usePlanningAssistant();
+  const { user } = useAuth();
 
   const [activeSection, setActiveSection] = useState<string | null>(null);
   const [startupCostCount, setStartupCostCount] = useState(0);
@@ -50,6 +64,20 @@ export default function PlanningWorkspace() {
       setActivePlanName(plan.name);
     }
   }, [plan?.name, setActivePlanName]);
+
+  const { openPlanningAssistant, sidebarStateBeforeOpen } = usePlanningAssistant();
+  const { open: sidebarOpen } = useSidebar();
+
+  useEffect(() => {
+    const handleOpenAssistant = () => {
+      sidebarStateBeforeOpen.current = sidebarOpen;
+      setOpen(false);
+      openPlanningAssistant();
+      navigateToMyPlan();
+    };
+    window.addEventListener("open-planning-assistant", handleOpenAssistant);
+    return () => window.removeEventListener("open-planning-assistant", handleOpenAssistant);
+  }, [openPlanningAssistant, sidebarStateBeforeOpen, sidebarOpen, setOpen, navigateToMyPlan]);
 
   const sidebarInitialized = useRef(false);
   useEffect(() => {
@@ -145,6 +173,19 @@ export default function PlanningWorkspace() {
         );
       case "my-plan":
       default:
+        if (isPlanningAssistantOpen) {
+          return (
+            <PlanningAssistantPanel
+              planId={planId}
+              plan={plan}
+              userName={user?.displayName || user?.email || "there"}
+              brandName={resolvedBrandName || "your franchise"}
+              financialInputs={financialInputs ?? null}
+              startupCostCount={startupCostCount}
+              queueSave={queueSave}
+            />
+          );
+        }
         return (
           <div className="flex-1 flex flex-col min-h-0">
             <div className="sticky top-0 z-20 bg-background border-b px-4 py-3 space-y-3" data-testid="my-plan-summary-metrics">
@@ -172,6 +213,7 @@ export default function PlanningWorkspace() {
         {renderWorkspaceContent()}
       </div>
 
+      {workspaceView === "my-plan" && <PlanningAssistantFAB />}
       <ImpactStrip
         planId={planId}
         activeSection={activeSection}

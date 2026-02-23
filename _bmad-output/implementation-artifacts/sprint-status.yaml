@@ -1,5 +1,6 @@
 # generated: 2026-02-09
 # updated: 2026-02-23 (Story 11.2 Party Mode review completed — 8 findings, 5 applied)
+# updated: 2026-02-23 (Story 9.2 implementation complete → review. All 12 ACs verified via Playwright E2E. 9 files created/modified. Demo-first simulation architecture.)
 # updated: 2026-02-23 (Story 9.2 context document created — Split-Screen Planning Assistant Interface)
 # updated: 2026-02-23 (Epic 10 retrospective completed — full 15-step BMAD workflow executed)
 # updated: 2026-02-22 (Sprint Planning regenerated — full inventory verification)
@@ -45,7 +46,10 @@
 generated: 2026-02-09
 updated: 2026-02-23  # Story 11.2 Party Mode review completed. 14 ACs (was 12). 8 findings (2H/3M/3L): stalled detection added (F1-H), JTBD alignment (F6-H), summary counts updated (F2-M), sorting added (F3-M), acknowledgment expanded to Version A with reset logic (F7-M), activity tracking guidance (F4-L), opt-in indicator direction (F5-L), lender packages deferred (F8-L). Franchisee-visible acknowledgment deferred to Phase 2.
 updated: 2026-02-23  # Story 11.2 context document created (Create Story workflow). 12 ACs, 10 files in change summary. Franchisor pipeline dashboard with summary bar, consent-based projection, acknowledgment feature, responsive layout. Story 11.1 dependency documented.
+updated: 2026-02-21  # Story 11.1 context document created (Create Story workflow)
+updated: 2026-02-21  # Story 5H.4 context document created (Create Story workflow)
 updated: 2026-02-23  # Story 9.2 Party Mode review completed + PO reframing applied. 12 ACs (was 10), 12 files (was 10). Demo-first: simulation service replaces LLM dependency. Self-contained — no 9.1 prerequisite. 12 findings resolved (3H/4M/5L).
+updated: 2026-02-23  # Story 9.2 implementation complete → review. All 12 ACs verified via Playwright E2E. 9 files (7 created, 2 modified). Demo-first simulation architecture — no LLM required.
 updated: 2026-02-23  # Story 9.2 context document created (Create Story workflow). 10 ACs, 10 files in change summary. Split-screen layout with resizable panels, SSE streaming, responsive stacked tabs. Epic 9 → in-progress.
 updated: 2026-02-23  # Story 10.3 adversarial code review completed → done. 9 findings (3H/3M/3L), all H+M fixed: newest-first sort (H1), inline validation (H2), useMemo dep (H3), disabled button (M1), strokeDasharray (M2), type unification (M3). 3L documented for later.
 updated: 2026-02-23  # Story 10.3 implementation complete → review. All 10 ACs satisfied, 7 files modified (schema, routes, engine, playground UI, charts). Sandbox invariant preserved.
@@ -642,6 +646,23 @@ story_location: _bmad-output/implementation-artifacts
 #   - Edits epics.md (coverage map) and architecture.md (FR count, stale references)
 #   - Story status: ready-for-dev
 #   - Next action: Dev Story (DS) for 5H.4 audit execution
+# 2026-02-21: Story 11.1 context document created (Create Story workflow)
+#   - Full story file: 11-1-franchisee-data-sharing-controls.md (ready-for-dev)
+#   - 9 acceptance criteria covering: data sharing description with shared/never-shared
+#     field lists (AC-1), grant consent flow with confirmation dialog (AC-2/AC-3),
+#     revoke consent flow with immediate effect (AC-4), append-only audit trail
+#     enforcement at API level (AC-5), pipeline-only projection for non-opted-in
+#     franchisors (AC-6), full projection for opted-in franchisors (AC-7),
+#     Katalyst admin full visibility regardless of consent (AC-8),
+#     franchisor cannot modify consent (AC-9)
+#   - Dev notes include: new data_sharing_consents table (append-only), IStorage
+#     consent methods, consent router (3 endpoints), RBAC response projection in
+#     plans.ts, DataSharingSettings component replacing settings placeholder,
+#     brand name via useBrandTheme() hook, 7 anti-patterns, 7 gotchas,
+#     data-testid convention for consent UI elements
+#   - FRs covered: FR33, FR34, FR35, FR36, FR37, FR38
+#   - Epic 11 status: in-progress (first story ready-for-dev)
+#   - Next action: Dev Story (DS) for 11.1 implementation
 # 2026-02-21: Epic 5H Retrospective FINALIZED (full 15-step BMAD workflow)
 #   - All 15 retrospective steps executed in sequence
 #   - Visual verification performed: ScenarioBar CONFIRMED visible, labor efficiency rows
@@ -859,7 +880,7 @@ development_status:
   # PO SEQUENCING (SCP-2026-02-22): LAST — intelligence layer, wait for core to stabilize
   epic-9: in-progress
   9-1-llm-integration-conversation-api: backlog
-  9-2-split-screen-planning-assistant-interface: ready-for-dev
+  9-2-split-screen-planning-assistant-interface: review
   9-3-ai-value-extraction-field-population: backlog
   9-4-graceful-degradation-mode-continuity: backlog
   epic-9-retrospective: optional

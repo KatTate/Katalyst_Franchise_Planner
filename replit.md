@@ -39,6 +39,15 @@ When the user triggers an agent or workflow, the AI MUST load the referenced fil
 
 # Recent Changes
 
+## Story 9.2: Split-Screen Planning Assistant Interface (Feb 2026)
+- **Planning Assistant Panel:** Split-screen layout (ResizablePanelGroup 50/50) replaces My Plan content when open. Conversation panel left, live dashboard right. Opened via FAB button or sidebar HELP item.
+- **Simulation Service:** Client-side `planning-assistant-simulation.ts` provides 5 conversation topics (location/rent, revenue, staffing, marketing, summary) with keyword matching, typing delays, and character-by-character streaming — no LLM backend required.
+- **Value Extraction:** Simulated AI populates financial inputs via standard `queueSave()` pipeline with `source: 'ai_populated'`. Dashboard updates in real-time.
+- **Mobile/Responsive:** Tabbed interface (Chat/Dashboard tabs) at <1024px breakpoint with accent dot indicator when dashboard has new data.
+- **State Management:** `PlanningAssistantContext` manages open/close state. `useConversation` hook manages messages, streaming, and extraction. Conversation persists in memory across open/close within session.
+- **New Files:** `client/src/lib/planning-assistant-simulation.ts`, `client/src/contexts/PlanningAssistantContext.tsx`, `client/src/hooks/use-conversation.ts`, `client/src/components/shared/error-boundary.tsx`, `client/src/components/planning/conversation-panel.tsx`, `client/src/components/planning/live-dashboard-panel.tsx`, `client/src/components/planning/planning-assistant-panel.tsx`, `client/src/components/planning/planning-assistant-fab.tsx`
+- **Modified:** `client/src/pages/planning-workspace.tsx` (FAB + panel integration), `client/src/components/app-sidebar.tsx` (HELP section item)
+
 ## Story 10.3: Scenario Persistence & Comparison (Feb 2026)
 - **Scenario CRUD:** Franchisees can save slider configurations as named scenarios (max 10 per plan), load them, update/rename, and delete via `whatIfScenarios` JSONB column on `plans` table.
 - **API Endpoints:** `POST/PUT/DELETE /api/plans/:planId/scenarios` with Zod validation (unique names, max 10, non-zero sliders).
