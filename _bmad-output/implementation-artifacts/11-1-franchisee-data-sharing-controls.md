@@ -157,18 +157,18 @@ Claude 4.6 Opus (Replit Agent)
 
 ### Completion Notes
 
-All 9 acceptance criteria implemented and verified via E2E Playwright testing. Implementation follows the three-layer RBAC enforcement pattern: route authorization, storage scoping, and consent-based response projection. Append-only audit trail uses INSERT-only operations on `data_sharing_consents` table. Pipeline fields remain visible to franchisors regardless of consent status.
+All 9 acceptance criteria implemented and verified via E2E Playwright testing. Implementation follows the three-layer RBAC enforcement pattern: `requireRole()` middleware on consent endpoints, storage scoping, and consent-based response projection across all financial data endpoints (plan detail, outputs, startup-costs). Batch consent query (`getConsentStatusBatch`) replaces N+1 per-plan queries for franchisor plan listing. Frontend role guard prevents non-franchisee users from seeing consent controls. Append-only audit trail uses INSERT-only operations on `data_sharing_consents` table. Pipeline fields remain visible to franchisors regardless of consent status.
 
 ### File List
 
 | File | Action | Description |
 |------|--------|-------------|
 | `shared/schema.ts` | MODIFIED | Added `dataSharingConsents` table, `insertDataSharingConsentSchema`, `DataSharingConsent` type, `ConsentStatus` type |
-| `server/storage.ts` | MODIFIED | Added `getConsentStatus()`, `grantConsent()`, `revokeConsent()`, `hasActiveConsent()` to IStorage interface and DatabaseStorage |
+| `server/storage.ts` | MODIFIED | Added `getConsentStatus()`, `getConsentStatusBatch()`, `grantConsent()`, `revokeConsent()` to IStorage interface and DatabaseStorage |
 | `server/routes/consent.ts` | CREATED | Consent router with GET status, POST grant, POST revoke endpoints |
 | `server/routes.ts` | MODIFIED | Registered consent router at `/api/plans` prefix |
-| `server/routes/plans.ts` | MODIFIED | Added `projectPlanForFranchisor()` helper and consent-based response projection for franchisor role in GET /api/plans and GET /api/plans/:planId |
-| `client/src/components/planning/data-sharing-settings.tsx` | CREATED | Data sharing settings component with consent status display, grant/revoke with AlertDialog confirmation, toast notifications |
+| `server/routes/plans.ts` | MODIFIED | Added `PipelinePlan` type, `projectPlanForFranchisor()` helper, consent-based response projection for franchisor role in GET /api/plans, GET /api/plans/:planId, GET /api/plans/:planId/outputs, and GET /api/plans/:planId/startup-costs |
+| `client/src/components/planning/data-sharing-settings.tsx` | CREATED | Data sharing settings component with franchisee role guard, consent status display, grant/revoke with AlertDialog confirmation, toast notifications |
 | `client/src/pages/planning-workspace.tsx` | MODIFIED | Replaced settings placeholder with DataSharingSettings component, cleaned up unused imports |
 
 ### Testing Summary

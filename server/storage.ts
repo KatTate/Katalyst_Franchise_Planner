@@ -130,6 +130,7 @@ export interface IStorage {
   deleteBrand(brandId: string): Promise<void>;
 
   getConsentStatus(planId: string, userId: string): Promise<ConsentStatus>;
+  getConsentStatusBatch(planIds: string[]): Promise<Map<string, ConsentStatus>>;
   grantConsent(planId: string, userId: string): Promise<DataSharingConsent>;
   revokeConsent(planId: string, userId: string): Promise<DataSharingConsent>;
 }
@@ -714,6 +715,36 @@ export class DatabaseStorage implements IStorage {
       return { hasConsent: false, grantedAt: null };
     }
     return { hasConsent: true, grantedAt: latest.createdAt.toISOString() };
+  }
+
+  async getConsentStatusBatch(planIds: string[]): Promise<Map<string, ConsentStatus>> {
+    const result = new Map<string, ConsentStatus>();
+    if (planIds.length === 0) return result;
+
+    const rows = await db
+      .select()
+      .from(dataSharingConsents)
+      .where(sql`${dataSharingConsents.planId} IN (${sql.join(planIds.map(id => sql`${id}`), sql`, `)})`)
+      .orderBy(sql`created_at DESC`);
+
+    const seen = new Set<string>();
+    for (const row of rows) {
+      if (seen.has(row.planId)) continue;
+      seen.add(row.planId);
+      if (row.action === "grant") {
+        result.set(row.planId, { hasConsent: true, grantedAt: row.createdAt.toISOString() });
+      } else {
+        result.set(row.planId, { hasConsent: false, grantedAt: null });
+      }
+    }
+
+    for (const planId of planIds) {
+      if (!result.has(planId)) {
+        result.set(planId, { hasConsent: false, grantedAt: null });
+      }
+    }
+
+    return result;
   }
 
   async grantConsent(planId: string, userId: string): Promise<DataSharingConsent> {

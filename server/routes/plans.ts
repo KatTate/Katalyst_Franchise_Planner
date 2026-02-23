@@ -61,8 +61,10 @@ async function requirePlanAccess(req: Request, res: Response): Promise<Plan | nu
   return plan;
 }
 
+type PipelinePlan = Pick<Plan, "id" | "userId" | "brandId" | "name" | "status" | "pipelineStage" | "targetMarket" | "targetOpenQuarter" | "quickStartCompleted" | "createdAt" | "updatedAt" | "lastAutoSave">;
+
 /** Pipeline-only projection: strips financial details for non-opted-in franchisor access */
-function projectPlanForFranchisor(plan: Plan): Partial<Plan> {
+function projectPlanForFranchisor(plan: Plan): PipelinePlan {
   return {
     id: plan.id,
     userId: plan.userId,
@@ -85,22 +87,22 @@ router.get(
   requireAuth,
   async (req: Request, res: Response) => {
     const effectiveUser = await getEffectiveUser(req);
-    let plans;
+    let plans: Array<Plan | PipelinePlan>;
     if (effectiveUser.role === "katalyst_admin") {
       plans = [];
     } else if (effectiveUser.role === "franchisor") {
       if (effectiveUser.brandId) {
         const allPlans = await storage.getPlansByBrand(effectiveUser.brandId);
-        const projectedPlans = await Promise.all(
-          allPlans.map(async (plan) => {
-            const consent = await storage.getConsentStatus(plan.id, plan.userId);
-            if (consent.hasConsent) {
-              return plan;
-            }
-            return projectPlanForFranchisor(plan);
-          })
-        );
-        plans = projectedPlans as Plan[];
+        const planIds = allPlans.map((p) => p.id);
+        const consentMap = await storage.getConsentStatusBatch(planIds);
+        const projectedPlans: Array<Plan | PipelinePlan> = allPlans.map((plan) => {
+          const consent = consentMap.get(plan.id);
+          if (consent?.hasConsent) {
+            return plan;
+          }
+          return projectPlanForFranchisor(plan);
+        });
+        plans = projectedPlans;
       } else {
         plans = [];
       }

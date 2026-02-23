@@ -18,6 +18,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { Shield, ShieldCheck, ShieldOff, Loader2 } from "lucide-react";
+import { useAuth } from "@/hooks/use-auth";
 import type { ConsentStatus } from "@shared/schema";
 
 interface DataSharingSettingsProps {
@@ -25,13 +26,16 @@ interface DataSharingSettingsProps {
 }
 
 export function DataSharingSettings({ planId }: DataSharingSettingsProps) {
+  const { user } = useAuth();
   const { brand } = useBrandTheme();
   const { toast } = useToast();
   const brandName = brand?.displayName || brand?.name || "your franchisor";
+  const isFranchisee = user?.role === "franchisee";
 
   const { data, isLoading } = useQuery<{ data: ConsentStatus }>({
     queryKey: ["/api/plans", planId, "consent"],
     staleTime: Infinity,
+    enabled: isFranchisee,
   });
 
   const consentStatus = data?.data;
@@ -69,6 +73,10 @@ export function DataSharingSettings({ planId }: DataSharingSettingsProps) {
       });
     },
   });
+
+  if (!isFranchisee) {
+    return null;
+  }
 
   if (isLoading) {
     return (
