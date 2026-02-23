@@ -1,4 +1,5 @@
 # generated: 2026-02-09
+# updated: 2026-02-23 (Story 11.2 Party Mode review completed — 8 findings, 5 applied)
 # updated: 2026-02-23 (Story 9.2 implementation complete → review. All 12 ACs verified via Playwright E2E. 9 files created/modified. Demo-first simulation architecture.)
 # updated: 2026-02-23 (Story 9.2 context document created — Split-Screen Planning Assistant Interface)
 # updated: 2026-02-23 (Epic 10 retrospective completed — full 15-step BMAD workflow executed)
@@ -43,6 +44,8 @@
 # - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
 
 generated: 2026-02-09
+updated: 2026-02-23  # Story 11.2 Party Mode review completed. 14 ACs (was 12). 8 findings (2H/3M/3L): stalled detection added (F1-H), JTBD alignment (F6-H), summary counts updated (F2-M), sorting added (F3-M), acknowledgment expanded to Version A with reset logic (F7-M), activity tracking guidance (F4-L), opt-in indicator direction (F5-L), lender packages deferred (F8-L). Franchisee-visible acknowledgment deferred to Phase 2.
+updated: 2026-02-23  # Story 11.2 context document created (Create Story workflow). 12 ACs, 10 files in change summary. Franchisor pipeline dashboard with summary bar, consent-based projection, acknowledgment feature, responsive layout. Story 11.1 dependency documented.
 updated: 2026-02-21  # Story 11.1 context document created (Create Story workflow)
 updated: 2026-02-21  # Story 5H.4 context document created (Create Story workflow)
 updated: 2026-02-23  # Story 9.2 Party Mode review completed + PO reframing applied. 12 ACs (was 10), 12 files (was 10). Demo-first: simulation service replaces LLM dependency. Self-contained — no 9.1 prerequisite. 12 findings resolved (3H/4M/5L).
@@ -76,6 +79,47 @@ story_location: _bmad-output/implementation-artifacts
 
 # CHANGE LOG:
 # ===========
+# 2026-02-23: Story 11.2 Party Mode review completed (Sally + John + Bob)
+#   - 8 findings total (2H/3M/3L), all HIGH+MEDIUM resolved:
+#     F1 (H): Added AC-13 — stalled franchisee detection (30+ days no activity, visual flag)
+#     F2 (M): Updated AC-3 — summary counts now include "Stalled" count alongside stage counts
+#     F3 (M): Added AC-14 — column sorting (stage, last activity, target open quarter)
+#     F4 (L): Dev notes updated — last activity date accuracy guidance (updatedAt vs meaningful change)
+#     F5 (L): UI deliverables updated — opt-in indicator as subtle secondary icon, not competing badge
+#     F6 (H): JTBD alignment — addressed by F1+F3 (dashboard as attention-routing tool, not just a list)
+#     F7 (M): AC-8 expanded — Version A acknowledgment (franchisor-only tracking, shows "Reviewed [date]",
+#             resets when franchisee updates plan, plan_updated_at_snapshot comparison pattern)
+#     F8 (L): Completed lender packages in summary — deferred as stretch goal
+#   - PO decision: Franchisee-visible acknowledgment notifications deferred to Phase 2
+#   - AC count: 14 (was 12). New: AC-13 (stalled detection), AC-14 (column sorting)
+#   - Anti-patterns: Added "DO NOT build franchisee-visible acknowledgment notifications"
+#   - Story 11.2 status: ready-for-dev (unchanged)
+#
+# 2026-02-23: Story 11.2 context document created (Create Story workflow)
+#   - Full story file: 11-2-franchisor-pipeline-dashboard.md (ready-for-dev)
+#   - 12 acceptance criteria covering: sidebar pipeline nav + dashboard page (AC-1),
+#     skeleton loading state (AC-2), pipeline stage summary counts (AC-3),
+#     non-opted-in franchisee shows pipeline-only data (AC-4), opted-in franchisee
+#     shows financial summary with indicator (AC-5), <3s load with 200 franchisees (AC-6),
+#     brand-level data isolation (AC-7), franchisor acknowledgment button when enabled (AC-8),
+#     Katalyst admin redirect/message (AC-9), data-testid coverage (AC-10),
+#     last-updated timestamp + refresh button (AC-11), responsive layout (AC-12)
+#   - Dev notes include: Express Router pattern (brands.ts reference), RBAC franchisor-only
+#     (not katalyst_admin — 11.3 handles that), 3-layer authorization (route → query → projection),
+#     consent-based response projection server-side, sidebar BarChart3 icon for franchisor,
+#     AdminRoute guard reuse, TanStack Query read-only pattern, Shadcn primitives
+#   - Anti-patterns: no katalyst_admin in requireRole, no raw JSONB exposure, no Shadcn
+#     modifications, no brand scoping bypass, no WebSocket, no req.user (use getEffectiveUser),
+#     no acknowledgment state on plans table
+#   - Gotchas: Story 11.1 dependency (consent table not yet implemented), demo franchisee
+#     exclusion, null pipeline fields, AdminRoute allows franchisor, Express Router actual
+#     pattern vs architecture doc example
+#   - 10 files in change summary: 3 CREATE (pipeline.ts route, pipeline.tsx page,
+#     pipeline-summary.tsx, pipeline-row.tsx), 4 MODIFY (schema.ts, storage.ts, routes.ts,
+#     app-sidebar.tsx, App.tsx), 1 migration
+#   - Story 11.2 status: ready-for-dev
+#   - Next action: Dev Story (DS) for 11.2 implementation (after Story 11.1 completes)
+#
 # 2026-02-23: Story 9.2 context document created (Create Story workflow)
 #   - Full story file: 9-2-split-screen-planning-assistant-interface.md (ready-for-dev)
 #   - 10 acceptance criteria covering: split-screen layout with resizable panels (AC-1, AC-2),
@@ -865,9 +909,10 @@ development_status:
   epic-st-retrospective: optional
 
   # Epic 11: Data Sharing, Privacy & Pipeline Dashboards [was Epic 8]
-  epic-11: in-progress
-  11-1-franchisee-data-sharing-controls: ready-for-dev
-  11-2-franchisor-pipeline-dashboard: backlog
+  # PO SEQUENCING (SCP-2026-02-22): AFTER Epic 8
+  epic-11: backlog
+  11-1-franchisee-data-sharing-controls: backlog
+  11-2-franchisor-pipeline-dashboard: ready-for-dev
   11-3-katalyst-admin-cross-brand-dashboard: backlog
   epic-11-retrospective: optional
 
