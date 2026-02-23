@@ -2,7 +2,7 @@
 title: 'Dashboard Enrichment — Completeness, Document Preview, and Empty State'
 slug: 'dashboard-enrichment'
 created: '2026-02-23'
-status: 'ready-for-dev'
+status: 'implementation-complete'
 stepsCompleted: [1, 2, 3, 4]
 tech_stack: ['React 18', 'TypeScript', 'TanStack Query v5', 'shadcn/ui', 'Express 5', 'PostgreSQL', 'Drizzle ORM']
 files_to_modify: ['client/src/pages/dashboard.tsx']
