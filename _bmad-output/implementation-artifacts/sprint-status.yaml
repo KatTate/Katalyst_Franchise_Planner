@@ -42,6 +42,7 @@
 # - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
 
 generated: 2026-02-09
+updated: 2026-02-23  # Story 9.2 Party Mode review completed + PO reframing applied. 12 ACs (was 10), 12 files (was 10). Demo-first: simulation service replaces LLM dependency. Self-contained — no 9.1 prerequisite. 12 findings resolved (3H/4M/5L).
 updated: 2026-02-23  # Story 9.2 context document created (Create Story workflow). 10 ACs, 10 files in change summary. Split-screen layout with resizable panels, SSE streaming, responsive stacked tabs. Epic 9 → in-progress.
 updated: 2026-02-23  # Story 10.3 adversarial code review completed → done. 9 findings (3H/3M/3L), all H+M fixed: newest-first sort (H1), inline validation (H2), useMemo dep (H3), disabled button (M1), strokeDasharray (M2), type unification (M3). 3L documented for later.
 updated: 2026-02-23  # Story 10.3 implementation complete → review. All 10 ACs satisfied, 7 files modified (schema, routes, engine, playground UI, charts). Sandbox invariant preserved.
