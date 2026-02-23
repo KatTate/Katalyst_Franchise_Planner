@@ -2,7 +2,7 @@
 title: 'Onboarding Copy Refresh'
 slug: 'onboarding-copy-refresh'
 created: '2026-02-23'
-status: 'ready-for-dev'
+status: 'implementation-complete'
 stepsCompleted: [1, 2, 3, 4]
 tech_stack: ['React 18.3', 'TypeScript 5.6', 'Tailwind CSS 3.4', 'shadcn/ui (Radix)', 'Wouter 3.3', 'TanStack Query v5', 'Lucide React']
 files_to_modify: ['client/src/pages/onboarding.tsx']
