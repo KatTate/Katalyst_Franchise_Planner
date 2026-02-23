@@ -20,7 +20,7 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
-import { RotateCcw, AlertCircle, ChevronDown } from "lucide-react";
+import { RotateCcw, AlertCircle, ChevronDown, Lock, LockOpen, CheckCircle2 } from "lucide-react";
 import {
   FIELD_METADATA,
   CATEGORY_LABELS,
@@ -62,6 +62,7 @@ export function FinancialInputEditor({ planId }: FinancialInputEditorProps) {
     handleEditCommit,
     handleEditCancel,
     handleReset,
+    handleConfirmField,
   } = useFieldEditing({ financialInputs, isSaving, onSave: saveInputs });
 
   if (isLoading) {
@@ -136,6 +137,7 @@ export function FinancialInputEditor({ planId }: FinancialInputEditorProps) {
               onEditCancel={handleEditCancel}
               onReset={handleReset}
               onFocusChange={setFocusedField}
+              onConfirm={handleConfirmField}
             />
           );
         })}
@@ -170,6 +172,7 @@ interface CategorySectionProps {
   onEditCancel: () => void;
   onReset: (category: string, fieldName: string) => void;
   onFocusChange: (key: string | null) => void;
+  onConfirm: (category: string, fieldName: string) => void;
 }
 
 function CategorySection({
@@ -186,6 +189,7 @@ function CategorySection({
   onEditCancel,
   onReset,
   onFocusChange,
+  onConfirm,
 }: CategorySectionProps) {
   const [isOpen, setIsOpen] = useState(true);
 
@@ -233,6 +237,7 @@ function CategorySection({
                   onEditCancel={onEditCancel}
                   onReset={onReset}
                   onFocusChange={onFocusChange}
+                  onConfirm={onConfirm}
                 />
               );
             })}
@@ -258,6 +263,7 @@ interface FieldRowProps {
   onEditCancel: () => void;
   onReset: (category: string, fieldName: string) => void;
   onFocusChange: (key: string | null) => void;
+  onConfirm: (category: string, fieldName: string) => void;
 }
 
 function FieldRow({
@@ -275,10 +281,19 @@ function FieldRow({
   onEditCancel,
   onReset,
   onFocusChange,
+  onConfirm,
 }: FieldRowProps) {
   const isUserEntry = field.source === "user_entry";
+  const isConfirmed = field.confirmed === true;
+  const isEditedButUnconfirmed = field.source !== "brand_default" && !isConfirmed;
   const defaultDisplay =
     field.brandDefault !== null ? formatFieldValue(field.brandDefault, meta.format) : null;
+
+  const confirmTooltip = isConfirmed
+    ? "Confirmed"
+    : isEditedButUnconfirmed
+    ? "Click to confirm this value"
+    : "Click to confirm the brand default";
 
   return (
     <div
@@ -334,7 +349,35 @@ function FieldRow({
         <SourceBadge source={field.source as "brand_default" | "user_entry" | "ai_populated"} />
       </div>
 
-      <div className="flex justify-end">
+      <div className="flex justify-end gap-1">
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              size="icon"
+              variant="ghost"
+              className={`h-7 w-7 ${
+                isConfirmed
+                  ? "text-green-600 dark:text-green-400"
+                  : isEditedButUnconfirmed
+                  ? "text-amber-500 animate-pulse"
+                  : "text-muted-foreground"
+              }`}
+              onClick={() => onConfirm(category, fieldName)}
+              disabled={isConfirmed}
+              aria-label={confirmTooltip}
+              data-testid={`button-confirm-${fieldName}`}
+            >
+              {isConfirmed ? (
+                <CheckCircle2 className="h-3.5 w-3.5" />
+              ) : isEditedButUnconfirmed ? (
+                <Lock className="h-3.5 w-3.5" />
+              ) : (
+                <LockOpen className="h-3.5 w-3.5" />
+              )}
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>{confirmTooltip}</TooltipContent>
+        </Tooltip>
         {isUserEntry && (
           <Tooltip>
             <TooltipTrigger asChild>
