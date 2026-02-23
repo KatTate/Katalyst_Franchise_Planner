@@ -7,7 +7,6 @@ import { RefreshCw, FileText } from "lucide-react";
 import { usePlanOutputs } from "@/hooks/use-plan-outputs";
 import { CalloutBar } from "./statements/callout-bar";
 import { GuardianBar } from "./statements/guardian-bar";
-import { ScenarioBar } from "./statements/scenario-bar";
 import { ScenarioSummaryCard } from "./statements/scenario-summary-card";
 import { computeGuardianState } from "@/lib/guardian-engine";
 import { computeCompleteness, getGenerateButtonLabel } from "@/lib/plan-completeness";
@@ -19,12 +18,54 @@ import { RoicTab } from "./statements/roic-tab";
 import { ValuationTab } from "./statements/valuation-tab";
 import { AuditTab } from "./statements/audit-tab";
 import { parseFieldInput } from "@/lib/field-metadata";
+import { INPUT_FIELD_MAP, getMonthRangeForColKey } from "./statements/input-field-map";
 import { updateFieldValue } from "@shared/plan-initialization";
 import { computeScenarioOutputs, type ScenarioOutputs } from "@/lib/scenario-engine";
 import { useToast } from "@/hooks/use-toast";
 import type { EngineOutput, PlanFinancialInputs, FinancialFieldValue } from "@shared/financial-engine";
 import type { FormatType } from "@/lib/field-metadata";
 import type { Plan } from "@shared/schema";
+
+function resolveCategoryObj(inputs: PlanFinancialInputs, category: string): Record<string, any> | undefined {
+  if (category === "facilitiesDecomposition") {
+    return inputs.operatingCosts?.facilitiesDecomposition as any;
+  }
+  return (inputs as any)[category];
+}
+
+function buildUpdatedInputs(
+  inputs: PlanFinancialInputs,
+  category: string,
+  categoryObj: Record<string, any>,
+  fieldName: string,
+  updatedField: FinancialFieldValue,
+  yearIndex: number,
+): PlanFinancialInputs {
+  const existingField = categoryObj[fieldName];
+  const updatedValue = Array.isArray(existingField)
+    ? existingField.map((f: FinancialFieldValue, i: number) => i === yearIndex ? updatedField : f)
+    : updatedField;
+
+  if (category === "facilitiesDecomposition") {
+    return {
+      ...inputs,
+      operatingCosts: {
+        ...inputs.operatingCosts,
+        facilitiesDecomposition: {
+          ...categoryObj,
+          [fieldName]: updatedValue,
+        },
+      },
+    } as PlanFinancialInputs;
+  }
+  return {
+    ...inputs,
+    [category]: {
+      ...categoryObj,
+      [fieldName]: updatedValue,
+    },
+  };
+}
 
 export type StatementTabId = "summary" | "pnl" | "balance-sheet" | "cash-flow" | "roic" | "valuation" | "audit";
 
@@ -112,23 +153,85 @@ export function FinancialStatements({ planId, defaultTab = "summary", plan, queu
   }, []);
 
   const handleCellEdit = useCallback(
-    (category: string, fieldName: string, rawInput: string, inputFormat: FormatType) => {
+    (category: string, fieldName: string, rawInput: string, inputFormat: FormatType, yearIndex: number, colKey?: string) => {
       if (!financialInputs || !queueSave) return;
       const parsedValue = parseFieldInput(rawInput, inputFormat);
       if (isNaN(parsedValue)) return;
-      const categoryObj = financialInputs[category as keyof PlanFinancialInputs];
+      const categoryObj = resolveCategoryObj(financialInputs, category);
       if (!categoryObj) return;
-      const field = categoryObj[fieldName as keyof typeof categoryObj] as FinancialFieldValue;
+      const fieldArr = categoryObj[fieldName];
+
+      const mapping = Object.values(INPUT_FIELD_MAP).find(m => m.fieldName === fieldName && m.category === category);
+      if (mapping?.perMonth && Array.isArray(fieldArr) && fieldArr.length === 60 && colKey) {
+        const { start, count } = getMonthRangeForColKey(colKey);
+        const now = new Date().toISOString();
+        let result = financialInputs;
+        for (let i = start; i < start + count && i < 60; i++) {
+          const existing = (resolveCategoryObj(result, category) as any)[fieldName][i] as FinancialFieldValue;
+          if (existing && parsedValue !== existing.currentValue) {
+            const updated = updateFieldValue(existing, parsedValue, now);
+            const catObj = resolveCategoryObj(result, category)!;
+            const newArr = [...(catObj[fieldName] as FinancialFieldValue[])];
+            newArr[i] = updated;
+            if (category === "facilitiesDecomposition") {
+              result = { ...result, operatingCosts: { ...result.operatingCosts, facilitiesDecomposition: { ...catObj, [fieldName]: newArr } } } as PlanFinancialInputs;
+            } else {
+              result = { ...result, [category]: { ...catObj, [fieldName]: newArr } };
+            }
+          }
+        }
+        queueSave({ financialInputs: result });
+        return;
+      }
+
+      const field = Array.isArray(fieldArr) ? fieldArr[yearIndex] as FinancialFieldValue : fieldArr as FinancialFieldValue;
       if (!field || parsedValue === field.currentValue) return;
       const updatedField = updateFieldValue(field, parsedValue, new Date().toISOString());
-      const updatedInputs: PlanFinancialInputs = {
-        ...financialInputs,
-        [category]: {
-          ...categoryObj,
-          [fieldName]: updatedField,
-        },
-      };
+      const updatedInputs = buildUpdatedInputs(financialInputs, category, categoryObj, fieldName, updatedField, yearIndex);
       queueSave({ financialInputs: updatedInputs });
+    },
+    [financialInputs, queueSave]
+  );
+
+  const handleCopyYear1ToAll = useCallback(
+    (rowKey: string) => {
+      if (!financialInputs || !queueSave) return;
+      const mapping = INPUT_FIELD_MAP[rowKey];
+      if (!mapping) return;
+      const categoryObj = resolveCategoryObj(financialInputs, mapping.category);
+      if (!categoryObj) return;
+      const fieldArr = categoryObj[mapping.fieldName];
+      if (!Array.isArray(fieldArr)) return;
+
+      if (mapping.perMonth && fieldArr.length === 60) {
+        const now = new Date().toISOString();
+        const newArr = [...fieldArr] as FinancialFieldValue[];
+        for (let monthInYear = 0; monthInYear < 12; monthInYear++) {
+          const sourceValue = (fieldArr[monthInYear] as FinancialFieldValue).currentValue;
+          for (let year = 1; year < 5; year++) {
+            const targetIdx = year * 12 + monthInYear;
+            newArr[targetIdx] = updateFieldValue(fieldArr[targetIdx] as FinancialFieldValue, sourceValue, now);
+          }
+        }
+        let result = financialInputs;
+        if (mapping.category === "facilitiesDecomposition") {
+          result = { ...result, operatingCosts: { ...result.operatingCosts, facilitiesDecomposition: { ...categoryObj, [mapping.fieldName]: newArr } } } as PlanFinancialInputs;
+        } else {
+          result = { ...result, [mapping.category]: { ...categoryObj, [mapping.fieldName]: newArr } };
+        }
+        queueSave({ financialInputs: result });
+        return;
+      }
+
+      if (fieldArr.length < 5) return;
+      const year1Value = (fieldArr[0] as FinancialFieldValue).currentValue;
+      const now = new Date().toISOString();
+      let result = financialInputs;
+      for (let i = 1; i < fieldArr.length; i++) {
+        const updated = updateFieldValue(fieldArr[i] as FinancialFieldValue, year1Value, now);
+        result = buildUpdatedInputs(result, mapping.category, resolveCategoryObj(result, mapping.category)!, mapping.fieldName, updated, i);
+      }
+      queueSave({ financialInputs: result });
     },
     [financialInputs, queueSave]
   );
@@ -275,12 +378,6 @@ export function FinancialStatements({ planId, defaultTab = "summary", plan, queu
           </Button>
         </div>
 
-        <ScenarioBar
-          comparisonActive={comparisonActive}
-          onActivateComparison={handleActivateComparison}
-          onDeactivateComparison={handleDeactivateComparison}
-        />
-
         <CalloutBar
           annualSummaries={output.annualSummaries}
           roiMetrics={output.roiMetrics}
@@ -311,6 +408,7 @@ export function FinancialStatements({ planId, defaultTab = "summary", plan, queu
                 output={output}
                 financialInputs={financialInputs}
                 onCellEdit={queueSave ? handleCellEdit : undefined}
+                onCopyYear1ToAll={queueSave ? handleCopyYear1ToAll : undefined}
                 isSaving={isSaving}
                 scenarioOutputs={scenarioOutputs}
                 brandName={brandName}
@@ -318,7 +416,13 @@ export function FinancialStatements({ planId, defaultTab = "summary", plan, queu
             </TabsContent>
 
             <TabsContent value="balance-sheet" className="mt-0">
-              <BalanceSheetTab output={output} scenarioOutputs={scenarioOutputs} />
+              <BalanceSheetTab
+                output={output}
+                scenarioOutputs={scenarioOutputs}
+                financialInputs={financialInputs}
+                onCellEdit={queueSave ? handleCellEdit : undefined}
+                isSaving={isSaving}
+              />
             </TabsContent>
 
             <TabsContent value="cash-flow" className="mt-0">
@@ -330,7 +434,13 @@ export function FinancialStatements({ planId, defaultTab = "summary", plan, queu
             </TabsContent>
 
             <TabsContent value="valuation" className="mt-0">
-              <ValuationTab output={output} scenarioOutputs={scenarioOutputs} />
+              <ValuationTab
+                output={output}
+                scenarioOutputs={scenarioOutputs}
+                financialInputs={financialInputs}
+                onCellEdit={queueSave ? handleCellEdit : undefined}
+                isSaving={isSaving}
+              />
             </TabsContent>
 
             <TabsContent value="audit" className="mt-0">

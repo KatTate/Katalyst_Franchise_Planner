@@ -1,9 +1,12 @@
+import { useState } from "react";
 import { useAuth } from "@/hooks/use-auth";
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "wouter";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { FileText, ArrowRight } from "lucide-react";
+import { FileText, ArrowRight, Plus } from "lucide-react";
+import { CreatePlanDialog } from "@/components/plan/create-plan-dialog";
+import { PlanContextMenu } from "@/components/plan/plan-context-menu";
 
 interface PlanSummary {
   id: string;
@@ -15,6 +18,7 @@ interface PlanSummary {
 
 export default function DashboardPage() {
   const { user } = useAuth();
+  const [showCreateDialog, setShowCreateDialog] = useState(false);
 
   const showPlans = user?.role === "franchisee" || user?.role === "franchisor";
 
@@ -40,7 +44,17 @@ export default function DashboardPage() {
 
       {showPlans && (
         <div className="space-y-3">
-          <h2 className="text-lg font-medium" data-testid="text-plans-heading">Your Plans</h2>
+          <div className="flex items-center justify-between">
+            <h2 className="text-lg font-medium" data-testid="text-plans-heading">Your Plans</h2>
+            <Button
+              size="sm"
+              onClick={() => setShowCreateDialog(true)}
+              data-testid="button-create-new-plan"
+            >
+              <Plus className="h-4 w-4 mr-1" />
+              New Plan
+            </Button>
+          </div>
           {plansLoading ? (
             <Card>
               <CardContent className="py-6">
@@ -50,8 +64,8 @@ export default function DashboardPage() {
           ) : plans && plans.length > 0 ? (
             <div className="grid gap-3">
               {plans.map((plan) => (
-                <Link key={plan.id} href={`/plans/${plan.id}`}>
-                  <Card className="hover-elevate cursor-pointer" data-testid={`card-plan-${plan.id}`}>
+                <Card key={plan.id} className="hover-elevate cursor-pointer group relative" data-testid={`card-plan-${plan.id}`}>
+                  <Link href={`/plans/${plan.id}`}>
                     <CardContent className="flex items-center gap-3 py-4">
                       <FileText className="h-5 w-5 text-muted-foreground flex-shrink-0" />
                       <div className="flex-1 min-w-0">
@@ -64,16 +78,32 @@ export default function DashboardPage() {
                       </div>
                       <ArrowRight className="h-4 w-4 text-muted-foreground flex-shrink-0" />
                     </CardContent>
-                  </Card>
-                </Link>
+                  </Link>
+                  <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <PlanContextMenu
+                      planId={plan.id}
+                      planName={plan.name}
+                      isActivePlan={false}
+                      isLastPlan={plans.length <= 1}
+                      nextPlanId={plans.find((p) => p.id !== plan.id)?.id ?? null}
+                    />
+                  </div>
+                </Card>
               ))}
             </div>
           ) : (
             <Card>
-              <CardContent className="py-6">
+              <CardContent className="py-6 text-center space-y-3">
                 <p className="text-muted-foreground text-sm" data-testid="text-no-plans">
-                  No plans yet. Your plan will appear here once it's created.
+                  No plans yet. Create your first plan to get started.
                 </p>
+                <Button
+                  onClick={() => setShowCreateDialog(true)}
+                  data-testid="button-create-first-plan"
+                >
+                  <Plus className="h-4 w-4 mr-1" />
+                  Create Your First Plan
+                </Button>
               </CardContent>
             </Card>
           )}
@@ -106,6 +136,11 @@ export default function DashboardPage() {
           </CardContent>
         </Card>
       )}
+
+      <CreatePlanDialog
+        open={showCreateDialog}
+        onOpenChange={setShowCreateDialog}
+      />
     </div>
   );
 }

@@ -33,24 +33,48 @@ export interface FinancialFieldValue {
 
 /** Wrapped financial inputs for plan JSONB persistence. Each user-editable field
  *  carries metadata (source, brand default, reset capability). The structure
- *  mirrors BrandParameters categories with camelCase keys. */
+ *  mirrors BrandParameters categories with camelCase keys.
+ *
+ *  Per-year fields use 5-element FinancialFieldValue[] arrays (Year 1 through Year 5).
+ *  Per-month qualifying fields (monthlyAuv, cogsPct, laborPct, marketingPct) use
+ *  60-element FinancialFieldValue[] arrays (Month 1 through Month 60).
+ *  Single-value fields remain as plain FinancialFieldValue. */
 export interface PlanFinancialInputs {
   revenue: {
-    monthlyAuv: FinancialFieldValue;
-    year1GrowthRate: FinancialFieldValue;
-    year2GrowthRate: FinancialFieldValue;
+    monthlyAuv: FinancialFieldValue[];
+    growthRates: FinancialFieldValue[];
     startingMonthAuvPct: FinancialFieldValue;
   };
   operatingCosts: {
-    cogsPct: FinancialFieldValue;
-    laborPct: FinancialFieldValue;
-    rentMonthly: FinancialFieldValue;
-    utilitiesMonthly: FinancialFieldValue;
-    insuranceMonthly: FinancialFieldValue;
-    marketingPct: FinancialFieldValue;
-    royaltyPct: FinancialFieldValue;
-    adFundPct: FinancialFieldValue;
-    otherMonthly: FinancialFieldValue;
+    royaltyPct: FinancialFieldValue[];
+    adFundPct: FinancialFieldValue[];
+    cogsPct: FinancialFieldValue[];
+    laborPct: FinancialFieldValue[];
+    facilitiesAnnual: FinancialFieldValue[];
+    facilitiesDecomposition: {
+      rent: FinancialFieldValue[];
+      utilities: FinancialFieldValue[];
+      telecomIt: FinancialFieldValue[];
+      vehicleFleet: FinancialFieldValue[];
+      insurance: FinancialFieldValue[];
+    };
+    marketingPct: FinancialFieldValue[];
+    managementSalariesAnnual: FinancialFieldValue[];
+    payrollTaxPct: FinancialFieldValue[];
+    otherOpexPct: FinancialFieldValue[];
+  };
+  profitabilityAndDistributions: {
+    targetPreTaxProfitPct: FinancialFieldValue[];
+    shareholderSalaryAdj: FinancialFieldValue[];
+    distributions: FinancialFieldValue[];
+    nonCapexInvestment: FinancialFieldValue[];
+  };
+  workingCapitalAndValuation: {
+    arDays: FinancialFieldValue;
+    apDays: FinancialFieldValue;
+    inventoryDays: FinancialFieldValue;
+    taxPaymentDelayMonths: FinancialFieldValue;
+    ebitdaMultiple: FinancialFieldValue;
   };
   financing: {
     loanAmount: FinancialFieldValue;
@@ -69,8 +93,8 @@ export interface PlanFinancialInputs {
 /** Raw numeric financial inputs consumed by the engine (no metadata wrappers). */
 export interface FinancialInputs {
   revenue: {
-    /** Annual gross sales / AUV in cents */
-    annualGrossSales: number;
+    /** Monthly AUV in cents, per month (60 elements, months 1-60) */
+    monthlyAuvByMonth: number[];
     /** Number of months to reach full AUV */
     monthsToReachAuv: number;
     /** Starting month AUV percentage (decimal, e.g. 0.08 = 8%) */
@@ -79,16 +103,16 @@ export interface FinancialInputs {
     growthRates: [number, number, number, number, number];
   };
   operatingCosts: {
-    /** COGS as % of revenue per year (decimal) */
-    cogsPct: [number, number, number, number, number];
-    /** Direct labor as % of revenue per year (decimal) */
-    laborPct: [number, number, number, number, number];
+    /** COGS as % of revenue per month (decimal), 60 elements */
+    cogsPct: number[];
+    /** Direct labor as % of revenue per month (decimal), 60 elements */
+    laborPct: number[];
     /** Royalty fee as % of revenue per year (decimal) */
     royaltyPct: [number, number, number, number, number];
     /** Ad fund / marketing fee as % of revenue per year (decimal) */
     adFundPct: [number, number, number, number, number];
-    /** Marketing / advertising as % of revenue per year (decimal) */
-    marketingPct: [number, number, number, number, number];
+    /** Marketing / advertising as % of revenue per month (decimal), 60 elements */
+    marketingPct: number[];
     /** Other operating expenses as % of revenue per year (decimal) */
     otherOpexPct: [number, number, number, number, number];
     /** Payroll taxes & benefits as % of (direct labor + mgmt salaries) per year (decimal) */
@@ -421,7 +445,8 @@ export function calculateProjections(input: EngineInput): EngineOutput {
   for (let m = 1; m <= MAX_PROJECTION_MONTHS; m++) {
     const yi = yearIndex(m);
     const miy = monthInYear(m);
-    const monthlyAuv = fi.revenue.annualGrossSales / MONTHS_PER_YEAR;
+    const mi = m - 1; // 0-based month index for per-month arrays
+    const monthlyAuv = fi.revenue.monthlyAuvByMonth[mi];
 
     // ── Revenue with ramp-up ──────────────────────────────────────
     let auvPct: number;
@@ -447,18 +472,18 @@ export function calculateProjections(input: EngineInput): EngineOutput {
     }
 
     // ── COGS ──────────────────────────────────────────────────────
-    const materialsCogs = round2(-revenue * fi.operatingCosts.cogsPct[yi]);
+    const materialsCogs = round2(-revenue * fi.operatingCosts.cogsPct[mi]);
     const royalties = round2(-revenue * fi.operatingCosts.royaltyPct[yi]);
     const adFund = round2(-revenue * fi.operatingCosts.adFundPct[yi]);
     const totalCogs = round2(materialsCogs + royalties + adFund);
     const grossProfit = round2(revenue + totalCogs);
 
     // ── Operating Expenses ────────────────────────────────────────
-    const directLabor = round2(-revenue * fi.operatingCosts.laborPct[yi]);
+    const directLabor = round2(-revenue * fi.operatingCosts.laborPct[mi]);
     const contributionMargin = round2(grossProfit + directLabor);
 
     const facilities = round2(-fi.operatingCosts.facilitiesAnnual[yi] / MONTHS_PER_YEAR);
-    const marketingExp = round2(-revenue * fi.operatingCosts.marketingPct[yi]);
+    const marketingExp = round2(-revenue * fi.operatingCosts.marketingPct[mi]);
     const managementSalaries = round2(-fi.operatingCosts.managementSalariesAnnual[yi] / MONTHS_PER_YEAR);
     const payrollBase = Math.abs(directLabor) + Math.abs(managementSalaries);
     const payrollTaxBenefits = round2(-payrollBase * fi.operatingCosts.payrollTaxPct[yi]);
@@ -765,10 +790,10 @@ export function calculateProjections(input: EngineInput): EngineOutput {
     const totalInvestedCapital = round2(totalCashInvested + cumulativeSweatEquity + retainedEarningsLessDistributions);
     const preTaxNetIncome = round2(annual.preTaxIncome);
     const annualSalaryAdj = shareholderSalaryAdj[y];
-    const preTaxNetIncomeIncSweatEquity = round2(preTaxNetIncome + annualSalaryAdj);
+    const preTaxNetIncomeIncSweatEquity = round2(preTaxNetIncome - annualSalaryAdj);
     const taxesDue = round2(Math.max(0, preTaxNetIncomeIncSweatEquity * fi.taxRate));
     const afterTaxNetIncome = round2(preTaxNetIncomeIncSweatEquity - taxesDue);
-    const roicPct = totalInvestedCapital > 0 ? round2(afterTaxNetIncome / totalInvestedCapital) : 0;
+    const roicPct = totalInvestedCapital > 0 ? round2(preTaxNetIncomeIncSweatEquity / totalInvestedCapital) : 0;
 
     const yearMonths = monthly.filter((mp) => mp.year === y + 1);
     const totalOpexAbs = yearMonths.reduce((s, mp) => s + Math.abs(mp.totalOpex), 0);
@@ -804,7 +829,7 @@ export function calculateProjections(input: EngineInput): EngineOutput {
     const yearMonths = monthly.filter((mp) => mp.year === y + 1);
     const revenue = round2(annual.revenue);
     const annualSalaryAdj = shareholderSalaryAdj[y];
-    const adjustedPreTaxProfit = round2(annual.preTaxIncome + annualSalaryAdj);
+    const adjustedPreTaxProfit = round2(annual.preTaxIncome - annualSalaryAdj);
     const targetPreTaxProfit = round2(revenue * targetPreTaxProfitPct[y]);
     const aboveBelowTarget = round2(adjustedPreTaxProfit - targetPreTaxProfit);
     const nonLaborGrossMargin = round2(annual.grossProfit);

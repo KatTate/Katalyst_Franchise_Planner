@@ -296,7 +296,6 @@ export function CashFlowTab({ output, scenarioOutputs }: CashFlowTabProps) {
           onExpandAll={expandAll}
           onCollapseAll={collapseAll}
           hasAnyDrillDown={hasAnyDrillDown}
-          showLinkedIndicator={false}
           comparisonActive
         />
         <div className="overflow-x-auto" data-testid="cf-table">
@@ -330,7 +329,6 @@ export function CashFlowTab({ output, scenarioOutputs }: CashFlowTabProps) {
         onExpandAll={expandAll}
         onCollapseAll={collapseAll}
         hasAnyDrillDown={hasAnyDrillDown}
-        showLinkedIndicator={false}
       />
       <div className="overflow-x-auto" data-testid="cf-table">
         <table className="w-full text-sm" role="grid" aria-label="Cash Flow Statement">

@@ -179,21 +179,26 @@ export function findHighestImpactInput(
     now
   );
   const revenueAdjustedLaborPct = staffCountToLaborPct(currentStaffCount, newRevenue);
-  revenueInputs.operatingCosts.laborPct = updateFieldValue(
-    revenueInputs.operatingCosts.laborPct,
-    revenueAdjustedLaborPct,
-    now
+  revenueInputs.operatingCosts.laborPct = revenueInputs.operatingCosts.laborPct.map((f) =>
+    updateFieldValue(f, revenueAdjustedLaborPct, now)
   );
   const revenueROI = computeQuickPreview(revenueInputs, startupCosts).roiMetrics.fiveYearROIPct;
   candidates.push({ field: "revenue", label: "monthly revenue", roiDelta: revenueROI - baseROI });
 
-  // 2. Rent -10% (lower is better)
+  // 2. Rent -10% (lower is better) — adjust facilities decomposition
   const rentInputs = structuredClone(financialInputs);
-  rentInputs.operatingCosts.rentMonthly = updateFieldValue(
-    rentInputs.operatingCosts.rentMonthly,
-    Math.round(rentInputs.operatingCosts.rentMonthly.currentValue * 0.9),
-    now
+  rentInputs.operatingCosts.facilitiesDecomposition.rent = rentInputs.operatingCosts.facilitiesDecomposition.rent.map((f) =>
+    updateFieldValue(f, Math.round(f.currentValue * 0.9), now)
   );
+  for (let i = 0; i < 5; i++) {
+    const total =
+      rentInputs.operatingCosts.facilitiesDecomposition.rent[i].currentValue +
+      rentInputs.operatingCosts.facilitiesDecomposition.utilities[i].currentValue +
+      rentInputs.operatingCosts.facilitiesDecomposition.telecomIt[i].currentValue +
+      rentInputs.operatingCosts.facilitiesDecomposition.vehicleFleet[i].currentValue +
+      rentInputs.operatingCosts.facilitiesDecomposition.insurance[i].currentValue;
+    rentInputs.operatingCosts.facilitiesAnnual[i] = updateFieldValue(rentInputs.operatingCosts.facilitiesAnnual[i], total, now);
+  }
   const rentROI = computeQuickPreview(rentInputs, startupCosts).roiMetrics.fiveYearROIPct;
   candidates.push({ field: "rent", label: "monthly rent", roiDelta: rentROI - baseROI });
 
@@ -206,20 +211,16 @@ export function findHighestImpactInput(
   const staffInputs = structuredClone(financialInputs);
   const reducedStaff = Math.max(1, Math.round(currentStaffCount * 0.9));
   const newLaborPct = staffCountToLaborPct(reducedStaff, staffInputs.revenue.monthlyAuv.currentValue);
-  staffInputs.operatingCosts.laborPct = updateFieldValue(
-    staffInputs.operatingCosts.laborPct,
-    newLaborPct,
-    now
+  staffInputs.operatingCosts.laborPct = staffInputs.operatingCosts.laborPct.map((f) =>
+    updateFieldValue(f, newLaborPct, now)
   );
   const staffROI = computeQuickPreview(staffInputs, startupCosts).roiMetrics.fiveYearROIPct;
   candidates.push({ field: "staff", label: "number of staff", roiDelta: staffROI - baseROI });
 
   // 5. Supplies -10% (lower COGS is better)
   const suppliesInputs = structuredClone(financialInputs);
-  suppliesInputs.operatingCosts.cogsPct = updateFieldValue(
-    suppliesInputs.operatingCosts.cogsPct,
-    suppliesInputs.operatingCosts.cogsPct.currentValue * 0.9,
-    now
+  suppliesInputs.operatingCosts.cogsPct = suppliesInputs.operatingCosts.cogsPct.map((f) =>
+    updateFieldValue(f, f.currentValue * 0.9, now)
   );
   const suppliesROI = computeQuickPreview(suppliesInputs, startupCosts).roiMetrics.fiveYearROIPct;
   candidates.push({ field: "supplies", label: "cost of supplies", roiDelta: suppliesROI - baseROI });

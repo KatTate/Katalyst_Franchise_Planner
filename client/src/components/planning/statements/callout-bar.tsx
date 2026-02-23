@@ -37,8 +37,8 @@ function getTabContent(
       const y1 = annuals[0];
       const marginPct = y1 ? (y1.preTaxIncomePct * 100).toFixed(1) : "0.0";
       let brandNote = "";
-      if (financialInputs?.operatingCosts?.cogsPct?.item7Range && y1) {
-        const range = financialInputs.operatingCosts.cogsPct.item7Range;
+      if (financialInputs?.operatingCosts?.cogsPct?.[0]?.item7Range && y1) {
+        const range = financialInputs.operatingCosts.cogsPct[0].item7Range;
         const cogsPct = y1.totalCogs !== 0 && y1.revenue !== 0 ? Math.abs(y1.totalCogs / y1.revenue) : 0;
         const minPct = range.min;
         const maxPct = range.max;

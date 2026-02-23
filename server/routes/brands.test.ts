@@ -21,6 +21,8 @@ vi.mock("../storage", () => ({
     getUser: vi.fn(),
     getKatalystAdmins: vi.fn(),
     getBrandAccountManager: vi.fn(),
+    getBrandStats: vi.fn(),
+    deleteBrand: vi.fn(),
   },
 }));
 
@@ -242,6 +244,166 @@ describe("Brands Routes", () => {
       const res = await request(app).delete("/api/brands/b1/account-managers/m1");
       expect(res.status).toBe(200);
       expect(storage.setDefaultAccountManager).toHaveBeenCalledWith("b1", null);
+    });
+  });
+
+  describe("PUT /api/brands/:brandId (metadata update with slug) — AC2, AC3, AC10", () => {
+    it("updates name, display_name, and slug together", async () => {
+      (storage.getBrand as any).mockResolvedValue({ id: "b1", name: "OldName", slug: "old-slug" });
+      (storage.getBrandByName as any).mockResolvedValue(null);
+      (storage.getBrandBySlug as any).mockResolvedValue(null);
+      (storage.updateBrand as any).mockResolvedValue({ id: "b1", name: "NewName", slug: "new-slug", displayName: "New Display" });
+
+      const app = createApp(adminUser);
+      const res = await request(app).put("/api/brands/b1").send({
+        name: "NewName",
+        display_name: "New Display",
+        slug: "new-slug",
+      });
+      expect(res.status).toBe(200);
+      expect(res.body.name).toBe("NewName");
+      expect(res.body.slug).toBe("new-slug");
+      expect(storage.updateBrand).toHaveBeenCalledWith("b1", { name: "NewName", displayName: "New Display", slug: "new-slug" });
+    });
+
+    it("allows no-op update when name/slug unchanged (same brand)", async () => {
+      (storage.getBrand as any).mockResolvedValue({ id: "b1", name: "SameName", slug: "same-slug" });
+      (storage.getBrandByName as any).mockResolvedValue({ id: "b1", name: "SameName" });
+      (storage.getBrandBySlug as any).mockResolvedValue({ id: "b1", slug: "same-slug" });
+      (storage.updateBrand as any).mockResolvedValue({ id: "b1", name: "SameName", slug: "same-slug" });
+
+      const app = createApp(adminUser);
+      const res = await request(app).put("/api/brands/b1").send({
+        name: "SameName",
+        slug: "same-slug",
+      });
+      expect(res.status).toBe(200);
+    });
+
+    it("returns 409 when slug already exists on another brand", async () => {
+      (storage.getBrand as any).mockResolvedValue({ id: "b1", name: "Brand1", slug: "brand-1" });
+      (storage.getBrandBySlug as any).mockResolvedValue({ id: "b2", slug: "taken-slug" });
+
+      const app = createApp(adminUser);
+      const res = await request(app).put("/api/brands/b1").send({ slug: "taken-slug" });
+      expect(res.status).toBe(409);
+      expect(res.body.message).toContain("slug already exists");
+    });
+
+    it("returns 409 when name already exists on another brand", async () => {
+      (storage.getBrand as any).mockResolvedValue({ id: "b1", name: "Brand1", slug: "brand-1" });
+      (storage.getBrandByName as any).mockResolvedValue({ id: "b2", name: "TakenName" });
+
+      const app = createApp(adminUser);
+      const res = await request(app).put("/api/brands/b1").send({ name: "TakenName" });
+      expect(res.status).toBe(409);
+      expect(res.body.message).toContain("name already exists");
+    });
+
+    it("returns 400 for invalid slug format (uppercase)", async () => {
+      (storage.getBrand as any).mockResolvedValue({ id: "b1" });
+      const app = createApp(adminUser);
+      const res = await request(app).put("/api/brands/b1").send({ slug: "Invalid-Slug!" });
+      expect(res.status).toBe(400);
+    });
+
+    it("returns 400 for slug with spaces", async () => {
+      (storage.getBrand as any).mockResolvedValue({ id: "b1" });
+      const app = createApp(adminUser);
+      const res = await request(app).put("/api/brands/b1").send({ slug: "has spaces" });
+      expect(res.status).toBe(400);
+    });
+
+    it("returns 404 for non-existent brand", async () => {
+      (storage.getBrand as any).mockResolvedValue(undefined);
+      const app = createApp(adminUser);
+      const res = await request(app).put("/api/brands/nonexistent").send({ name: "X" });
+      expect(res.status).toBe(404);
+    });
+
+    it("returns 403 for non-admin user", async () => {
+      const app = createApp(franchisorUser);
+      const res = await request(app).put("/api/brands/b1").send({ name: "X" });
+      expect(res.status).toBe(403);
+    });
+  });
+
+  describe("GET /api/brands/:brandId/stats — AC5", () => {
+    it("returns plan and user counts", async () => {
+      (storage.getBrand as any).mockResolvedValue({ id: "b1", name: "PostNet" });
+      (storage.getBrandStats as any).mockResolvedValue({ planCount: 3, userCount: 5 });
+
+      const app = createApp(adminUser);
+      const res = await request(app).get("/api/brands/b1/stats");
+      expect(res.status).toBe(200);
+      expect(res.body.planCount).toBe(3);
+      expect(res.body.userCount).toBe(5);
+    });
+
+    it("returns 404 for non-existent brand", async () => {
+      (storage.getBrand as any).mockResolvedValue(undefined);
+      const app = createApp(adminUser);
+      const res = await request(app).get("/api/brands/nonexistent/stats");
+      expect(res.status).toBe(404);
+    });
+
+    it("returns 403 for non-admin user", async () => {
+      const app = createApp(franchisorUser);
+      const res = await request(app).get("/api/brands/b1/stats");
+      expect(res.status).toBe(403);
+    });
+  });
+
+  describe("DELETE /api/brands/:brandId — AC6, AC7, AC8", () => {
+    it("deletes brand successfully for admin", async () => {
+      (storage.getBrand as any).mockResolvedValue({ id: "b1", name: "PostNet" });
+      (storage.deleteBrand as any).mockResolvedValue(undefined);
+
+      const app = createApp(adminUser);
+      const res = await request(app).delete("/api/brands/b1");
+      expect(res.status).toBe(200);
+      expect(res.body.success).toBe(true);
+      expect(storage.deleteBrand).toHaveBeenCalledWith("b1");
+    });
+
+    it("returns 404 for non-existent brand", async () => {
+      (storage.getBrand as any).mockResolvedValue(undefined);
+      const app = createApp(adminUser);
+      const res = await request(app).delete("/api/brands/nonexistent");
+      expect(res.status).toBe(404);
+    });
+
+    it("returns 403 for franchisor (AC8 — RBAC enforcement)", async () => {
+      const app = createApp(franchisorUser);
+      const res = await request(app).delete("/api/brands/b1");
+      expect(res.status).toBe(403);
+    });
+
+    it("returns 403 for franchisee (AC8 — RBAC enforcement)", async () => {
+      const app = createApp({
+        ...adminUser,
+        id: "f1",
+        role: "franchisee",
+        brandId: "b1",
+      });
+      const res = await request(app).delete("/api/brands/b1");
+      expect(res.status).toBe(403);
+    });
+
+    it("returns 401 for unauthenticated user", async () => {
+      const app = createApp();
+      const res = await request(app).delete("/api/brands/b1");
+      expect(res.status).toBe(401);
+    });
+
+    it("returns 500 when storage.deleteBrand throws", async () => {
+      (storage.getBrand as any).mockResolvedValue({ id: "b1", name: "PostNet" });
+      (storage.deleteBrand as any).mockRejectedValue(new Error("FK constraint violation"));
+
+      const app = createApp(adminUser);
+      const res = await request(app).delete("/api/brands/b1");
+      expect(res.status).toBe(500);
+      expect(res.body.message).toContain("FK constraint violation");
     });
   });
 });

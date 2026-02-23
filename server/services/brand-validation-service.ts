@@ -13,20 +13,17 @@ const DEFAULT_TOLERANCES: ValidationToleranceConfig = {
 export interface ValidationTestInputs {
   revenue?: {
     monthlyAuv?: number;
-    year1GrowthRate?: number;
-    year2GrowthRate?: number;
+    growthRates?: number[];
     startingMonthAuvPct?: number;
   };
   operatingCosts?: {
     cogsPct?: number;
     laborPct?: number;
-    rentMonthly?: number;
-    utilitiesMonthly?: number;
-    insuranceMonthly?: number;
+    facilitiesAnnual?: number;
     marketingPct?: number;
     royaltyPct?: number;
     adFundPct?: number;
-    otherMonthly?: number;
+    otherOpexPct?: number;
   };
   financing?: {
     loanAmount?: number;
@@ -68,24 +65,23 @@ function applyTestInputOverrides(
   if (testInputs.revenue) {
     if (testInputs.revenue.monthlyAuv !== undefined)
       planInputs.revenue.monthlyAuv.currentValue = testInputs.revenue.monthlyAuv;
-    if (testInputs.revenue.year1GrowthRate !== undefined)
-      planInputs.revenue.year1GrowthRate.currentValue = testInputs.revenue.year1GrowthRate;
-    if (testInputs.revenue.year2GrowthRate !== undefined)
-      planInputs.revenue.year2GrowthRate.currentValue = testInputs.revenue.year2GrowthRate;
+    if (testInputs.revenue.growthRates !== undefined) {
+      for (let i = 0; i < Math.min(testInputs.revenue.growthRates.length, 5); i++) {
+        planInputs.revenue.growthRates[i].currentValue = testInputs.revenue.growthRates[i];
+      }
+    }
     if (testInputs.revenue.startingMonthAuvPct !== undefined)
       planInputs.revenue.startingMonthAuvPct.currentValue = testInputs.revenue.startingMonthAuvPct;
   }
   if (testInputs.operatingCosts) {
     const oc = testInputs.operatingCosts;
-    if (oc.cogsPct !== undefined) planInputs.operatingCosts.cogsPct.currentValue = oc.cogsPct;
-    if (oc.laborPct !== undefined) planInputs.operatingCosts.laborPct.currentValue = oc.laborPct;
-    if (oc.rentMonthly !== undefined) planInputs.operatingCosts.rentMonthly.currentValue = oc.rentMonthly;
-    if (oc.utilitiesMonthly !== undefined) planInputs.operatingCosts.utilitiesMonthly.currentValue = oc.utilitiesMonthly;
-    if (oc.insuranceMonthly !== undefined) planInputs.operatingCosts.insuranceMonthly.currentValue = oc.insuranceMonthly;
-    if (oc.marketingPct !== undefined) planInputs.operatingCosts.marketingPct.currentValue = oc.marketingPct;
-    if (oc.royaltyPct !== undefined) planInputs.operatingCosts.royaltyPct.currentValue = oc.royaltyPct;
-    if (oc.adFundPct !== undefined) planInputs.operatingCosts.adFundPct.currentValue = oc.adFundPct;
-    if (oc.otherMonthly !== undefined) planInputs.operatingCosts.otherMonthly.currentValue = oc.otherMonthly;
+    if (oc.cogsPct !== undefined) planInputs.operatingCosts.cogsPct.forEach((f) => { f.currentValue = oc.cogsPct!; });
+    if (oc.laborPct !== undefined) planInputs.operatingCosts.laborPct.forEach((f) => { f.currentValue = oc.laborPct!; });
+    if (oc.facilitiesAnnual !== undefined) planInputs.operatingCosts.facilitiesAnnual.forEach((f) => { f.currentValue = oc.facilitiesAnnual!; });
+    if (oc.marketingPct !== undefined) planInputs.operatingCosts.marketingPct.forEach((f) => { f.currentValue = oc.marketingPct!; });
+    if (oc.royaltyPct !== undefined) planInputs.operatingCosts.royaltyPct.forEach((f) => { f.currentValue = oc.royaltyPct!; });
+    if (oc.adFundPct !== undefined) planInputs.operatingCosts.adFundPct.forEach((f) => { f.currentValue = oc.adFundPct!; });
+    if (oc.otherOpexPct !== undefined) planInputs.operatingCosts.otherOpexPct.forEach((f) => { f.currentValue = oc.otherOpexPct!; });
   }
   if (testInputs.financing) {
     const f = testInputs.financing;

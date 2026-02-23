@@ -290,8 +290,9 @@ This document provides the complete epic and story breakdown for the Katalyst Gr
 | FR95 | Epic 5 | Plan completeness indicator (section-by-section status) |
 | FR96 | Epic 5 | Dashboard Document Preview widget with completeness-aware labels |
 | FR97 | Epic 5 | Bidirectional sync — edits on either surface reflected immediately |
+| FR98 | Epic 7 | Multi-plan lifecycle: create, rename, clone, delete with last-plan protection |
 
-**Coverage Summary:** 111/111 FRs mapped (58 original FR1-FR58 + 15 FR59-FR73 admin support tools + 14 FR7a-FR7n financial statement views + 10 FR74-FR83 engine extensions + 14 FR84-FR97 display standards, advisory language, Impact Strip, plan completeness, bidirectional sync — added per SCP-2026-02-20). All functional requirements covered. Stories across 11 MVP epics (+ 1 deferred Phase 2 epic + 1 admin support tools epic). *Corrected 2026-02-21 per Story 5H.4 audit — previous header said "96/96" but breakdown terms already summed to 111.*
+**Coverage Summary:** 112/112 FRs mapped (58 original FR1-FR58 + 1 FR98 multi-plan management + 15 FR59-FR73 admin support tools + 14 FR7a-FR7n financial statement views + 10 FR74-FR83 engine extensions + 14 FR84-FR97 display standards, advisory language, Impact Strip, plan completeness, bidirectional sync — added per SCP-2026-02-20). All functional requirements covered. Stories across 11 MVP epics (+ 1 stabilization mini-epic + 1 deferred Phase 2 epic + 1 admin support tools epic). *Corrected 2026-02-22 per Story 7H.1 — added FR98 (multi-plan CRUD from Epic 7.2).*
 
 ## Epic List
 
@@ -328,10 +329,31 @@ Generate lender-grade PDF business plan packages and maintain document history w
 **NFRs addressed:** NFR3 (< 30s PDF generation), NFR18 (immutable documents)
 **Stories (2):** 6.1 PDF Document Generation, 6.2 Document History & Downloads
 
-### Epic 7: Per-Year Inputs & Multi-Plan Management
-Enable Year 1-5 independent input values for all per-year financial assumptions, unlocking growth trajectory modeling. Add plan creation, naming, cloning, and navigation for multi-location planning. Includes PlanFinancialInputs restructuring, Facilities field alignment, and Other OpEx unit correction.
+### Epic 7: Per-Year Inputs & Multi-Plan Management — DONE
+Enable Year 1-5 independent input values for all per-year financial assumptions, unlocking growth trajectory modeling. Add plan creation, naming, cloning, and navigation for multi-location planning. Includes PlanFinancialInputs restructuring, Facilities guided decomposition, Other OpEx unit correction, Balance Sheet & Valuation inline editing.
+**Design Principle (adopted during E7):** Forms (My Plan) = onboarding wizard for less experienced personas (single-value inputs, "Set for all years" checkbox). Reports = power editing surface where all financial assumptions are editable inline with per-year independence. Expert users skip Forms entirely. Forms does NOT replicate Reports' granular per-year or per-month editing.
 **FRs covered:** FR7i, FR7j, FR15, FR16
-**Stories (2):** 7.1 Per-Year Input Columns, 7.2 Plan CRUD & Navigation
+**Stories (6):**
+- 7.1a Data Model Restructuring & Migration — DONE (foundation — PlanFinancialInputs per-year arrays, migration, unwrapForEngine rewrite, FIELD_METADATA extensions, sensitivity/scenario engine updates)
+- 7.1b Make All Financial Assumptions Editable in Reports — DONE (15+ fields inline-editable in P&L with per-year independence, INPUT_FIELD_MAP extensions, drill-down display. Per-month independence deferred to 7.1b.1)
+- 7.1c Forms Onboarding — New Field Sections & Simple Inputs — DONE (all fields in Forms with single-value inputs, "Set for all years" checkbox, brand default indicators, new sections for Profitability & Working Capital)
+- 7.1d Facilities Guided Decomposition & Other OpEx Correction — DONE (facilities sub-field breakdown in Forms with rollup, simplified mismatch handling as informational note only, Other OpEx displayed as percentage)
+- 7.1e Balance Sheet & Valuation Inline Editing — DONE (arDays, apDays, inventoryDays, taxPaymentDelayMonths, ebitdaMultiple inline-editable in Balance Sheet and Valuation tabs)
+- 7.2 Plan CRUD & Navigation — DONE (create, rename, clone, delete with type-to-confirm, last-plan protection). **PO design pivot:** Plan CRUD lives on Dashboard, not sidebar. Sidebar shows Home→Dashboard + active plan context. Sidebar plan list from 7.2 implementation to be removed in future cleanup.
+**Dependency chain:** 7.1a → 7.1b → 7.1c + 7.1d (parallel) → 7.1e
+**Remaining:** 7.1b.1 Per-Month Independence (60-element arrays for revenue, COGS%, labor%, marketing%) — scheduled in stabilization mini-epic (Epic 7H). Infrastructure (storedGranularity, scaleForStorage) in place from 7.1a.
+
+### Epic 7H: Post-Epic-7 Stabilization Sprint
+Resolve accumulated gaps from Epic 7's mid-epic design pivot, complete the per-month independence feature that was the core motivation for Epic 7's data model restructuring, fix the Brand CRUD gap from Epic 2, and establish testing infrastructure standards. All planning documents (PRD, Architecture, Epics, UX Spec) are realigned in this epic to reflect what was actually built.
+
+**Stories (5):**
+- 7H.1 Planning Document Realignment — Update all 4 planning documents (PRD, Architecture, Epics, UX Spec) to reflect Epic 7 implementation decisions. Add FR98 (multi-plan CRUD). Update Epic 10 description. Remove stale pre-Epic-7 content from UX spec. Add facilities decomposition to UX spec. Update sidebar wireframe.
+- 7H.2 Per-Month Independence (7.1b.1) — Extend PlanFinancialInputs schema from 5-element per-year arrays to 60-element per-month arrays for qualifying fields (revenue, COGS%, labor%, marketing%). Update engine input types. Add Reports UI for per-month editing at monthly drill level. Forms unchanged (single-value + "Set for all years" only).
+- 7H.3 Brand CRUD Completion — Add brand deletion (with confirmation) and full metadata editing (name, display name, slug) to the brand management interface. Resolves Epic 2 gap that is actively causing development pain (test agents create junk brands requiring manual PO cleanup).
+- 7H.4 INPUT_FIELD_MAP Mechanical Validation — Add test-time assertion verifying every INPUT_FIELD_MAP entry has a format type matching FIELD_METADATA / engine output type. Build fails if a percentage field is mapped as currency. Closes the recurring display format bug (flagged in 3 consecutive retrospectives).
+- 7H.5 E2E Testing Standards & Infrastructure — Document and enforce: test agents must authenticate as franchisee (not admin), must not use demo mode, must clean up test data. Update test helpers and documentation. Prevents junk brand accumulation and wasted tokens.
+
+**Dependency chain:** 7H.1 (no code dependencies, can start immediately) → 7H.2 (extends 7.1a infrastructure) | 7H.3, 7H.4, 7H.5 (independent, can parallel)
 
 ### Epic 8: Advisory Guardrails & Smart Guidance
 System provides non-blocking advisory nudges when franchisee inputs fall outside FDD Item 7 ranges or brand averages. Identifies weak business cases with actionable guidance on which inputs to reconsider. Suggests consultant booking when appropriate. All guidance is advisory — never blocks the franchisee.
@@ -344,10 +366,10 @@ Franchisees can have a natural-language conversation with an AI advisor in a sli
 **NFRs addressed:** NFR22 (< 5s AI response), NFR23 (AI value validation), NFR24 (graceful degradation)
 
 ### Epic 10: What-If Playground (formerly "Scenario Comparison")
-Standalone sidebar destination providing interactive graphical sensitivity analysis. Franchisees adjust assumption sliders (revenue, COGS, labor, marketing, facilities) and see 6 simultaneous charts (Profitability, Cash Flow, Break-Even, ROI, Balance Sheet, Debt & Working Capital) update across Base, Conservative, and Optimistic scenarios. This is a planning sandbox — slider adjustments do NOT change the user's actual plan. Replaces the retired Story 5.7 column-splitting approach. Per SCP-2026-02-20 Decision D5/D6 and Section 3.
+Standalone sidebar destination providing interactive graphical sensitivity analysis. Franchisees adjust assumption sliders (revenue, COGS, labor, marketing, facilities) and see 6 simultaneous charts (Profitability, Cash Flow, Break-Even, ROI, Balance Sheet, Debt & Working Capital) comparing Base Case vs Your Scenario (user's live slider state). This is a planning sandbox — slider adjustments do NOT change the user's actual plan. Replaces the retired Story 5.7 column-splitting approach. Per SCP-2026-02-21: Conservative/Optimistic system-defined columns killed (D1), replaced with user-authored scenario model (D2/D3). Slider ranges: ±50%/±100% visual range, uncapped numeric input (D6).
 **FRs covered:** FR7d *(additional scenario FRs to be defined)*
-**Stories (3):** 10.1 Sensitivity Controls & Sandbox Engine, 10.2 Multi-Chart Sensitivity Dashboard, 10.3 Scenario Persistence & Sharing (optional enhancement)
-**Status:** Deferred — depends on financial statement views (Epic 5) being complete
+**Stories (4):** 10.1 Sensitivity Controls & Sandbox Engine, 10.2a Sensitivity Chart Dashboard, 10.2b Metric Delta Cards, 10.3 Scenario Persistence & Comparison
+**Status:** Ready — Epic 5 dependency satisfied. Scheduled after stabilization mini-epic.
 
 ### Epic 11: Data Sharing, Privacy & Pipeline Dashboards
 Franchisees control data sharing with their franchisor via explicit opt-in/revoke. Franchisor admins see pipeline dashboards with planning status. Katalyst admins see cross-brand operational intelligence. Privacy boundaries enforced at the API level.
@@ -977,7 +999,7 @@ So that I can quickly assess my business plan across all 5 years and drill into 
 
 **Given** I am logged in with an active plan
 **When** the sidebar renders
-**Then** the sidebar navigation includes these items under the active plan: **My Plan**, **Reports**, **Scenarios**, **Settings**
+**Then** the sidebar navigation includes these items under the active plan: **My Plan**, **Reports**, **What-If**, **Settings**
 **And** a "HELP" section includes **Planning Assistant**
 **And** a "MY LOCATIONS" section includes **All Plans** (portfolio view)
 **And** any existing mode switcher UI (Planning Assistant | Forms | Quick Entry segmented control) from Epic 4 is removed — there are no user-facing modes
@@ -1824,21 +1846,51 @@ So that I can walk into a bank meeting feeling confident and prepared (FR24, FR2
 - Valuation Analysis (annual)
 - Break-Even Analysis with cumulative cash flow chart
 - Startup Capital Summary
+- Audit Summary (pass/fail status of all 15 audit checks with plain-language explanations for any failures)
 
 **And** the document header reads "[Franchisee Name]'s [Brand] Business Plan" — franchisee name before brand name
-**And** professional formatting with brand identity (logo, colors) and Katalyst design — consistent typography, proper page breaks, branded headers/footers, and financial tables with formatting that matches or exceeds what a financial consultant would produce
+**And** the PDF uses the following formatting standards:
+- Brand logo in the header of every page (except cover page, which has a larger centered logo)
+- Brand primary color used for section headers and table header backgrounds
+- Financial tables use alternating row shading for readability, right-aligned numeric columns, and left-aligned label columns
+- No table is split across a page break mid-row — tables that don't fit on the current page start on the next page
+- Page margins: 1 inch on all sides (standard business document)
+- Headers: page number, brand name, and "Confidential" indicator
+- Footers: FTC disclaimer text (FR25) and generation date
+- Font: system professional font (e.g., Inter, Helvetica, or similar sans-serif) at 10-11pt for body, 14-16pt for section headers
 **And** FTC-compliant disclaimers state on every page: "These projections are franchisee-created estimates and do not constitute franchisor earnings claims or representations" (FR25)
 **And** financial values use consistent formatting throughout: currency as $X,XXX, percentages as X.X% (NFR27)
 
 **Given** the "Generate PDF" button label evolves with input completeness (Story 5.9)
-**When** the button is clicked at < 50% completeness
+
+**When** the button is clicked at < 50% completeness ("Generate Draft")
 **Then** the generated PDF includes a "DRAFT" watermark on every page
-**And** a brief note on the cover: "This plan contains brand default assumptions that have not been personalized. Review and update inputs for a complete projection."
+**And** a note on the cover: "This plan contains brand default assumptions that have not been personalized. Review and update inputs for a complete projection."
+
+**When** the button is clicked at 50-90% completeness ("Generate Package")
+**Then** the generated PDF does NOT include a DRAFT watermark
+**And** a note on the cover: "Some inputs in this plan use brand default values. Review remaining defaults in My Plan for fully personalized projections."
+
+**When** the button is clicked at > 90% completeness ("Generate Lender Package")
+**Then** the generated PDF does NOT include a DRAFT watermark and no default-values note appears
+
+**And** the "Generate PDF" button tooltip displays the current completeness percentage and indicates whether the generated document will include a DRAFT watermark or cover note
 
 ~~**Given** scenario comparison is active when PDF is generated~~
 ~~**When** the PDF renders~~
 ~~**Then** the PDF includes the comparison summary card text and scenario columns in the P&L and key metrics tables~~
 > **RETIRED (SCP-2026-02-20 D5/D6):** Scenario comparison was pulled out of Reports. Scenario PDF export deferred to Epic 10 (What-If Playground) if that feature supports export.
+
+**Given** PDF generation is initiated
+**When** generation fails (server error, timeout > 30 seconds per NFR3, or storage failure)
+**Then** a toast notification appears: "PDF generation failed. Please try again." with a "Retry" action button
+**And** no partial or corrupted PDF is rendered, presented to the user, or stored in document history
+**And** the "Generate PDF" button returns to its pre-generation state (not stuck in loading)
+
+**Given** PDF generation is initiated
+**When** the generation is in progress
+**Then** the "Generate PDF" button shows a loading state (spinner + "Generating...") and is disabled to prevent duplicate generation
+**And** a progress indicator is visible to the user
 
 **And** the PDF is available for immediate download upon generation
 **And** the generated PDF is stored for future access (Story 6.2)
@@ -1866,55 +1918,92 @@ So that I can access any version of my plan at any time (FR26, FR27).
 **And** each document entry shows a thumbnail preview of the first page
 **And** a "Generate New" button is prominently available to create an updated version reflecting current inputs
 
+**Dev Notes:**
+- Thumbnail generation: Generate a PNG thumbnail of the first PDF page at PDF creation time. Format: PNG, 300x400px, 72 DPI. Storage path convention: `documents/{planId}/{docId}/thumbnail.png` alongside `documents/{planId}/{docId}/document.pdf`. Failure isolation: Thumbnail generation failure must NOT block document creation. Log the error, store null reference, render generic document icon placeholder.
+- Architecture constraint (NON-NEGOTIABLE): The `IStorage` interface for documents exposes exactly three methods: `createDocument()`, `getDocument()`, `listDocuments()`. No update or delete methods. Immutability is enforced at the interface level, not just as policy.
+- API endpoints: POST /api/plans/:id/documents (generate), GET /api/plans/:id/documents (list), GET /api/plans/:id/documents/:docId (download). No PUT/PATCH/DELETE endpoints.
+- No user journey currently describes the document history experience. Lightweight journey sketch for dev agent guidance: Sam returns to his Dashboard a week after generating his lender package → clicks "Documents" in sidebar → sees his previously generated lender package with date and thumbnail → downloads it for his banker.
+- Empty state: Show a warm call-to-action: "Your lender packages will appear here after you generate them. Head to Reports or your Dashboard to create your first one."
+- Navigation: Add a "Documents" entry in the sidebar (below Reports) for direct access.
+
 ---
 
 ## Epic 7: Per-Year Inputs & Multi-Plan Management
 
-Enable Year 1-5 independent input values for all per-year financial assumptions, unlocking growth trajectory modeling. Add plan creation, naming, cloning, and navigation for multi-location planning.
+Enable Year 1-5 independent input values for all per-year financial assumptions, unlocking growth trajectory modeling. Per-month independence for qualifying fields (revenue, COGS%, labor%, marketing%) enables seasonality modeling. Add plan creation, naming, cloning, and navigation for multi-location planning.
+
+**Design Principle:** Forms (My Plan) = onboarding wizard for less experienced personas. Reports = power editing surface where all financial assumptions are editable inline. Expert users skip Forms entirely and build their plan directly in Reports. Forms does NOT replicate Reports' granular per-year or per-month editing.
 
 **FRs covered:** FR7i, FR7j, FR15, FR16
-**Dependencies:** Epic 5 (financial statement views with linked-column indicators provide the visual foundation that this epic unlocks)
+**Dependencies:** Epic 5 (financial statement views provide the visual foundation that this epic unlocks)
+**Dependency chain:** 7.1a (DONE) → 7.1b → 7.1c + 7.1d (parallel, depend on 7.1b) → 7.1e (parallel with 7.1c/d)
 
-### Story 7.1: Per-Year Input Columns
+### Story 7.1a: Data Model Restructuring & Migration — DONE
 
 As a franchisee,
-I want to set different values for each year (Year 1 through Year 5) for my financial assumptions,
-So that I can model realistic growth trajectories instead of flat projections across all 5 years (FR7i).
+I want the system's data model to support different values for each year (Year 1 through Year 5) for my financial assumptions,
+So that per-year input editing (Stories 7.1b–7.1e) can be built on a stable foundation without data loss (FR7i).
 
-**Acceptance Criteria:**
-
-**Given** the `PlanFinancialInputs` interface is restructured
-**When** per-year fields are stored
-**Then** all 10 per-year operating cost categories use 5-element arrays: growthRates[5], royaltyPct[5], adFundPct[5], cogsPct[5], laborPct[5], facilitiesAnnual[5], marketingPct[5], managementSalariesAnnual[5], payrollTaxPct[5], otherOpexPct[5]
-**And** new per-year fields are added: targetPreTaxProfitPct[5], shareholderSalaryAdj[5], distributions[5], nonCapexInvestment[5]
-**And** missing single-value fields are added to the UI: arDays, apDays, inventoryDays, taxPaymentDelayMonths, ebitdaMultiple
-**And** existing plans are migrated by broadcasting current single values into 5-element arrays (semantically identical — no data loss)
-
-**Given** I am editing inputs via Reports inline editing (Financial Statement tabs)
-**When** I edit a value in a specific year column
-**Then** only that year's value changes — other years retain their independent values
-**And** the linked-column indicators from Story 5.2 are removed (link icons disappear, cells no longer flash on broadcast)
-**And** a "Copy Year 1 to all years" action is available for users who want to broadcast a single value
-
-**Given** I am editing inputs in Forms mode (My Plan)
-**When** the form renders per-year fields
-**Then** each per-year field shows 5 input columns labeled Year 1 through Year 5
-**And** by default, Year 2-5 inherit Year 1's value with a visual indicator (link icon, lighter text) showing they are inherited
-**And** editing Year 2-5 breaks the inheritance for that specific year — the value becomes independent
-**And** a "Reset to Year 1" action is available per cell to re-establish inheritance
-
-**Given** the Facilities field alignment
-**When** the input structure is corrected
-**Then** the engine's single `facilitiesAnnual[5]` field is exposed directly in Reports inline editing as "Facilities ($)" per year (matching the spreadsheet)
-**And** in Forms mode (My Plan), the guided decomposition (rent, utilities, telecom, vehicle fleet, insurance) rolls up into `facilitiesAnnual[year]` with per-year support
-**And** Other OpEx changes from flat dollar amount to % of revenue (matching the spreadsheet), with migration converting existing dollar values to equivalent percentages based on projected revenue
+**Acceptance Criteria:** PlanFinancialInputs restructured to per-year arrays (13 per-year fields + 5 single-value fields). Existing plan migration is lossless, transactionally safe, idempotent, and writes back on first load. unwrapForEngine updated to pass per-year arrays directly. Scenario/sensitivity engines updated. FIELD_METADATA and FormatType extended for new fields including "decimal" type. Revenue drill-down display with storedGranularity and reverse-scaling infrastructure.
 
 **Dev Notes:**
-- This is the story that removes the "linked columns" behavior introduced in Story 5.2 and replaces it with independent per-year editing.
-- The `PlanFinancialInputs` → `FinancialInputs` translation layer changes from broadcasting single values to passing per-year arrays directly.
-- Migration must handle existing plans gracefully — broadcast current single values to 5-element arrays.
-- The Facilities and Other OpEx field alignment fixes are included here because they are structurally tied to the per-year restructuring.
-- See Sprint Change Proposal SCP-2026-02-15 CP-3 (Fix PlanFinancialInputs) — note: this is NOT SCP-2026-02-20 CP-3 (Fix Navigation Architecture). See also UX spec Part 3 (Pre-Epic-7 / Post-Epic-7 behavior).
+- Foundation story — all other 7.1x stories depend on this.
+- Completed with 686 unit tests passing. Revenue drill-down enhancement included as display infrastructure.
+- See full story: `_bmad-output/implementation-artifacts/7-1-per-year-input-columns.md`
+
+### Story 7.1b: Make All Financial Assumptions Editable in Reports
+
+As a franchisee fine-tuning my 5-year plan,
+I want to click on any financial assumption in my Reports — revenue, COGS, rent, salaries, royalties, marketing, all of it — and change it for any year, quarter, or month,
+So that I can model exactly how my business will evolve over time, the way I would in a spreadsheet, but with the math handled for me.
+
+**Acceptance Criteria:** All 15+ financial assumption rows editable inline in P&L with per-year independence. Per-month independence (60-element arrays) for qualifying fields (revenue, COGS%, labor%, marketing%). "Copy Year 1 to all years" with confirmation dialog. Legacy linked-column code (flash animation, link icons) removed. Drill-down display with correct aggregation at all levels.
+
+**Dev Notes:**
+- This is the centerpiece story. Reports is the power editing surface.
+- Existing PnlRow + InlineEditableCell + column manager handle per-year rendering natively — no separate PerYearEditableRow component needed.
+- Per-month independence scope risk note: can split into 7.1b.1 if timeline pressure emerges without blocking downstream stories.
+- See full story: `_bmad-output/implementation-artifacts/7-1b-reports-per-year-editing.md`
+
+### Story 7.1c: Forms Onboarding — New Field Sections & Simple Inputs
+
+As a first-time franchisee setting up my plan,
+I want the My Plan forms to walk me through all the financial assumptions I need to set — including new fields like management salaries, payroll taxes, and growth rates — with simple, approachable inputs,
+So that I can get from zero to a working 5-year projection without being overwhelmed.
+
+**Acceptance Criteria:** All financial assumption fields rendered in Forms with simple single-value inputs (not 5-column per-year editing). "Set for all years" checkbox for per-year fields. "Fine-tune per year in Reports" hints. Brand default indicators with reset action. New form sections for Profitability & Distributions, Working Capital & Valuation.
+
+**Dev Notes:**
+- Forms = onboarding only. No per-year columns, no drill-down, no per-month editing.
+- See full story: `_bmad-output/implementation-artifacts/7-1c-forms-per-year-layout.md`
+
+### Story 7.1d: Facilities Guided Decomposition & Other OpEx Correction
+
+As a franchisee planning my operating costs,
+I want to break down my Facilities costs into Rent, Utilities, Telecom/IT, Vehicle/Fleet, and Insurance in the My Plan forms,
+So that I can think through each component while still editing the total directly in Reports for quick adjustments.
+
+**Acceptance Criteria:** Facilities guided decomposition in Forms (sub-fields with rollup total). Direct facilitiesAnnual editing in Reports (handled by 7.1b). Simplified mismatch handling — informational note only, no action buttons or proportional redistribution. Other OpEx displays as percentage in both surfaces.
+
+**Dev Notes:**
+- Forms provides guided breakdown; Reports provides direct total editing. Persistent mismatch is an accepted tradeoff, not a bug.
+- See full story: `_bmad-output/implementation-artifacts/7-1d-new-field-surfaces.md`
+
+### Story 7.1e: Balance Sheet & Valuation Inline Editing
+
+As a franchisee reviewing my financial projections,
+I want to adjust working capital assumptions and EBITDA multiple directly in the Balance Sheet and Valuation tabs,
+So that I can see how these assumptions affect my projected balance sheet and business valuation without leaving Reports.
+
+**Acceptance Criteria:** Balance Sheet tab: arDays, apDays, inventoryDays, taxPaymentDelayMonths inline-editable with validation (integer, range constraints). Valuation tab: ebitdaMultiple inline-editable with decimal format and "x" suffix display. All single-value fields (not per-year).
+
+**Dev Notes:**
+- Simple extension of Reports editing to two more tabs.
+- See full story: `_bmad-output/implementation-artifacts/7-1e-balance-sheet-valuation-editing.md`
+
+### Future: Labor Cost Guided Decomposition
+
+**Earmarked for future development (Party Mode 2026-02-21).** Break "Direct Labor %" into staffing assumptions (headcount, hourly rate, hours/week) so beginners can arrive at the percentage from concrete questions. Same pattern as Facilities decomposition — Forms provides the guided breakdown, engine still consumes laborPct. Not scheduled for current sprint.
 
 ### Story 7.2: Plan CRUD & Navigation
 
@@ -1963,6 +2052,7 @@ So that I can model different locations or scenarios as separate plans (FR15, FR
 - The "Create New Plan" button addresses Gap #1 and Gap #10 (blockers for multi-location planning).
 - Plan naming addresses Gap #3 and Gap #4 (no more "Demo Plan" default name).
 - See Brainstorming Session 2026-02-15, Layer 3 (Multi-Plan and Workflow Gaps).
+- **TODO (Epic 2 gap — add ACs to this story or a new story):** Brand Management is missing delete and full edit capabilities. Epic 2 Story 2.1 only covered brand creation and financial parameter editing, but never specified: (1) deleting a brand, (2) editing brand metadata (name, display name, slug) after creation. The Brand Settings tab needs proper edit functionality. These should be added as acceptance criteria — either here alongside Plan CRUD or as a separate Brand CRUD story.
 
 ---
 
@@ -2098,7 +2188,7 @@ So that I can explore "what-if" scenarios of my own design — without modifying
 
 **Given** I have a plan with financial inputs and am on the dashboard or any planning surface
 **When** I click the "What-If" sidebar navigation item
-**Then** I see a standalone What-If Playground page (route: `/plans/:planId/what-if`)
+**Then** I see the What-If Playground view replace the main content area (rendered as the "scenarios" workspace view via `WorkspaceViewContext` — not a separate URL route)
 **And** the page header explains the purpose: "What happens to my WHOLE business if things change?"
 **And** a sticky/collapsible Sensitivity Controls panel is displayed at the top with sliders for key assumptions:
   - Revenue adjustment: -50% ←——●——→ +100%
@@ -2111,7 +2201,7 @@ So that I can explore "what-if" scenarios of my own design — without modifying
 **And** sliders can be supplemented by editable numeric fields for precise input
 **And** slider adjustments do NOT modify the user's actual plan — this is a sandbox (base case always reflects saved plan inputs)
 **And** the financial engine computes two scenarios client-side: Base Case (saved plan inputs, unmodified) and Your Scenario (base inputs with current slider adjustments applied)
-**And** metric cards show Base Case vs Your Scenario with delta indicators
+**And** metric cards (4 cards: Break-Even Month, Year-1 Revenue, 5-Year ROI %, Year-5 Cash) show Base Case vs Your Scenario with delta indicators
 **And** a "Reset Sliders" button returns all sliders to 0% (Your Scenario = Base Case)
 **And** each computation completes in < 2 seconds (NFR1)
 **And** slider input is debounced for an instant, responsive feel
@@ -2120,6 +2210,8 @@ So that I can explore "what-if" scenarios of my own design — without modifying
 - Financial engine already supports this — pass modified inputs, get full projection
 - Engine runs twice: base (no adjustments) and current (slider adjustments applied). If sliders are all at zero, skip the second run — Your Scenario equals Base Case. Client-side computation with debounced slider input.
 - Base case always reflects the user's actual saved plan inputs — not slider-modified values
+- Sidebar button label: "What-If" (internal `WorkspaceView` identifier stays `"scenarios"`, `data-testid="nav-scenarios"`)
+- Expose `hasInteractedWithSlider` boolean state for Story 10.2b's helper text lifecycle
 
 ### Story 10.2a: Sensitivity Chart Dashboard
 
@@ -2133,7 +2225,7 @@ So that I can understand the full impact of changing assumptions across every di
 **When** I adjust any slider
 **Then** all 6 charts update simultaneously with two scenario curves: Base Case (solid line) and Your Scenario (dashed line). If a saved scenario is loaded for comparison (Story 10.3), a third curve (dotted line) shows the saved scenario.
 **And** Chart 1 — **Profitability (P&L Summary)**: 5-year line/area chart showing Annual Revenue, COGS, Gross Profit, EBITDA, Pre-Tax Income
-**And** Chart 2 — **Cash Flow**: 5-year line chart showing Net Operating Cash Flow, Net Cash Flow, Ending Cash Balance. Months where any scenario goes cash-negative are highlighted with an amber advisory zone
+**And** Chart 2 — **Cash Flow**: 60-month line chart showing Ending Cash Balance at monthly granularity (required for amber advisory zone precision — checking only year-end values would miss mid-year cash-negative months). Months where any scenario goes cash-negative are highlighted with an amber advisory zone
 **And** Chart 3 — **Break-Even Analysis**: Visual showing months to break-even for Base Case + Your Scenario (+ optional saved scenario) as horizontal bars
 **And** Chart 4 — **ROI & Returns**: 5-year cumulative ROIC chart with Base + Your Scenario curves. Callout card: "Your scenario: [X]% ROIC at Year 5"
 **And** Chart 5 — **Balance Sheet Health**: Total Assets vs Total Liabilities over 5 years. Equity growth visible as the gap between the lines

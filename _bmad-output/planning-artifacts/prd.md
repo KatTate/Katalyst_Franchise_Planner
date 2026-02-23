@@ -763,8 +763,9 @@ This section defines THE CAPABILITY CONTRACT for the entire product. UX designer
 
 - **FR11:** Franchisee can complete a planning experience that collects all inputs needed for a complete financial projection
 - **FR12:** Franchisee interacts with the planning tool through two persistent surfaces and three adaptive experience tiers:
-  - **My Plan surface:** Structured input forms that decompose composite fields into guided sub-fields with contextual help. Includes the AI Planning Assistant as a slide-in panel for conversational input collection.
-  - **Reports surface:** Interactive financial statements (P&L, Balance Sheet, Cash Flow, ROIC, Valuation, Summary, Audit) with inline-editable input cells and read-only computed cells. Both surfaces write to the same financial input state with bidirectional sync.
+  - **My Plan surface (Forms = Onboarding Wizard):** Structured input forms that decompose composite fields into guided sub-fields with contextual help. Provides single-value inputs with "Set for all years" checkbox — deliberately does NOT replicate Reports' granular per-year or per-month editing. Designed to get beginners from zero to a working projection without being overwhelmed. Includes the AI Planning Assistant as a slide-in panel for conversational input collection. Expert users skip My Plan entirely and build their plan directly in Reports.
+  - **Reports surface (Power Editing Surface):** Interactive financial statements (P&L, Balance Sheet, Cash Flow, ROIC, Valuation, Summary, Audit) with inline-editable input cells supporting per-year independence (5 values per field) and per-month independence for qualifying fields. Read-only computed cells. Both surfaces write to the same financial input state with bidirectional sync. This is where all granular financial assumption editing happens.
+  - **Two-Surface Design Principle (adopted Epic 7):** Forms = onboarding wizard for less experienced personas. Reports = power editing surface where all financial assumptions are editable inline. Expert users skip Forms entirely. Forms does NOT replicate Reports' granular per-year or per-month editing. Per-year and per-month independence is a Reports-only capability.
   - **Story Tier:** AI Planning Assistant active by default, maximum educational content, guided conversation for input collection. Designed for first-time franchisees (Sam).
   - **Normal Tier:** My Plan forms as primary interaction, educational content available but not forced. Efficient for experienced operators who know their numbers (Chris).
   - **Expert Tier:** Reports inline editing as default landing, minimal educational overlays, maximum speed. Also serves as the validation interface for Katalyst to verify engine outputs against known-good spreadsheets (Maria).
@@ -899,6 +900,10 @@ _Scope: Katalyst admins only. Franchisors and franchisees never see or access th
 ### 17. Bidirectional Surface Sync
 
 - **FR97:** Edits made on either surface (My Plan or Reports) are immediately reflected on the other surface. When a franchisee edits a decomposed sub-field in My Plan (e.g., individual facilities cost components), the consolidated value updates in the corresponding Reports inline cell. When a franchisee edits a consolidated value in Reports, the corresponding My Plan fields reflect the change. Both surfaces share a single financial input state — there is no "save and sync" step
+
+### 18. Multi-Plan Management
+
+- **FR98:** Franchisee can create, rename, clone (deep copy), and delete financial plans. Cloning creates an independent copy of all financial inputs. Deletion requires type-to-confirm and is blocked if only one plan remains (last-plan protection). Plan management (CRUD) lives on the Dashboard; the sidebar provides a Home link to the Dashboard and shows workspace navigation for the active plan.
 
 ## Non-Functional Requirements
 

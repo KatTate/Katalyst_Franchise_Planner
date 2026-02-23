@@ -80,6 +80,41 @@ router.get(
   }
 );
 
+router.get(
+  "/:brandId/stats",
+  requireAuth,
+  requireRole("katalyst_admin"),
+  async (req: Request<{ brandId: string }>, res: Response) => {
+    const { brandId } = req.params;
+    const brand = await storage.getBrand(brandId);
+    if (!brand) {
+      return res.status(404).json({ message: "Brand not found" });
+    }
+    const stats = await storage.getBrandStats(brandId);
+    return res.json(stats);
+  }
+);
+
+router.delete(
+  "/:brandId",
+  requireAuth,
+  requireRole("katalyst_admin"),
+  async (req: Request<{ brandId: string }>, res: Response) => {
+    const { brandId } = req.params;
+    const brand = await storage.getBrand(brandId);
+    if (!brand) {
+      return res.status(404).json({ message: "Brand not found" });
+    }
+
+    try {
+      await storage.deleteBrand(brandId);
+      return res.json({ success: true });
+    } catch (err: any) {
+      return res.status(500).json({ message: err.message || "Failed to delete brand" });
+    }
+  }
+);
+
 router.put(
   "/:brandId",
   requireAuth,
@@ -94,6 +129,7 @@ router.put(
     const updateSchema = z.object({
       name: z.string().min(1).max(100).optional(),
       display_name: z.string().max(100).optional(),
+      slug: z.string().min(1).max(50).regex(/^[a-z0-9-]+$/, "Slug must be lowercase alphanumeric with hyphens").optional(),
     });
 
     const parsed = updateSchema.safeParse(req.body);
@@ -104,9 +140,24 @@ router.put(
       });
     }
 
+    if (parsed.data.name) {
+      const existingName = await storage.getBrandByName(parsed.data.name);
+      if (existingName && existingName.id !== brandId) {
+        return res.status(409).json({ message: "A brand with this name already exists" });
+      }
+    }
+
+    if (parsed.data.slug) {
+      const existingSlug = await storage.getBrandBySlug(parsed.data.slug);
+      if (existingSlug && existingSlug.id !== brandId) {
+        return res.status(409).json({ message: "A brand with this slug already exists" });
+      }
+    }
+
     const updateData: Record<string, any> = {};
     if (parsed.data.name) updateData.name = parsed.data.name;
     if (parsed.data.display_name !== undefined) updateData.displayName = parsed.data.display_name;
+    if (parsed.data.slug) updateData.slug = parsed.data.slug;
 
     const updated = await storage.updateBrand(brandId, updateData);
     return res.json(updated);
@@ -363,20 +414,17 @@ const validationRequestSchema = z.object({
   inputs: z.object({
     revenue: z.object({
       monthlyAuv: z.number().optional(),
-      year1GrowthRate: z.number().optional(),
-      year2GrowthRate: z.number().optional(),
+      growthRates: z.array(z.number()).optional(),
       startingMonthAuvPct: z.number().optional(),
     }).optional(),
     operatingCosts: z.object({
       cogsPct: z.number().optional(),
       laborPct: z.number().optional(),
-      rentMonthly: z.number().optional(),
-      utilitiesMonthly: z.number().optional(),
-      insuranceMonthly: z.number().optional(),
+      facilitiesAnnual: z.number().optional(),
       marketingPct: z.number().optional(),
       royaltyPct: z.number().optional(),
       adFundPct: z.number().optional(),
-      otherMonthly: z.number().optional(),
+      otherOpexPct: z.number().optional(),
     }).optional(),
     financing: z.object({
       loanAmount: z.number().optional(),

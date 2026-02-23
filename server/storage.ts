@@ -31,7 +31,7 @@ import {
   fddIngestionRuns,
 } from "@shared/schema";
 import type { StartupCostLineItem } from "@shared/financial-engine";
-import { buildPlanFinancialInputs, buildPlanStartupCosts, migrateStartupCosts } from "@shared/plan-initialization";
+import { buildPlanFinancialInputs, buildPlanStartupCosts, migrateStartupCosts, migratePlanFinancialInputs } from "@shared/plan-initialization";
 
 export interface IStorage {
   getUser(id: string): Promise<User | undefined>;
@@ -82,6 +82,8 @@ export interface IStorage {
   getPlansByBrand(brandId: string): Promise<Plan[]>;
   updatePlan(id: string, data: UpdatePlan): Promise<Plan>;
   deletePlan(id: string): Promise<void>;
+  clonePlan(id: string, newName: string): Promise<Plan>;
+  getPlanCountByUser(userId: string): Promise<number>;
   getKatalystAdmins(): Promise<Array<{ id: string; email: string; displayName: string | null; profileImageUrl: string | null }>>;
   getBrandAccountManagers(brandId: string): Promise<BrandAccountManager[]>;
   getBrandAccountManager(brandId: string, accountManagerId: string): Promise<BrandAccountManager | undefined>;
@@ -119,6 +121,9 @@ export interface IStorage {
   getFddIngestionRuns(brandId: string): Promise<FddIngestionRun[]>;
   getFddIngestionRun(runId: string): Promise<FddIngestionRun | undefined>;
   updateFddIngestionRun(runId: string, data: Partial<Pick<FddIngestionRun, "status" | "extractedData" | "errorMessage" | "appliedAt">>): Promise<FddIngestionRun>;
+
+  getBrandStats(brandId: string): Promise<{ planCount: number; userCount: number }>;
+  deleteBrand(brandId: string): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -323,15 +328,20 @@ export class DatabaseStorage implements IStorage {
 
   async getPlan(id: string): Promise<Plan | undefined> {
     const [plan] = await db.select().from(plans).where(eq(plans.id, id)).limit(1);
+    if (plan) migratePlanInPlace(plan);
     return plan;
   }
 
   async getPlansByUser(userId: string): Promise<Plan[]> {
-    return db.select().from(plans).where(eq(plans.userId, userId));
+    const result = await db.select().from(plans).where(eq(plans.userId, userId));
+    result.forEach(migratePlanInPlace);
+    return result;
   }
 
   async getPlansByBrand(brandId: string): Promise<Plan[]> {
-    return db.select().from(plans).where(eq(plans.brandId, brandId));
+    const result = await db.select().from(plans).where(eq(plans.brandId, brandId));
+    result.forEach(migratePlanInPlace);
+    return result;
   }
 
   async updatePlan(id: string, data: UpdatePlan): Promise<Plan> {
@@ -345,6 +355,41 @@ export class DatabaseStorage implements IStorage {
 
   async deletePlan(id: string): Promise<void> {
     await db.delete(plans).where(eq(plans.id, id));
+  }
+
+  async clonePlan(id: string, newName: string): Promise<Plan> {
+    const source = await this.getPlan(id);
+    if (!source) throw new Error("Source plan not found");
+    const clonedFinancialInputs = source.financialInputs
+      ? JSON.parse(JSON.stringify(source.financialInputs))
+      : null;
+    const clonedStartupCosts = source.startupCosts
+      ? JSON.parse(JSON.stringify(source.startupCosts))
+      : null;
+    const [created] = await db
+      .insert(plans)
+      .values({
+        userId: source.userId,
+        brandId: source.brandId,
+        name: newName,
+        financialInputs: clonedFinancialInputs as any,
+        startupCosts: clonedStartupCosts as any,
+        status: "draft" as const,
+        pipelineStage: source.pipelineStage,
+        quickStartCompleted: false,
+        targetMarket: source.targetMarket,
+        targetOpenQuarter: source.targetOpenQuarter,
+      } as any)
+      .returning();
+    return created;
+  }
+
+  async getPlanCountByUser(userId: string): Promise<number> {
+    const result = await db
+      .select({ count: sql<number>`count(*)::int` })
+      .from(plans)
+      .where(eq(plans.userId, userId));
+    return result[0]?.count ?? 0;
   }
 
   async getKatalystAdmins(): Promise<Array<{ id: string; email: string; displayName: string | null; profileImageUrl: string | null }>> {
@@ -611,6 +656,51 @@ export class DatabaseStorage implements IStorage {
     if (data.appliedAt !== undefined) updateData.appliedAt = data.appliedAt;
     const [updated] = await db.update(fddIngestionRuns).set(updateData).where(eq(fddIngestionRuns.id, runId)).returning();
     return updated;
+  }
+
+  async getBrandStats(brandId: string): Promise<{ planCount: number; userCount: number }> {
+    const [planResult] = await db
+      .select({ count: sql<number>`count(*)::int` })
+      .from(plans)
+      .where(eq(plans.brandId, brandId));
+    const [userResult] = await db
+      .select({ count: sql<number>`count(*)::int` })
+      .from(users)
+      .where(eq(users.brandId, brandId));
+    return {
+      planCount: planResult?.count ?? 0,
+      userCount: userResult?.count ?? 0,
+    };
+  }
+
+  async deleteBrand(brandId: string): Promise<void> {
+    await db.transaction(async (tx) => {
+      await tx.update(users).set({ brandId: null }).where(eq(users.brandId, brandId));
+      await tx.delete(invitations).where(eq(invitations.brandId, brandId));
+      await tx.delete(brandAccountManagers).where(eq(brandAccountManagers.brandId, brandId));
+      await tx.delete(brandValidationRuns).where(eq(brandValidationRuns.brandId, brandId));
+      await tx.delete(fddIngestionRuns).where(eq(fddIngestionRuns.brandId, brandId));
+      await tx.delete(brands).where(eq(brands.id, brandId));
+    });
+  }
+}
+
+function migratePlanInPlace(plan: Plan): void {
+  if (plan.financialInputs) {
+    const original = JSON.stringify(plan.financialInputs);
+    plan.financialInputs = migratePlanFinancialInputs(plan.financialInputs as any) as any;
+    const migrated = JSON.stringify(plan.financialInputs);
+    if (original !== migrated) {
+      db.update(plans)
+        .set({ financialInputs: plan.financialInputs as any, updatedAt: new Date() })
+        .where(eq(plans.id, plan.id))
+        .then(() => {
+          console.log(`[migration] Persisted migrated financial_inputs for plan ${plan.id}`);
+        })
+        .catch((err) => {
+          console.error(`[migration] Failed to persist migrated financial_inputs for plan ${plan.id}:`, err);
+        });
+    }
   }
 }
 

@@ -1,6 +1,6 @@
 # Story 10.2a: Sensitivity Chart Dashboard
 
-Status: needs-revision
+Status: done
 
 ## Story
 
@@ -179,6 +179,10 @@ Each chart card uses a plain-language primary title (in `CardTitle`) with the te
 
 - **DO NOT add a Tasks/Subtasks section to this story file.** The dev agent plans its own implementation.
 
+### 7H.2 Per-Month Independence Dependency
+
+- **If Story 7H.2 has been completed**, the `PlanFinancialInputs` schema may now support 60-element per-month arrays for qualifying fields (revenue, COGS%, labor%, marketing%) alongside the existing 5-element per-year arrays. The sensitivity engine's `applySensitivityFactors()` function in `sensitivity-engine.ts` currently iterates 5 elements (`for (let i = 0; i < 5; i++)`). If 7H.2 has extended these arrays, the sensitivity engine must be updated to iterate over all array elements. Verify the current array structure in `FinancialInputs` before implementation. `SliderValues` (percentage adjustments) are unaffected — they are scenario-agnostic and applied at computation time.
+
 ### Gotchas & Integration Warnings
 
 - **Story 10.1 must complete before 10.2a can begin.** Story 10.2a's `SensitivityCharts` component is rendered inside `WhatIfPlayground` created in Story 10.1. The interface contract: `WhatIfPlayground` computes `SensitivityOutputs` (from `computeSensitivityOutputs`) and passes them to `SensitivityCharts` as a prop. If 10.1 is not done, there is no host component for 10.2a's charts.
@@ -200,3 +204,35 @@ Each chart card uses a plain-language primary title (in `CardTitle`) with the te
 - **Dark mode:** All chart colors use CSS variables which have dark-mode overrides in `index.css`. No explicit dark mode handling needed in chart code — `ChartContainer` wraps in the CSS scope.
 
 - **Chart 2 performance note:** 2 scenarios × 60 data points = 120 line segments. If animation causes jank on lower-end devices, consider downsampling to monthly averages per quarter for the line display while retaining full monthly data in tooltips.
+
+## Dev Agent Record
+
+- **Agent Model Used:** Claude 4.6 Opus (Replit Agent)
+- **Completion Notes:** Implemented all 6 sensitivity charts as a pure presentational `SensitivityCharts` component integrated into the existing `WhatIfPlayground`. Charts follow the `dashboard-charts.tsx` recharts + ChartContainer pattern. All currency values converted from cents to dollars. ROIC percentage correctly multiplied by 100. Error boundary and data validation guard handle malformed data. Amber advisory zone on Chart 2 checks all 60 months for negative cash. Break-even null case handled gracefully.
+- **File List:**
+  - Created: `client/src/components/planning/sensitivity-charts.tsx`
+  - Modified: `client/src/components/planning/what-if-playground.tsx` (import + render SensitivityCharts)
+  - Modified: `_bmad-output/implementation-artifacts/10-2a-sensitivity-chart-dashboard.md` (status updates)
+  - Modified: `_bmad-output/implementation-artifacts/sprint-status.yaml` (status updates)
+- **Testing Summary:**
+  - Test approach: E2E Playwright testing + Vitest regression suite
+  - E2E test verified: all 6 charts render, 2-column grid layout, ROI callout text, slider interaction re-renders charts, no error boundary triggered
+  - Vitest: 753/753 tests passing, 0 regressions
+  - ACs covered by E2E: AC1-AC2 (layout/reactivity), AC7-AC10 (break-even, ROI), AC13 (error boundary absence), AC15 (data-testid), AC17 (no API calls)
+  - ACs covered by code inspection: AC3-AC6 (profitability, cash flow details), AC11-AC12 (balance sheet, debt), AC14 (memoization), AC16 (colors)
+- **LSP Status:** 0 errors, 0 warnings
+- **Visual Verification:** yes (E2E Playwright test with screenshots confirmed all charts visible)
+- **Code Review (Adversarial):**
+  - Reviewer: Claude 4.6 Opus (fresh context)
+  - Date: 2026-02-22
+  - Findings: 3 HIGH, 2 MEDIUM, 3 LOW — all HIGH and MEDIUM fixed
+  - H1 FIXED: Grid breakpoint `lg:grid-cols-2` → `md:grid-cols-2` (tablet 2-column per Dev Notes)
+  - H2 FIXED: Custom tooltip for Chart 1 showing year, scenario labels, all 5 P&L values formatted as dollars
+  - H3 FIXED: Data validation guard now checks both `base` AND `current` for annualSummaries, roicExtended, monthlyProjections
+  - M1 NOTED: Cash flow advisory text below chart (acceptable — recharts annotation positioning limitation)
+  - M2 FIXED: Break-Even chart `<rect>` → recharts `<Cell>` for proper individual bar coloring
+  - L1 FIXED: Removed unused `Legend` import
+  - L2 FIXED: Static `tickMonths` array moved to module-level constant `CASH_FLOW_TICK_MONTHS`
+  - L3 NOTED: Hardcoded hex `#D0D1DB4D` in CartesianGrid follows existing `dashboard-charts.tsx` pattern
+  - All 17 ACs verified: 15 SATISFIED, 1 PARTIAL (AC6 annotation position — acceptable), 1 PARTIAL (AC15 tooltip data-testid forwarding — shadcn limitation)
+  - Post-fix LSP: 0 errors, 0 warnings

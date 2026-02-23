@@ -45,13 +45,13 @@ function makeStartupCost(id: string, name: string, amount: number, classificatio
 // Input!E6: Depreciation = 4 years → 1/4 = 0.25
 // Input!E7: Tax rate = 21% → 0.21; EBITDA multiple = 5x
 const POSTNET_INPUTS: FinancialInputs = {
-  revenue: { annualGrossSales: 32240100, monthsToReachAuv: 14, startingMonthAuvPct: 0.08, growthRates: [0.13, 0.13, 0.10, 0.08, 0.08] },
+  revenue: { monthlyAuvByMonth: Array(60).fill(Math.round(32240100 / 12)), /* annualGrossSales was 32240100 */ monthsToReachAuv: 14, startingMonthAuvPct: 0.08, growthRates: [0.13, 0.13, 0.10, 0.08, 0.08] },
   operatingCosts: {
-    cogsPct: [0.30, 0.30, 0.30, 0.30, 0.30],
-    laborPct: [0.17, 0.17, 0.17, 0.17, 0.17],
+    cogsPct: Array(60).fill(0.30),
+    laborPct: Array(60).fill(0.17),
     royaltyPct: [0.05, 0.05, 0.05, 0.05, 0.05],
     adFundPct: [0.02, 0.02, 0.02, 0.02, 0.02],
-    marketingPct: [0.05, 0.03, 0.02, 0.02, 0.02],
+    marketingPct: [...Array(12).fill(0.05), ...Array(12).fill(0.03), ...Array(12).fill(0.02), ...Array(12).fill(0.02), ...Array(12).fill(0.02)],
     otherOpexPct: [0.03, 0.03, 0.03, 0.03, 0.03],
     payrollTaxPct: [0.20, 0.20, 0.20, 0.20, 0.20],
     facilitiesAnnual: [1000000, 1030000, 1060900, 1092727, 1125509],
@@ -183,13 +183,13 @@ const PN_VALUATION: Record<number, { grossSales: number; netOperatingIncome: num
 // Input!E3: Equity = 20%; E4: Interest = 10.5%; E5: Term = 144 months
 // Input!E6: Depreciation = 4 years → 0.25; E7: Tax = 21%
 const JEREMIAHS_INPUTS: FinancialInputs = {
-  revenue: { annualGrossSales: 54965900, monthsToReachAuv: 15, startingMonthAuvPct: 0.50, growthRates: [0.10, 0.08, 0.06, 0.05, 0.04] },
+  revenue: { monthlyAuvByMonth: Array(60).fill(Math.round(54965900 / 12)), /* annualGrossSales was 54965900 */ monthsToReachAuv: 15, startingMonthAuvPct: 0.50, growthRates: [0.10, 0.08, 0.06, 0.05, 0.04] },
   operatingCosts: {
-    cogsPct: [0.22, 0.22, 0.22, 0.22, 0.22],
-    laborPct: [0.18, 0.18, 0.18, 0.18, 0.18],
+    cogsPct: Array(60).fill(0.22),
+    laborPct: Array(60).fill(0.18),
     royaltyPct: [0.06, 0.06, 0.06, 0.06, 0.06],
     adFundPct: [0.045, 0.045, 0.045, 0.045, 0.045],
-    marketingPct: [0.02, 0.02, 0.02, 0.02, 0.02],
+    marketingPct: Array(60).fill(0.02),
     otherOpexPct: [0.03, 0.03, 0.03, 0.03, 0.03],
     payrollTaxPct: [0.20, 0.20, 0.20, 0.20, 0.20],
     facilitiesAnnual: [7500000, 7725000, 7956750, 8195453, 8441316],
@@ -494,7 +494,7 @@ describe("PostNet Reference Validation", () => {
   describe("Intermediate Month Spot-Checks (AC-7)", () => {
     test("Month 6 P&L revenue within ±$1 of interpolated ramp-up", () => {
       const m6 = result.monthlyProjections[5];
-      const monthlyAuv = POSTNET_INPUTS.revenue.annualGrossSales / 12;
+      const monthlyAuv = POSTNET_INPUTS.revenue.monthlyAuvByMonth[0];
       const startPct = POSTNET_INPUTS.revenue.startingMonthAuvPct;
       const expectedPct = startPct + ((1 - startPct) * 6 / POSTNET_INPUTS.revenue.monthsToReachAuv);
       const expectedRevenue = Math.round(expectedPct * monthlyAuv);
@@ -531,6 +531,16 @@ describe("PostNet Reference Validation", () => {
         expect(r.taxRate).toBeCloseTo(ss.taxRate, 2);
       });
     }
+
+    // ROIC percentage — reference uses pre-tax: preTaxNetIncomeIncSweat / totalInvestedCapital
+    // Source: ROIC tab row 19: (67.0%), (0.4%), 5.2%, 9.2%, 24.8%
+    test("ROIC percentage is pre-tax (matches reference spreadsheet)", () => {
+      const refRoicPct = [-0.67, -0.004, 0.052, 0.092, 0.248];
+      for (let y = 0; y < 5; y++) {
+        const r = result.roicExtended[y];
+        expect(r.roicPct).toBeCloseTo(refRoicPct[y], 1);
+      }
+    });
 
     // DISCREPANCY: ROIC retained earnings diverge due to tax accrual on BS (KNOWN DIVERGENCE #2)
     test("KNOWN DIVERGENCE: retained earnings diverge Y2+ due to tax accrual on BS", () => {
@@ -733,7 +743,7 @@ describe("Jeremiah's Italian Ice Reference Validation", () => {
   describe("Intermediate Month Spot-Checks (AC-7)", () => {
     test("Month 8 P&L revenue within ±$1 of interpolated ramp-up", () => {
       const m8 = result.monthlyProjections[7];
-      const monthlyAuv = JEREMIAHS_INPUTS.revenue.annualGrossSales / 12;
+      const monthlyAuv = JEREMIAHS_INPUTS.revenue.monthlyAuvByMonth[0];
       const startPct = JEREMIAHS_INPUTS.revenue.startingMonthAuvPct;
       const expectedPct = startPct + ((1 - startPct) * 8 / JEREMIAHS_INPUTS.revenue.monthsToReachAuv);
       const expectedRevenue = Math.round(expectedPct * monthlyAuv);
@@ -823,20 +833,20 @@ describe("Cross-Brand Structural Validation", () => {
   // PostNet M1: was $56.80, now correctly $21.49 (8% of $268.67 monthly AUV)
   test("month 1 revenue matches startPct × monthlyAuv for both brands (ramp-up fix regression)", () => {
     const pnM1 = pnResult.monthlyProjections[0];
-    const pnExpected = Math.round(POSTNET_INPUTS.revenue.annualGrossSales / 12 * POSTNET_INPUTS.revenue.startingMonthAuvPct);
+    const pnExpected = Math.round(POSTNET_INPUTS.revenue.monthlyAuvByMonth[0] * POSTNET_INPUTS.revenue.startingMonthAuvPct);
     expect(pnM1.revenue).toBe(pnExpected);
 
     const jiM1 = jiResult.monthlyProjections[0];
-    const jiExpected = Math.round(JEREMIAHS_INPUTS.revenue.annualGrossSales / 12 * JEREMIAHS_INPUTS.revenue.startingMonthAuvPct);
+    const jiExpected = Math.round(JEREMIAHS_INPUTS.revenue.monthlyAuvByMonth[0] * JEREMIAHS_INPUTS.revenue.startingMonthAuvPct);
     expectClose(jiM1.revenue, jiExpected, 1, "Jeremiah's M1 revenue");
   });
 
   test("month at monthsToReachAuv reaches 100% AUV for both brands", () => {
-    const pnAuv = POSTNET_INPUTS.revenue.annualGrossSales / 12;
+    const pnAuv = POSTNET_INPUTS.revenue.monthlyAuvByMonth[0];
     const pnM14 = pnResult.monthlyProjections[13];
     expectClose(pnM14.revenue, pnAuv, 1, "PostNet month 14 = 100% AUV");
 
-    const jiAuv = JEREMIAHS_INPUTS.revenue.annualGrossSales / 12;
+    const jiAuv = JEREMIAHS_INPUTS.revenue.monthlyAuvByMonth[0];
     const jiM15 = jiResult.monthlyProjections[14];
     expectClose(jiM15.revenue, jiAuv, 1, "Jeremiah's month 15 = 100% AUV");
   });
@@ -849,5 +859,54 @@ describe("Cross-Brand Structural Validation", () => {
     const jiGPPct = 1 - 0.22 - 0.06 - 0.045;
     const jiM12 = jiResult.monthlyProjections[11];
     expect(jiM12.grossProfit / jiM12.revenue).toBeCloseTo(jiGPPct, 2);
+  });
+
+  // ═══════════════════════════════════════════════════════════════════════
+  // P&L ANALYSIS — Labor Efficiency (Total Wages / Revenue)
+  // Source: P&L Statement tab, rows 59-60
+  // Formula: Total Wages / Revenue — ratio of wages to revenue (0-1 range)
+  // ═══════════════════════════════════════════════════════════════════════
+  test("P&L Analysis: labor efficiency uses Wages/Revenue formula (PostNet)", () => {
+    expect(pnResult.plAnalysis).toHaveLength(5);
+    const y1 = pnResult.plAnalysis[0];
+    const annual = pnResult.annualSummaries[0];
+    if (annual.revenue > 0) {
+      const manualLER = y1.totalWages / annual.revenue;
+      expect(y1.laborEfficiency).toBeCloseTo(manualLER, 1);
+    }
+    expect(y1.laborEfficiency).toBeGreaterThanOrEqual(0);
+    expect(y1.laborEfficiency).toBeLessThanOrEqual(1);
+  });
+
+  test("P&L Analysis: adjusted labor efficiency uses AdjWages/Revenue (PostNet)", () => {
+    const y1 = pnResult.plAnalysis[0];
+    const annual1 = pnResult.annualSummaries[0];
+    if (annual1.revenue > 0) {
+      const manualAdjLER = y1.adjustedTotalWages / annual1.revenue;
+      expect(y1.adjustedLaborEfficiency).toBeCloseTo(manualAdjLER, 1);
+    }
+    const y2 = pnResult.plAnalysis[1];
+    const annual2 = pnResult.annualSummaries[1];
+    expect(y2.adjustedTotalWages).toBeGreaterThan(0);
+    if (annual2.revenue > 0) {
+      const manualY2 = y2.adjustedTotalWages / annual2.revenue;
+      expect(y2.adjustedLaborEfficiency).toBeCloseTo(manualY2, 1);
+    }
+  });
+
+  test("P&L Analysis: laborEfficiency is between 0 and 1 (PostNet)", () => {
+    pnResult.plAnalysis.forEach((p) => {
+      expect(p.laborEfficiency).toBeGreaterThanOrEqual(0);
+      expect(p.laborEfficiency).toBeLessThanOrEqual(1);
+    });
+  });
+
+  test("P&L Analysis: percentage metrics computed correctly (PostNet)", () => {
+    for (const pla of pnResult.plAnalysis) {
+      expect(pla.discretionaryMarketingPct).toBeGreaterThanOrEqual(0);
+      expect(pla.discretionaryMarketingPct).toBeLessThanOrEqual(0.10);
+      expect(pla.prTaxBenefitsPctOfWages).toBeCloseTo(0.20, 1);
+      expect(pla.otherOpexPctOfRevenue).toBeCloseTo(0.03, 1);
+    }
   });
 });

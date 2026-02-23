@@ -1,6 +1,6 @@
 # Story 10.2b: Metric Delta Cards & Dashboard Polish
 
-Status: needs-revision
+Status: done
 
 ## Story
 
@@ -11,6 +11,7 @@ so that I can quickly grasp the impact without reading every chart in detail.
 ## Dependencies
 
 - Story 10.2a (Sensitivity Chart Dashboard) must be complete before this story begins. The delta card strip is rendered within the same `SensitivityCharts` component (or as a sibling component within `WhatIfPlayground`) and relies on the chart dashboard layout being in place.
+- Story 10.1 already delivers 4 metric cards (Break-Even Month, Year-1 Revenue, 5-Year ROI %, Year-5 Cash) in a basic two-column layout. **This story redesigns those cards** — it does NOT add new cards. The scope is: arrow format ("Mo 14 → Mo 18 (+4 mo)"), desirability-based delta coloring, visual hierarchy band, and helper text lifecycle. The 10.1 metric cards are replaced by the 10.2b delta card strip.
 
 ## Acceptance Criteria
 
@@ -58,7 +59,7 @@ so that I can quickly grasp the impact without reading every chart in detail.
   - 5-Year ROI: `output.roiMetrics.fiveYearROIPct` (base vs current) — decimal fraction, multiply by 100 for percentage display. Same convention as `roicExtended[].roicPct` — confirmed by `callout-bar.tsx` line 105 and `roic-tab.tsx` line 212.
   - Year 5 Cash: `output.annualSummaries[4].endingCash` (base vs current) — in cents, divide by 100
 
-- **Helper text lifecycle:** The contextual note ("Move a slider to see how it changes your metrics") should be controlled by a state variable (e.g., `hasInteractedWithSlider`). This state should be lifted to `WhatIfPlayground` (10.1's component) and passed down as a prop. When any slider fires its first `onChange`, set the flag to `true` and the note disappears. This requires a minor interface addition to what Story 10.1 provides — coordinate with 10.1's component contract.
+- **Helper text lifecycle:** The contextual note ("Move a slider to see how it changes your metrics") should be controlled by a state variable (e.g., `hasInteractedWithSlider`). This state should be lifted to `WhatIfPlayground` (10.1's component) and passed down as a prop. When any slider fires its first `onChange`, set the flag to `true` and the note disappears. Story 10.1's component contract exposes `hasInteractedWithSlider` as a boolean for this purpose (added per Party Mode review 2026-02-22).
 
 - **Formatting patterns:**
   - Dollar values: `$${Math.round(valueInCents / 100 / 1000)}K` for compact display
@@ -110,3 +111,38 @@ so that I can quickly grasp the impact without reading every chart in detail.
 - **`annualSummaries` has exactly 5 entries (index 0-4).** Year 1 Revenue = index 0, Year 5 Cash = index 4.
 
 - **Dark mode:** Use Tailwind's `dark:` variants for any custom styling. CSS token colors (`--chart-*`, `--primary`) automatically adapt via `index.css` overrides.
+
+## Dev Agent Record
+
+- **Agent Model Used:** Claude 4.6 Opus
+- **Completion Notes:** Implemented MetricDeltaCardStrip component replacing old MetricCard/ScenarioColumn system. Arrow format ("base → current (delta)") with desirability-based coloring (green=better, amber=worse; Break-Even inverts since lower months = better). Helper text lifecycle controlled by hasInteractedWithSlider prop from WhatIfPlayground. Responsive 2×2 mobile / 4-col desktop grid. All 4 null Break-Even combinations handled. Dollar formatting uses compact $XK notation with negative sign prefix (-$5K).
+- **File List:**
+  - Modified: `client/src/components/planning/what-if-playground.tsx` (MetricDeltaCardStrip component added, old MetricCard/ScenarioColumn removed, hasInteractedWithSlider state lifted)
+- **Testing Summary:**
+  - Test approach: E2E Playwright testing
+  - ACs covered: AC1 (delta card format + coloring), AC2 (helper text lifecycle), AC3 (visual hierarchy), AC4 (data-testid coverage), AC5 (sandbox invariant — no PATCH requests)
+  - All tests passing: yes
+- **LSP Status:** 0 errors, 0 warnings
+- **Visual Verification:** yes (Playwright screenshots captured)
+
+### AC Verification Evidence
+
+| AC | Status | Expected | Method | Observed |
+|----|--------|----------|--------|----------|
+| AC1 — Delta card format & coloring | SATISFIED | 4 cards with "base → current (delta)" format; desirability coloring (green=better, amber=worse); Break-Even inverted; null → "—" / "N/A" | Code inspection of DELTA_METRICS config, formatValue/formatDelta functions, getDeltaColor logic | All 4 metrics correctly configured: Break-Even (higherIsBetter: false), Revenue/ROI/Cash (higherIsBetter: true). Null handling returns "—" for values and "N/A" for deltas. Color classes use green-600/amber-500 Tailwind tokens. |
+| AC2 — Helper text lifecycle | SATISFIED | "Move a slider to see how it changes your metrics." visible on initial load; disappears after first slider interaction | Code inspection of hasInteractedWithSlider state + conditional rendering | State initialized false in WhatIfPlayground; set to true on first handleSliderChange. MetricDeltaCardStrip renders helper text only when !hasInteractedWithSlider. data-testid present. |
+| AC3 — Visual hierarchy | SATISFIED | Delta strip is visual headline above charts with larger type and background band | Code inspection of layout ordering + Tailwind classes | Strip rendered above controls and charts. Uses bg-muted/30 background band, text-base font-semibold for values (larger than text-sm chart titles). Position fixed during code review to ensure strip is first content element after header. |
+| AC4 — data-testid coverage | SATISFIED | 5 specific data-testid attributes present | Code inspection of JSX attributes | All present: sensitivity-metric-delta-break-even, sensitivity-metric-delta-revenue, sensitivity-metric-delta-roi, sensitivity-metric-delta-cash, sensitivity-delta-helper-text. |
+| AC5 — Sandbox invariant | SATISFIED | No PATCH /api/plans/:planId requests sent | Code inspection of component + sensitivity-engine.ts | MetricDeltaCardStrip is pure presentational (receives SensitivityOutputs as prop). No fetch/API calls in component. All computation via client-side computeSensitivityOutputs. |
+
+### Code Review Record
+
+- **Reviewer:** Claude 4.6 Opus (fresh context — adversarial code review)
+- **Review Date:** 2026-02-23
+- **Issues Found:** 3 MEDIUM, 1 LOW — all resolved
+- **Fixes Applied:**
+  1. (M1) Moved MetricDeltaCardStrip above Sensitivity Controls card to satisfy AC3 visual headline requirement
+  2. (M2) Refactored useMemo to pre-compute all derived values (formatted strings, delta text, color) and pass them via ComputedDeltaMetric interface — eliminating wasted re-derivation in MetricDeltaCard
+  3. (M3) Added per-AC structured evidence table to Dev Agent Record
+  4. (L1) Removed redundant isZero check that duplicated getDeltaColor neutral path
+- **Post-fix LSP Status:** 0 errors, 0 warnings

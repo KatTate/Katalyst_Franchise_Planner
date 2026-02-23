@@ -1,4 +1,9 @@
 # generated: 2026-02-09
+# updated: 2026-02-23 (Epic 10 retrospective completed — full 15-step BMAD workflow executed)
+# updated: 2026-02-22 (Sprint Planning regenerated — full inventory verification)
+# updated: 2026-02-22 (SCP-2026-02-22 approved — Post-Epic-7 Course Correction & Stabilization)
+# updated: 2026-02-21 (Epic 7 retrospective completed — sprint planning reset required)
+# updated: 2026-02-21 (Epic 7 Party Mode review: 7.1a→done, 7.1b-7.1d rewritten, 7.1e created)
 # updated: 2026-02-20 (Story 10.2 context document created: Multi-Chart Sensitivity Dashboard)
 # project: Katalyst Growth Planner
 # project_key: NOKEY
@@ -22,6 +27,7 @@
 #   - in-progress: Developer actively working on implementation
 #   - review: Ready for code review (via Dev's code-review workflow)
 #   - done: Story completed
+#   - needs-revision: Story ACs require rewrite per Sprint Change Proposal before implementation
 #
 # Retrospective Status:
 #   - optional: Can be completed but not required
@@ -37,10 +43,26 @@
 generated: 2026-02-09
 updated: 2026-02-21  # Story 11.1 context document created (Create Story workflow)
 updated: 2026-02-21  # Story 5H.4 context document created (Create Story workflow)
+updated: 2026-02-23  # Story 10.3 adversarial code review completed → done. 9 findings (3H/3M/3L), all H+M fixed: newest-first sort (H1), inline validation (H2), useMemo dep (H3), disabled button (M1), strokeDasharray (M2), type unification (M3). 3L documented for later.
+updated: 2026-02-23  # Story 10.3 implementation complete → review. All 10 ACs satisfied, 7 files modified (schema, routes, engine, playground UI, charts). Sandbox invariant preserved.
+updated: 2026-02-23  # Story 10.3 context document created (Create Story workflow). 10 ACs, 6 files in change summary. JSONB column storage decision documented.
+updated: 2026-02-23  # Story 10.2b adversarial code review completed → done. 3M/1L found, all fixed. AC3 positioning (M1), useMemo effectiveness (M2), evidence table (M3), redundant check (L1). All 5 ACs satisfied.
+updated: 2026-02-22  # Story 10.1 adversarial code review completed → done. 2H fixed (COGS unit "pp", input clamping), 2M/2L documented. All 5 ACs satisfied.
+updated: 2026-02-22  # Story 7H.4 adversarial code review completed → done. 4 findings fixed (2M/2L). All 8 ACs satisfied. 753 tests passing.
+updated: 2026-02-22  # Story 7H.4 implementation complete → review. All 8 ACs satisfied, 753 tests passing (6 in target file), 1 file modified. Test-only story.
+updated: 2026-02-22  # Story 7H.4 context document created (Create Story workflow). 8 ACs, 1 file in change summary. Test-only story.
+updated: 2026-02-22  # Story 7H.3 context document created (Create Story workflow). 10 ACs, 5 files in change summary.
+updated: 2026-02-22  # Story 7H.2 implementation complete → review. All 10 ACs satisfied, 407 tests passing, 12 files modified.
+updated: 2026-02-22  # Story 7H.2 context document created (Create Story workflow). 10 ACs, 13+ files in change summary.
+updated: 2026-02-22  # Story 7H.1 context document created (Create Story workflow). Epic 7H status: in-progress.
+updated: 2026-02-22  # Sprint Planning regenerated: 15 epics, 69 stories (incl. 2 orphans, 1 retired). Epic 7H verified. All statuses preserved — no downgrades.
+updated: 2026-02-22  # SCP-2026-02-22 approved: Post-Epic-7 Course Correction & Stabilization. Epic 7H created. Epic sequencing reset. 7.1b.1 promoted from deferred to required.
+updated: 2026-02-21  # Story 7.2 adversarial code review completed → done. 9 findings fixed (3H/4M/2L). E2E re-verified.
+updated: 2026-02-21  # Story 7.1e adversarial code review completed — done (0H/3M/3L, all resolved)
+updated: 2026-02-21  # Story 7.1d adversarial code review completed — done
+updated: 2026-02-21  # Story 7.1 split into 7.1a-7.1d per Party Mode review
 updated: 2026-02-21  # SCP-2026-02-21 approved: Epic 10 pivot to user-authored scenario modeling
 updated: 2026-02-21  # Story 5H.2 → done (adversarial code review completed, all findings fixed)
-updated: 2026-02-20  # Story 10.2 context document created (Create Story workflow)
-updated: 2026-02-20  # Story 5H.2 → review (dev-story workflow complete, pending code review)
 updated: 2026-02-21  # Story 5H.3 context document created (Create Story workflow)
 project: Katalyst Growth Planner
 project_key: NOKEY
@@ -49,6 +71,158 @@ story_location: _bmad-output/implementation-artifacts
 
 # CHANGE LOG:
 # ===========
+# 2026-02-23: Story 10.3 context document created (Create Story workflow)
+#   - Full story file: 10-3-scenario-persistence-comparison.md (ready-for-dev)
+#   - 10 acceptance criteria covering: save scenario with name validation and 10-cap
+#     (AC-1, AC-2), load scenario into sliders from dropdown (AC-3), loaded scenario
+#     name display + unsaved changes indicator (AC-4), update existing / save as new
+#     (AC-5), delete with confirmation and state cleanup (AC-6), comparison overlay
+#     with third engine run and dotted chart lines (AC-7, AC-8), sandbox invariant
+#     (AC-9), data-testid coverage (AC-10)
+#   - Storage decision: JSONB column `what_if_scenarios` on plans table (recommended
+#     over separate table — simpler, free clone/cascade, no join overhead at ≤10 items)
+#   - Dev notes include: WhatIfScenario interface, 3 API endpoints (POST/PUT/DELETE
+#     under /api/plans/:planId/scenarios), Zod validation schemas, comparison overlay
+#     engine pattern, TanStack Query cache invalidation, SensitivityCharts prop
+#     extension for third dotted line, MetricDeltaCard third column
+#   - Anti-patterns: no financialInputs mutation, no EngineOutput storage, no separate
+#     table, no zero-slider scenario saves, no dead-code integration
+#   - 6 files in change summary: schema.ts, plans.ts route, sensitivity-engine.ts,
+#     what-if-playground.tsx, sensitivity-charts.tsx, Drizzle migration
+#   - Next action: Dev Story (DS) for 10.3 implementation
+#
+# 2026-02-22: Story 7H.4 context document created (Create Story workflow)
+#   - Full story file: 7h-4-input-field-map-validation.md (ready-for-dev)
+#   - 8 acceptance criteria covering: existing test preservation (AC-1), engine type
+#     cross-reference via ENGINE_FIELD_SEMANTICS map (AC-2, AC-7), FIELD_METADATA
+#     completeness coverage with EXCLUDED_FIELDS set (AC-3), category validity (AC-4),
+#     format mismatch detection verification (AC-5), minimum 6 test count (AC-6),
+#     full suite no-regression (AC-8)
+#   - Dev notes include: ENGINE_FIELD_SEMANTICS mapping table (20 entries with engine
+#     paths and semantic types), EXCLUDED_FIELDS inventory (12 entries with exclusion
+#     reasons), anti-patterns (no source file modifications, no separate test file,
+#     no weakening existing tests), ebitdaMultiple special case handling
+#   - Test-only story — modifies 1 file: input-field-map-validation.test.ts
+#   - Addresses recurring display format bug flagged in 3 consecutive retrospectives
+#     (Epics 5, 5H, 7). Root cause: manual mapping without engine cross-reference.
+#   - Next action: Dev Story (DS) for 7H.4 implementation
+#
+# 2026-02-22: Story 7H.3 context document created (Create Story workflow)
+#   - Full story file: 7h-3-brand-crud-completion.md (ready-for-dev)
+#   - 10 acceptance criteria covering: brand metadata editing (name, display name, slug)
+#     in Settings tab (AC-1 through AC-3), brand deletion with type-to-confirm dialog
+#     (AC-4 through AC-6), user preservation with null brandId on cascade (AC-7),
+#     auth enforcement (AC-8), list page unchanged (AC-9), slug change behavior (AC-10)
+#   - Dev notes include: FK cascade ordering (users nullified → invitations deleted →
+#     account managers deleted → brand deleted with plan cascade), uniqueness validation
+#     excluding current brand, existing DELETE plan dialog as reference pattern,
+#     7 anti-patterns, 5 gotchas, demo account handling
+#   - 5 files in change summary: brands.ts route (extend PUT + add DELETE + add stats),
+#     storage.ts (deleteBrand + getBrandStats), BrandIdentityTab.tsx (metadata section +
+#     danger zone), DeleteBrandDialog.tsx (new), admin-brand-detail.tsx (minor)
+#   - Next action: Dev Story (DS) for 7H.3 implementation
+#
+# 2026-02-22: Story 7H.2 implementation complete → review (Dev Story workflow)
+#   - All 10 acceptance criteria satisfied
+#   - 12 files modified across shared/ and client/
+#   - Core changes: qualifying fields (monthlyAuv, cogsPct, laborPct, marketingPct) now
+#     use 60-element FinancialFieldValue[] arrays; engine uses [m-1] direct month indexing;
+#     5→60 migration with idempotency; unwrapForEngine extracts 60-element number arrays;
+#     monthlyAuvByMonth replaces annualGrossSales in FinancialInputs
+#   - UI changes: per-month inline editing in Reports P&L; annual/quarterly convenience editing
+#     updates month ranges; getRawValue averages per-month values for annual/quarterly display;
+#     Copy Year 1 copies month-by-month pattern; "Linked" indicator removed from ColumnToolbar
+#   - Forms: edits on 60-element arrays update all months (AC-8); displays Month 1 value
+#   - Scenario/sensitivity engines updated for 60-element qualifying field arrays
+#   - 407 tests passing (101 plan-init + 173 engine + 104 reference + 29 schema)
+#   - Next action: Adversarial Code Review (CR) for 7H.2
+#
+# 2026-02-22: Story 7H.2 context document created (Create Story workflow)
+#   - Full story file: 7h-2-per-month-independence.md (ready-for-dev)
+#   - 10 acceptance criteria covering: 60-element PlanFinancialInputs arrays (AC-1),
+#     5-to-60 lossless migration with idempotency (AC-2), unwrapForEngine with 60-element
+#     number arrays and monthlyAuvByMonth (AC-3), engine direct month indexing with identity
+#     checks (AC-4), monthly-level inline editing in Reports (AC-5), annual/quarterly
+#     convenience editing updating multiple months (AC-6), Copy Year 1 pattern copy (AC-7),
+#     Forms single-value semantics preserved (AC-8), test coverage (AC-9),
+#     INPUT_FIELD_MAP / scaleForStorage updates (AC-10)
+#   - Dev notes include: engine revenue ramp-up interaction, growth rate preservation,
+#     migration idempotency detection, scenario/sensitivity engine updates, Copy Year 1
+#     month-by-month pattern copy, Forms bidirectional sync (Month 1 representative),
+#     scaleForStorage per-month semantics, "Linked" indicator removal
+#   - 13+ files in change summary spanning shared/ (engine, schema, plan-init, tests) and
+#     client/ (financial-statements, pnl-tab, input-field-map, column-manager, forms)
+#   - Next action: Dev Story (DS) for 7H.2 implementation
+#
+# 2026-02-22: Story 7H.1 context document created (Create Story workflow)
+#   - Full story file: 7h-1-planning-document-realignment.md (ready-for-dev)
+#   - 12 acceptance criteria covering: FR98 addition to PRD (AC-1), architecture per-month
+#     status update (AC-2), Epic 10 description fix (AC-3), 7.1b.1 status change (AC-4),
+#     Epic 7H section addition to epics.md (AC-5), FR Coverage Map update to 112/112 (AC-6),
+#     UX spec two-surface boundary (AC-7), pre-Epic-7 section marked historical (AC-8),
+#     facilities decomposition pattern added (AC-9), story rewrite section marked historical
+#     (AC-10), sidebar wireframe updated (AC-11), UX spec change log entry (AC-12)
+#   - Dev notes include: exact file locations with line numbers, SCP CP-1 through CP-7
+#     text specifications, anti-patterns (no code changes, no content deletion, no tier
+#     confusion), gotchas (line number shifts, FR coverage math, sidebar naming changes,
+#     Part 19 deferred items now delivered)
+#   - Documentation-only story — no application source code changes
+#   - Edits 4 planning artifacts: prd.md, architecture.md, epics.md, ux-design-specification-consolidated.md
+#   - Epic 7H status: in-progress (first story ready-for-dev)
+#   - Next action: Dev Story (DS) for 7H.1 document realignment execution
+#
+# 2026-02-22: Sprint Planning REGENERATED (full workflow execution)
+#   - Full epic file parse: 14 epics with stories in epics.md
+#   - Epic 7H (5 stories) from SCP-2026-02-22 — NOT YET in epics.md (pending story 7H.1 execution)
+#   - 2 documented orphans preserved: 4-7-integration-gaps-startup-cost-mounting (mid-epic add),
+#     5-cp11-border-radius-polish (SCP CP item). Both done — historical artifacts.
+#   - Totals: 15 epics, 69 stories, 15 retrospective entries
+#   - Completed: 7 epics done (1, 2, 3, 4, 5, 5H, 7)
+#   - In-progress: 1 epic (ST — 3/4 stories done, ST-4 blocked on 11.2)
+#   - Backlog: 7 epics (6, 7H, 8, 9, 10, 11, 12)
+#   - Stories done: 49 | needs-revision: 3 | ready-for-dev: 1 | backlog: 16
+#   - All statuses preserved from existing file — no downgrades
+#   - PO-directed epic sequencing (from SCP-2026-02-22):
+#     NEXT: Epic 7H → Epic 10 → Epic 8 → Epic 11 → Epic ST (ST-4) →
+#     Epic 6 → Epic 9 → Epic 12 (Phase 2)
+#   - Validation: PASS with 1 finding (Epic 7H not in epics.md — expected, 7H.1 will add it)
+#
+# 2026-02-22: SCP-2026-02-22 APPROVED — Post-Epic-7 Course Correction & Stabilization
+#   - Sprint planning reset executed per PO direction
+#   - Epic 7 status: DONE (all 6 original stories complete)
+#   - NEW: Epic 7H (Post-Epic-7 Stabilization Sprint) created with 5 stories:
+#     7H.1 Planning Document Realignment (all 4 docs + UX spec)
+#     7H.2 Per-Month Independence (7.1b.1 — promoted from deferred to required)
+#     7H.3 Brand CRUD Completion (delete + edit — Epic 2 gap fix)
+#     7H.4 INPUT_FIELD_MAP Mechanical Validation (recurring bug prevention)
+#     7H.5 E2E Testing Standards & Infrastructure
+#   - Epic sequencing reset by PO:
+#     NEXT: Epic 7H (stabilization)
+#     THEN: Epic 10 (What-If Playground)
+#     THEN: Epic 8 (Advisory Guardrails)
+#     THEN: Epic 11 (Data Sharing & Dashboards)
+#     LATER: Epic ST (Admin Tools — ST-4 blocked on 11.2)
+#     LAST: Epic 6 (PDF Generation) — presentation layer, wait for core to stabilize
+#     LAST: Epic 9 (AI Planning Advisor) — intelligence layer, same reason
+#     PHASE 2: Epic 12 (Advisory Board Meeting)
+#   - FR98 (Multi-Plan CRUD) to be added to PRD (CP-1)
+#   - Epic 10 description to be updated — still references killed Conservative/Optimistic (CP-3)
+#   - UX spec to be updated for Epic 7 decisions (CP-7 — 5 issues)
+#   - Process rules activated: mandatory adversarial review (P-1), change proposal for
+#     design pivots (P-2), story complexity threshold (P-3), completion report accuracy (P-4)
+#   - See: sprint-change-proposal-2026-02-22.md
+#
+# 2026-02-21: Epic 7 Retrospective completed
+#   - Epic 7 delivered all 6 stories (7.1a-7.1e + 7.2)
+#   - CRITICAL: Stories were rewritten mid-epic without Sprint Change Proposal
+#   - CRITICAL: PRD, architecture, epics summary misaligned with what was built
+#   - "Forms = onboarding wizard / Reports = power editing surface" design pivot adopted informally
+#   - 13 action items generated (3 CRITICAL, 5 HIGH, 2 MEDIUM, 3 LOW)
+#   - SPRINT PLANNING RESET REQUIRED before new epic work
+#   - PO directive: Epic 6 (PDF) and Epic 9 (AI Advisor) are NOT next
+#   - Brand CRUD gap (Epic 2) causing active dev pain — needs scheduling
+#   - E2E testing standards needed: agents must auth as franchisee, not admin
+#   - See: epic-7-retrospective.md
 # 2026-02-21: SCP-2026-02-21 approved — Epic 10 pivot to user-authored scenario modeling
 #   - Conservative/Optimistic system-defined columns KILLED (D1)
 #   - Replaced with Base Case vs Your Scenario (user's live slider state) (D2/D3)
@@ -342,6 +516,51 @@ story_location: _bmad-output/implementation-artifacts
 #   - Step 5: All findings fixed. Story status → done, sprint-status.yaml synced.
 #   - All 7 ACs verified SATISFIED (AC-2 required H1 fix to become truly functional)
 #   - Next action: Story 5H.3 (Epic 6 AC Audit & User Journeys)
+# 2026-02-21: Story 7.1 split into 7.1a–7.1d (Party Mode review + story grooming)
+#   - Party Mode multi-agent review (Bob, Winston, Amelia, Quinn) identified 9 issues:
+#     Scope (INVEST violation — 8 deliverables), Facilities dual-source-of-truth,
+#     fragile inheritance heuristic, missing migration transactional safety,
+#     otherOpexPct sanity cap, unresolved scenario engine question,
+#     PerYearEditableRow composition pattern, 5 missing test scenarios
+#   - Story 7.1 → 7.1a: Data Model Restructuring & Migration (AC-1, AC-2, AC-7 + fixes)
+#   - New 7.1b: Reports Per-Year Inline Editing (AC-3)
+#   - New 7.1c: Forms Mode Per-Year Layout (AC-4, inheritance simplified to independent fields)
+#   - New 7.1d: New Field Surfaces (AC-5/6/8/9, Facilities source-of-truth resolved)
+#   - Dependency chain: 7.1a → 7.1b + 7.1c (parallel) → 7.1d
+#   - Epics.md updated: Epic 7 story count 2 → 5
+#   - No Course Correct needed — story-level grooming, not strategic pivot
+#   - See story files: 7-1-per-year-input-columns.md (now 7.1a),
+#     7-1b-reports-per-year-editing.md, 7-1c-forms-per-year-layout.md,
+#     7-1d-new-field-surfaces.md
+# 2026-02-21: Story 7.1b implementation completed (Dev Story workflow)
+#   - AC-1: 15 editable fields in P&L Reports (was 5). INPUT_FIELD_MAP extended with
+#     growth-rate, royalty-pct, ad-fund-pct, other-opex-pct, facilities, mgmt-salaries,
+#     payroll-tax-pct, target-pretax-profit-pct, distributions, shareholder-salary-adj,
+#     non-capex-investment
+#   - AC-2 (per-month independence): DEFERRED to follow-up story 7.1b.1 per Scope Risk Note
+#   - AC-3: Copy Year 1 to All — hover button + AlertDialog confirmation, reuses buildUpdatedInputs
+#   - AC-4: Flash animation cleanup complete (flashingRows, isFlashing, animate-flash-linked removed)
+#   - Bug fix: Expense rows use Math.abs for storedGranularity fields in edit mode
+#   - handleCopyYear1ToAll refactored to eliminate facilitiesDecomposition dead code branch
+#   - Architect review: 2 rounds (initial FAIL on dead code, fix applied, re-reviewed)
+#   - LSP: 0 errors, 0 warnings on all 5 changed files
+#   - E2E: Playwright verified COGS% editing, Copy Y1, all new rows rendering
+#   - Story status: done
+#   - Next: 7.1c + 7.1d can proceed in parallel (both unblocked)
+# 2026-02-21: Story 7.1 context document created (Create Story workflow)
+#   - Full story file: 7-1-per-year-input-columns.md (ready-for-dev)
+#   - 7 acceptance criteria covering: PlanFinancialInputs per-year restructuring (AC-1),
+#     lossless migration (AC-2), Reports independent per-year editing (AC-3),
+#     Forms mode 5-column per-year layout (AC-4), Facilities field alignment (AC-5),
+#     Other OpEx unit correction (AC-6), unwrapForEngine translation update (AC-7)
+#   - Dev notes include: FinancialFieldValue array pattern, fill5() removal audit,
+#     otherMonthly→otherOpexPct conversion elimination, facilities compound calculation
+#     removal, year1GrowthRate/year2GrowthRate consolidation, migration idempotency,
+#     scenario/sensitivity engine compatibility, 16 files in change summary
+#   - Anti-patterns: no engine computation changes, no new API endpoints, no fill5
+#     for per-year fields, no duplicate InlineEditableCell
+#   - Epic 7 status: in-progress (first story ready-for-dev)
+#   - Next action: Dev Story (DS) for 7.1 implementation
 # 2026-02-21: Story 5H.4 context document created (Create Story workflow)
 #   - Full story file: 5h-4-planning-artifact-alignment.md (ready-for-dev)
 #   - 5 acceptance criteria across 5 phases: FR-to-Story Cross-Reference (111 FRs),
@@ -373,6 +592,78 @@ story_location: _bmad-output/implementation-artifacts
 #   - FRs covered: FR33, FR34, FR35, FR36, FR37, FR38
 #   - Epic 11 status: in-progress (first story ready-for-dev)
 #   - Next action: Dev Story (DS) for 11.1 implementation
+# 2026-02-21: Epic 5H Retrospective FINALIZED (full 15-step BMAD workflow)
+#   - All 15 retrospective steps executed in sequence
+#   - Visual verification performed: ScenarioBar CONFIRMED visible, labor efficiency rows
+#     NOT FOUND in DOM, callout bar remediation CONFIRMED working
+#   - PO feedback captured verbatim: NOT SATISFIED with Epic 5H
+#   - Key concerns: display format validation gap, 30-day month architecture decision
+#     unmade, Plan CRUD (Epic 7) and Brand CRUD (Epic 2) flows unresolved,
+#     forward momentum stalled by hardening work
+#   - 9 action items: 2 CRITICAL (display format validation, 30-day month resolution),
+#     3 HIGH (ScenarioBar removal, labor efficiency fix, 5H.3 AC amendments),
+#     2 MEDIUM (decision surfacing process, display-layer validation standard),
+#     2 LOW (content authoring, large file doc — carried from Epic 5)
+#   - Critical path: 5 items must complete before Epic 6 implementation
+#   - Deployment status: development only — not published
+#   - Epic 5H status: DONE (all 4 stories + retrospective complete)
+#   - See: epic-5h-retrospective.md
+# 2026-02-21: Epic 5H Retro Action Items — HIGH items executed, then CRITICAL ENGINE BUGS FOUND
+#   - AI-3 HIGH (ScenarioBar removal): DONE — ScenarioBar import and render removed from
+#     financial-statements.tsx. "Compare Scenarios" button no longer visible in Reports.
+#   - AI-4 HIGH (Labor Efficiency fix): ESCALATED TO CRITICAL — During AI-4 execution,
+#     discovered the engine formula was COMPLETELY INVERTED (totalWages/revenue instead of
+#     nonLaborGrossMargin/totalWages). This was NOT a tooltip issue — the engine computation
+#     itself was wrong. Produced 0.17x instead of correct 3.71x. Fixed in financial-engine.ts.
+#   - AI-5 HIGH (5H.3 AC amendments): DONE — all 6 amendments applied to epics.md.
+#   - AI-1 CRITICAL (Display format validation): DEFERRED — PO decision to address after
+#     progressing through several more epics.
+#   - AI-2 CRITICAL (30-day month resolution): DEFERRED — PO decision to address after
+#     progressing through several more epics.
+#
+# 2026-02-21: POST-RETROSPECTIVE ENGINE BUG DISCOVERY (PO-directed post-mortem)
+#   *** THIS ENTRY CORRECTS THE RECORD — Story 5H.1 was NOT complete at time of retrospective ***
+#   During AI-3/AI-4/AI-5 action item execution, 4 CRITICAL engine formula bugs were found
+#   that Story 5H.1 ("cell-by-cell validation") was specifically designed to catch:
+#
+#   BUG 1: Labor Efficiency formula INVERTED
+#     Engine had: totalWages / revenue (= 0.17x)
+#     Reference spreadsheet: nonLaborGrossMargin / totalWages (= 3.71x)
+#     The formula was computing the RECIPROCAL. Not a rounding error — completely backwards.
+#     Root cause: 5H.1 tests covered P&L dollar values but NEVER tested P&L Analysis ratios.
+#
+#   BUG 2: ROIC percentage using after-tax instead of pre-tax
+#     Engine had: afterTaxNetIncome / totalInvestedCapital
+#     Reference (ROIC tab row 19): preTaxNetIncomeIncSweatEquity / totalInvestedCapital
+#     Root cause: 5H.1 tests validated ROIC dollar components but NEVER validated roicPct itself.
+#
+#   BUG 3: Salary adjustment sign error (ROIC + P&L Analysis)
+#     Engine had: preTaxNetIncome + annualSalaryAdj (should be minus)
+#     Reference: Pre-Tax NI (-$92k) - Salary Adj ($55k) = -$147k
+#     Root cause: Valuation section already had correct sign (subtraction). Nobody cross-checked.
+#
+#   BUG 4: businessAnnualROIC not synced from ROIC tab
+#     Engine had: independent computation (adjNetOperatingIncome / equityAmount)
+#     Reference: copies value directly from ROIC tab
+#     Root cause: No cross-section consistency test existed.
+#
+#   BONUS: Runtime crash in pnl-tab.tsx interpretation function
+#     Accessed enriched[0].laborEfficiency but field only exists on PLAnalysisOutput.
+#     Crashed every time P&L Analysis section was expanded. Went undetected because section
+#     was collapsed by default and nobody expanded it during testing or retrospective.
+#
+#   ALL FIXES APPLIED 2026-02-21:
+#     - financial-engine.ts: 4 formula corrections
+#     - pnl-tab.tsx: interpretation function data source fix
+#     - financial-engine-reference.test.ts: 5 new tests (104 total, all passing)
+#     - E2E verified: ROIC, Labor Efficiency, Business Annual ROIC all rendering correctly
+#
+#   PROCESS FAILURE ANALYSIS:
+#     - Dev agent wrote tests covering dollar values, skipped ratios/percentages/cross-sections
+#     - Code reviewer accepted "99 tests" without checking coverage against AC scope
+#     - SM (Bob) accepted story as "done" without verifying test matrix against ACs
+#     - Retrospective characterized engine bugs as "display issues" (understated severity)
+#     - See: epic-5h-retrospective.md POST-RETROSPECTIVE ADDENDUM for full accountability
 
 development_status:
   # Epic 1: Auth, Onboarding & User Management
@@ -416,7 +707,7 @@ development_status:
   4-4-quick-entry-mode-keyboard-navigation-formatting: done
   4-5-auto-save-session-recovery: done
   4-6-consultant-booking-link-workspace-chrome: done
-  4-7-integration-gaps-startup-cost-mounting: done
+  4-7-integration-gaps-startup-cost-mounting: done  # Orphan: added mid-epic, not in epics.md
   epic-4-retrospective: done
 
   # ==========================================================================
@@ -451,50 +742,71 @@ development_status:
   5-8-guardian-bar-dynamic-interpretation: done
   5-9-document-preview-pdf-generation-trigger: done
   5-10-glossary-contextual-help: done
-  5-cp11-border-radius-polish: done  # SCP-2026-02-20 CP-11 — confirmed already applied
+  5-cp11-border-radius-polish: done  # Orphan: SCP-2026-02-20 CP-11 — confirmed already applied
   epic-5-retrospective: done  # FINALIZED 2026-02-20 — action items (AI-1 through AI-10) captured for Sprint Planning
 
   # Epic 5H: Post-Epic-5 Hardening Sprint [NEW — from Epic 5 Retrospective]
   # Validation & remediation work gating Epic 6. Origin: AI-1, AI-2, AI-3, AI-5.
-  # Must complete ALL 4 stories before Epic 6 implementation begins.
-  # AI-7 (content authoring) → dev note on 6.1
-  # AI-8 (dead code cleanup) → pre-Epic-6 checklist item
-  # AI-9 (large file decision) → architecture note during Epic 6 planning
-  # AI-10 (taxRate TODO) → absorbed into 5H.1 engine validation
-  epic-5h: in-progress
-  5h-1-financial-engine-reference-validation: done  # AI-1: cell-by-cell vs reference spreadsheets. 99 tests, 2 brands (PostNet + Jeremiah's), 1 BUG fixed (ramp-up M1), 2 KNOWN DIVERGENCES documented, taxRate TODO resolved, adversarial code review completed
-  5h-2-report-tab-ui-audit-remediation: review    # AI-2: Implementation complete. 5 per-tab callout bars removed, parent CalloutBar enriched (BS identity check + Valuation net proceeds), comparison mode visibility fixed, column width reduced. Playwright e2e PASS, LSP clean. Pending adversarial code review.
-  5h-3-epic-6-ac-audit-user-journeys: review              # AI-3: Audit executed. 8 gaps found (3 Blocker, 3 Quality Risk, 2 Enhancement). 6 AC amendment proposals. Completeness threshold 2-surface model recommended. Pending PO review.
-  5h-4-planning-artifact-alignment: review                  # AI-5: 111 FR traceability, fix stale coverage map. Audit complete: 111/111 FRs mapped, 54 stories traced, 6 artifact corrections applied. Pending PO review.
-  epic-5h-retrospective: optional
+  # All 4 stories complete + retrospective done. Epic 5H COMPLETE.
+  epic-5h: done
+  5h-1-financial-engine-reference-validation: done  # AI-1: cell-by-cell vs reference spreadsheets. CORRECTED RECORD: Initially closed with 99 tests covering dollar values only. Post-retro audit found 4 CRITICAL engine bugs (inverted labor efficiency, after-tax ROIC, salary adj sign, ROIC sync) because tests skipped ratios/percentages/cross-sections. Fixed 2026-02-21, now 104 tests including ratio/pct coverage. See retrospective addendum.
+  5h-2-report-tab-ui-audit-remediation: done    # AI-2: Implementation complete. 5 per-tab callout bars removed, parent CalloutBar enriched (BS identity check + Valuation net proceeds), comparison mode visibility fixed, column width reduced. Adversarial code review completed 2026-02-21 (H1 BS identity fix, all findings resolved).
+  5h-3-epic-6-ac-audit-user-journeys: done              # AI-3: Audit executed. 8 gaps found (3 Blocker, 3 Quality Risk, 2 Enhancement). 6 AC amendment proposals. Completeness threshold 2-surface model recommended. PO review completed 2026-02-21.
+  5h-4-planning-artifact-alignment: done                  # AI-5: 111 FR traceability, fix stale coverage map. Audit complete: 111/111 FRs mapped, 54 stories traced, 6 artifact corrections applied. PO review completed 2026-02-21.
+  epic-5h-retrospective: done  # FINALIZED 2026-02-21 — 15-step workflow completed. 9 action items (2 CRITICAL, 3 HIGH, 2 MEDIUM, 2 LOW). 5 critical path blockers before Epic 6. PO NOT SATISFIED. See: epic-5h-retrospective.md
 
   # Epic 6: Document Generation & Vault [ELEVATED from old Epic 7]
   # PDF export + document history
   # Dependencies: Epic 5 (statement views must exist to export), Epic 5H (hardening must complete first)
+  # PO SEQUENCING (SCP-2026-02-22): LAST — presentation layer, wait for core to stabilize
   epic-6: backlog
   6-1-pdf-document-generation: backlog
   6-2-document-history-downloads: backlog
   epic-6-retrospective: optional
 
   # Epic 7: Per-Year Inputs & Multi-Plan Management [NEW]
-  # Year 1-5 input columns + plan CRUD
-  # Dependencies: Epic 5 (linked-column indicators provide visual foundation)
-  epic-7: backlog
-  7-1-per-year-input-columns: backlog
-  7-2-plan-crud-navigation: backlog
-  epic-7-retrospective: optional
+  # Design Principle: Forms = onboarding wizard, Reports = power editing surface
+  # Expert users skip Forms entirely and edit directly in Reports
+  # Story 7.1 split into 7.1a–7.1e per Party Mode review (2026-02-21)
+  # NOTE: 7.1b.1 (per-month independence) promoted to Epic 7H per SCP-2026-02-22
+  # All 6 stories complete + retrospective done. Epic 7 COMPLETE.
+  epic-7: done
+  7-1a-data-model-restructuring-migration: done
+  7-1b-all-fields-editable-reports: done
+  7-1c-forms-onboarding-new-fields: done
+  7-1d-facilities-decomposition-opex: done
+  7-1e-balance-sheet-valuation-editing: done
+  7-2-plan-crud-navigation: done
+  epic-7-retrospective: done
+
+  # Epic 7H: Post-Epic-7 Stabilization Sprint [NEW — from SCP-2026-02-22]
+  # Resolve accumulated gaps from Epic 7, complete per-month independence,
+  # fix Brand CRUD gap from Epic 2, establish testing infrastructure.
+  # All planning documents realigned in this epic.
+  # Dependency: 7H.1 first (no code deps), then 7H.2-7H.5 can parallel
+  # PO directive: THIS EPIC IS NEXT — before any feature work (Epic 10, etc.)
+  # NOTE: Epic 7H stories NOT YET in epics.md — will be added during story 7H.1 execution
+  epic-7h: in-progress  # First story (7H.1) context document created 2026-02-22
+  7h-1-planning-document-realignment: done                  # All 12 ACs satisfied 2026-02-22. PO review feedback applied: sidebar redesigned (Home→Dashboard pattern), HELP section expanded. Done 2026-02-22.
+  7h-2-per-month-independence: review                     # Implementation complete 2026-02-22. All 10 ACs satisfied. 407 tests passing. 12 files modified. Pending adversarial code review.
+  7h-3-brand-crud-completion: done                       # Delete (with confirmation) + metadata editing. All 10 ACs satisfied. E2E tests passing. Code review completed 2026-02-22: 2H/3M/1L findings, 4 fixed (FK cleanup, transaction, fetcher convention, duplicate field). Done 2026-02-22.
+  7h-4-input-field-map-validation: done                   # Code review complete 2026-02-22. All 8 ACs satisfied. 4 findings fixed (2M/2L). 753 tests passing.
+  7h-5-e2e-testing-standards: backlog                   # Test agents auth as franchisee, no demo mode, clean up test data. Documentation + enforcement.
+  epic-7h-retrospective: optional
 
   # ==========================================================================
   # RENUMBERED EPICS (from Sprint Change Proposal 2026-02-15)
   # ==========================================================================
 
   # Epic 8: Advisory Guardrails & Smart Guidance [was Epic 5]
+  # PO SEQUENCING (SCP-2026-02-22): AFTER Epic 10
   epic-8: backlog
   8-1-input-range-validation-advisory-nudges: backlog
   8-2-weak-business-case-detection-actionable-guidance: backlog
   epic-8-retrospective: optional
 
   # Epic 9: AI Planning Advisor (Planning Assistant) [was Epic 6]
+  # PO SEQUENCING (SCP-2026-02-22): LAST — intelligence layer, wait for core to stabilize
   epic-9: backlog
   9-1-llm-integration-conversation-api: backlog
   9-2-split-screen-planning-assistant-interface: backlog
@@ -506,15 +818,18 @@ development_status:
   # Rewritten per SCP-2026-02-20 D5/D6 — standalone sensitivity dashboard, not column-splitting
   # Pivoted per SCP-2026-02-21 — user-authored scenarios replace system-defined Conservative/Optimistic
   # Stories (4): Sensitivity Controls, Chart Dashboard, Metric Delta Cards, Scenario Persistence & Comparison
-  epic-10: in-progress
-  10-1-sensitivity-controls-sandbox-engine: needs-revision  # AC rewrite + code modification per SCP-2026-02-21 CP-2/CP-7/CP-8
-  10-2a-sensitivity-chart-dashboard: needs-revision  # AC rewrite per SCP-2026-02-21 CP-3 (split from 10-2)
-  10-2b-metric-delta-cards: needs-revision  # AC rewrite per SCP-2026-02-21 CP-4 (split from 10-2)
-  10-3-scenario-persistence-comparison: ready-for-dev  # Promoted from optional to essential per SCP-2026-02-21 CP-5
-  epic-10-retrospective: optional
+  # PO SEQUENCING (SCP-2026-02-22): NEXT FEATURE EPIC — after Epic 7H stabilization completes
+  # Description stale: still references Conservative/Optimistic — to be fixed in 7H.1
+  epic-10: done  # All 4 stories completed (10.1, 10.2a, 10.2b, 10.3). What-If Playground with sensitivity controls, charts, metric deltas, and scenario persistence/comparison.
+  10-1-sensitivity-controls-sandbox-engine: done  # Adversarial code review completed — 2H fixed (COGS unit display, dead conditional), 2M/2L documented. All 5 ACs satisfied.
+  10-2a-sensitivity-chart-dashboard: done  # Adversarial code review completed — 3H/2M/3L found, all HIGH+MEDIUM fixed. Grid breakpoint (H1), custom tooltip (H2), data validation (H3), Cell component (M2). All 17 ACs satisfied.
+  10-2b-metric-delta-cards: done  # Adversarial code review completed — 3M/1L found, all fixed. AC3 positioning, useMemo effectiveness, evidence table, redundant check. All 5 ACs satisfied.
+  10-3-scenario-persistence-comparison: done  # Code review completed. 9 findings (3H/3M/3L), all H+M fixed. All 10 ACs satisfied. Schema JSONB column, API CRUD endpoints, scenario management UI, comparison overlay on 6 charts, sandbox invariant preserved.
+  epic-10-retrospective: done  # Full 15-step BMAD retrospective workflow executed 2026-02-23. Parts 1-15 documented. 9 action items (AI-E10-1 through AI-E10-9). LSP clean. Sandbox invariant verified.
 
   # Epic ST: Admin Support Tools — Impersonation & Demo Modes
   # Added via Sprint Change Proposal 2026-02-11
+  # PO SEQUENCING (SCP-2026-02-22): LATER — ST-4 blocked on Epic 11.2
   epic-st: in-progress
   st-1-view-as-infrastructure-read-only-mode: done
   st-2-view-as-edit-mode-audit-logging: done
@@ -530,5 +845,6 @@ development_status:
   epic-11-retrospective: optional
 
   # Epic 12: Advisory Board Meeting (Phase 2 — Deferred) [was Epic 9]
+  # PO SEQUENCING (SCP-2026-02-22): PHASE 2
   epic-12: backlog
   epic-12-retrospective: optional

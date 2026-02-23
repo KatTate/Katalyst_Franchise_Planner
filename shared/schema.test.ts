@@ -418,24 +418,47 @@ describe("planFinancialInputsSchema", () => {
     };
   }
 
+  function makeFieldArray5(value: number) {
+    return Array.from({ length: 5 }, () => makeFieldValue(value));
+  }
+
   it("accepts valid plan financial inputs", () => {
     const inputs = {
       revenue: {
         monthlyAuv: makeFieldValue(1500000),
-        year1GrowthRate: makeFieldValue(0.05),
-        year2GrowthRate: makeFieldValue(0.03),
+        growthRates: [makeFieldValue(0.05), makeFieldValue(0.03), makeFieldValue(0.03), makeFieldValue(0.03), makeFieldValue(0.03)],
         startingMonthAuvPct: makeFieldValue(0.08),
       },
       operatingCosts: {
-        cogsPct: makeFieldValue(0.30),
-        laborPct: makeFieldValue(0.25),
-        rentMonthly: makeFieldValue(300000),
-        utilitiesMonthly: makeFieldValue(50000),
-        insuranceMonthly: makeFieldValue(20000),
-        marketingPct: makeFieldValue(0.05),
-        royaltyPct: makeFieldValue(0.065),
-        adFundPct: makeFieldValue(0.02),
-        otherMonthly: makeFieldValue(30000),
+        cogsPct: makeFieldArray5(0.30),
+        laborPct: makeFieldArray5(0.25),
+        facilitiesAnnual: makeFieldArray5(4440000),
+        facilitiesDecomposition: {
+          rent: makeFieldArray5(3600000),
+          utilities: makeFieldArray5(600000),
+          telecomIt: makeFieldArray5(0),
+          vehicleFleet: makeFieldArray5(0),
+          insurance: makeFieldArray5(240000),
+        },
+        marketingPct: makeFieldArray5(0.05),
+        royaltyPct: makeFieldArray5(0.065),
+        adFundPct: makeFieldArray5(0.02),
+        managementSalariesAnnual: makeFieldArray5(0),
+        payrollTaxPct: makeFieldArray5(0.20),
+        otherOpexPct: makeFieldArray5(0.03),
+      },
+      profitabilityAndDistributions: {
+        targetPreTaxProfitPct: makeFieldArray5(0),
+        shareholderSalaryAdj: makeFieldArray5(0),
+        distributions: makeFieldArray5(0),
+        nonCapexInvestment: makeFieldArray5(0),
+      },
+      workingCapitalAndValuation: {
+        arDays: makeFieldValue(30),
+        apDays: makeFieldValue(60),
+        inventoryDays: makeFieldValue(60),
+        taxPaymentDelayMonths: makeFieldValue(0),
+        ebitdaMultiple: makeFieldValue(0),
       },
       financing: {
         loanAmount: makeFieldValue(15000000),

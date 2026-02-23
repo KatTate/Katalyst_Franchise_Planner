@@ -1,5 +1,5 @@
 import { useState, useCallback, useMemo } from "react";
-import { ChevronUp, Link2, ChevronsDownUp, ChevronsUpDown } from "lucide-react";
+import { ChevronUp, ChevronsDownUp, ChevronsUpDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import type { MonthlyProjection } from "@shared/financial-engine";
@@ -136,7 +136,6 @@ interface ColumnToolbarProps {
   onExpandAll: () => void;
   onCollapseAll: () => void;
   hasAnyDrillDown: boolean;
-  showLinkedIndicator?: boolean;
   comparisonActive?: boolean;
 }
 
@@ -144,30 +143,11 @@ export function ColumnToolbar({
   onExpandAll,
   onCollapseAll,
   hasAnyDrillDown,
-  showLinkedIndicator = true,
   comparisonActive = false,
 }: ColumnToolbarProps) {
   return (
     <div className="flex items-center justify-end gap-1 px-2 py-1">
-      {showLinkedIndicator && (
-        <>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <span className="flex items-center gap-1 text-xs text-muted-foreground cursor-help">
-                <Link2 className="h-3 w-3" />
-                <span>Linked</span>
-              </span>
-            </TooltipTrigger>
-            <TooltipContent side="bottom" className="max-w-[240px]">
-              <p className="text-xs">
-                All years share the same input value. Per-year values will be available in a future update.
-              </p>
-            </TooltipContent>
-          </Tooltip>
-          <div className="flex-1" />
-        </>
-      )}
-      {!showLinkedIndicator && <div className="flex-1" />}
+      <div className="flex-1" />
       {comparisonActive ? (
         <Tooltip>
           <TooltipTrigger asChild>

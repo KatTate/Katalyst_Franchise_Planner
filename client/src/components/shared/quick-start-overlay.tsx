@@ -119,10 +119,11 @@ export function QuickStartOverlay({ planId, brand, onComplete }: QuickStartOverl
     }
 
     const monthlyAuvCents = fi.revenue.monthlyAuv.currentValue;
-    const rentCents = fi.operatingCosts.rentMonthly.currentValue;
+    const rentAnnualCents = fi.operatingCosts.facilitiesDecomposition.rent[0].currentValue;
+    const rentCents = Math.round(rentAnnualCents / 12);
     const investmentCents = startupCostTotal(costs);
-    const laborPct = fi.operatingCosts.laborPct.currentValue;
-    const cogsPct = fi.operatingCosts.cogsPct.currentValue;
+    const laborPct = fi.operatingCosts.laborPct[0].currentValue;
+    const cogsPct = fi.operatingCosts.cogsPct[0].currentValue;
 
     // Derive staff count from labor pct
     const derivedStaff = laborPctToStaffCount(laborPct, monthlyAuvCents);
@@ -198,13 +199,25 @@ export function QuickStartOverlay({ planId, brand, onComplete }: QuickStartOverl
           fi.revenue.monthlyAuv = updateFieldValue(fi.revenue.monthlyAuv, cents, now);
           // Recompute labor pct with new revenue
           const newLaborPct = staffCountToLaborPct(staff, cents);
-          fi.operatingCosts.laborPct = updateFieldValue(fi.operatingCosts.laborPct, newLaborPct, now);
+          fi.operatingCosts.laborPct = fi.operatingCosts.laborPct.map((f) => updateFieldValue(f, newLaborPct, now));
           break;
         }
         case "rentDollars": {
-          const cents = parseDollarsToCents(rawValue);
-          if (isNaN(cents)) return;
-          fi.operatingCosts.rentMonthly = updateFieldValue(fi.operatingCosts.rentMonthly, cents, now);
+          const monthlyCents = parseDollarsToCents(rawValue);
+          if (isNaN(monthlyCents)) return;
+          const annualCents = monthlyCents * 12;
+          fi.operatingCosts.facilitiesDecomposition.rent = fi.operatingCosts.facilitiesDecomposition.rent.map((f, i) =>
+            updateFieldValue(f, Math.round(annualCents * Math.pow(1.03, i)), now)
+          );
+          for (let i = 0; i < 5; i++) {
+            const total =
+              fi.operatingCosts.facilitiesDecomposition.rent[i].currentValue +
+              fi.operatingCosts.facilitiesDecomposition.utilities[i].currentValue +
+              fi.operatingCosts.facilitiesDecomposition.telecomIt[i].currentValue +
+              fi.operatingCosts.facilitiesDecomposition.vehicleFleet[i].currentValue +
+              fi.operatingCosts.facilitiesDecomposition.insurance[i].currentValue;
+            fi.operatingCosts.facilitiesAnnual[i] = updateFieldValue(fi.operatingCosts.facilitiesAnnual[i], total, now);
+          }
           break;
         }
         case "investmentDollars": {
@@ -220,13 +233,13 @@ export function QuickStartOverlay({ planId, brand, onComplete }: QuickStartOverl
           setStaffNum(count);
           const monthlyAuv = fi.revenue.monthlyAuv.currentValue;
           const newLaborPct = staffCountToLaborPct(count, monthlyAuv);
-          fi.operatingCosts.laborPct = updateFieldValue(fi.operatingCosts.laborPct, newLaborPct, now);
+          fi.operatingCosts.laborPct = fi.operatingCosts.laborPct.map((f) => updateFieldValue(f, newLaborPct, now));
           break;
         }
         case "suppliesPct": {
           const pct = parseFloat(rawValue);
           if (isNaN(pct) || pct < 0 || pct > 100) return;
-          fi.operatingCosts.cogsPct = updateFieldValue(fi.operatingCosts.cogsPct, pct / 100, now);
+          fi.operatingCosts.cogsPct = fi.operatingCosts.cogsPct.map((f) => updateFieldValue(f, pct / 100, now));
           break;
         }
       }
@@ -373,7 +386,7 @@ export function QuickStartOverlay({ planId, brand, onComplete }: QuickStartOverl
             </div>
             {workingInputs && (
               <p className="text-xs text-muted-foreground mt-1">
-                Brand average: {formatCents(workingInputs.operatingCosts.rentMonthly.brandDefault ?? 0)}
+                Brand average: {formatCents(Math.round((workingInputs.operatingCosts.facilitiesDecomposition.rent[0].brandDefault ?? 0) / 12))}
               </p>
             )}
           </div>
@@ -439,7 +452,7 @@ export function QuickStartOverlay({ planId, brand, onComplete }: QuickStartOverl
             </div>
             {workingInputs && (
               <p className="text-xs text-muted-foreground mt-1">
-                Brand average: {Math.round((workingInputs.operatingCosts.cogsPct.brandDefault ?? 0) * 100)}%
+                Brand average: {Math.round((workingInputs.operatingCosts.cogsPct[0].brandDefault ?? 0) * 100)}%
               </p>
             )}
           </div>

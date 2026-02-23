@@ -174,6 +174,23 @@ export const insertInvitationSchema = createInsertSchema(invitations).omit({
 export type InsertInvitation = z.infer<typeof insertInvitationSchema>;
 export type Invitation = typeof invitations.$inferSelect;
 
+// ─── What-If Scenario (Story 10.3 — JSONB column on plans) ───────────────
+
+export interface WhatIfScenarioSliderValues {
+  revenue: number;
+  cogs: number;
+  labor: number;
+  marketing: number;
+  facilities: number;
+}
+
+export interface WhatIfScenario {
+  id: string;
+  name: string;
+  sliderValues: WhatIfScenarioSliderValues;
+  createdAt: string;
+}
+
 export const plans = pgTable("plans", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   userId: varchar("user_id").references(() => users.id, { onDelete: "cascade" }).notNull(),
@@ -181,6 +198,7 @@ export const plans = pgTable("plans", {
   name: text("name").notNull(),
   financialInputs: jsonb("financial_inputs").$type<import("./financial-engine").PlanFinancialInputs>(),
   startupCosts: jsonb("startup_costs").$type<import("./financial-engine").StartupCostLineItem[]>(),
+  whatIfScenarios: jsonb("what_if_scenarios").$type<WhatIfScenario[]>().default([]),
   status: text("status").notNull().$type<"draft" | "in_progress" | "completed">().default("draft"),
   pipelineStage: text("pipeline_stage").$type<"planning" | "site_evaluation" | "financing" | "construction" | "open">().default("planning"),
   quickStartCompleted: boolean("quick_start_completed").default(false).notNull(),
@@ -219,23 +237,44 @@ export const financialFieldValueSchema = z.object({
   isCustom: z.boolean(),
 });
 
+const financialFieldValueArraySchema = z.array(financialFieldValueSchema);
+
 export const planFinancialInputsSchema = z.object({
   revenue: z.object({
     monthlyAuv: financialFieldValueSchema,
-    year1GrowthRate: financialFieldValueSchema,
-    year2GrowthRate: financialFieldValueSchema,
+    growthRates: financialFieldValueArraySchema,
     startingMonthAuvPct: financialFieldValueSchema,
   }),
   operatingCosts: z.object({
-    cogsPct: financialFieldValueSchema,
-    laborPct: financialFieldValueSchema,
-    rentMonthly: financialFieldValueSchema,
-    utilitiesMonthly: financialFieldValueSchema,
-    insuranceMonthly: financialFieldValueSchema,
-    marketingPct: financialFieldValueSchema,
-    royaltyPct: financialFieldValueSchema,
-    adFundPct: financialFieldValueSchema,
-    otherMonthly: financialFieldValueSchema,
+    royaltyPct: financialFieldValueArraySchema,
+    adFundPct: financialFieldValueArraySchema,
+    cogsPct: financialFieldValueArraySchema,
+    laborPct: financialFieldValueArraySchema,
+    facilitiesAnnual: financialFieldValueArraySchema,
+    facilitiesDecomposition: z.object({
+      rent: financialFieldValueArraySchema,
+      utilities: financialFieldValueArraySchema,
+      telecomIt: financialFieldValueArraySchema,
+      vehicleFleet: financialFieldValueArraySchema,
+      insurance: financialFieldValueArraySchema,
+    }),
+    marketingPct: financialFieldValueArraySchema,
+    managementSalariesAnnual: financialFieldValueArraySchema,
+    payrollTaxPct: financialFieldValueArraySchema,
+    otherOpexPct: financialFieldValueArraySchema,
+  }),
+  profitabilityAndDistributions: z.object({
+    targetPreTaxProfitPct: financialFieldValueArraySchema,
+    shareholderSalaryAdj: financialFieldValueArraySchema,
+    distributions: financialFieldValueArraySchema,
+    nonCapexInvestment: financialFieldValueArraySchema,
+  }),
+  workingCapitalAndValuation: z.object({
+    arDays: financialFieldValueSchema,
+    apDays: financialFieldValueSchema,
+    inventoryDays: financialFieldValueSchema,
+    taxPaymentDelayMonths: financialFieldValueSchema,
+    ebitdaMultiple: financialFieldValueSchema,
   }),
   financing: z.object({
     loanAmount: financialFieldValueSchema,

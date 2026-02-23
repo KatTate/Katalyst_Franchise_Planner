@@ -1,12 +1,23 @@
-import { useMemo, useState, useCallback, useRef, useEffect } from "react";
-import { Pencil, ChevronDown, ChevronRight } from "lucide-react";
+import { useMemo, useState, useCallback, useEffect } from "react";
+import { Pencil, ChevronDown, ChevronRight, CopyCheck } from "lucide-react";
 import { Link } from "wouter";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { formatFinancialValue } from "@/components/shared/financial-value";
 import { useColumnManager, ColumnToolbar, GroupedTableHead } from "./column-manager";
 import { ComparisonTableHead, buildComparisonColumns, type ComparisonColumnDef } from "./comparison-table-head";
 import { InlineEditableCell } from "./inline-editable-cell";
-import { INPUT_FIELD_MAP, isEditableRow } from "./input-field-map";
+import { INPUT_FIELD_MAP, isEditableRow, getDrillLevelFromColKey, scaleForStorage, getAbsoluteMonthIndex, getMonthRangeForColKey } from "./input-field-map";
 import { SCENARIO_COLORS, type ScenarioId, type ScenarioOutputs } from "@/lib/scenario-engine";
 import type { EngineOutput, MonthlyProjection, AnnualSummary, PLAnalysisOutput, PlanFinancialInputs, FinancialFieldValue } from "@shared/financial-engine";
 import type { ColumnDef } from "./column-manager";
@@ -17,7 +28,8 @@ import type { FormatType } from "@/lib/field-metadata";
 interface PnlTabProps {
   output: EngineOutput;
   financialInputs?: PlanFinancialInputs | null;
-  onCellEdit?: (category: string, fieldName: string, rawInput: string, inputFormat: FormatType) => void;
+  onCellEdit?: (category: string, fieldName: string, rawInput: string, inputFormat: FormatType, yearIndex: number, colKey?: string) => void;
+  onCopyYear1ToAll?: (rowKey: string) => void;
   isSaving?: boolean;
   scenarioOutputs?: ScenarioOutputs | null;
   brandName?: string;
@@ -40,7 +52,7 @@ interface PnlRowDef {
   isExpense?: boolean;
   indent?: number;
   interpretationId?: string;
-  interpretation?: (enriched: EnrichedAnnual[], financialInputs?: PlanFinancialInputs | null, brandName?: string) => string | null;
+  interpretation?: (enriched: EnrichedAnnual[], financialInputs?: PlanFinancialInputs | null, brandName?: string, plAnalysis?: PLAnalysisOutput[]) => string | null;
   tooltip?: CellTooltip;
 }
 
@@ -64,14 +76,41 @@ type EnrichedAnnual = AnnualSummary & {
   marketing: number;
   discretionaryMarketing: number;
   otherOpex: number;
+  nonCapexInvestment: number;
+  cfDistributions: number;
+  growthRateInput: number;
+  royaltyPctInput: number;
+  adFundPctInput: number;
+  payrollTaxPctInput: number;
+  otherOpexPctInput: number;
+  targetPreTaxProfitPctInput: number;
+  distributionsInput: number;
+  shareholderSalaryAdjInput: number;
+  nonCapexInvestmentInput: number;
 };
 
-function computeEnrichedAnnuals(monthly: MonthlyProjection[], annuals: AnnualSummary[]): EnrichedAnnual[] {
+const INPUT_ONLY_FIELDS = new Set([
+  "growthRateInput", "royaltyPctInput", "adFundPctInput",
+  "payrollTaxPctInput", "otherOpexPctInput", "targetPreTaxProfitPctInput",
+  "distributionsInput", "shareholderSalaryAdjInput", "nonCapexInvestmentInput",
+]);
+
+const ANNUAL_CURRENCY_INPUT_FIELDS = new Set([
+  "distributionsInput", "shareholderSalaryAdjInput", "nonCapexInvestmentInput",
+]);
+
+function computeEnrichedAnnuals(
+  monthly: MonthlyProjection[],
+  annuals: AnnualSummary[],
+  financialInputs?: PlanFinancialInputs | null,
+): EnrichedAnnual[] {
   return annuals.map((a) => {
     const yearMonths = monthly.filter((m) => m.year === a.year);
     const sum = (fn: (m: MonthlyProjection) => number) => yearMonths.reduce((s, m) => s + fn(m), 0);
     const revenue = a.revenue;
     const annualMarketing = sum((m) => m.marketing);
+    const yi = a.year - 1;
+    const fi = financialInputs;
     return {
       ...a,
       monthlyRevenue: yearMonths.length > 0 ? Math.round(revenue / yearMonths.length) : 0,
@@ -86,6 +125,17 @@ function computeEnrichedAnnuals(monthly: MonthlyProjection[], annuals: AnnualSum
       marketing: annualMarketing,
       discretionaryMarketing: annualMarketing,
       otherOpex: sum((m) => m.otherOpex),
+      nonCapexInvestment: sum((m) => m.nonCapexInvestment),
+      cfDistributions: sum((m) => m.cfDistributions),
+      growthRateInput: fi?.revenue?.growthRates?.[yi]?.currentValue ?? 0,
+      royaltyPctInput: fi?.operatingCosts?.royaltyPct?.[yi]?.currentValue ?? 0,
+      adFundPctInput: fi?.operatingCosts?.adFundPct?.[yi]?.currentValue ?? 0,
+      payrollTaxPctInput: fi?.operatingCosts?.payrollTaxPct?.[yi]?.currentValue ?? 0,
+      otherOpexPctInput: fi?.operatingCosts?.otherOpexPct?.[yi]?.currentValue ?? 0,
+      targetPreTaxProfitPctInput: fi?.profitabilityAndDistributions?.targetPreTaxProfitPct?.[yi]?.currentValue ?? 0,
+      distributionsInput: fi?.profitabilityAndDistributions?.distributions?.[yi]?.currentValue ?? 0,
+      shareholderSalaryAdjInput: fi?.profitabilityAndDistributions?.shareholderSalaryAdj?.[yi]?.currentValue ?? 0,
+      nonCapexInvestmentInput: fi?.profitabilityAndDistributions?.nonCapexInvestment?.[yi]?.currentValue ?? 0,
     };
   });
 }
@@ -95,8 +145,8 @@ const PNL_SECTIONS: PnlSectionDef[] = [
     key: "revenue",
     title: "Revenue",
     rows: [
-      { key: "monthly-revenue", label: "Monthly Revenue", field: "monthlyRevenue", format: "currency", isInput: true },
-      { key: "annual-revenue", label: "Annual Revenue", field: "revenue", format: "currency", isSubtotal: true, tooltip: { explanation: "Total revenue earned during the year", formula: "Sum of monthly revenue" } },
+      { key: "monthly-revenue", label: "Revenue", field: "revenue", format: "currency", isInput: true, tooltip: { explanation: "Total revenue for the period", formula: "Monthly AUV × months, adjusted for ramp-up and growth" } },
+      { key: "growth-rate", label: "Growth Rate %", field: "growthRateInput", format: "pct", isInput: true, indent: 1, tooltip: { explanation: "Annual revenue growth rate applied to the base AUV", formula: "Year-over-year percentage increase" } },
     ],
   },
   {
@@ -105,8 +155,10 @@ const PNL_SECTIONS: PnlSectionDef[] = [
     rows: [
       { key: "cogs-pct", label: "COGS %", field: "cogsPct", format: "pct", isInput: true },
       { key: "materials-cogs", label: "Materials / COGS", field: "materialsCogs", format: "currency", indent: 1, isExpense: true, tooltip: { explanation: "Direct materials cost based on your COGS percentage", formula: "Revenue x COGS %" } },
-      { key: "royalties", label: "Royalties", field: "royalties", format: "currency", indent: 1, isExpense: true, tooltip: { explanation: "Franchise royalty fees paid to the brand", formula: "Revenue x Royalty rate" } },
-      { key: "ad-fund", label: "Ad Fund", field: "adFund", format: "currency", indent: 1, isExpense: true, tooltip: { explanation: "Required advertising fund contribution", formula: "Revenue x Ad fund rate" } },
+      { key: "royalty-pct", label: "Royalty %", field: "royaltyPctInput", format: "pct", isInput: true, indent: 1, tooltip: { explanation: "Franchise royalty fee as a percentage of revenue", formula: "Set per year" } },
+      { key: "royalties", label: "Royalties", field: "royalties", format: "currency", indent: 1, isExpense: true, tooltip: { explanation: "Franchise royalty fees paid to the brand", formula: "Revenue x Royalty %" } },
+      { key: "ad-fund-pct", label: "Ad Fund %", field: "adFundPctInput", format: "pct", isInput: true, indent: 1, tooltip: { explanation: "Required advertising fund contribution as a percentage of revenue", formula: "Set per year" } },
+      { key: "ad-fund", label: "Ad Fund", field: "adFund", format: "currency", indent: 1, isExpense: true, tooltip: { explanation: "Required advertising fund contribution", formula: "Revenue x Ad Fund %" } },
       {
         key: "total-cogs",
         label: "Total Cost of Sales",
@@ -120,7 +172,7 @@ const PNL_SECTIONS: PnlSectionDef[] = [
           const y1 = enriched[0];
           if (!y1 || y1.revenue === 0) return null;
           const cogsPct = (y1.cogsPct * 100).toFixed(1);
-          const brandDefault = financialInputs?.operatingCosts?.cogsPct?.brandDefault;
+          const brandDefault = financialInputs?.operatingCosts?.cogsPct?.[0]?.brandDefault;
           if (brandDefault != null) {
             const brandPct = (brandDefault * 100).toFixed(1);
             const diff = y1.cogsPct * 100 - brandDefault * 100;
@@ -150,7 +202,7 @@ const PNL_SECTIONS: PnlSectionDef[] = [
           if (!y1 || y1.revenue === 0) return null;
           const pct = (y1.grossProfitPct * 100).toFixed(1);
           const pctNum = y1.grossProfitPct * 100;
-          const cogsBrandDefault = financialInputs?.operatingCosts?.cogsPct?.brandDefault;
+          const cogsBrandDefault = financialInputs?.operatingCosts?.cogsPct?.[0]?.brandDefault;
           if (cogsBrandDefault != null) {
             const expectedMargin = ((1 - cogsBrandDefault) * 100).toFixed(1);
             if (pctNum >= Number(expectedMargin) - 2) return `${pct}% gross margin in Year 1 — in line with ${brandName || "brand"} expectations`;
@@ -168,14 +220,15 @@ const PNL_SECTIONS: PnlSectionDef[] = [
     key: "opex",
     title: "Operating Expenses",
     rows: [
-      { key: "direct-labor", label: "Direct Labor", field: "directLabor", format: "currency", isInput: true, isExpense: true, indent: 1 },
+      { key: "direct-labor", label: "Direct Labor", field: "directLabor", format: "currency", isExpense: true, indent: 1, tooltip: { explanation: "Direct labor costs computed from your labor percentage", formula: "Revenue x Direct Labor %" } },
       { key: "dl-pct", label: "Direct Labor %", field: "directLaborPct", format: "pct", isInput: true, indent: 1 },
-      { key: "mgmt-salaries", label: "Management Salaries", field: "managementSalaries", format: "currency", isInput: true, isExpense: true, indent: 1 },
-      { key: "payroll-tax", label: "Payroll Tax & Benefits", field: "payrollTaxBenefits", format: "currency", indent: 1, isExpense: true, tooltip: { explanation: "Employer payroll taxes and employee benefits", formula: "(Direct Labor + Mgmt Salaries) x Payroll Tax rate" } },
+      { key: "mgmt-salaries", label: "Management Salaries", field: "managementSalaries", format: "currency", isInput: true, isExpense: true, indent: 1, tooltip: { explanation: "Annual management and admin salaries", formula: "Set per year" } },
+      { key: "payroll-tax-pct", label: "Payroll Tax %", field: "payrollTaxPctInput", format: "pct", isInput: true, indent: 1, tooltip: { explanation: "Payroll tax and benefits as a percentage of total wages", formula: "Set per year" } },
+      { key: "payroll-tax", label: "Payroll Tax & Benefits", field: "payrollTaxBenefits", format: "currency", indent: 1, isExpense: true, tooltip: { explanation: "Employer payroll taxes and employee benefits", formula: "(Direct Labor + Mgmt Salaries) x Payroll Tax %" } },
       { key: "facilities", label: "Facilities", field: "facilities", format: "currency", isInput: true, isExpense: true, indent: 1 },
       { key: "marketing", label: "Marketing / Advertising", field: "marketing", format: "currency", isInput: true, isExpense: true, indent: 1 },
       { key: "disc-marketing", label: "Discretionary Marketing", field: "discretionaryMarketing", format: "currency", indent: 1, isExpense: true, tooltip: { explanation: "Owner-directed marketing spend beyond required brand contributions", formula: "Same as Marketing in current model" } },
-      { key: "other-opex", label: "Other OpEx", field: "otherOpex", format: "currency", isInput: true, isExpense: true, indent: 1 },
+      { key: "other-opex", label: "Other OpEx %", field: "otherOpexPctInput", format: "pct", isInput: true, indent: 1 },
       { key: "total-opex", label: "Total Operating Expenses", field: "totalOpex", format: "currency", isSubtotal: true, isExpense: true, tooltip: { explanation: "Total cost of running the business day-to-day", formula: "Sum of all operating expense line items" } },
     ],
   },
@@ -222,9 +275,13 @@ const PNL_SECTIONS: PnlSectionDef[] = [
   {
     key: "pl-analysis",
     title: "P&L Analysis",
-    defaultExpanded: false,
+    defaultExpanded: true,
     rows: [
-      { key: "adj-pretax", label: "Adjusted Pre-Tax Profit", field: "adjustedPreTaxProfit", format: "currency", tooltip: { explanation: "Pre-tax income adjusted for owner compensation", formula: "Pre-Tax Income + Owner salary adjustment" } },
+      { key: "target-pretax-profit-pct", label: "Target Pre-Tax Profit %", field: "targetPreTaxProfitPctInput", format: "pct", isInput: true, tooltip: { explanation: "The target pre-tax profit margin you want to achieve", formula: "Set per year" } },
+      { key: "shareholder-salary-adj", label: "Shareholder Salary Adj", field: "shareholderSalaryAdjInput", format: "currency", isInput: true, tooltip: { explanation: "Unpaid owner salary adjustment for profitability analysis", formula: "Set per year (annual)" } },
+      { key: "distributions", label: "Distributions", field: "distributionsInput", format: "currency", isInput: true, tooltip: { explanation: "Annual owner distributions / draws from the business", formula: "Set per year (annual)" } },
+      { key: "non-capex-investment", label: "Non-CapEx Investment", field: "nonCapexInvestmentInput", format: "currency", isInput: true, tooltip: { explanation: "Non-capital expenditure investment that reduces operating income", formula: "Set per year (annual)" } },
+      { key: "adj-pretax", label: "Adjusted Pre-Tax Profit", field: "adjustedPreTaxProfit", format: "currency", tooltip: { explanation: "Pre-tax income adjusted for owner compensation (subtracts unpaid owner salary as an expense)", formula: "Pre-Tax Income - Shareholder Salary Adjustment" } },
       { key: "target-pretax", label: "Target Pre-Tax Profit", field: "targetPreTaxProfit", format: "currency", tooltip: { explanation: "The profit level your plan should aim for", formula: "Revenue x Target Pre-Tax Profit %" } },
       { key: "above-below-target", label: "Above / Below Target", field: "aboveBelowTarget", format: "currency", tooltip: { explanation: "How far your adjusted profit is from the target", formula: "Adjusted Pre-Tax - Target Pre-Tax" } },
       { key: "salary-cap", label: "Salary Cap at Target", field: "salaryCapAtTarget", format: "currency", tooltip: { explanation: "Maximum owner salary to still hit the target profit", formula: "Derived from target profit and operating expenses" } },
@@ -234,23 +291,19 @@ const PNL_SECTIONS: PnlSectionDef[] = [
         label: "Labor Efficiency",
         field: "laborEfficiency",
         format: "ratio",
-        tooltip: { explanation: "What portion of gross profit goes to all wages", formula: "Total wages / Gross Profit" },
+        tooltip: { explanation: "How much gross margin each dollar of wages generates", formula: "Non-Labor Gross Margin / Total Wages" },
         interpretationId: "interp-labor-eff",
-        interpretation: (enriched, financialInputs, brandName) => {
-          const y1 = enriched[0];
-          if (!y1 || y1.revenue === 0) return null;
-          const labPct = y1.laborEfficiency * 100;
-          const laborBrand = financialInputs?.operatingCosts?.laborPct?.brandDefault;
-          if (laborBrand != null) {
-            const brandPct = (laborBrand * 100).toFixed(0);
-            return `${labPct.toFixed(0)}% of gross profit goes to wages (${brandName || "brand"} labor default: ${brandPct}% of revenue)`;
-          }
-          if (labPct > 70) return `${labPct.toFixed(0)}% of gross profit goes to wages — labor-heavy, consider staffing mix`;
-          if (labPct > 50) return `${labPct.toFixed(0)}% of gross profit goes to wages — typical for service businesses`;
-          return `${labPct.toFixed(0)}% of gross profit goes to wages — efficient labor cost structure`;
+        interpretation: (_enriched, _fi, _bn, plAnalysis) => {
+          const y1 = plAnalysis?.[0];
+          if (!y1) return null;
+          const ler = y1.laborEfficiency;
+          if (ler == null || ler === 0) return "No wages recorded";
+          if (ler >= 3.0) return `${ler.toFixed(1)}x — each dollar of wages generates $${ler.toFixed(2)} of gross margin (strong)`;
+          if (ler >= 2.0) return `${ler.toFixed(1)}x — each dollar of wages generates $${ler.toFixed(2)} of gross margin (moderate)`;
+          return `${ler.toFixed(1)}x — each dollar of wages generates $${ler.toFixed(2)} of gross margin (tight, review staffing)`;
         },
       },
-      { key: "adj-labor-eff", label: "Adjusted Labor Efficiency", field: "adjustedLaborEfficiency", format: "ratio", tooltip: { explanation: "Labor efficiency excluding owner salary", formula: "Wages (excl. owner salary) / Gross Profit" } },
+      { key: "adj-labor-eff", label: "Adjusted Labor Efficiency", field: "adjustedLaborEfficiency", format: "ratio", tooltip: { explanation: "Gross margin per dollar of wages, excluding owner salary adjustment", formula: "Non-Labor Gross Margin / Adjusted Total Wages" } },
       { key: "disc-mktg-pct", label: "Discretionary Marketing %", field: "discretionaryMarketingPct", format: "pct", tooltip: { explanation: "Discretionary marketing as a share of revenue", formula: "Discretionary Marketing / Revenue" } },
       { key: "pr-tax-ben-pct", label: "PR Taxes & Benefits % of Wages", field: "prTaxBenefitsPctOfWages", format: "pct", tooltip: { explanation: "Payroll burden relative to total wages", formula: "Payroll Taxes & Benefits / Total Wages" } },
       { key: "other-opex-pct-rev", label: "Other OpEx % of Revenue", field: "otherOpexPctOfRevenue", format: "pct", tooltip: { explanation: "Miscellaneous operating costs as a share of revenue", formula: "Other Operating Expenses / Revenue" } },
@@ -278,6 +331,17 @@ function getCellValue(
   plAnalysis: PLAnalysisOutput[],
   format: "currency" | "pct" | "ratio"
 ): number {
+  if (INPUT_ONLY_FIELDS.has(field)) {
+    const ea = enriched[col.year - 1];
+    if (!ea) return 0;
+    const rawValue = (ea as any)[field] as number;
+    if (ANNUAL_CURRENCY_INPUT_FIELDS.has(field)) {
+      if (col.level === "quarterly") return Math.round(rawValue / 4);
+      if (col.level === "monthly") return Math.round(rawValue / 12);
+    }
+    return rawValue;
+  }
+
   if (field === "monthlyRevenue") {
     if (col.level === "annual") {
       const ea = enriched[col.year - 1];
@@ -346,11 +410,11 @@ function getEditableRowKeys(): string[] {
 
 const EDITABLE_ROW_ORDER = getEditableRowKeys();
 
-export function PnlTab({ output, financialInputs, onCellEdit, isSaving, scenarioOutputs, brandName }: PnlTabProps) {
+export function PnlTab({ output, financialInputs, onCellEdit, onCopyYear1ToAll, isSaving, scenarioOutputs, brandName }: PnlTabProps) {
   const { annualSummaries, monthlyProjections, plAnalysis } = output;
   const enriched = useMemo(
-    () => computeEnrichedAnnuals(monthlyProjections, annualSummaries),
-    [monthlyProjections, annualSummaries]
+    () => computeEnrichedAnnuals(monthlyProjections, annualSummaries, financialInputs),
+    [monthlyProjections, annualSummaries, financialInputs]
   );
 
   const comparisonActive = !!scenarioOutputs;
@@ -358,11 +422,11 @@ export function PnlTab({ output, financialInputs, onCellEdit, isSaving, scenario
   const scenarioEnriched = useMemo(() => {
     if (!scenarioOutputs) return null;
     return {
-      base: computeEnrichedAnnuals(scenarioOutputs.base.monthlyProjections, scenarioOutputs.base.annualSummaries),
-      conservative: computeEnrichedAnnuals(scenarioOutputs.conservative.monthlyProjections, scenarioOutputs.conservative.annualSummaries),
-      optimistic: computeEnrichedAnnuals(scenarioOutputs.optimistic.monthlyProjections, scenarioOutputs.optimistic.annualSummaries),
+      base: computeEnrichedAnnuals(scenarioOutputs.base.monthlyProjections, scenarioOutputs.base.annualSummaries, financialInputs),
+      conservative: computeEnrichedAnnuals(scenarioOutputs.conservative.monthlyProjections, scenarioOutputs.conservative.annualSummaries, financialInputs),
+      optimistic: computeEnrichedAnnuals(scenarioOutputs.optimistic.monthlyProjections, scenarioOutputs.optimistic.annualSummaries, financialInputs),
     };
-  }, [scenarioOutputs]);
+  }, [scenarioOutputs, financialInputs]);
 
   const {
     drillState,
@@ -400,8 +464,6 @@ export function PnlTab({ output, financialInputs, onCellEdit, isSaving, scenario
   }, []);
 
   const [editingCell, setEditingCell] = useState<string | null>(null);
-  const [flashingRows, setFlashingRows] = useState<Set<string>>(new Set());
-  const flashTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const handleStartEdit = useCallback((rowKey: string, colKey: string) => {
     if (isSaving || !onCellEdit || !financialInputs) return;
@@ -417,22 +479,25 @@ export function PnlTab({ output, financialInputs, onCellEdit, isSaving, scenario
     if (!onCellEdit || !financialInputs) return;
     const mapping = INPUT_FIELD_MAP[rowKey];
     if (!mapping) return;
-    onCellEdit(mapping.category, mapping.fieldName, rawInput, mapping.inputFormat);
-    setEditingCell(null);
+    const colKey = editingCell?.split(":")[1] ?? "y1";
+    const yearMatch = colKey.match(/^y(\d)/);
+    const yearIndex = yearMatch ? parseInt(yearMatch[1]) - 1 : 0;
 
-    const flashKeys = new Set<string>();
-    visibleCols.forEach((col) => {
-      const cellKey = `${rowKey}:${col.key}`;
-      if (cellKey !== editingCell) {
-        flashKeys.add(cellKey);
+    let finalInput = rawInput;
+    if (mapping.storedGranularity && !mapping.perMonth) {
+      const drillLevel = getDrillLevelFromColKey(colKey);
+      const parsed = parseFieldInput(rawInput, mapping.inputFormat);
+      if (!isNaN(parsed)) {
+        const result = scaleForStorage(parsed, drillLevel, mapping.storedGranularity, mapping.inputFormat);
+        if (result) {
+          finalInput = result.inputStr;
+        }
       }
-    });
-    setFlashingRows(flashKeys);
-    if (flashTimeoutRef.current) clearTimeout(flashTimeoutRef.current);
-    flashTimeoutRef.current = setTimeout(() => {
-      setFlashingRows(new Set());
-    }, 250);
-  }, [onCellEdit, financialInputs, editingCell, visibleCols]);
+    }
+
+    onCellEdit(mapping.category, mapping.fieldName, finalInput, mapping.inputFormat, yearIndex, mapping.perMonth ? colKey : undefined);
+    setEditingCell(null);
+  }, [onCellEdit, financialInputs, editingCell]);
 
   const handleTabNav = useCallback((rowKey: string, direction: "next" | "prev") => {
     const idx = EDITABLE_ROW_ORDER.indexOf(rowKey);
@@ -451,13 +516,28 @@ export function PnlTab({ output, financialInputs, onCellEdit, isSaving, scenario
     }
   }, [visibleCols, expandedSections]);
 
-  const getRawValue = useCallback((rowKey: string): number => {
+  const getRawValue = useCallback((rowKey: string, yearIndex: number = 0, colKey?: string): number => {
     if (!financialInputs) return 0;
     const mapping = INPUT_FIELD_MAP[rowKey];
     if (!mapping) return 0;
-    const categoryObj = financialInputs[mapping.category as keyof PlanFinancialInputs];
+    const categoryObj = mapping.category === "facilitiesDecomposition"
+      ? financialInputs.operatingCosts?.facilitiesDecomposition as any
+      : (financialInputs as any)[mapping.category];
     if (!categoryObj) return 0;
-    const field = categoryObj[mapping.fieldName as keyof typeof categoryObj] as FinancialFieldValue;
+    const fieldArr = categoryObj[mapping.fieldName];
+    if (mapping.perMonth && Array.isArray(fieldArr) && fieldArr.length === 60 && colKey) {
+      const { start, count } = getMonthRangeForColKey(colKey);
+      if (count === 1) {
+        const field = fieldArr[start] as FinancialFieldValue;
+        return field?.currentValue ?? 0;
+      }
+      let sum = 0;
+      for (let i = start; i < start + count && i < 60; i++) {
+        sum += (fieldArr[i] as FinancialFieldValue)?.currentValue ?? 0;
+      }
+      return sum / count;
+    }
+    const field = Array.isArray(fieldArr) ? fieldArr[yearIndex] as FinancialFieldValue : fieldArr as FinancialFieldValue;
     return field?.currentValue ?? 0;
   }, [financialInputs]);
 
@@ -478,7 +558,6 @@ export function PnlTab({ output, financialInputs, onCellEdit, isSaving, scenario
           onExpandAll={expandAll}
           onCollapseAll={collapseAll}
           hasAnyDrillDown={hasAnyDrillDown}
-          showLinkedIndicator={canEdit}
           comparisonActive
         />
         <div className="overflow-x-auto" data-testid="pnl-table">
@@ -498,7 +577,6 @@ export function PnlTab({ output, financialInputs, onCellEdit, isSaving, scenario
                     onToggle={() => toggleSection(section.key)}
                     totalCols={totalScenarioCols}
                     editingCell={editingCell}
-                    flashingRows={flashingRows}
                     onStartEdit={canEdit ? handleStartEdit : undefined}
                     onCancelEdit={handleCancelEdit}
                     onCommitEdit={handleCommitEdit}
@@ -522,7 +600,6 @@ export function PnlTab({ output, financialInputs, onCellEdit, isSaving, scenario
         onExpandAll={expandAll}
         onCollapseAll={collapseAll}
         hasAnyDrillDown={hasAnyDrillDown}
-        showLinkedIndicator={canEdit}
       />
       <div className="overflow-x-auto" data-testid="pnl-table">
         <table className="w-full text-sm" role="grid" aria-label="Profit and Loss Statement">
@@ -546,7 +623,6 @@ export function PnlTab({ output, financialInputs, onCellEdit, isSaving, scenario
                 isExpanded={expandedSections[section.key] ?? true}
                 onToggle={() => toggleSection(section.key)}
                 editingCell={editingCell}
-                flashingRows={flashingRows}
                 onStartEdit={canEdit ? handleStartEdit : undefined}
                 onCancelEdit={handleCancelEdit}
                 onCommitEdit={handleCommitEdit}
@@ -555,6 +631,7 @@ export function PnlTab({ output, financialInputs, onCellEdit, isSaving, scenario
                 showInterpretation={!hasAnyDrillDown}
                 financialInputs={financialInputs}
                 brandName={brandName}
+                onCopyYear1ToAll={canEdit ? onCopyYear1ToAll : undefined}
               />
             ))}
           </tbody>
@@ -574,21 +651,21 @@ interface PnlSectionProps {
   isExpanded: boolean;
   onToggle: () => void;
   editingCell: string | null;
-  flashingRows: Set<string>;
   onStartEdit?: (rowKey: string, colKey: string) => void;
   onCancelEdit: () => void;
   onCommitEdit: (rowKey: string, rawInput: string) => void;
   onTabNav: (rowKey: string, direction: "next" | "prev") => void;
-  getRawValue: (rowKey: string) => number;
+  getRawValue: (rowKey: string, yearIndex: number, colKey?: string) => number;
   showInterpretation?: boolean;
   financialInputs?: PlanFinancialInputs | null;
   brandName?: string;
+  onCopyYear1ToAll?: (rowKey: string) => void;
 }
 
 function PnlSection({
   section, columns, enriched, monthly, plAnalysis, isExpanded, onToggle,
-  editingCell, flashingRows, onStartEdit, onCancelEdit, onCommitEdit, onTabNav, getRawValue,
-  showInterpretation = true, financialInputs, brandName,
+  editingCell, onStartEdit, onCancelEdit, onCommitEdit, onTabNav, getRawValue,
+  showInterpretation = true, financialInputs, brandName, onCopyYear1ToAll,
 }: PnlSectionProps) {
   return (
     <>
@@ -630,7 +707,6 @@ function PnlSection({
             monthly={monthly}
             plAnalysis={plAnalysis}
             editingCell={editingCell}
-            flashingRows={flashingRows}
             onStartEdit={onStartEdit}
             onCancelEdit={onCancelEdit}
             onCommitEdit={onCommitEdit}
@@ -639,6 +715,7 @@ function PnlSection({
             showInterpretation={showInterpretation}
             financialInputs={financialInputs}
             brandName={brandName}
+            onCopyYear1ToAll={onCopyYear1ToAll}
           />
         ))}
     </>
@@ -652,21 +729,21 @@ interface PnlRowProps {
   monthly: MonthlyProjection[];
   plAnalysis: PLAnalysisOutput[];
   editingCell: string | null;
-  flashingRows: Set<string>;
   onStartEdit?: (rowKey: string, colKey: string) => void;
   onCancelEdit: () => void;
   onCommitEdit: (rowKey: string, rawInput: string) => void;
   onTabNav: (rowKey: string, direction: "next" | "prev") => void;
-  getRawValue: (rowKey: string) => number;
+  getRawValue: (rowKey: string, yearIndex: number, colKey?: string) => number;
   showInterpretation?: boolean;
   financialInputs?: PlanFinancialInputs | null;
   brandName?: string;
+  onCopyYear1ToAll?: (rowKey: string) => void;
 }
 
 function PnlRow({
   row, columns, enriched, monthly, plAnalysis,
-  editingCell, flashingRows, onStartEdit, onCancelEdit, onCommitEdit, onTabNav, getRawValue,
-  showInterpretation = true, financialInputs, brandName,
+  editingCell, onStartEdit, onCancelEdit, onCommitEdit, onTabNav, getRawValue,
+  showInterpretation = true, financialInputs, brandName, onCopyYear1ToAll,
 }: PnlRowProps) {
   const rowClass = row.isTotal
     ? "font-semibold border-t-[3px] border-double border-b"
@@ -683,7 +760,7 @@ function PnlRow({
   const canEditThisRow = row.isInput && isEditableRow(row.key) && !!onStartEdit;
   const mapping = canEditThisRow ? INPUT_FIELD_MAP[row.key] : null;
 
-  const interpText = showInterpretation && row.interpretation ? row.interpretation(enriched, financialInputs, brandName) : null;
+  const interpText = showInterpretation && row.interpretation ? row.interpretation(enriched, financialInputs, brandName, plAnalysis) : null;
   const interpId = row.interpretationId;
 
   return (
@@ -707,6 +784,37 @@ function PnlRow({
                 aria-label="Editable field"
               />
             )}
+            {canEditThisRow && onCopyYear1ToAll && !editingCell && (
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <button
+                    className="invisible group-hover:visible shrink-0 text-xs text-muted-foreground hover:text-primary transition-colors"
+                    data-testid={`copy-y1-${row.key}`}
+                    title="Copy Year 1 to all years"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <CopyCheck className="h-3 w-3" />
+                  </button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Copy Year 1 to all years?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      This will overwrite Years 2–5 with Year 1's value for "{row.label}". This action cannot be undone.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel data-testid="copy-y1-cancel">Cancel</AlertDialogCancel>
+                    <AlertDialogAction
+                      data-testid="copy-y1-confirm"
+                      onClick={() => onCopyYear1ToAll(row.key)}
+                    >
+                      Copy Year 1 to All
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            )}
           </span>
         </td>
         {columns.map((col) => {
@@ -716,16 +824,23 @@ function PnlRow({
           if (canEditThisRow && mapping) {
             const cellKey = `${row.key}:${col.key}`;
             const isEditingThis = editingCell === cellKey;
-            const isFlashing = flashingRows.has(cellKey);
-            const rawValue = getRawValue(row.key);
 
-            const displayFormatted = formatFieldValue(rawValue, mapping.inputFormat);
+            let cellRawValue: number;
+            let displayFormatted: string;
+
+            if (mapping.storedGranularity && !mapping.perMonth) {
+              cellRawValue = row.isExpense ? Math.abs(value) : value;
+              displayFormatted = formatFieldValue(cellRawValue, mapping.inputFormat);
+            } else {
+              cellRawValue = getRawValue(row.key, (col.year ?? 1) - 1, col.key);
+              displayFormatted = formatFieldValue(cellRawValue, mapping.inputFormat);
+            }
 
             return (
               <InlineEditableCell
                 key={col.key}
                 displayValue={displayFormatted}
-                rawValue={rawValue}
+                rawValue={cellRawValue}
                 inputFormat={mapping.inputFormat}
                 isEditing={isEditingThis}
                 onStartEdit={() => onStartEdit!(row.key, col.key)}
@@ -736,7 +851,6 @@ function PnlRow({
                 testId={`pnl-value-${row.key}-${col.key}`}
                 ariaLabel={`${row.label}, ${col.label}`}
                 className={`${inputCellClass}${isNegative ? " text-amber-700 dark:text-amber-400" : ""}`}
-                isFlashing={isFlashing}
               />
             );
           }
@@ -815,6 +929,10 @@ function getScenarioAnnualValue(
     const ea = enriched[year - 1];
     return ea ? ea.discretionaryMarketing : 0;
   }
+  if (INPUT_ONLY_FIELDS.has(field)) {
+    const ea = enriched[year - 1];
+    return ea ? (ea as any)[field] as number : 0;
+  }
   return getAnnualValue(field, year, enriched, plAnalysis);
 }
 
@@ -824,8 +942,18 @@ function getComparisonCellValue(
   enriched: EnrichedAnnual[],
   monthly: MonthlyProjection[],
   plAnalysis: PLAnalysisOutput[],
-  format: "currency" | "pct",
+  format: "currency" | "pct" | "ratio",
 ): number {
+  if (INPUT_ONLY_FIELDS.has(field)) {
+    const ea = enriched[col.year - 1];
+    if (!ea) return 0;
+    const rawValue = (ea as any)[field] as number;
+    if (ANNUAL_CURRENCY_INPUT_FIELDS.has(field)) {
+      if (col.level === "quarterly") return Math.round(rawValue / 4);
+    }
+    return rawValue;
+  }
+
   if (col.level === "annual") {
     return getScenarioAnnualValue(field, col.year, enriched, plAnalysis);
   }
@@ -860,14 +988,13 @@ interface ComparisonPnlSectionProps {
   onToggle: () => void;
   totalCols: number;
   editingCell: string | null;
-  flashingRows: Set<string>;
   onStartEdit?: (rowKey: string, colKey: string) => void;
   onCancelEdit: () => void;
   onCommitEdit: (rowKey: string, rawInput: string) => void;
   onTabNav: (rowKey: string, direction: "next" | "prev") => void;
-  getRawValue: (rowKey: string) => number;
+  getRawValue: (rowKey: string, yearIndex: number, colKey?: string) => number;
   financialInputs?: PlanFinancialInputs | null;
-  onCellEdit?: (category: string, fieldName: string, rawInput: string, inputFormat: FormatType) => void;
+  onCellEdit?: (category: string, fieldName: string, rawInput: string, inputFormat: FormatType, yearIndex: number, colKey?: string) => void;
 }
 
 function ComparisonPnlSection({
@@ -879,7 +1006,6 @@ function ComparisonPnlSection({
   onToggle,
   totalCols,
   editingCell,
-  flashingRows,
   onStartEdit,
   onCancelEdit,
   onCommitEdit,
@@ -916,7 +1042,6 @@ function ComparisonPnlSection({
             scenarioOutputs={scenarioOutputs}
             comparisonCols={comparisonCols}
             editingCell={editingCell}
-            flashingRows={flashingRows}
             onStartEdit={onStartEdit}
             onCancelEdit={onCancelEdit}
             onCommitEdit={onCommitEdit}
@@ -936,14 +1061,13 @@ interface ComparisonPnlRowProps {
   scenarioOutputs: ScenarioOutputs;
   comparisonCols: ComparisonColumnDef[];
   editingCell: string | null;
-  flashingRows: Set<string>;
   onStartEdit?: (rowKey: string, colKey: string) => void;
   onCancelEdit: () => void;
   onCommitEdit: (rowKey: string, rawInput: string) => void;
   onTabNav: (rowKey: string, direction: "next" | "prev") => void;
-  getRawValue: (rowKey: string) => number;
+  getRawValue: (rowKey: string, yearIndex: number, colKey?: string) => number;
   financialInputs?: PlanFinancialInputs | null;
-  onCellEdit?: (category: string, fieldName: string, rawInput: string, inputFormat: FormatType) => void;
+  onCellEdit?: (category: string, fieldName: string, rawInput: string, inputFormat: FormatType, yearIndex: number, colKey?: string) => void;
 }
 
 function ComparisonPnlRow({
@@ -952,7 +1076,6 @@ function ComparisonPnlRow({
   scenarioOutputs,
   comparisonCols,
   editingCell,
-  flashingRows,
   onStartEdit,
   onCancelEdit,
   onCommitEdit,
@@ -996,27 +1119,25 @@ function ComparisonPnlRow({
         const isYearBoundary = colIdx > 0 && col.year !== comparisonCols[colIdx - 1].year;
 
         if (isBase && editable && editingCell === `${row.key}:${col.key}`) {
-          const rawValue = getRawValue(row.key);
+          const cellRawValue = (mapping!.storedGranularity && !mapping!.perMonth)
+            ? (row.isExpense ? Math.abs(value) : value)
+            : getRawValue(row.key, (col.year ?? 1) - 1, col.key);
           return (
-            <td
+            <InlineEditableCell
               key={col.key}
-              className={`py-1.5 px-1 text-right ${SCENARIO_COLORS[scenario].bg}${isYearBoundary ? " border-l-2 border-border/40" : ""}`}
-              role="gridcell"
-              data-testid={`pnl-value-${row.key}-${col.key}`}
-            >
-              <InlineEditableCell
-                value={formatFieldValue(rawValue, mapping!.inputFormat)}
-                inputFormat={mapping!.inputFormat}
-                onCommit={(val) => onCommitEdit(row.key, val)}
-                onCancel={onCancelEdit}
-                onTabNext={() => onTabNav(row.key, "next")}
-                onTabPrev={() => onTabNav(row.key, "prev")}
-                testId={`pnl-value-${row.key}-${col.key}`}
-                ariaLabel={`${row.label}, ${col.label}`}
-                className={isNegative ? "text-amber-700 dark:text-amber-400" : ""}
-                isFlashing={false}
-              />
-            </td>
+              displayValue={formatFieldValue(cellRawValue, mapping!.inputFormat)}
+              rawValue={cellRawValue}
+              inputFormat={mapping!.inputFormat}
+              isEditing={true}
+              onStartEdit={() => {}}
+              onCommit={(val) => onCommitEdit(row.key, val)}
+              onCancel={onCancelEdit}
+              onTabNext={() => onTabNav(row.key, "next")}
+              onTabPrev={() => onTabNav(row.key, "prev")}
+              testId={`pnl-value-${row.key}-${col.key}`}
+              ariaLabel={`${row.label}, ${col.label}`}
+              className={`${SCENARIO_COLORS[scenario].bg}${isYearBoundary ? " border-l-2 border-border/40" : ""}${isNegative ? " text-amber-700 dark:text-amber-400" : ""}`}
+            />
           );
         }
 

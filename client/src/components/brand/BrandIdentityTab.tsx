@@ -9,7 +9,8 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
-import { Save } from "lucide-react";
+import { Save, Trash2 } from "lucide-react";
+import { DeleteBrandDialog } from "./DeleteBrandDialog";
 
 function isValidHex(color: string): boolean {
   return /^#([a-f\d]{3}|[a-f\d]{6})$/i.test(color);
@@ -31,6 +32,40 @@ export function BrandIdentityTab({ brand }: { brand: Brand }) {
   const [defaultBookingUrl, setDefaultBookingUrl] = useState(brand.defaultBookingUrl || "");
   const [franchisorAck, setFranchisorAck] = useState(brand.franchisorAcknowledgmentEnabled);
   const [colorError, setColorError] = useState("");
+
+  const [metaName, setMetaName] = useState(brand.name);
+  const [metaSlug, setMetaSlug] = useState(brand.slug);
+  const [slugError, setSlugError] = useState("");
+
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+
+  const handleSlugChange = (value: string) => {
+    if (value.length > 50) return;
+    setMetaSlug(value);
+    if (value && !/^[a-z0-9-]+$/.test(value)) {
+      setSlugError("Lowercase letters, numbers, and hyphens only");
+    } else {
+      setSlugError("");
+    }
+  };
+
+  const updateMetadata = useMutation({
+    mutationFn: async () => {
+      const res = await apiRequest("PUT", `/api/brands/${brand.id}`, {
+        name: metaName,
+        slug: metaSlug,
+      });
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/brands"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/brands", brand.id] });
+      toast({ title: "Metadata saved", description: "Brand metadata has been updated." });
+    },
+    onError: (error: Error) => {
+      toast({ title: "Error", description: error.message, variant: "destructive" });
+    },
+  });
 
   const handleColorTextChange = (value: string) => {
     setPrimaryColor(value);
@@ -74,8 +109,55 @@ export function BrandIdentityTab({ brand }: { brand: Brand }) {
     },
   });
 
+  const canSaveMetadata = metaName.trim().length > 0 && metaSlug.trim().length > 0 && !slugError;
+
   return (
     <div className="space-y-4">
+      <Card>
+        <CardHeader className="pb-3">
+          <div className="flex items-center justify-between gap-4 flex-wrap">
+            <CardTitle className="text-base">Brand Metadata</CardTitle>
+            <Button
+              size="sm"
+              onClick={() => updateMetadata.mutate()}
+              disabled={updateMetadata.isPending || !canSaveMetadata}
+              data-testid="button-save-metadata"
+            >
+              <Save className="h-4 w-4 mr-2" />
+              {updateMetadata.isPending ? "Saving..." : "Save Metadata"}
+            </Button>
+          </div>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="meta-brand-name">Brand Name</Label>
+            <Input
+              id="meta-brand-name"
+              value={metaName}
+              onChange={(e) => setMetaName(e.target.value)}
+              placeholder="e.g., PostNet"
+              data-testid="input-meta-brand-name"
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="meta-slug">Slug</Label>
+            <Input
+              id="meta-slug"
+              value={metaSlug}
+              onChange={(e) => handleSlugChange(e.target.value)}
+              placeholder="e.g., postnet"
+              className={slugError ? "border-destructive" : ""}
+              data-testid="input-meta-slug"
+            />
+            {slugError ? (
+              <p className="text-xs text-destructive" data-testid="text-slug-error">{slugError}</p>
+            ) : (
+              <p className="text-xs text-muted-foreground">Lowercase letters, numbers, and hyphens only</p>
+            )}
+          </div>
+        </CardContent>
+      </Card>
+
       <div className="flex items-center justify-between gap-4 flex-wrap">
         <div>
           <h2 className="text-lg font-semibold">Brand Identity</h2>
@@ -175,6 +257,37 @@ export function BrandIdentityTab({ brand }: { brand: Brand }) {
           </div>
         </CardContent>
       </Card>
+
+      <Card className="border-destructive/50">
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base text-destructive">Danger Zone</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="flex items-center justify-between gap-4 flex-wrap">
+            <div>
+              <p className="text-sm font-medium">Delete this brand</p>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                Permanently remove this brand and all associated plans. This action cannot be undone.
+              </p>
+            </div>
+            <Button
+              variant="destructive"
+              onClick={() => setDeleteDialogOpen(true)}
+              data-testid="button-delete-brand"
+            >
+              <Trash2 className="h-4 w-4 mr-2" />
+              Delete Brand
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+
+      <DeleteBrandDialog
+        open={deleteDialogOpen}
+        onOpenChange={setDeleteDialogOpen}
+        brandId={brand.id}
+        brandName={brand.name}
+      />
     </div>
   );
 }

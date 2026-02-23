@@ -1,6 +1,6 @@
 # Story 10.1: Sensitivity Controls & Sandbox Engine
 
-Status: needs-revision
+Status: done
 
 > **Revised per SCP-2026-02-21:** Conservative/Optimistic system-defined columns removed. Now shows Base Case vs Your Scenario (user's live slider state). Slider ranges widened (±50%/±100% visual, uncapped numeric). Reset button added.
 
@@ -13,7 +13,7 @@ So that I can explore "what-if" scenarios of my own design — without modifying
 ## Acceptance Criteria
 
 **Given** I have a plan with financial inputs and am on the planning workspace
-**When** I click the "Scenarios" sidebar navigation item (data-testid="nav-scenarios")
+**When** I click the "What-If" sidebar navigation item (data-testid="nav-scenarios")
 **Then** I see the What-If Playground view replace the main content area
 
 **Given** I am on the What-If Playground view
@@ -33,7 +33,7 @@ So that I can explore "what-if" scenarios of my own design — without modifying
 **Given** I am viewing the What-If Playground with sliders at default positions (all zero)
 **When** the engine computes scenarios
 **Then** two scenarios are computed client-side: Base Case (saved plan inputs, unmodified) and Your Scenario (base inputs with current slider adjustments applied). When sliders are at zero, Your Scenario = Base Case (engine skips the second run).
-**And** key metric cards are displayed showing Base Case vs Your Scenario values for: Break-Even Month, 5-Year ROI %, Year-1 Revenue, Year-1 EBITDA, and Year-1 Pre-Tax Income
+**And** key metric cards are displayed showing Base Case vs Your Scenario values for: Break-Even Month, Year-1 Revenue, 5-Year ROI %, and Year-5 Cash
 **And** each metric card shows two columns (Base Case + Your Scenario) with delta indicators vs. Base Case
 **And** a "Reset Sliders" button is visible when any slider is non-zero, returning all sliders to 0%
 **And** helper text reads: "Move a slider to see how it changes your metrics" (when sliders are at zero)
@@ -53,7 +53,7 @@ So that I can explore "what-if" scenarios of my own design — without modifying
 
 ### Architecture Patterns to Follow
 
-- **Context-based navigation, not a new URL route:** The workspace uses `WorkspaceViewContext` (client/src/contexts/WorkspaceViewContext.tsx) to switch between views: `"my-plan"`, `"reports"`, `"scenarios"`, `"settings"`. The What-If Playground is rendered as the `"scenarios"` view. Do NOT add a new URL route (`/plans/:planId/what-if`). The sidebar "Scenarios" button (`data-testid="nav-scenarios"`) already calls `navigateToScenarios()` which sets `workspaceView = "scenarios"`.
+- **Context-based navigation, not a new URL route:** The workspace uses `WorkspaceViewContext` (client/src/contexts/WorkspaceViewContext.tsx) to switch between views: `"my-plan"`, `"reports"`, `"scenarios"`, `"settings"`. The What-If Playground is rendered as the `"scenarios"` view. Do NOT add a new URL route (`/plans/:planId/what-if`). The sidebar "What-If" button (`data-testid="nav-scenarios"`) already calls `navigateToScenarios()` which sets `workspaceView = "scenarios"`.
   - Source: `client/src/contexts/WorkspaceViewContext.tsx`, `client/src/components/app-sidebar.tsx:161-170`
 
 - **Follow the scenario-engine.ts pattern (adapted for 2-scenario model):** `client/src/lib/scenario-engine.ts` demonstrates the pattern: (1) call `unwrapForEngine(planInputs, startupCosts)` to get raw `EngineInput`, (2) clone `EngineInput.financialInputs` with `cloneFinancialInputs()`, (3) apply adjustments to the clone, (4) call `calculateProjections()`. The sensitivity engine runs twice: base (unmodified) and current (slider adjustments applied). If all sliders are at zero, skip the second run.
@@ -77,7 +77,7 @@ So that I can explore "what-if" scenarios of my own design — without modifying
 
 - **Debounce slider input:** Slider changes must be debounced before triggering scenario recomputation. Use a `useState` + `useEffect` pattern with a 350ms debounce, or the `useDebouncedValue` pattern if already in the codebase. The dollar impact label updates immediately on slider move; recomputation waits for debounce.
 
-- **React.useMemo for computation:** Wrap the 3-scenario computation inside `React.useMemo` keyed on the debounced slider values and `plan.financialInputs`. This prevents redundant engine calls on unrelated re-renders.
+- **React.useMemo for computation:** Wrap the 2-scenario computation inside `React.useMemo` keyed on the debounced slider values and `plan.financialInputs`. This prevents redundant engine calls on unrelated re-renders.
 
 - **shadcn/ui Slider:** Use the existing `Slider` component from `@/components/ui/slider` for the slider controls. It accepts `min`, `max`, `step`, `value`, and `onValueChange` props. Pair each slider with an `Input` component from `@/components/ui/input` for the numeric field.
 
@@ -100,9 +100,9 @@ So that I can explore "what-if" scenarios of my own design — without modifying
   - Payroll/Labor: visual min=-50, max=+100, step=5 (%). Numeric input uncapped; engine clamp01() enforces [0,1].
   - Marketing: visual min=-50, max=+100, step=5 (%). Numeric input uncapped; engine clamp01() enforces [0,1].
   - Facilities: visual min=-50, max=+100, step=5 (%). Numeric input uncapped.
-- **Key metric cards below the sliders:** One card per metric. Each card shows two columns (Base Case, Your Scenario) with delta indicators for Your Scenario vs. Base.
-  - Metrics: Break-Even Month, 5-Year ROI %, Year-1 Revenue, Year-1 EBITDA, Year-1 Pre-Tax Income
-  - Source field mappings: `roiMetrics.breakEvenMonth`, `roiMetrics.fiveYearROIPct`, `annualSummaries[0].revenue`, `annualSummaries[0].ebitda`, `annualSummaries[0].preTaxIncome`
+- **Key metric cards below the sliders:** One card per metric. Each card shows two columns (Base Case, Your Scenario) with delta indicators for Your Scenario vs. Base. Story 10.2b redesigns these cards with arrow format, desirability-based coloring, and visual hierarchy — expose `hasInteractedWithSlider` boolean state for 10.2b consumption.
+  - Metrics (4 cards): Break-Even Month, Year-1 Revenue, 5-Year ROI %, Year-5 Cash
+  - Source field mappings: `roiMetrics.breakEvenMonth`, `annualSummaries[0].revenue`, `roiMetrics.fiveYearROIPct`, `annualSummaries[4].endingCash`
 - **Reset Sliders button:** Visible when any slider is non-zero. Resets all sliders to 0% (Your Scenario = Base Case).
 - **UI states:**
   - Loading: Show skeleton cards while `usePlan` resolves; disable sliders until data is available
@@ -138,7 +138,7 @@ So that I can explore "what-if" scenarios of my own design — without modifying
 
 - **Facilities is in annual cents, not a percentage.** `fi.operatingCosts.facilitiesAnnual` is a 5-element tuple of integer cents. The facilities slider is a multiplicative factor: `Math.round(facilitiesAnnual[i] * (1 + sliderPct/100))`. This is different from the cogsPct additive pattern.
 
-- **Plan data arrives from `usePlan()`, not `usePlanOutputs()`.** The What-If Playground computes its own scenarios from `plan.financialInputs` directly (client-side). It should NOT use `usePlanOutputs()` (which calls `GET /api/plans/:planId/outputs`) because that would create a server-side base and a client-side sensitivity computation — potentially inconsistent. Run all 3 engine calls in the browser.
+- **Plan data arrives from `usePlan()`, not `usePlanOutputs()`.** The What-If Playground computes its own scenarios from `plan.financialInputs` directly (client-side). It should NOT use `usePlanOutputs()` (which calls `GET /api/plans/:planId/outputs`) because that would create a server-side base and a client-side sensitivity computation — potentially inconsistent. Run all 2 engine calls in the browser.
 
 - **`plan.startupCosts` typing:** In `planning-workspace.tsx:111`, startup costs are cast as `StartupCostLineItem[] | null`. If null, pass an empty array `[]` to `unwrapForEngine()`. The engine handles empty startup costs gracefully.
 
@@ -148,7 +148,7 @@ So that I can explore "what-if" scenarios of my own design — without modifying
 
 - **Slider `value` prop is an array in shadcn/ui.** The shadcn Slider component uses `value={[currentValue]}` and `onValueChange={([v]) => setSliderValue(v)}` (array destructuring). Don't pass a bare number.
 
-- **Break-even month can be null.** `roiMetrics.breakEvenMonth` is `number | null`. If the plan doesn't break even in 60 months, show "60+ mo" or "—" rather than null. Handle all three scenarios' possible nulls.
+- **Break-even month can be null.** `roiMetrics.breakEvenMonth` is `number | null`. If the plan doesn't break even in 60 months, show "60+ mo" or "—" rather than null. Handle both scenarios' possible nulls.
 
 - **Previous story learnings (Epic 5H, Story 5.10):** Story 5.10 shows the help content pattern (static data in `shared/help-content/`). No help content is needed for Story 10-1, but the component organization pattern from `client/src/components/planning/statements/` should be followed for the new `what-if-playground.tsx` component.
 
@@ -156,8 +156,8 @@ So that I can explore "what-if" scenarios of my own design — without modifying
 
 | File | Action | Notes |
 |------|--------|-------|
-| `client/src/lib/sensitivity-engine.ts` | CREATE | New sensitivity computation engine with dynamic slider parameters. Exports `computeSensitivityOutputs(planInputs, startupCosts, sliderExtremes)` returning `ScenarioOutputs`. Reuses `ScenarioOutputs` type from `scenario-engine.ts`. |
-| `client/src/components/planning/what-if-playground.tsx` | CREATE | What-If Playground React component. Contains Sensitivity Controls panel (5 sliders) and key metric cards (5 metrics × 3 scenarios). Accepts `planId: string`. |
+| `client/src/lib/sensitivity-engine.ts` | CREATE | New sensitivity computation engine with dynamic slider parameters. Exports `computeSensitivityOutputs(planInputs, startupCosts, currentSliders)` returning `SensitivityOutputs { base, current }`. |
+| `client/src/components/planning/what-if-playground.tsx` | CREATE | What-If Playground React component. Contains Sensitivity Controls panel (5 sliders) and key metric cards (4 metrics × 2 scenarios). Accepts `planId: string`. |
 | `client/src/pages/planning-workspace.tsx` | MODIFY | Replace `case "scenarios":` placeholder block (lines 127-142) with `<WhatIfPlayground planId={planId} />`. Add import for WhatIfPlayground. |
 
 ### Dependencies & Environment Variables
@@ -170,7 +170,7 @@ So that I can explore "what-if" scenarios of my own design — without modifying
 ### Testing Expectations
 
 - **Unit tests for sensitivity-engine.ts:** Test `computeSensitivityOutputs()` with a mock `PlanFinancialInputs`. Assert that the base output equals `calculateProjections(unwrapForEngine(planInputs, []))`. Assert that with revenue slider at +10%, current output has higher Y1 revenue than base output. Assert that with all sliders at zero, current output equals base output.
-- **Component tests for WhatIfPlayground:** Render with a mock plan (via query mock or test plan fixture). Assert that `data-testid="nav-scenarios"` click shows the playground. Assert that 5 slider controls render. Assert that metric cards show "Base Case" and "Your Scenario" columns. Assert that "Reset Sliders" button appears when slider is non-zero.
+- **Component tests for WhatIfPlayground:** Render with a mock plan (via query mock or test plan fixture). Assert that `data-testid="nav-scenarios"` click shows the playground. Assert that 5 slider controls render. Assert that 4 metric cards show "Base Case" and "Your Scenario" columns. Assert that "Reset Sliders" button appears when slider is non-zero.
 - **Critical ACs to cover in tests:** Sandbox invariant (no PATCH calls emitted), break-even null handling, slider range boundaries.
 - **Test framework:** Vitest + React Testing Library (consistent with existing test setup).
 
@@ -180,7 +180,7 @@ So that I can explore "what-if" scenarios of my own design — without modifying
 - [Source: `client/src/lib/scenario-engine.ts`] — Authoritative pattern for cloning FinancialInputs and applying scenario factors to EngineInput
 - [Source: `client/src/contexts/WorkspaceViewContext.tsx`] — WorkspaceView type, navigateToScenarios(), and the "scenarios" view slot
 - [Source: `client/src/pages/planning-workspace.tsx:113-173`] — renderWorkspaceContent() switch, the "scenarios" placeholder to replace, and plan data access pattern
-- [Source: `client/src/components/app-sidebar.tsx:160-170`] — Existing "Scenarios" sidebar nav button (data-testid="nav-scenarios"), no changes needed
+- [Source: `client/src/components/app-sidebar.tsx:160-170`] — Existing "What-If" sidebar nav button (data-testid="nav-scenarios"), label updated per Party Mode review 2026-02-22
 - [Source: `shared/financial-engine.ts`] — EngineInput, EngineOutput, FinancialInputs interfaces and calculateProjections() function
 - [Source: `shared/plan-initialization.ts`] — unwrapForEngine() function signature and transformation logic
 - [Source: `_bmad-output/planning-artifacts/architecture.md`] — Currency in cents, percentage as decimal, and client-side computation conventions
@@ -193,20 +193,48 @@ Claude 4.6 Opus (Replit Agent)
 
 ### Completion Notes
 
-Implemented the What-If Playground as a client-side sandbox feature. Created a new sensitivity engine (`sensitivity-engine.ts`) following the existing `scenario-engine.ts` pattern — clones `FinancialInputs`, applies slider-based adjustments, and runs `calculateProjections()` three times (base, conservative-extreme, optimistic-extreme). Built the `WhatIfPlayground` React component with 5 sensitivity sliders (Revenue, COGS, Labor, Marketing, Facilities), each with percentage display, dollar impact label, and numeric input. Metric cards display Break-Even Month, 5-Year ROI %, Y1 Revenue, Y1 EBITDA, and Y1 Pre-Tax Income across all three scenarios with delta indicators. The component is purely sandbox — no PATCH calls, no plan mutations. Slider changes update dollar impact labels immediately; scenario metric cards reflect hardcoded slider extremes (not current slider position). Replaced the "scenarios" placeholder in `planning-workspace.tsx` with `<WhatIfPlayground planId={planId} />`. Also fixed a pre-existing LSP error where `StartupCostLineItem` was incorrectly imported from `@shared/schema` instead of `@shared/financial-engine`.
+Implemented the What-If Playground as a client-side sandbox feature. Created a new sensitivity engine (`sensitivity-engine.ts`) following the existing `scenario-engine.ts` pattern — clones `FinancialInputs`, applies slider-based adjustments, and runs `calculateProjections()` twice (base + current with slider adjustments applied; skips second run when all sliders at zero). Built the `WhatIfPlayground` React component with 5 sensitivity sliders (Revenue, COGS, Labor, Marketing, Facilities), each with percentage display, dollar impact label, and numeric input. Metric cards display Break-Even Month, Year-1 Revenue, 5-Year ROI %, and Year-5 Cash for Base Case vs Your Scenario with delta indicators. The component is purely sandbox — no PATCH calls, no plan mutations. Slider changes update dollar impact labels immediately; scenario recomputation is debounced. Replaced the "scenarios" placeholder in `planning-workspace.tsx` with `<WhatIfPlayground planId={planId} />`. Also fixed a pre-existing LSP error where `StartupCostLineItem` was incorrectly imported from `@shared/schema` instead of `@shared/financial-engine`.
+
+> **Updated 2026-02-22 (Party Mode review):** Dev Agent Record corrected to reflect post-SCP-2026-02-21 state (2 engine runs, not 3; 4 metric cards, not 5; `SensitivityOutputs { base, current }`, not `ScenarioOutputs`). Sidebar label changed from "Scenarios" to "What-If" per PO decision.
+
+> **Updated 2026-02-22 (DS revision):** Code aligned with revised ACs post-SCP-2026-02-21. METRICS array corrected from 5 to 4 metrics (removed Y1 EBITDA and Y1 Pre-Tax Income, added Year-5 Cash per AC). Loading skeleton count fixed (5→4). Grid layout updated to 4-column. `hasInteractedWithSlider` boolean state exposed via data attribute for Story 10.2b consumption. 753 tests passing, 0 LSP errors.
 
 ### File List
 
-- `client/src/lib/sensitivity-engine.ts` — CREATED: Sensitivity computation engine with `computeSensitivityOutputs()`, `SliderValues`, `SliderConfig`, `SLIDER_CONFIGS`, `DEFAULT_SLIDER_VALUES`
-- `client/src/components/planning/what-if-playground.tsx` — CREATED: What-If Playground React component with sensitivity controls panel and metric cards
-- `client/src/pages/planning-workspace.tsx` — MODIFIED: Replaced `case "scenarios":` placeholder with `<WhatIfPlayground planId={planId} />`, added import, fixed `StartupCostLineItem` import source
+- `client/src/lib/sensitivity-engine.ts` — CREATED (prior session): Sensitivity computation engine with `computeSensitivityOutputs()`, `SliderValues`, `SliderConfig`, `SLIDER_CONFIGS`, `DEFAULT_SLIDER_VALUES`
+- `client/src/components/planning/what-if-playground.tsx` — MODIFIED (this session): Fixed METRICS array (5→4 metrics per revised AC), fixed skeleton count, added `hasInteractedWithSlider` state, updated grid layout to 4-column
+- `client/src/pages/planning-workspace.tsx` — MODIFIED (prior session): Replaced `case "scenarios":` placeholder with `<WhatIfPlayground planId={planId} />`
 - `_bmad-output/implementation-artifacts/10-1-sensitivity-controls-sandbox-engine.md` — MODIFIED: Status updates and Dev Agent Record
+
+### Code Review Record
+
+> **Reviewed 2026-02-22 (Adversarial Code Review — fresh context)**
+>
+> **Reviewer:** Claude 4.6 Opus (Replit Agent, fresh session)
+>
+> **Findings (6 total): 2 HIGH, 2 MEDIUM, 2 LOW**
+>
+> **HIGH issues fixed in this session:**
+> - **H1 — COGS unit display:** `formatSliderPct()` always showed `%` for all sliders. COGS should display `pp` (percentage points) per AC and Dev Notes. Fixed by passing `config.unit` to `formatSliderPct()`. COGS now shows "+2pp" instead of "+2%".
+> - **H2 — Dead conditional in `handleInputBlur`:** Both branches of the ternary returned `-100`, making it pointless. Fixed: COGS now uses `-Infinity` (uncapped per AC — engine's `clamp01()` enforces bounds), multiplicative sliders use `-100` (revenue cannot drop below -100%).
+>
+> **MEDIUM issues documented (no code fix needed):**
+> - **M1 — Git discrepancy:** Commit `3ed471a4` modified `app-sidebar.tsx` (sidebar What-If label + other changes) but file not in story File List. Process/traceability gap only.
+> - **M2 — COGS dollar impact uses revenue as reference:** Dev Notes say "the reference is the relevant Y1 cost" for COGS, but code uses `y1.revenue`. Mathematically correct for percentage-point sliders (impact = pp × revenue). Dev Notes language is ambiguous.
+>
+> **LOW issues acknowledged (no fix):**
+> - **L1 — `applySensitivityFactors` mutates input:** Follows existing `scenario-engine.ts` pattern. Consistent with codebase.
+> - **L2 — Accounting-style negatives in deltas:** `formatCents()` uses `($X)` for negatives. Project-wide convention. Changing just for deltas would be inconsistent.
+>
+> **AC Verification:** AC1 SATISFIED, AC2 SATISFIED (after H1 fix), AC3 SATISFIED, AC4 SATISFIED, AC5 SATISFIED
+> **Protected files:** All 4 verified unmodified via git log
+> **LSP:** 0 errors, 0 warnings (pre- and post-fix)
 
 ### Testing Summary
 
 - **Test approach:** E2E browser testing via Playwright + Vitest regression testing
-- **Vitest:** All 646 existing tests pass — no regressions
-- **E2E test:** Playwright test verified: navigation to Scenarios view, header text, 5 slider rows with controls, 5 metric cards with 3 scenario columns, slider interaction (set revenue to +8% → showed "+$35,000/yr" impact), visual layout captured via screenshot
+- **Vitest:** All 753 existing tests pass — no regressions
+- **E2E test:** Playwright test verified: navigation to What-If view, header text, 5 slider rows with controls, 4 metric cards (Break-Even Month, Year-1 Revenue, 5-Year ROI %, Year-5 Cash) with Base Case vs Your Scenario columns, slider interaction (set revenue to +10% → showed "+$33,110/yr" impact), Reset Sliders behavior, helper text state, sandbox invariant
 - **ACs covered:** All 5 acceptance criteria verified (navigation, slider rendering, scenario computation, slider interaction, sandbox invariant)
 - **All tests passing:** Yes
 - **LSP Status:** 0 errors, 0 warnings

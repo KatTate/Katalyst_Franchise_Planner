@@ -104,23 +104,46 @@ function makeFieldValue(currentValue: number, source = "brand_default" as string
   };
 }
 
+function makeFieldArray5(v: number, isCustom = false) {
+  return Array.from({ length: 5 }, () => makeFieldValue(v, "brand_default", isCustom));
+}
+
 const validFinancialInputs = {
   revenue: {
     monthlyAuv: makeFieldValue(2686700),
-    year1GrowthRate: makeFieldValue(0.13),
-    year2GrowthRate: makeFieldValue(0.13),
+    growthRates: [makeFieldValue(0.13), makeFieldValue(0.13), makeFieldValue(0.13), makeFieldValue(0.13), makeFieldValue(0.13)],
     startingMonthAuvPct: makeFieldValue(0.08),
   },
   operatingCosts: {
-    cogsPct: makeFieldValue(0.30),
-    laborPct: makeFieldValue(0.17),
-    rentMonthly: makeFieldValue(500000),
-    utilitiesMonthly: makeFieldValue(80000),
-    insuranceMonthly: makeFieldValue(50000),
-    marketingPct: makeFieldValue(0.05),
-    royaltyPct: makeFieldValue(0.05),
-    adFundPct: makeFieldValue(0.02),
-    otherMonthly: makeFieldValue(100000),
+    royaltyPct: makeFieldArray5(0.05),
+    adFundPct: makeFieldArray5(0.02),
+    cogsPct: makeFieldArray5(0.30),
+    laborPct: makeFieldArray5(0.17),
+    facilitiesAnnual: makeFieldArray5(7560000),
+    facilitiesDecomposition: {
+      rent: makeFieldArray5(6000000),
+      utilities: makeFieldArray5(960000),
+      telecomIt: makeFieldArray5(0),
+      vehicleFleet: makeFieldArray5(0),
+      insurance: makeFieldArray5(600000),
+    },
+    marketingPct: makeFieldArray5(0.05),
+    managementSalariesAnnual: makeFieldArray5(0),
+    payrollTaxPct: makeFieldArray5(0.20),
+    otherOpexPct: makeFieldArray5(0.03),
+  },
+  profitabilityAndDistributions: {
+    targetPreTaxProfitPct: makeFieldArray5(0),
+    shareholderSalaryAdj: makeFieldArray5(0),
+    distributions: makeFieldArray5(0),
+    nonCapexInvestment: makeFieldArray5(0),
+  },
+  workingCapitalAndValuation: {
+    arDays: makeFieldValue(30),
+    apDays: makeFieldValue(60),
+    inventoryDays: makeFieldValue(60),
+    taxPaymentDelayMonths: makeFieldValue(0),
+    ebitdaMultiple: makeFieldValue(0),
   },
   financing: {
     loanAmount: makeFieldValue(20000000),
@@ -343,17 +366,18 @@ describe("Plans Routes", () => {
     });
 
     it("preserves brandDefault when user edits currentValue", async () => {
+      const editedCogsPct = validFinancialInputs.operatingCosts.cogsPct.map((f: any) => ({
+        ...f,
+        currentValue: 0.35,
+        source: "user_entry",
+        isCustom: true,
+        lastModifiedAt: "2026-02-15T12:00:00Z",
+      }));
       const editedInputs = {
         ...validFinancialInputs,
         operatingCosts: {
           ...validFinancialInputs.operatingCosts,
-          cogsPct: {
-            ...validFinancialInputs.operatingCosts.cogsPct,
-            currentValue: 0.35,
-            source: "user_entry",
-            isCustom: true,
-            lastModifiedAt: "2026-02-15T12:00:00Z",
-          },
+          cogsPct: editedCogsPct,
         },
       };
 
@@ -368,7 +392,7 @@ describe("Plans Routes", () => {
         financialInputs: editedInputs,
       });
       expect(res.status).toBe(200);
-      expect(res.body.data.financialInputs.operatingCosts.cogsPct.brandDefault).toBe(0.30);
+      expect(res.body.data.financialInputs.operatingCosts.cogsPct[0].brandDefault).toBe(0.30);
     });
 
     it("rejects financialInputs with invalid source value", async () => {
