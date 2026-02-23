@@ -1,6 +1,7 @@
 # generated: 2026-02-09
 # updated: 2026-02-23 (Story 11.1 adversarial code review completed → done. 8 findings (2H/3M/3L), all H+M fixed: consent bypass on /outputs + /startup-costs (H1,H2), N+1→batch query (M1), frontend role guard (M2), requireRole middleware (M3). Type safety + docs corrected (L1,L3). 0 LSP errors.)
 # updated: 2026-02-23 (Story 11.1 implementation complete → review. All 9 ACs verified via Playwright E2E. 7 files created/modified. Append-only audit trail, consent-based response projection, Settings UI.)
+# updated: 2026-02-23 (Story 11.2 adversarial code review completed → done. 10 findings (4H/4M/2L), all H+M fixed: formatCents for currency display (H1), ROI percentage fix (H2), cached outputs documented as limitation (H3), Dev Agent Record populated (H4), targetOpenQuarter sort (M1), BarChart3 icon (M2), access denial message (M3), getConsentStatusBatch userId scoping (M4).)
 # updated: 2026-02-23 (Story 11.2 Party Mode review completed — 8 findings, 5 applied)
 # updated: 2026-02-23 (Story 9.2 implementation complete → review. All 12 ACs verified via Playwright E2E. 9 files created/modified. Demo-first simulation architecture.)
 # updated: 2026-02-23 (Story 9.2 context document created — Split-Screen Planning Assistant Interface)
@@ -47,6 +48,7 @@
 
 generated: 2026-02-09
 updated: 2026-02-23  # Story 11.1 adversarial code review completed → done. 8 findings (2H/3M/3L), all HIGH+MEDIUM fixed. Consent bypass on /outputs and /startup-costs endpoints (H1,H2). N+1 query replaced with batch (M1). Frontend role guard added (M2). requireRole middleware on consent endpoints (M3). Type safety + docs corrected (L1,L3).
+updated: 2026-02-23  # Story 11.2 adversarial code review completed → done. 10 findings (4H/4M/2L), all H+M fixed. formatCents for currency (H1), ROI pct fix (H2), cached outputs limitation documented (H3), Dev Agent Record populated (H4). targetOpenQuarter sort (M1), BarChart3 icon (M2), access denial message (M3), getConsentStatusBatch userId scoping (M4).
 updated: 2026-02-23  # Story 11.2 Party Mode review completed. 14 ACs (was 12). 8 findings (2H/3M/3L): stalled detection added (F1-H), JTBD alignment (F6-H), summary counts updated (F2-M), sorting added (F3-M), acknowledgment expanded to Version A with reset logic (F7-M), activity tracking guidance (F4-L), opt-in indicator direction (F5-L), lender packages deferred (F8-L). Franchisee-visible acknowledgment deferred to Phase 2.
 updated: 2026-02-23  # Story 11.2 context document created (Create Story workflow). 12 ACs, 10 files in change summary. Franchisor pipeline dashboard with summary bar, consent-based projection, acknowledgment feature, responsive layout. Story 11.1 dependency documented.
 updated: 2026-02-21  # Story 11.1 context document created (Create Story workflow)
@@ -82,6 +84,20 @@ story_location: _bmad-output/implementation-artifacts
 
 # CHANGE LOG:
 # ===========
+# 2026-02-23: Story 11.2 adversarial code review completed → done
+#   - 10 findings total (4H/4M/2L), all HIGH+MEDIUM fixed:
+#     H1: Financial values displayed raw cents — replaced with formatCents() utility
+#     H2: ROI displayed as raw ratio — now multiplied by 100 for percentage
+#     H3: Cached financial_outputs column doesn't exist — documented as architectural limitation
+#     H4: Dev Agent Record was empty — populated with completion notes, file list, testing summary
+#     M1: Added targetOpenQuarter sortable column per AC-14
+#     M2: Changed sidebar icon from GitBranch to BarChart3 per dev notes
+#     M3: Added franchisor-specific access denial message for non-franchisor users (AC-9)
+#     M4: getConsentStatusBatch now accepts optional userId parameter for consistency
+#     L1: Removed duplicate formatCurrency function (replaced by shared formatCents import)
+#     L2: Covered by H1 — formatCents consolidation
+#   - Story 11.2 status: done (confirmed)
+#
 # 2026-02-23: Story 11.2 Party Mode review completed (Sally + John + Bob)
 #   - 8 findings total (2H/3M/3L), all HIGH+MEDIUM resolved:
 #     F1 (H): Added AC-13 — stalled franchisee detection (30+ days no activity, visual flag)

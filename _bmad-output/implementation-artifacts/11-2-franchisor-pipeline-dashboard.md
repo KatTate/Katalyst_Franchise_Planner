@@ -214,9 +214,38 @@ Per UX Journey 7 (Linda, VP of Development at PostNet), the dashboard should sho
 ## Dev Agent Record
 
 ### Agent Model Used
+Claude 4.6 Opus (Replit Agent)
 
 ### Completion Notes
+Story 11.2 implemented the franchisor pipeline dashboard at `/pipeline`. Implementation + adversarial code review completed 2026-02-23.
+
+**Code review findings (10 total: 4H/4M/2L):**
+- H1: Fixed financial values displayed raw (cents) — replaced inline `formatCurrency()` with shared `formatCents()` utility for proper cents-to-dollars conversion
+- H2: Fixed ROI displayed as raw ratio (e.g., 2.01) — now multiplied by 100 for percentage display (e.g., 201.0%)
+- H3: Documented as architectural limitation — story references cached `financial_outputs` column that doesn't exist in schema; recalculation via engine is the only available approach until a caching layer is added
+- H4: Populated this Dev Agent Record (was empty)
+- M1: Added `targetOpenQuarter` as sortable column per AC-14 — sort logic, table header with ArrowUpDown icon, and data cell added
+- M2: Changed sidebar Pipeline icon from `GitBranch` to `BarChart3` per story dev notes
+- M3: Added franchisor-specific access denial message for non-franchisor users navigating to `/pipeline` (AC-9)
+- M4: Made `getConsentStatusBatch()` consistent with `getConsentStatus()` by adding optional `userId` parameter for scoped queries
+- L1: Removed duplicate `formatCurrency` function (replaced by shared `formatCents` import)
+- L2: (Covered by H1 — formatCents consolidation)
 
 ### File List
+- `server/routes/pipeline.ts` — Pipeline API route (Express Router, RBAC-protected)
+- `client/src/pages/pipeline.tsx` — Pipeline dashboard page (summary bar, table, mobile cards, financial cell, acknowledgment cell)
+- `client/src/components/app-sidebar.tsx` — Sidebar nav: Pipeline item with BarChart3 icon, franchisor-only visibility
+- `client/src/App.tsx` — Route registration for `/pipeline` with AdminRoute guard
+- `server/storage.ts` — IStorage: getConsentStatusBatch (userId param added), getAcknowledgmentsByPlanIds, createAcknowledgment
+- `shared/schema.ts` — dataSharingConsents table, planAcknowledgments table, PipelinePlan type
+- `client/src/lib/format-currency.ts` — Shared formatCents utility (pre-existing, now used by pipeline)
 
 ### Testing Summary
+- Server running with no errors after all fixes applied
+- Pipeline API returns correct response structure with franchisee data, consent status, financial summaries
+- Financial values correctly formatted (cents to dollars via formatCents)
+- ROI percentage correctly displayed (ratio * 100)
+- Sort by targetOpenQuarter functional
+- Sidebar shows BarChart3 icon for franchisor users
+- Non-franchisor users see access denial message
+- HMR errors from mid-edit resolved after clean restart
