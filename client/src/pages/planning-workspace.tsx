@@ -3,8 +3,7 @@ import { useParams } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
-import { RefreshCw, Settings } from "lucide-react";
+import { RefreshCw } from "lucide-react";
 import { useSidebar } from "@/components/ui/sidebar";
 import { usePlanAutoSave } from "@/hooks/use-plan-auto-save";
 import { planKey } from "@/hooks/use-plan";
@@ -16,6 +15,7 @@ import { ImpactStrip } from "@/components/planning/impact-strip";
 import { DocumentPreviewModal } from "@/components/planning/document-preview-modal";
 import { PlanCompletenessBar } from "@/components/planning/plan-completeness-bar";
 import { WhatIfPlayground } from "@/components/planning/what-if-playground";
+import { DataSharingSettings } from "@/components/planning/data-sharing-settings";
 import { PlanningAssistantPanel } from "@/components/planning/planning-assistant-panel";
 import { PlanningAssistantFAB } from "@/components/planning/planning-assistant-fab";
 import { PlanningAssistantProvider, usePlanningAssistant } from "@/contexts/PlanningAssistantContext";
@@ -156,21 +156,7 @@ function PlanningWorkspaceInner() {
       case "scenarios":
         return <WhatIfPlayground planId={planId} />;
       case "settings":
-        return (
-          <div data-testid="placeholder-settings" className="flex-1 flex items-center justify-center p-8">
-            <Card>
-              <CardContent className="flex flex-col items-center justify-center py-16 px-8 text-center">
-                <div className="rounded-full bg-muted p-4 mb-4">
-                  <Settings className="h-8 w-8 text-muted-foreground" />
-                </div>
-                <h3 className="text-lg font-semibold mb-2">Settings</h3>
-                <p className="text-muted-foreground text-sm max-w-sm">
-                  Coming soon — plan settings will appear here.
-                </p>
-              </CardContent>
-            </Card>
-          </div>
-        );
+        return <DataSharingSettings planId={planId} />;
       case "my-plan":
       default:
         if (isPlanningAssistantOpen) {
