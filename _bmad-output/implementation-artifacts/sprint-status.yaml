@@ -1,4 +1,5 @@
 # generated: 2026-02-09
+# updated: 2026-02-23 (Story 9.2 context document created — Split-Screen Planning Assistant Interface)
 # updated: 2026-02-23 (Epic 10 retrospective completed — full 15-step BMAD workflow executed)
 # updated: 2026-02-22 (Sprint Planning regenerated — full inventory verification)
 # updated: 2026-02-22 (SCP-2026-02-22 approved — Post-Epic-7 Course Correction & Stabilization)
@@ -43,6 +44,8 @@
 generated: 2026-02-09
 updated: 2026-02-21  # Story 11.1 context document created (Create Story workflow)
 updated: 2026-02-21  # Story 5H.4 context document created (Create Story workflow)
+updated: 2026-02-23  # Story 9.2 Party Mode review completed + PO reframing applied. 12 ACs (was 10), 12 files (was 10). Demo-first: simulation service replaces LLM dependency. Self-contained — no 9.1 prerequisite. 12 findings resolved (3H/4M/5L).
+updated: 2026-02-23  # Story 9.2 context document created (Create Story workflow). 10 ACs, 10 files in change summary. Split-screen layout with resizable panels, SSE streaming, responsive stacked tabs. Epic 9 → in-progress.
 updated: 2026-02-23  # Story 10.3 adversarial code review completed → done. 9 findings (3H/3M/3L), all H+M fixed: newest-first sort (H1), inline validation (H2), useMemo dep (H3), disabled button (M1), strokeDasharray (M2), type unification (M3). 3L documented for later.
 updated: 2026-02-23  # Story 10.3 implementation complete → review. All 10 ACs satisfied, 7 files modified (schema, routes, engine, playground UI, charts). Sandbox invariant preserved.
 updated: 2026-02-23  # Story 10.3 context document created (Create Story workflow). 10 ACs, 6 files in change summary. JSONB column storage decision documented.
@@ -71,6 +74,28 @@ story_location: _bmad-output/implementation-artifacts
 
 # CHANGE LOG:
 # ===========
+# 2026-02-23: Story 9.2 context document created (Create Story workflow)
+#   - Full story file: 9-2-split-screen-planning-assistant-interface.md (ready-for-dev)
+#   - 10 acceptance criteria covering: split-screen layout with resizable panels (AC-1, AC-2),
+#     AI greeting with personalization (AC-3), message send + streaming display (AC-4),
+#     auto-scroll with scroll-to-bottom button (AC-5), responsive tabbed layout below 1024px
+#     with accent dot indicator (AC-6), panel close/dismiss with state preservation (AC-7),
+#     conversation persistence on reopen (AC-8), sidebar auto-collapse in Planning Assistant
+#     mode (AC-9), dual entry points: FAB + sidebar Help item (AC-10)
+#   - Dev notes include: WorkspaceView NOT extended (panel is overlay, not view), existing
+#     react-resizable-panels v2.1.7 via shadcn wrapper, SSE streaming via EventSource/fetch,
+#     unified updateFinancialInput() for AI values (no separate path), independent panel
+#     loading states (Party Mode: Sally), error boundary per panel, sidebar collapse/restore
+#     logic, 200-300ms animation with prefers-reduced-motion
+#   - Anti-patterns: no WorkspaceView extension, no mode switcher, no shadcn ui/ modifications,
+#     no WebSocket, no AI-specific mutation path, no component duplication from shared/
+#   - Gotchas: Story 9.1 API dependency (stub if needed), 9.3/9.4 scope boundaries documented,
+#     auto-scroll vs user-scroll behavior, sidebar collapse restore logic
+#   - 10 files in change summary: 7 CREATE (panel, conversation, dashboard, FAB, mobile,
+#     context, hook), 2 MODIFY (planning-workspace, app-sidebar), 1 NO CHANGE (WorkspaceViewContext)
+#   - Epic 9 status: in-progress (first story ready-for-dev)
+#   - Next action: Dev Story (DS) for 9.2 implementation
+#
 # 2026-02-23: Story 10.3 context document created (Create Story workflow)
 #   - Full story file: 10-3-scenario-persistence-comparison.md (ready-for-dev)
 #   - 10 acceptance criteria covering: save scenario with name validation and 10-cap
@@ -807,9 +832,9 @@ development_status:
 
   # Epic 9: AI Planning Advisor (Planning Assistant) [was Epic 6]
   # PO SEQUENCING (SCP-2026-02-22): LAST — intelligence layer, wait for core to stabilize
-  epic-9: backlog
+  epic-9: in-progress
   9-1-llm-integration-conversation-api: backlog
-  9-2-split-screen-planning-assistant-interface: backlog
+  9-2-split-screen-planning-assistant-interface: ready-for-dev
   9-3-ai-value-extraction-field-population: backlog
   9-4-graceful-degradation-mode-continuity: backlog
   epic-9-retrospective: optional
