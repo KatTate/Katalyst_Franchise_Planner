@@ -18,7 +18,7 @@ export function PlanningAssistantFAB() {
   return (
     <Button
       onClick={handleClick}
-      className="fixed bottom-20 right-6 z-30 rounded-full h-12 w-12 shadow-lg hover:shadow-xl transition-shadow"
+      className="absolute bottom-20 right-6 z-30 rounded-full h-12 w-12 shadow-lg hover:shadow-xl transition-shadow"
       size="icon"
       data-testid="button-planning-assistant-fab"
     >

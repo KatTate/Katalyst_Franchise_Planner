@@ -201,7 +201,7 @@ function PlanningWorkspaceInner() {
   };
 
   return (
-    <div data-testid="planning-workspace" className="flex flex-col h-full">
+    <div data-testid="planning-workspace" className="relative flex flex-col h-full">
       <PlanningHeader
         planId={planId}
         planName={plan.name || "My Plan"}
@@ -214,7 +214,6 @@ function PlanningWorkspaceInner() {
       </div>
 
       {workspaceView === "my-plan" && <PlanningAssistantFAB />}
-
       <ImpactStrip
         planId={planId}
         activeSection={activeSection}
