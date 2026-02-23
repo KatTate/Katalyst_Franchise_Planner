@@ -1,14 +1,9 @@
 import { calculateProjections, type EngineInput, type FinancialInputs } from "@shared/financial-engine";
 import { unwrapForEngine } from "@shared/plan-initialization";
 import type { PlanFinancialInputs, StartupCostLineItem } from "@shared/financial-engine";
+import type { WhatIfScenarioSliderValues } from "@shared/schema";
 
-export interface SliderValues {
-  revenue: number;
-  cogs: number;
-  labor: number;
-  marketing: number;
-  facilities: number;
-}
+export type SliderValues = WhatIfScenarioSliderValues;
 
 export interface SliderConfig {
   key: keyof SliderValues;

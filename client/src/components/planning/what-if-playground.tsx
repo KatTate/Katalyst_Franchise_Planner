@@ -419,6 +419,7 @@ export function WhatIfPlayground({ planId }: WhatIfPlaygroundProps) {
   const [saveDialogName, setSaveDialogName] = useState("");
   const [saveDialogMode, setSaveDialogMode] = useState<"create" | "rename">("create");
   const [isSaving, setIsSaving] = useState(false);
+  const [saveDialogError, setSaveDialogError] = useState<string | null>(null);
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
 
   const [comparisonScenarioId, setComparisonScenarioId] = useState<string | null>(null);
@@ -442,7 +443,10 @@ export function WhatIfPlayground({ planId }: WhatIfPlaygroundProps) {
 
   const financialInputs = plan?.financialInputs as PlanFinancialInputs | null | undefined;
   const startupCostsData = (plan?.startupCosts ?? []) as StartupCostLineItem[];
-  const scenarios: WhatIfScenario[] = (plan?.whatIfScenarios as WhatIfScenario[] | null) ?? [];
+  const scenarios: WhatIfScenario[] = useMemo(() => {
+    const raw = (plan?.whatIfScenarios as WhatIfScenario[] | null) ?? [];
+    return [...raw].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+  }, [plan?.whatIfScenarios]);
 
   const hasAdjustment = Object.values(sliderValues).some((v) => v !== 0);
 
@@ -487,6 +491,7 @@ export function WhatIfPlayground({ planId }: WhatIfPlaygroundProps) {
   const handleSaveNew = useCallback(() => {
     setSaveDialogMode("create");
     setSaveDialogName("");
+    setSaveDialogError(null);
     setSaveDialogOpen(true);
   }, []);
 
@@ -494,12 +499,27 @@ export function WhatIfPlayground({ planId }: WhatIfPlaygroundProps) {
     if (!activeScenario) return;
     setSaveDialogMode("rename");
     setSaveDialogName(activeScenario.name);
+    setSaveDialogError(null);
     setSaveDialogOpen(true);
   }, [activeScenario]);
 
   const handleSaveDialogConfirm = useCallback(async () => {
     const name = saveDialogName.trim();
-    if (!name) return;
+    if (!name) {
+      setSaveDialogError("Scenario name is required.");
+      return;
+    }
+    if (name.length > 60) {
+      setSaveDialogError("Name must be 60 characters or less.");
+      return;
+    }
+    const excludeId = saveDialogMode === "rename" ? activeScenarioId : null;
+    const duplicate = scenarios.some((s) => s.name === name && s.id !== excludeId);
+    if (duplicate) {
+      setSaveDialogError("A scenario with this name already exists.");
+      return;
+    }
+    setSaveDialogError(null);
     setIsSaving(true);
     try {
       if (saveDialogMode === "create") {
@@ -519,11 +539,12 @@ export function WhatIfPlayground({ planId }: WhatIfPlaygroundProps) {
       invalidatePlan();
       setSaveDialogOpen(false);
     } catch (err: any) {
-      toast({ title: "Error", description: err.message || "Failed to save scenario", variant: "destructive" });
+      const msg = err.message || "Failed to save scenario";
+      setSaveDialogError(msg.includes(":") ? msg.split(": ").slice(1).join(": ") : msg);
     } finally {
       setIsSaving(false);
     }
-  }, [saveDialogName, saveDialogMode, planId, sliderValues, activeScenarioId, invalidatePlan, toast]);
+  }, [saveDialogName, saveDialogMode, planId, sliderValues, activeScenarioId, scenarios, invalidatePlan, toast]);
 
   const handleUpdateScenario = useCallback(async () => {
     if (!activeScenarioId) return;
@@ -674,18 +695,16 @@ export function WhatIfPlayground({ planId }: WhatIfPlaygroundProps) {
                   </Button>
                 )}
 
-                {hasAdjustment && (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={handleSaveNew}
-                    disabled={scenarios.length >= 10 && !activeScenario}
-                    data-testid="button-save-scenario"
-                  >
-                    <Save className="h-3.5 w-3.5 mr-1.5" />
-                    Save As…
-                  </Button>
-                )}
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleSaveNew}
+                  disabled={!hasAdjustment || (scenarios.length >= 10 && !activeScenario)}
+                  data-testid="button-save-scenario"
+                >
+                  <Save className="h-3.5 w-3.5 mr-1.5" />
+                  Save As…
+                </Button>
 
                 {hasAdjustment && (
                   <Button
@@ -862,16 +881,21 @@ export function WhatIfPlayground({ planId }: WhatIfPlaygroundProps) {
           </DialogHeader>
           {saveDialogMode === "create" && activeScenario && hasUnsavedChanges ? (
             <>
-              <Input
-                value={saveDialogName}
-                onChange={(e) => setSaveDialogName(e.target.value)}
-                placeholder="e.g. Optimistic Revenue"
-                maxLength={60}
-                data-testid="input-scenario-name"
-                onKeyDown={(e) => {
-                  if (e.key === "Enter" && saveDialogName.trim()) handleSaveDialogConfirm();
-                }}
-              />
+              <div>
+                <Input
+                  value={saveDialogName}
+                  onChange={(e) => { setSaveDialogName(e.target.value); setSaveDialogError(null); }}
+                  placeholder="e.g. Optimistic Revenue"
+                  maxLength={60}
+                  data-testid="input-scenario-name"
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" && saveDialogName.trim()) handleSaveDialogConfirm();
+                  }}
+                />
+                {saveDialogError && (
+                  <p className="text-sm text-destructive mt-1.5" data-testid="text-scenario-name-error">{saveDialogError}</p>
+                )}
+              </div>
               <DialogFooter className="flex gap-2 sm:gap-2">
                 <Button variant="outline" onClick={() => setSaveDialogOpen(false)} data-testid="button-cancel-save">
                   Cancel
@@ -895,16 +919,21 @@ export function WhatIfPlayground({ planId }: WhatIfPlaygroundProps) {
             </>
           ) : (
             <>
-              <Input
-                value={saveDialogName}
-                onChange={(e) => setSaveDialogName(e.target.value)}
-                placeholder="e.g. Optimistic Revenue"
-                maxLength={60}
-                data-testid="input-scenario-name"
-                onKeyDown={(e) => {
-                  if (e.key === "Enter" && saveDialogName.trim()) handleSaveDialogConfirm();
-                }}
-              />
+              <div>
+                <Input
+                  value={saveDialogName}
+                  onChange={(e) => { setSaveDialogName(e.target.value); setSaveDialogError(null); }}
+                  placeholder="e.g. Optimistic Revenue"
+                  maxLength={60}
+                  data-testid="input-scenario-name"
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" && saveDialogName.trim()) handleSaveDialogConfirm();
+                  }}
+                />
+                {saveDialogError && (
+                  <p className="text-sm text-destructive mt-1.5" data-testid="text-scenario-name-error">{saveDialogError}</p>
+                )}
+              </div>
               <DialogFooter>
                 <Button variant="outline" onClick={() => setSaveDialogOpen(false)} data-testid="button-cancel-save">
                   Cancel

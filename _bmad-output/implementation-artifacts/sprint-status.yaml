@@ -40,6 +40,7 @@
 # - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
 
 generated: 2026-02-09
+updated: 2026-02-23  # Story 10.3 adversarial code review completed → done. 9 findings (3H/3M/3L), all H+M fixed: newest-first sort (H1), inline validation (H2), useMemo dep (H3), disabled button (M1), strokeDasharray (M2), type unification (M3). 3L documented for later.
 updated: 2026-02-23  # Story 10.3 implementation complete → review. All 10 ACs satisfied, 7 files modified (schema, routes, engine, playground UI, charts). Sandbox invariant preserved.
 updated: 2026-02-23  # Story 10.3 context document created (Create Story workflow). 10 ACs, 6 files in change summary. JSONB column storage decision documented.
 updated: 2026-02-23  # Story 10.2b adversarial code review completed → done. 3M/1L found, all fixed. AC3 positioning (M1), useMemo effectiveness (M2), evidence table (M3), redundant check (L1). All 5 ACs satisfied.
@@ -799,11 +800,11 @@ development_status:
   # Stories (4): Sensitivity Controls, Chart Dashboard, Metric Delta Cards, Scenario Persistence & Comparison
   # PO SEQUENCING (SCP-2026-02-22): NEXT FEATURE EPIC — after Epic 7H stabilization completes
   # Description stale: still references Conservative/Optimistic — to be fixed in 7H.1
-  epic-10: backlog  # Was in-progress. Reset to backlog per SCP-2026-02-22 — Epic 7H is next.
+  epic-10: done  # All 4 stories completed (10.1, 10.2a, 10.2b, 10.3). What-If Playground with sensitivity controls, charts, metric deltas, and scenario persistence/comparison.
   10-1-sensitivity-controls-sandbox-engine: done  # Adversarial code review completed — 2H fixed (COGS unit display, dead conditional), 2M/2L documented. All 5 ACs satisfied.
   10-2a-sensitivity-chart-dashboard: done  # Adversarial code review completed — 3H/2M/3L found, all HIGH+MEDIUM fixed. Grid breakpoint (H1), custom tooltip (H2), data validation (H3), Cell component (M2). All 17 ACs satisfied.
   10-2b-metric-delta-cards: done  # Adversarial code review completed — 3M/1L found, all fixed. AC3 positioning, useMemo effectiveness, evidence table, redundant check. All 5 ACs satisfied.
-  10-3-scenario-persistence-comparison: review  # Implementation complete → review. All 10 ACs satisfied. Schema JSONB column, API CRUD endpoints, scenario management UI, comparison overlay on 6 charts, sandbox invariant preserved.
+  10-3-scenario-persistence-comparison: done  # Code review completed. 9 findings (3H/3M/3L), all H+M fixed. All 10 ACs satisfied. Schema JSONB column, API CRUD endpoints, scenario management UI, comparison overlay on 6 charts, sandbox invariant preserved.
   epic-10-retrospective: optional
 
   # Epic ST: Admin Support Tools — Impersonation & Demo Modes

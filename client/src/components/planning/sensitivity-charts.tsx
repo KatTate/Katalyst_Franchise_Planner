@@ -148,8 +148,8 @@ function ProfitabilityChart({ base, current, comparison }: { base: EngineOutput;
             <Line type="monotone" dataKey="currentEbitda" stroke="hsl(var(--chart-4))" strokeWidth={2} strokeDasharray="5 5" dot={false} name="EBITDA (Yours)" />
             <Line type="monotone" dataKey="basePreTaxIncome" stroke="hsl(var(--chart-5))" strokeWidth={2} dot={false} name="Pre-Tax (Base)" />
             <Line type="monotone" dataKey="currentPreTaxIncome" stroke="hsl(var(--chart-5))" strokeWidth={2} strokeDasharray="5 5" dot={false} name="Pre-Tax (Yours)" />
-            {comparison && <Line type="monotone" dataKey="compRevenue" stroke={COMPARISON_COLOR} strokeWidth={2} strokeDasharray="2 3" dot={false} name="Revenue (Comp)" />}
-            {comparison && <Line type="monotone" dataKey="compPreTaxIncome" stroke={COMPARISON_COLOR} strokeWidth={2} strokeDasharray="2 3" dot={false} name="Pre-Tax (Comp)" opacity={0.7} />}
+            {comparison && <Line type="monotone" dataKey="compRevenue" stroke={COMPARISON_COLOR} strokeWidth={2} strokeDasharray="2 2" dot={false} name="Revenue (Comp)" />}
+            {comparison && <Line type="monotone" dataKey="compPreTaxIncome" stroke={COMPARISON_COLOR} strokeWidth={2} strokeDasharray="2 2" dot={false} name="Pre-Tax (Comp)" opacity={0.7} />}
           </AreaChart>
         </ChartContainer>
         <div className="flex flex-wrap gap-x-4 gap-y-1 mt-2 text-[10px] text-muted-foreground">
@@ -207,7 +207,7 @@ function CashFlowChart({ base, current, comparison }: { base: EngineOutput; curr
     if (rangeStart !== null) ranges.push({ start: rangeStart, end: 60 });
 
     return { data: chartData, hasNegativeCash: anyNegative, negativeRanges: ranges };
-  }, [base, current]);
+  }, [base, current, comparison]);
 
   return (
     <Card data-testid="sensitivity-chart-cash-flow">
@@ -248,7 +248,7 @@ function CashFlowChart({ base, current, comparison }: { base: EngineOutput; curr
             />
             <Line type="monotone" dataKey="baseCash" stroke="hsl(var(--primary))" strokeWidth={2} dot={false} name="Base Case" />
             <Line type="monotone" dataKey="currentCash" stroke="hsl(var(--chart-4))" strokeWidth={2} strokeDasharray="5 5" dot={false} name="Your Scenario" />
-            {comparison && <Line type="monotone" dataKey="compCash" stroke={COMPARISON_COLOR} strokeWidth={2} strokeDasharray="2 3" dot={false} name="Comparison" />}
+            {comparison && <Line type="monotone" dataKey="compCash" stroke={COMPARISON_COLOR} strokeWidth={2} strokeDasharray="2 2" dot={false} name="Comparison" />}
           </LineChart>
         </ChartContainer>
         {hasNegativeCash && (
@@ -388,7 +388,7 @@ function ROIChart({ base, current, comparison }: { base: EngineOutput; current: 
             <ChartTooltip content={<ChartTooltipContent formatter={(value) => pctTooltipFormatter(value)} />} />
             <Line type="monotone" dataKey="baseRoic" stroke="hsl(var(--primary))" strokeWidth={2} dot={false} name="Base Case" />
             <Line type="monotone" dataKey="currentRoic" stroke="hsl(var(--chart-4))" strokeWidth={2} strokeDasharray="5 5" dot={false} name="Your Scenario" />
-            {comparison && <Line type="monotone" dataKey="compRoic" stroke={COMPARISON_COLOR} strokeWidth={2} strokeDasharray="2 3" dot={false} name="Comparison" />}
+            {comparison && <Line type="monotone" dataKey="compRoic" stroke={COMPARISON_COLOR} strokeWidth={2} strokeDasharray="2 2" dot={false} name="Comparison" />}
           </LineChart>
         </ChartContainer>
         <div className="mt-2 rounded-md bg-muted/50 p-2" data-testid="roi-callout">
@@ -446,8 +446,8 @@ function BalanceSheetChart({ base, current, comparison }: { base: EngineOutput; 
             <Line type="monotone" dataKey="currentAssets" stroke="hsl(var(--chart-1))" strokeWidth={2} strokeDasharray="5 5" dot={false} name="Assets (Yours)" />
             <Line type="monotone" dataKey="baseLiabilities" stroke="hsl(var(--chart-2))" strokeWidth={2} dot={false} name="Liabilities (Base)" />
             <Line type="monotone" dataKey="currentLiabilities" stroke="hsl(var(--chart-2))" strokeWidth={2} strokeDasharray="5 5" dot={false} name="Liabilities (Yours)" />
-            {comparison && <Line type="monotone" dataKey="compAssets" stroke={COMPARISON_COLOR} strokeWidth={2} strokeDasharray="2 3" dot={false} name="Assets (Comp)" />}
-            {comparison && <Line type="monotone" dataKey="compLiabilities" stroke={COMPARISON_COLOR} strokeWidth={2} strokeDasharray="2 3" dot={false} name="Liabilities (Comp)" opacity={0.7} />}
+            {comparison && <Line type="monotone" dataKey="compAssets" stroke={COMPARISON_COLOR} strokeWidth={2} strokeDasharray="2 2" dot={false} name="Assets (Comp)" />}
+            {comparison && <Line type="monotone" dataKey="compLiabilities" stroke={COMPARISON_COLOR} strokeWidth={2} strokeDasharray="2 2" dot={false} name="Liabilities (Comp)" opacity={0.7} />}
           </LineChart>
         </ChartContainer>
         <div className="flex flex-wrap gap-x-4 gap-y-1 mt-2 text-[10px] text-muted-foreground">
@@ -509,8 +509,8 @@ function DebtWorkingCapitalChart({ base, current, comparison }: { base: EngineOu
             <Line type="monotone" dataKey="currentDebt" stroke="hsl(var(--chart-1))" strokeWidth={2} strokeDasharray="5 5" dot={false} name="Debt (Yours)" />
             <Line type="monotone" dataKey="baseWorkingCapital" stroke="hsl(var(--chart-3))" strokeWidth={2} dot={false} name="Working Cap (Base)" />
             <Line type="monotone" dataKey="currentWorkingCapital" stroke="hsl(var(--chart-3))" strokeWidth={2} strokeDasharray="5 5" dot={false} name="Working Cap (Yours)" />
-            {comparison && <Line type="monotone" dataKey="compDebt" stroke={COMPARISON_COLOR} strokeWidth={2} strokeDasharray="2 3" dot={false} name="Debt (Comp)" />}
-            {comparison && <Line type="monotone" dataKey="compWorkingCapital" stroke={COMPARISON_COLOR} strokeWidth={2} strokeDasharray="2 3" dot={false} name="Working Cap (Comp)" opacity={0.7} />}
+            {comparison && <Line type="monotone" dataKey="compDebt" stroke={COMPARISON_COLOR} strokeWidth={2} strokeDasharray="2 2" dot={false} name="Debt (Comp)" />}
+            {comparison && <Line type="monotone" dataKey="compWorkingCapital" stroke={COMPARISON_COLOR} strokeWidth={2} strokeDasharray="2 2" dot={false} name="Working Cap (Comp)" opacity={0.7} />}
           </LineChart>
         </ChartContainer>
         <div className="flex flex-wrap gap-x-4 gap-y-1 mt-2 text-[10px] text-muted-foreground">

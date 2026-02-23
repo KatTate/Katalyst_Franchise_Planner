@@ -277,12 +277,20 @@ Brief inline confirmation or small dialog. Keep lightweight — a full modal for
 
 - **Agent Model Used:** Claude 4.6 Opus (Replit Agent)
 - **Completion Notes:** Implemented full scenario persistence & comparison feature. JSONB column `whatIfScenarios` added to plans table via direct SQL migration. Three API endpoints (POST/PUT/DELETE) with Zod validation enforce max 10 scenarios, unique names, and non-zero sliders. UI includes scenario save/load dropdown, update/rename buttons, save-as-new vs update dialog, comparison dropdown and per-row toggle, comparison banner, and N/10 counter. All 6 sensitivity charts extended with third dotted comparison line. MetricDeltaCardStrip shows comparison metrics. Sandbox invariant preserved — no scenario CRUD operation touches financialInputs.
+- **Code Review:** Adversarial review completed (9 findings: 3H/3M/3L). All HIGH and MEDIUM issues fixed:
+  - H1 (AC3 breach): Scenarios now sorted newest-first via useMemo sort on createdAt
+  - H2 (AC2 breach): Inline validation errors displayed below input (empty, >60 chars, duplicate name)
+  - H3 (stale closure): CashFlowChart useMemo dependency array now includes `comparison`
+  - M1: Save As button always visible, disabled when no slider adjustments
+  - M2: Comparison strokeDasharray corrected from '2 3' to '2 2'
+  - M3: SliderValues type unified — now re-exports WhatIfScenarioSliderValues from schema.ts
+  - L1-L3 (documented, not fixed): ARIA labels on dropdowns, Tooltip wrapper on disabled button, scenario count as Zustand atom
 - **File List:**
   - `shared/schema.ts` — Added WhatIfScenario interface, WhatIfScenarioSliderValues, whatIfScenarios JSONB column
   - `server/routes/plans.ts` — Added POST/PUT/DELETE /api/plans/:planId/scenarios endpoints
-  - `client/src/lib/sensitivity-engine.ts` — Added computeComparisonOutput() function, exported EngineOutput type
-  - `client/src/components/planning/what-if-playground.tsx` — Scenario CRUD UI, comparison overlay, save/load/update/rename/delete, dialog with Save as New + Update options
-  - `client/src/components/planning/sensitivity-charts.tsx` — Third dotted comparison line on all 6 charts
+  - `client/src/lib/sensitivity-engine.ts` — Added computeComparisonOutput() function, exported EngineOutput type, unified SliderValues type alias
+  - `client/src/components/planning/what-if-playground.tsx` — Scenario CRUD UI, comparison overlay, save/load/update/rename/delete, dialog with Save as New + Update options, inline validation, newest-first sort
+  - `client/src/components/planning/sensitivity-charts.tsx` — Third dotted comparison line on all 6 charts, corrected strokeDasharray
 - **Testing Summary:** E2E test attempted via Playwright but blocked by authentication requirement (Google OAuth / email-password login). Code verified structurally via architect review, LSP diagnostics (0 errors, 0 warnings), and HMR hot-reload confirmation. All ACs verified via code inspection.
-- **LSP Status:** 0 errors, 0 warnings
+- **LSP Status:** 0 errors, 0 warnings (post-review-fix)
 - **Visual Verification:** Blocked by auth — screenshots not obtainable without authenticated session
