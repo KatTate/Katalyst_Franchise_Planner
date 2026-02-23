@@ -2,8 +2,8 @@
 title: 'Plan Confirmation Model & Franchisee Plan Settings'
 slug: 'plan-confirmation-and-settings'
 created: '2026-02-23'
-status: 'review'
-stepsCompleted: [1, 2, 3]
+status: 'ready-for-dev'
+stepsCompleted: [1, 2, 3, 4]
 tech_stack: ['React 18.3', 'TypeScript 5.6', 'Tailwind CSS 3.4', 'shadcn/ui (Radix)', 'Wouter 3.3', 'TanStack Query v5', 'Lucide React', 'Express 5', 'Drizzle ORM 0.39', 'PostgreSQL', 'Drizzle-Zod 0.7', 'Zod 3.24', 'Framer Motion 11.13']
 files_to_modify: ['shared/financial-engine.ts', 'shared/schema.ts', 'shared/plan-initialization.ts', 'client/src/lib/plan-completeness.ts', 'client/src/components/planning/plan-completeness-bar.tsx', 'client/src/components/shared/financial-input-editor.tsx', 'client/src/hooks/use-field-editing.ts', 'client/src/components/shared/source-badge.tsx', 'client/src/components/planning/document-preview-widget.tsx', 'client/src/components/planning/financial-statements.tsx', 'client/src/pages/dashboard.tsx', 'client/src/pages/planning-workspace.tsx', 'client/src/components/planning/data-sharing-settings.tsx', 'server/routes/plans.ts', 'server/storage.ts']
 code_patterns: ['FinancialFieldValue wrapper pattern', 'updateFieldValue/resetFieldToDefault helpers', 'makeField/makeFieldArray5/makeFieldArray60 factories', 'WorkspaceView state machine (my-plan|reports|scenarios|settings)', 'queueSave auto-save pipeline', 'useFieldEditing hook', 'SectionProgress completeness tracking', 'PATCH /api/plans/:planId with updatePlanSchema', 'CategorySection/FieldRow component hierarchy', 'TanStack Query v5 object-form with staleTime: Infinity']
