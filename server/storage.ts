@@ -613,7 +613,27 @@ export class DatabaseStorage implements IStorage {
   }): Promise<User> {
     const email = `dev-${params.role}-${params.brandSlug}@katgroupinc.com`;
     const existing = await this.getUserByEmail(email);
+
+    const brand = await this.getBrand(params.brandId);
+    let accountManagerId: string | null = null;
+    let bookingUrl: string | null = null;
+    if (brand && params.role === "franchisee") {
+      accountManagerId = brand.defaultAccountManagerId || null;
+      if (accountManagerId) {
+        const bam = await this.getBrandAccountManager(params.brandId, accountManagerId);
+        bookingUrl = bam?.bookingUrl || brand.defaultBookingUrl || null;
+      }
+    }
+
     if (existing) {
+      if (params.role === "franchisee" && accountManagerId && !existing.accountManagerId) {
+        const [updated] = await db
+          .update(users)
+          .set({ accountManagerId, bookingUrl })
+          .where(eq(users.id, existing.id))
+          .returning();
+        return updated;
+      }
       return existing;
     }
     const displayName = `Dev ${params.role === "franchisee" ? "Franchisee" : "Franchisor"} (${params.brandDisplayName})`;
@@ -625,6 +645,8 @@ export class DatabaseStorage implements IStorage {
         brandId: params.brandId,
         displayName,
         onboardingCompleted: true,
+        accountManagerId,
+        bookingUrl,
       })
       .returning();
     return created;
