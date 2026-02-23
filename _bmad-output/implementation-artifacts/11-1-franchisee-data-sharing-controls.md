@@ -1,6 +1,6 @@
 # Story 11.1: Franchisee Data Sharing Controls
 
-Status: review
+Status: done
 
 ## Story
 
