@@ -1051,7 +1051,7 @@ The Document Preview widget shows "DRAFT" watermark diagonally across the previe
 
 ### Journey 1: New Franchisee — Normal Tier (Sam)
 
-> **Persona:** Sam, first-time franchisee, PostNet. Entered the system without AI guidance — he selected Normal tier during onboarding (or was detected as Normal). He'll use structured forms in My Plan to build his plan.
+> **Persona:** Sam, first-time franchisee, PostNet. During onboarding, the system recommended starting with the Planning Assistant, but Sam opted to start with My Plan forms instead. He'll use structured forms to build his plan.
 
 **Phase 1: Invitation & Onboarding**
 
@@ -1090,21 +1090,21 @@ The Document Preview widget shows "DRAFT" watermark diagonally across the previe
 
 ### Journey 2: New Franchisee — Story Tier with AI Planning Assistant (Sam, alternate path)
 
-> **Persona:** Same Sam, but this time he accepts the Story tier recommendation during onboarding. The AI Planning Assistant guides him through planning conversationally. Note: AI Planning Assistant ships in Epic 9. Until then, Story tier users see the same forms as Normal tier.
+> **Persona:** Same Sam, but this time he accepts the onboarding recommendation to start with the Planning Assistant. The AI guides him through planning conversationally. Note: AI Planning Assistant ships in Epic 9. Until then, users who start via the Planning Assistant see the same forms with a simulated assistant experience.
 
 **Phase 1: Invitation & Onboarding**
 
-1–5. Identical to Journey 1, steps 1–5. Sam creates his account, completes Quick ROI, books time with Denise. The difference: when onboarding recommends Story tier, Sam accepts it this time.
+1–5. Identical to Journey 1, steps 1–5. Sam creates his account, completes Quick Start, books time with Denise. The difference: when onboarding recommends starting with the Planning Assistant, Sam accepts the recommendation this time.
 
 6. Sam lands on the Dashboard. Same welcome experience as Journey 1.
 
 **Phase 2: AI-Guided Planning in My Plan**
 
-7. Sam clicks "My Plan" in the sidebar. He sees the same form sections as Normal tier, but a floating action button (bottom-right corner) pulses gently — the AI Planning Assistant is available.
-8. Sam clicks the floating AI button. A panel slides in from the right edge of the screen. The AI greets him: "Hi Sam, I'm your planning assistant. I see you're starting your PostNet plan. Let's begin with your location — tell me about where you're planning to open."
-9. Sam types naturally: "I'm looking at a 1,200 sq ft space in a strip mall in suburban Atlanta. Rent would be about $2,800/month." The AI responds: "Got it — I've set your facilities rent to $2,800/month. For a 1,200 sq ft suburban Atlanta location, PostNet franchisees typically see monthly revenue between $25K and $35K. What's your expectation?" Sam's rent field populates in the form behind the panel. The Impact Strip updates.
-10. The conversation continues. Sam tells the AI about his staffing plans, his marketing budget, his startup timeline. Each answer populates the corresponding form fields. Sam can see the forms updating in real time alongside the conversation.
-11. At any point, Sam can close the AI panel (X button, click outside, or Escape), review and adjust values directly in the forms, then reopen the panel to continue the conversation where he left off.
+7. Sam clicks "My Plan" in the sidebar. Because he accepted the Planning Assistant recommendation, the assistant opens automatically in the 50/50 split-screen layout — conversation panel on the left, live financial dashboard on the right.
+8. The AI greets him: "Hi Sam, I'm your planning assistant. I see you're starting your PostNet plan. Let's begin with your location — tell me about where you're planning to open."
+9. Sam types naturally: "I'm looking at a 1,200 sq ft space in a strip mall in suburban Atlanta. Rent would be about $2,800/month." The AI responds: "Got it — I've set your facilities rent to $2,800/month. For a 1,200 sq ft suburban Atlanta location, PostNet franchisees typically see monthly revenue between $25K and $35K. What's your expectation?" The live dashboard on the right updates in real time — Sam sees his break-even and ROI shift as values are populated.
+10. The conversation continues. Sam tells the AI about his staffing plans, his marketing budget, his startup timeline. Each answer populates the corresponding financial inputs. The dashboard panel shows metrics updating in real time alongside the conversation.
+11. At any point, Sam can close the AI panel (X button or Escape) to return to the My Plan forms view, review and adjust values directly, then reopen the panel via the floating action button to continue the conversation where he left off.
 12. The AI doesn't tell Sam the "right" answers — it helps him discover them by asking targeted questions and providing context ("PostNet franchisees in similar markets typically..."). The values it suggests are always clearly labeled as suggestions that Sam can override.
 
 **Phase 3–4: Reviewing Reports & Document Generation**
@@ -1451,6 +1451,7 @@ This consolidated spec requires the following story structure for Epic 5:
 | 2026-02-18 | **Consolidated into single document.** Mode switcher retired. Quick Entry retired. AI Planning Assistant repositioned from workspace mode to contextual feature (slide-in panel within My Plan). All content from both source documents preserved, with v3 architecture taking precedence on navigation, input surfaces, and component architecture. Part 9 (AI Planning Assistant) freshly written. | This document |
 | 2026-02-20 | **Part 15 expanded to 8 comprehensive user journey narratives** per SCP-2026-02-20 Decision D7. Replaces previous 3 brief journey traces. New journeys cover: Normal tier franchisee, Story tier with AI, returning franchisee session recovery, What-If Playground scenario review, Katalyst admin brand setup, admin invitation flow, franchisor pipeline visibility, and admin View As/impersonation. | SCP-2026-02-20, Party Mode review |
 | 2026-02-22 | **Epic 7H.1 Document Realignment.** Added two-surface design boundary (Part 7). Marked Pre-Epic-7 Per-Year Behavior as historical (Part 10). Added Facilities Guided Decomposition pattern (Part 8). Marked Story Rewrite Implications as historical. Sidebar wireframe redesigned per PO review: removed MY PLANS list from sidebar (over-scoped in 7.2 — doesn't scale for 20+ location franchisees), replaced with Home link to Dashboard where plan CRUD lives. Active plan section loads when a plan is selected from Dashboard. What-If replaces Scenarios. HELP section: Planning Assistant, Glossary, Book a Consultation (human help — Katalyst AM and/or brand contact). Updated Part 19 deferred items: per-year inputs and multi-plan comparison marked DONE. | SCP-2026-02-22, CP-7, PO review feedback |
+| 2026-02-23 | **UX Audit & Spec Alignment.** Part 9 (AI Planning Assistant): Updated panel behavior from slide-in panel to 50/50 split-screen layout (ResizablePanelGroup) per implemented Story 9.2 design. Entry points table updated (header icon removed — two entry points remain). Journey 1 Step 3-4: Updated onboarding language from "tier selection" to "experience recommendation." Quick ROI clarified as Quick Start Overlay within plan workspace. Journey 2 Steps 7-11: Updated to reflect split-screen auto-open behavior and live dashboard panel. Removed all "Normal tier" / "Story tier" mode selection language from Journeys 1-2. | UX Audit, Gap Analysis `ux-gap-analysis-2026-02-23.md` |
 
 ---
 
