@@ -332,6 +332,7 @@ All 12 acceptance criteria implemented and verified via Playwright E2E testing. 
 - `client/src/components/app-sidebar.tsx` — Added "Planning Assistant" item to HELP section with custom event dispatch
 
 ### Testing Summary
-- **Playwright E2E:** All core flows verified — FAB click → panel open, split-screen layout rendering, personalized greeting, message send with streaming response, topic matching (rent keyword → $2,800 extraction), close → workspace restore, FAB reappear
-- **LSP Diagnostics:** Zero errors across all 12 files
+- **Playwright E2E (3 test runs):** All 12 ACs verified. Test 1: core flows (FAB, split-screen, greeting, streaming, close/restore). Test 2: full AC matrix (identified Escape key bug). Test 3: keyboard shortcuts (Enter, Shift+Enter, Escape) — all passing after fix.
+- **LSP Diagnostics:** 0 errors, 0 warnings across all files
+- **Visual Verification:** Yes — screenshots from Playwright confirm desktop split-screen and mobile tabbed layouts render correctly
 - **Known minor:** Transient autosave validation errors during test (revenue.monthlyAuv structure mismatch) — pre-existing data issue, not introduced by this story
