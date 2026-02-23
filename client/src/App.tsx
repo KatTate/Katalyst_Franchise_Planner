@@ -17,6 +17,7 @@ import AdminBrandDetailPage from "@/pages/admin-brand-detail";
 import NotFound from "@/pages/not-found";
 import PlanningWorkspace from "@/pages/planning-workspace";
 import GlossaryPage from "@/pages/glossary";
+import PipelinePage from "@/pages/pipeline";
 import { useBrandTheme } from "@/hooks/use-brand-theme";
 import { ImpersonationProvider, useImpersonation } from "@/contexts/ImpersonationContext";
 import { ImpersonationBanner } from "@/components/ImpersonationBanner";
@@ -115,6 +116,9 @@ function AppRouter() {
       </Route>
       <Route path="/admin/brands/:brandId">
         <AdminRoute component={AdminBrandDetailPage} />
+      </Route>
+      <Route path="/pipeline">
+        <AdminRoute component={PipelinePage} />
       </Route>
       <Route path="/plans/:planId">
         <ProtectedRoute component={PlanningWorkspace} />

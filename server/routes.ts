@@ -14,6 +14,7 @@ import plansRouter from "./routes/plans";
 import helpRouter from "./routes/help";
 import fddIngestionRouter from "./routes/fdd-ingestion";
 import consentRouter from "./routes/consent";
+import pipelineRouter from "./routes/pipeline";
 
 export async function registerRoutes(
   httpServer: Server,
@@ -53,6 +54,7 @@ export async function registerRoutes(
   app.use("/api/help", helpRouter);
   app.use("/api/brands", fddIngestionRouter);
   app.use("/api/plans", consentRouter);
+  app.use("/api/pipeline", pipelineRouter);
 
   return httpServer;
 }
