@@ -2,8 +2,8 @@
 title: 'Dashboard Enrichment — Completeness, Document Preview, and Empty State'
 slug: 'dashboard-enrichment'
 created: '2026-02-23'
-status: 'in-progress'
-stepsCompleted: [1, 2]
+status: 'review'
+stepsCompleted: [1, 2, 3]
 tech_stack: ['React 18', 'TypeScript', 'TanStack Query v5', 'shadcn/ui', 'Express 5', 'PostgreSQL', 'Drizzle ORM']
 files_to_modify: ['client/src/pages/dashboard.tsx']
 code_patterns: ['TanStack Query v5 object-form', 'existing component reuse', 'data-testid convention', 'useQuery for brand resolution', 'Plan type from @shared/schema']
@@ -79,30 +79,94 @@ Enrich the Dashboard by (1) adding completeness progress bars to every plan card
 
 ## Acceptance Criteria
 
-{acceptance_criteria}
+### B.1: Plan Completeness on Every Plan Card
+
+- **AC-1:** Given a franchisee with one or more plans, when they view the Dashboard, then each plan card displays a `PlanCompletenessBar` showing section-by-section progress bars with edited/total field counts.
+- **AC-2:** Given a plan where some sections have been customized and others are at brand defaults, when the Dashboard renders, then the completeness bar accurately reflects the per-section edit counts (matching what `computeSectionProgress()` returns for that plan's `financialInputs`).
+- **AC-3:** Given a plan with no customized fields (all brand defaults), when the Dashboard renders, then the completeness bar shows 0/N for each section with empty progress bars.
+
+### B.2: Document Preview Widget on Dashboard
+
+- **AC-4:** Given a franchisee with one or more plans, when they view the Dashboard, then each plan displays a `DocumentPreviewWidget` showing the plan name, brand name, and a miniature business plan preview.
+- **AC-5:** Given a plan with completeness below 50%, when the Dashboard renders, then the document preview widget displays a "DRAFT" watermark over the preview.
+- **AC-6:** Given a plan with completeness above 90%, when the Dashboard renders, then the document preview widget shows a "Ready" badge.
+- **AC-7:** Given a plan with financial projections computed (engine outputs available), when the Dashboard renders, then the document preview widget displays Pre-Tax Income, Break-even, and 5yr ROI metrics.
+- **AC-8:** Given a user clicks "View Full Preview" on a dashboard document preview widget, when the button is clicked, then the `DocumentPreviewModal` opens showing the full business plan preview for that specific plan.
+- **AC-9:** Given a user clicks "Generate PDF" on a dashboard document preview widget, when the button is clicked, then a toast displays "PDF generation coming soon."
+
+### B.3: Dashboard Empty State Copy
+
+- **AC-10:** Given a franchisee with no plans, when they view the Dashboard, then the empty state message reads "Ready to plan your next location? Let's build something great." instead of "No plans yet. Create your first plan to get started."
+- **AC-11:** Given a franchisee with no plans, when they view the Dashboard, then the CTA button reads "Create Your First Plan" (already correct — verify preserved).
+
+### Layout and Responsiveness
+
+- **AC-12:** Given a desktop viewport (md breakpoint and above), when the Dashboard renders plans, then the plan info card (with completeness bar) and the document preview widget appear side-by-side for each plan.
+- **AC-13:** Given a mobile viewport (below md breakpoint), when the Dashboard renders plans, then the plan info card and document preview widget stack vertically.
+- **AC-14:** Given a franchisor or katalyst_admin user, when they view the Dashboard, then no completeness bars or document preview widgets appear (these widgets only show within the `showPlans` guard for roles that have plans).
+
+### Data Loading
+
+- **AC-15:** Given the Dashboard page loads, when the plans query executes, then the response is typed to include `financialInputs`, `startupCosts`, and `brandId` from the full `Plan` type — no backend API changes required.
+- **AC-16:** Given plans have loaded with a `brandId`, when the brand query executes, then the brand name (using `displayName || name`) is available for the document preview widgets.
 
 ## Implementation Guidance
 
 ### Architecture Patterns to Follow
 
-{architecture_patterns}
+1. **Expand `PlanSummary` to `Plan` type.** Replace the local `PlanSummary` interface in `dashboard.tsx` with the `Plan` type imported from `@shared/schema`. The API already returns full plan objects — the narrow interface was just discarding data.
+2. **Brand resolution via `useQuery`.** Add a `useQuery` for `/api/brands/{brandId}` using the first plan's `brandId` (all plans for a franchisee share the same brand). Follow the same pattern used in `client/src/pages/planning-workspace.tsx` line 54. The brand query should be `enabled` only when plans exist and `brandId` is available.
+3. **Plan station layout.** For each plan, render a container div with two children:
+   - A `Card` containing the plan link, name, status, context menu, AND the `PlanCompletenessBar` component (embedded inside the card).
+   - The `DocumentPreviewWidget` component (renders its own `Card`).
+   - Use `grid grid-cols-1 md:grid-cols-2 gap-3` for side-by-side on desktop, stacked on mobile.
+4. **Component wiring.** Pass props to existing components:
+   - `PlanCompletenessBar`: `financialInputs={plan.financialInputs}` and `startupCostCount={plan.startupCosts?.length ?? 0}`
+   - `DocumentPreviewWidget`: `planId={plan.id}`, `planName={plan.name}`, `brandName={brand?.displayName || brand?.name}`, `financialInputs={plan.financialInputs}`, `startupCosts={plan.startupCosts}`, `startupCostCount={plan.startupCosts?.length ?? 0}`
+5. **Loading state.** Show skeleton cards while plans or brand data is loading.
 
 ### Anti-Patterns and Constraints
 
-{anti_patterns}
+- **DO NOT modify `server/routes/plans.ts`** — the API already returns full plan data. No backend changes.
+- **DO NOT modify `plan-completeness-bar.tsx` or `document-preview-widget.tsx`** — reuse as-is.
+- **DO NOT create a new API endpoint** for dashboard-specific plan summaries or completeness data.
+- **DO NOT compute completeness server-side** — the existing client-side `computeSectionProgress()` is the single source of truth.
+- **DO NOT nest a `<Card>` inside another `<Card>`** — the `DocumentPreviewWidget` renders its own `<Card>`, so place it as a sibling, not a child of the plan card.
+- **DO NOT use template literals in queryKey** — use array segments: `["/api/brands", brandId]` not `[`/api/brands/${brandId}`]`.
+- **DO NOT import React explicitly** — the Vite JSX transform handles it.
 
 ### File Change Summary
 
-{file_change_summary}
+| File | Change |
+| ---- | ------ |
+| `client/src/pages/dashboard.tsx` | Replace `PlanSummary` interface with `Plan` import from `@shared/schema`. Add `Brand` import. Add brand `useQuery`. Restructure plan card rendering to include `PlanCompletenessBar` and `DocumentPreviewWidget`. Update empty state copy. |
 
 ### Dependencies
 
-{dependencies}
+- **No new packages required.** All components and utilities already exist in the codebase.
+- **Existing component dependencies (already installed):**
+  - `PlanCompletenessBar` from `@/components/planning/plan-completeness-bar`
+  - `DocumentPreviewWidget` from `@/components/planning/document-preview-widget`
+- **API dependencies (already working):**
+  - `GET /api/plans` — returns full `Plan[]` for franchisees
+  - `GET /api/brands/:brandId` — returns `Brand` with `name` and `displayName`
+  - `GET /api/plans/:planId/outputs` — returns engine outputs (called by `DocumentPreviewWidget` internally)
 
 ### Testing Guidance
 
-{testing_guidance}
+- **Primary test approach:** Playwright E2E testing via the Dashboard page.
+- **Auth:** Use `POST /api/auth/dev-login` to authenticate as a franchisee user.
+- **Key scenarios to verify:**
+  1. Dashboard with plans: verify completeness bar renders for each plan card (`data-testid="plan-completeness-dashboard"` inside each plan group).
+  2. Dashboard with plans: verify document preview widget renders for each plan (`data-testid="document-preview-widget"` inside each plan group).
+  3. Document preview widget interaction: click "View Full Preview" button (`data-testid="button-view-full-preview"`) and verify the modal opens (`data-testid="document-preview-modal"`).
+  4. Empty state: verify updated copy text when no plans exist.
+  5. Responsive layout: verify side-by-side at desktop width and stacked at mobile width.
+- **Note:** The testing agent should create test plans via `POST /api/plans` to ensure data exists, using unique plan names to avoid conflicts.
 
 ### Notes
 
-{notes}
+- **Future consideration:** If users accumulate many plans (5+), the Dashboard could become visually dense. Sally (UX) flagged this as a potential future issue — consider collapsing document previews to thumbnails if density becomes a problem. Not in scope for this spec.
+- **Engine performance:** Each `DocumentPreviewWidget` triggers `calculateProjections()` per plan via `usePlanOutputs`. For 1-3 plans this is negligible. Monitor if plan counts grow significantly.
+- **Franchisor view:** Franchisors with plans also see these widgets (gated by existing `showPlans` logic). If a franchisor's plan data was projected (consent-stripped), the `financialInputs` field will be `null/undefined`, and both widgets gracefully handle this (completeness bar returns null, document preview shows empty state).
+- **Brand query deduplication:** TanStack Query deduplicates — if the sidebar or other components already query the same brand, no additional network request is made.
