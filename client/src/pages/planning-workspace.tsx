@@ -42,7 +42,7 @@ function PlanningWorkspaceInner() {
   const planId = params.planId!;
   const { plan, isLoading: planLoading, error: planError, saveStatus, queueSave, retrySave, flushSave, isSaving, hasUnsavedChanges } = usePlanAutoSave(planId);
   const { setOpen } = useSidebar();
-  const { workspaceView, statementsDefaultTab, navigateToStatements, setActivePlanName, resetWorkspaceView, navigateToMyPlan } = useWorkspaceView();
+  const { workspaceView, statementsDefaultTab, navigateToStatements, setActivePlanName, resetWorkspaceView, navigateToMyPlan, navigateToSettings } = useWorkspaceView();
   const { isOpen: isPlanningAssistantOpen } = usePlanningAssistant();
   const { user } = useAuth();
 
@@ -57,8 +57,15 @@ function PlanningWorkspaceInner() {
   });
 
   useEffect(() => {
-    resetWorkspaceView();
-  }, [planId, resetWorkspaceView]);
+    const urlParams = new URLSearchParams(window.location.search);
+    const viewParam = urlParams.get("view");
+    if (viewParam === "settings") {
+      navigateToSettings();
+      window.history.replaceState({}, "", window.location.pathname);
+    } else {
+      resetWorkspaceView();
+    }
+  }, [planId, resetWorkspaceView, navigateToSettings]);
 
   useEffect(() => {
     if (plan?.name) {

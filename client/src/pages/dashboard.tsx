@@ -5,7 +5,7 @@ import { Link } from "wouter";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { FileText, ArrowRight, Plus } from "lucide-react";
+import { FileText, ArrowRight, Plus, Settings } from "lucide-react";
 import { CreatePlanDialog } from "@/components/plan/create-plan-dialog";
 import { PlanContextMenu } from "@/components/plan/plan-context-menu";
 import { PlanCompletenessBar } from "@/components/planning/plan-completeness-bar";
@@ -120,14 +120,28 @@ export default function DashboardPage() {
                     </div>
                   </Card>
 
-                  <DocumentPreviewWidget
-                    planId={plan.id}
-                    planName={plan.name}
-                    brandName={brandName}
-                    financialInputs={plan.financialInputs}
-                    startupCosts={plan.startupCosts}
-                    startupCostCount={plan.startupCosts?.length ?? 0}
-                  />
+                  <div className="flex flex-col gap-2">
+                    <DocumentPreviewWidget
+                      planId={plan.id}
+                      planName={plan.name}
+                      brandName={brandName}
+                      financialInputs={plan.financialInputs}
+                      startupCosts={plan.startupCosts}
+                      startupCostCount={plan.startupCosts?.length ?? 0}
+                    />
+                    <Link href={`/plans/${plan.id}?view=settings`}>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="w-full text-muted-foreground"
+                        data-testid={`button-update-settings-${plan.id}`}
+                        title="Update pipeline status, target open date, and other plan details"
+                      >
+                        <Settings className="h-3.5 w-3.5 mr-1.5" />
+                        Update Plan Settings
+                      </Button>
+                    </Link>
+                  </div>
                 </div>
               ))}
             </div>

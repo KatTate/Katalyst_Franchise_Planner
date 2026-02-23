@@ -403,7 +403,7 @@ export function FinancialStatements({ planId, defaultTab = "summary", plan, queu
             </div>
           )}
           <div className="flex-1" />
-          {queueSave && unconfirmedCount > 0 && (
+          {queueSave && unconfirmedCount > 0 ? (
             <Button
               variant="outline"
               size="sm"
@@ -415,7 +415,12 @@ export function FinancialStatements({ planId, defaultTab = "summary", plan, queu
               <CheckCircle2 className="h-3.5 w-3.5 mr-1.5" />
               Confirm All ({unconfirmedCount})
             </Button>
-          )}
+          ) : queueSave && unconfirmedCount === 0 ? (
+            <div className="flex items-center gap-1.5 text-green-600 text-sm shrink-0 my-2" data-testid="text-all-confirmed">
+              <CheckCircle2 className="h-4 w-4" />
+              <span>All Confirmed</span>
+            </div>
+          ) : null}
           <Button
             variant="outline"
             size="sm"
