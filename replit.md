@@ -48,6 +48,18 @@ When the user triggers an agent or workflow, the AI MUST load the referenced fil
 - **New Files:** `client/src/lib/planning-assistant-simulation.ts`, `client/src/contexts/PlanningAssistantContext.tsx`, `client/src/hooks/use-conversation.ts`, `client/src/components/shared/error-boundary.tsx`, `client/src/components/planning/conversation-panel.tsx`, `client/src/components/planning/live-dashboard-panel.tsx`, `client/src/components/planning/planning-assistant-panel.tsx`, `client/src/components/planning/planning-assistant-fab.tsx`
 - **Modified:** `client/src/pages/planning-workspace.tsx` (FAB + panel integration), `client/src/components/app-sidebar.tsx` (HELP section item)
 
+## Story 11.2: Franchisor Pipeline Dashboard (Feb 2026)
+- **Pipeline Dashboard:** Franchisor admins can view all franchisees in their brand with pipeline visibility at `/pipeline`. Sidebar nav item "Pipeline" visible to franchisor role only.
+- **Summary Bar:** Counts per pipeline stage (Planning, Site Evaluation, Financing, Construction, Open) plus Stalled count (30+ days since last activity).
+- **Consent-Based Projection:** Financial summary (projected annual revenue, startup investment, break-even month, 5Y ROI) only shown for franchisees who have granted data sharing consent. Others show "No consent" indicator.
+- **Stalled Detection:** Franchisees with no activity in 30+ days flagged with warning icon and red highlight.
+- **Acknowledgment Tracking:** When `franchisorAcknowledgmentEnabled` is true for a brand, franchisor can acknowledge/unacknowledge plans. Acknowledgment resets when plan is updated after acknowledgment.
+- **Responsive Layout:** Desktop table (lg+) and mobile card layout (below lg). Summary cards grid adapts to viewport.
+- **Sorting & Filtering:** Sort by name, stage, last activity. Filter by stage or stalled status.
+- **New DB Table:** `plan_acknowledgments` (planId, franchisorUserId, acknowledgedAt, planUpdatedAtSnapshot).
+- **New Files:** `server/routes/pipeline.ts`, `client/src/pages/pipeline.tsx`.
+- **Modified:** `shared/schema.ts`, `server/storage.ts`, `server/routes.ts`, `client/src/App.tsx`, `client/src/components/app-sidebar.tsx`.
+
 ## Story 11.1: Franchisee Data Sharing Controls (Feb 2026)
 - **Consent Management:** Franchisees can grant/revoke consent for franchisors to view financial plan details via Settings → Data Sharing in the plan workspace.
 - **Append-Only Audit Trail:** `data_sharing_consents` table (INSERT-only) tracks all grant/revoke actions with timestamps.
