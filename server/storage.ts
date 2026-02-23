@@ -132,7 +132,7 @@ export interface IStorage {
   deleteBrand(brandId: string): Promise<void>;
 
   getConsentStatus(planId: string, userId: string): Promise<ConsentStatus>;
-  getConsentStatusBatch(planIds: string[]): Promise<Map<string, ConsentStatus>>;
+  getConsentStatusBatch(planIds: string[], userId?: string): Promise<Map<string, ConsentStatus>>;
   grantConsent(planId: string, userId: string): Promise<DataSharingConsent>;
   revokeConsent(planId: string, userId: string): Promise<DataSharingConsent>;
 
@@ -723,14 +723,19 @@ export class DatabaseStorage implements IStorage {
     return { hasConsent: true, grantedAt: latest.createdAt.toISOString() };
   }
 
-  async getConsentStatusBatch(planIds: string[]): Promise<Map<string, ConsentStatus>> {
+  async getConsentStatusBatch(planIds: string[], userId?: string): Promise<Map<string, ConsentStatus>> {
     const result = new Map<string, ConsentStatus>();
     if (planIds.length === 0) return result;
+
+    const planCondition = sql`${dataSharingConsents.planId} IN (${sql.join(planIds.map(id => sql`${id}`), sql`, `)})`;
+    const whereCondition = userId
+      ? and(planCondition, eq(dataSharingConsents.userId, userId))
+      : planCondition;
 
     const rows = await db
       .select()
       .from(dataSharingConsents)
-      .where(sql`${dataSharingConsents.planId} IN (${sql.join(planIds.map(id => sql`${id}`), sql`, `)})`)
+      .where(whereCondition)
       .orderBy(sql`created_at DESC`);
 
     const seen = new Set<string>();
