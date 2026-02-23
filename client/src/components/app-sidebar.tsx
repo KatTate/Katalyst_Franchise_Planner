@@ -6,7 +6,7 @@ import { useBrandTheme } from "@/hooks/use-brand-theme";
 import { useImpersonation } from "@/contexts/ImpersonationContext";
 import { useDemoMode } from "@/contexts/DemoModeContext";
 import { useWorkspaceView } from "@/contexts/WorkspaceViewContext";
-import { Home, Mail, Building2, LogOut, CalendarCheck, ClipboardList, BarChart3, FlaskConical, Settings, BookOpen, Plus, FileText, Circle } from "lucide-react";
+import { Home, Mail, Building2, LogOut, CalendarCheck, ClipboardList, BarChart3, FlaskConical, Settings, BookOpen, Plus, FileText, Circle, MessageSquare } from "lucide-react";
 import { CreatePlanDialog } from "@/components/plan/create-plan-dialog";
 import { PlanContextMenu } from "@/components/plan/plan-context-menu";
 import {
@@ -286,6 +286,19 @@ export function AppSidebar() {
                       </SidebarMenuButton>
                     </SidebarMenuItem>
                   )}
+                  <SidebarMenuItem>
+                    <SidebarMenuButton
+                      onClick={() => {
+                        const event = new CustomEvent("open-planning-assistant");
+                        window.dispatchEvent(event);
+                      }}
+                      data-testid="nav-planning-assistant"
+                      tooltip="Planning Assistant"
+                    >
+                      <MessageSquare />
+                      <span>Planning Assistant</span>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
                   <SidebarMenuItem>
                     <SidebarMenuButton
                       isActive={location === "/glossary"}
