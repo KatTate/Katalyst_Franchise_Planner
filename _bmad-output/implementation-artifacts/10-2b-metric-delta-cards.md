@@ -1,6 +1,6 @@
 # Story 10.2b: Metric Delta Cards & Dashboard Polish
 
-Status: review
+Status: done
 
 ## Story
 
@@ -124,3 +124,25 @@ so that I can quickly grasp the impact without reading every chart in detail.
   - All tests passing: yes
 - **LSP Status:** 0 errors, 0 warnings
 - **Visual Verification:** yes (Playwright screenshots captured)
+
+### AC Verification Evidence
+
+| AC | Status | Expected | Method | Observed |
+|----|--------|----------|--------|----------|
+| AC1 — Delta card format & coloring | SATISFIED | 4 cards with "base → current (delta)" format; desirability coloring (green=better, amber=worse); Break-Even inverted; null → "—" / "N/A" | Code inspection of DELTA_METRICS config, formatValue/formatDelta functions, getDeltaColor logic | All 4 metrics correctly configured: Break-Even (higherIsBetter: false), Revenue/ROI/Cash (higherIsBetter: true). Null handling returns "—" for values and "N/A" for deltas. Color classes use green-600/amber-500 Tailwind tokens. |
+| AC2 — Helper text lifecycle | SATISFIED | "Move a slider to see how it changes your metrics." visible on initial load; disappears after first slider interaction | Code inspection of hasInteractedWithSlider state + conditional rendering | State initialized false in WhatIfPlayground; set to true on first handleSliderChange. MetricDeltaCardStrip renders helper text only when !hasInteractedWithSlider. data-testid present. |
+| AC3 — Visual hierarchy | SATISFIED | Delta strip is visual headline above charts with larger type and background band | Code inspection of layout ordering + Tailwind classes | Strip rendered above controls and charts. Uses bg-muted/30 background band, text-base font-semibold for values (larger than text-sm chart titles). Position fixed during code review to ensure strip is first content element after header. |
+| AC4 — data-testid coverage | SATISFIED | 5 specific data-testid attributes present | Code inspection of JSX attributes | All present: sensitivity-metric-delta-break-even, sensitivity-metric-delta-revenue, sensitivity-metric-delta-roi, sensitivity-metric-delta-cash, sensitivity-delta-helper-text. |
+| AC5 — Sandbox invariant | SATISFIED | No PATCH /api/plans/:planId requests sent | Code inspection of component + sensitivity-engine.ts | MetricDeltaCardStrip is pure presentational (receives SensitivityOutputs as prop). No fetch/API calls in component. All computation via client-side computeSensitivityOutputs. |
+
+### Code Review Record
+
+- **Reviewer:** Claude 4.6 Opus (fresh context — adversarial code review)
+- **Review Date:** 2026-02-23
+- **Issues Found:** 3 MEDIUM, 1 LOW — all resolved
+- **Fixes Applied:**
+  1. (M1) Moved MetricDeltaCardStrip above Sensitivity Controls card to satisfy AC3 visual headline requirement
+  2. (M2) Refactored useMemo to pre-compute all derived values (formatted strings, delta text, color) and pass them via ComputedDeltaMetric interface — eliminating wasted re-derivation in MetricDeltaCard
+  3. (M3) Added per-AC structured evidence table to Dev Agent Record
+  4. (L1) Removed redundant isZero check that duplicated getDeltaColor neutral path
+- **Post-fix LSP Status:** 0 errors, 0 warnings

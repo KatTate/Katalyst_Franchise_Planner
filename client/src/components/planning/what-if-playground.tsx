@@ -142,34 +142,32 @@ const deltaColorClasses: Record<DeltaColor, string> = {
   neutral: "text-muted-foreground",
 };
 
-function MetricDeltaCard({
-  config,
-  outputs,
-}: {
+interface ComputedDeltaMetric {
   config: DeltaMetricConfig;
-  outputs: SensitivityOutputs;
-}) {
-  const baseVal = config.getBase(outputs);
-  const currentVal = config.getCurrent(outputs);
-  const deltaStr = config.formatDelta(baseVal, currentVal);
-  const color = getDeltaColor(baseVal, currentVal, config.higherIsBetter);
-  const isZero = baseVal !== null && currentVal !== null && baseVal === currentVal;
+  baseVal: number | null;
+  currentVal: number | null;
+  baseFormatted: string;
+  currentFormatted: string;
+  deltaStr: string;
+  color: DeltaColor;
+}
 
+function MetricDeltaCard({ metric }: { metric: ComputedDeltaMetric }) {
   return (
     <div
       className="rounded-lg border bg-card p-3 space-y-1"
-      data-testid={config.testId}
+      data-testid={metric.config.testId}
     >
       <div className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
-        {config.label}
+        {metric.config.label}
       </div>
       <div className="flex items-center gap-1.5 text-base font-semibold font-mono tabular-nums">
-        <span>{config.formatValue(baseVal)}</span>
+        <span>{metric.baseFormatted}</span>
         <ArrowRight className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-        <span>{config.formatValue(currentVal)}</span>
+        <span>{metric.currentFormatted}</span>
       </div>
-      <div className={`text-sm font-mono tabular-nums ${isZero ? "text-muted-foreground" : deltaColorClasses[color]}`}>
-        ({deltaStr})
+      <div className={`text-sm font-mono tabular-nums ${deltaColorClasses[metric.color]}`}>
+        ({metric.deltaStr})
       </div>
     </div>
   );
@@ -182,23 +180,27 @@ function MetricDeltaCardStrip({
   outputs: SensitivityOutputs;
   hasInteractedWithSlider: boolean;
 }) {
-  const deltaMetrics = useMemo(() => {
-    return DELTA_METRICS.map((config) => ({
-      config,
-      baseVal: config.getBase(outputs),
-      currentVal: config.getCurrent(outputs),
-    }));
+  const computedMetrics = useMemo<ComputedDeltaMetric[]>(() => {
+    return DELTA_METRICS.map((config) => {
+      const baseVal = config.getBase(outputs);
+      const currentVal = config.getCurrent(outputs);
+      return {
+        config,
+        baseVal,
+        currentVal,
+        baseFormatted: config.formatValue(baseVal),
+        currentFormatted: config.formatValue(currentVal),
+        deltaStr: config.formatDelta(baseVal, currentVal),
+        color: getDeltaColor(baseVal, currentVal, config.higherIsBetter),
+      };
+    });
   }, [outputs]);
 
   return (
     <div className="rounded-xl bg-muted/30 p-4 space-y-3" data-testid="sensitivity-delta-strip">
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-        {deltaMetrics.map(({ config }) => (
-          <MetricDeltaCard
-            key={config.key}
-            config={config}
-            outputs={outputs}
-          />
+        {computedMetrics.map((metric) => (
+          <MetricDeltaCard key={metric.config.key} metric={metric} />
         ))}
       </div>
       {!hasInteractedWithSlider && (
@@ -435,6 +437,13 @@ export function WhatIfPlayground({ planId }: WhatIfPlaygroundProps) {
           </p>
         </div>
 
+        {scenarioOutputs && (
+          <MetricDeltaCardStrip
+            outputs={scenarioOutputs}
+            hasInteractedWithSlider={hasInteractedWithSlider}
+          />
+        )}
+
         <Card data-testid="sensitivity-controls-panel">
           <CardHeader className="pb-3">
             <div className="flex items-center justify-between">
@@ -474,13 +483,6 @@ export function WhatIfPlayground({ planId }: WhatIfPlaygroundProps) {
             ))}
           </CardContent>
         </Card>
-
-        {scenarioOutputs && (
-          <MetricDeltaCardStrip
-            outputs={scenarioOutputs}
-            hasInteractedWithSlider={hasInteractedWithSlider}
-          />
-        )}
 
         <div>
           <h2 className="text-base font-semibold mb-3" data-testid="charts-heading">
