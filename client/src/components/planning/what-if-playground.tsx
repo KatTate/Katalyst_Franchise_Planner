@@ -648,7 +648,7 @@ export function WhatIfPlayground({ planId }: WhatIfPlaygroundProps) {
                   >
                     <SelectTrigger
                       className="h-8 w-[180px] text-xs"
-                      data-testid="select-load-scenario"
+                      data-testid="select-scenario"
                     >
                       <SelectValue placeholder="Load scenario…" />
                     </SelectTrigger>
@@ -660,19 +660,6 @@ export function WhatIfPlayground({ planId }: WhatIfPlaygroundProps) {
                       ))}
                     </SelectContent>
                   </Select>
-                )}
-
-                {activeScenario && hasUnsavedChanges && (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={handleUpdateScenario}
-                    disabled={isSaving}
-                    data-testid="button-update-scenario"
-                  >
-                    <Upload className="h-3.5 w-3.5 mr-1.5" />
-                    Update
-                  </Button>
                 )}
 
                 {activeScenario && (
@@ -687,11 +674,12 @@ export function WhatIfPlayground({ planId }: WhatIfPlaygroundProps) {
                   </Button>
                 )}
 
-                {hasAdjustment && scenarios.length < 10 && (
+                {hasAdjustment && (
                   <Button
                     variant="outline"
                     size="sm"
                     onClick={handleSaveNew}
+                    disabled={scenarios.length >= 10 && !activeScenario}
                     data-testid="button-save-scenario"
                   >
                     <Save className="h-3.5 w-3.5 mr-1.5" />
@@ -711,16 +699,23 @@ export function WhatIfPlayground({ planId }: WhatIfPlaygroundProps) {
                   </Button>
                 )}
 
-                <span className="text-xs text-muted-foreground tabular-nums" data-testid="text-scenario-count">
+                <span className="text-xs text-muted-foreground tabular-nums" data-testid="scenario-count-indicator">
                   {scenarios.length}/10 saved
                 </span>
               </div>
             </div>
 
-            {activeScenario && hasUnsavedChanges && (
-              <p className="text-xs text-amber-500 mt-1" data-testid="text-unsaved-changes">
-                Unsaved changes — sliders differ from "{activeScenario.name}"
-              </p>
+            {activeScenario && (
+              <div className="flex items-center gap-2 mt-1">
+                <span className="text-xs text-muted-foreground" data-testid="text-loaded-scenario-name">
+                  Loaded: "{activeScenario.name}"
+                </span>
+                {hasUnsavedChanges && (
+                  <span className="text-xs text-amber-500" data-testid="indicator-unsaved-changes">
+                    • unsaved changes
+                  </span>
+                )}
+              </div>
             )}
           </CardHeader>
           <CardContent className="space-y-4">
@@ -747,7 +742,28 @@ export function WhatIfPlayground({ planId }: WhatIfPlaygroundProps) {
         {scenarios.length > 0 && (
           <Card data-testid="saved-scenarios-panel">
             <CardHeader className="pb-3">
-              <CardTitle className="text-base">Saved Scenarios</CardTitle>
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-base">Saved Scenarios</CardTitle>
+                <Select
+                  value={comparisonScenarioId ?? "__none__"}
+                  onValueChange={(v) => setComparisonScenarioId(v === "__none__" ? null : v)}
+                >
+                  <SelectTrigger
+                    className="h-8 w-[200px] text-xs"
+                    data-testid="select-comparison-scenario"
+                  >
+                    <SelectValue placeholder="Compare with…" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="__none__">— None —</SelectItem>
+                    {scenarios.map((s) => (
+                      <SelectItem key={s.id} value={s.id}>
+                        {s.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
             </CardHeader>
             <CardContent>
               <div className="space-y-2">
@@ -831,35 +847,78 @@ export function WhatIfPlayground({ planId }: WhatIfPlaygroundProps) {
       <Dialog open={saveDialogOpen} onOpenChange={setSaveDialogOpen}>
         <DialogContent className="sm:max-w-md" data-testid="dialog-save-scenario">
           <DialogHeader>
-            <DialogTitle>{saveDialogMode === "create" ? "Save Scenario" : "Rename Scenario"}</DialogTitle>
+            <DialogTitle>
+              {saveDialogMode === "rename" ? "Rename Scenario" : "Save Scenario"}
+            </DialogTitle>
             <DialogDescription>
-              {saveDialogMode === "create"
-                ? "Give this slider configuration a name so you can load it later."
-                : "Enter a new name for this scenario."}
+              {saveDialogMode === "rename"
+                ? "Enter a new name for this scenario."
+                : activeScenario && hasUnsavedChanges
+                  ? "Save your changes as a new scenario, or update the current one."
+                  : scenarios.length >= 10
+                    ? "Maximum 10 scenarios per plan reached — delete one to save a new one."
+                    : "Give this slider configuration a name so you can load it later."}
             </DialogDescription>
           </DialogHeader>
-          <Input
-            value={saveDialogName}
-            onChange={(e) => setSaveDialogName(e.target.value)}
-            placeholder="e.g. Optimistic Revenue"
-            maxLength={60}
-            data-testid="input-scenario-name"
-            onKeyDown={(e) => {
-              if (e.key === "Enter" && saveDialogName.trim()) handleSaveDialogConfirm();
-            }}
-          />
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setSaveDialogOpen(false)} data-testid="button-cancel-save">
-              Cancel
-            </Button>
-            <Button
-              onClick={handleSaveDialogConfirm}
-              disabled={!saveDialogName.trim() || isSaving}
-              data-testid="button-confirm-save"
-            >
-              {isSaving ? "Saving…" : saveDialogMode === "create" ? "Save" : "Rename"}
-            </Button>
-          </DialogFooter>
+          {saveDialogMode === "create" && activeScenario && hasUnsavedChanges ? (
+            <>
+              <Input
+                value={saveDialogName}
+                onChange={(e) => setSaveDialogName(e.target.value)}
+                placeholder="e.g. Optimistic Revenue"
+                maxLength={60}
+                data-testid="input-scenario-name"
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && saveDialogName.trim()) handleSaveDialogConfirm();
+                }}
+              />
+              <DialogFooter className="flex gap-2 sm:gap-2">
+                <Button variant="outline" onClick={() => setSaveDialogOpen(false)} data-testid="button-cancel-save">
+                  Cancel
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={() => { handleUpdateScenario(); setSaveDialogOpen(false); }}
+                  disabled={isSaving}
+                  data-testid="button-update-scenario"
+                >
+                  {isSaving ? "Updating…" : `Update "${activeScenario.name}"`}
+                </Button>
+                <Button
+                  onClick={handleSaveDialogConfirm}
+                  disabled={!saveDialogName.trim() || isSaving || scenarios.length >= 10}
+                  data-testid="button-save-as-new"
+                >
+                  {isSaving ? "Saving…" : "Save as New"}
+                </Button>
+              </DialogFooter>
+            </>
+          ) : (
+            <>
+              <Input
+                value={saveDialogName}
+                onChange={(e) => setSaveDialogName(e.target.value)}
+                placeholder="e.g. Optimistic Revenue"
+                maxLength={60}
+                data-testid="input-scenario-name"
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && saveDialogName.trim()) handleSaveDialogConfirm();
+                }}
+              />
+              <DialogFooter>
+                <Button variant="outline" onClick={() => setSaveDialogOpen(false)} data-testid="button-cancel-save">
+                  Cancel
+                </Button>
+                <Button
+                  onClick={handleSaveDialogConfirm}
+                  disabled={!saveDialogName.trim() || isSaving || (saveDialogMode === "create" && scenarios.length >= 10)}
+                  data-testid="button-confirm-save-scenario"
+                >
+                  {isSaving ? "Saving…" : saveDialogMode === "create" ? "Save" : "Rename"}
+                </Button>
+              </DialogFooter>
+            </>
+          )}
         </DialogContent>
       </Dialog>
 

@@ -1,6 +1,6 @@
 # Story 10.3: Scenario Persistence & Comparison
 
-Status: done
+Status: review
 
 ## Story
 
@@ -272,3 +272,17 @@ Brief inline confirmation or small dialog. Keep lightweight — a full modal for
 | `client/src/components/planning/what-if-playground.tsx` | Modify | Add scenario save/load/delete/compare UI, state management, mutation hooks |
 | `client/src/components/planning/sensitivity-charts.tsx` | Modify | Accept optional `comparisonOutput` prop, render third dotted line on all 6 charts |
 | Drizzle migration file | Create | Add `what_if_scenarios` column to plans table |
+
+## Dev Agent Record
+
+- **Agent Model Used:** Claude 4.6 Opus (Replit Agent)
+- **Completion Notes:** Implemented full scenario persistence & comparison feature. JSONB column `whatIfScenarios` added to plans table via direct SQL migration. Three API endpoints (POST/PUT/DELETE) with Zod validation enforce max 10 scenarios, unique names, and non-zero sliders. UI includes scenario save/load dropdown, update/rename buttons, save-as-new vs update dialog, comparison dropdown and per-row toggle, comparison banner, and N/10 counter. All 6 sensitivity charts extended with third dotted comparison line. MetricDeltaCardStrip shows comparison metrics. Sandbox invariant preserved — no scenario CRUD operation touches financialInputs.
+- **File List:**
+  - `shared/schema.ts` — Added WhatIfScenario interface, WhatIfScenarioSliderValues, whatIfScenarios JSONB column
+  - `server/routes/plans.ts` — Added POST/PUT/DELETE /api/plans/:planId/scenarios endpoints
+  - `client/src/lib/sensitivity-engine.ts` — Added computeComparisonOutput() function, exported EngineOutput type
+  - `client/src/components/planning/what-if-playground.tsx` — Scenario CRUD UI, comparison overlay, save/load/update/rename/delete, dialog with Save as New + Update options
+  - `client/src/components/planning/sensitivity-charts.tsx` — Third dotted comparison line on all 6 charts
+- **Testing Summary:** E2E test attempted via Playwright but blocked by authentication requirement (Google OAuth / email-password login). Code verified structurally via architect review, LSP diagnostics (0 errors, 0 warnings), and HMR hot-reload confirmation. All ACs verified via code inspection.
+- **LSP Status:** 0 errors, 0 warnings
+- **Visual Verification:** Blocked by auth — screenshots not obtainable without authenticated session
