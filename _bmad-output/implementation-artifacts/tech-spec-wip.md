@@ -60,6 +60,22 @@ Update `TIER_INFO` in the frontend with per-persona recommendation copy. The rec
 - Persona-specific copy lives in the frontend only (user's choice) — backend returns the tier key, frontend maps to copy
 - Keep "approach" language — no need to change to "starting point" / "recommended path" (user's choice)
 - No structural or layout changes — copy/language only
+- `TIER_INFO` structure changes from `{ label, description, icon }` to `{ label, shortDescription, recommendedCopy, icon }` — `recommendedCopy` shown when tier is the recommended one, `shortDescription` shown for non-recommended tiers
+- Tier-to-persona mapping is 1:1 via the `recommendedTier` key from the backend: `planning_assistant` → Sam copy, `forms` → Chris copy, `quick_entry` → Maria copy
+
+### Finalized Copy (Party Mode — Sally, John, Amelia)
+
+**Planning Assistant (recommended for Sam — score ≤3):**
+- **Recommended copy:** "We recommend starting with the **Planning Assistant** — it'll guide you through your plan conversationally, explaining things as you go. You can always switch to forms anytime."
+- **Short description (non-recommended):** "A conversational guide that walks you through your plan step by step."
+
+**Forms (recommended for Chris — score 4-6):**
+- **Recommended copy:** "You're in good shape to dive into **My Plan** forms. Fill in your numbers section by section. The Planning Assistant is always available if you want a second opinion."
+- **Short description (non-recommended):** "Build your plan section by section with structured input forms."
+
+**Quick Entry (recommended for Maria — score 7+):**
+- **Recommended copy:** "You've got this. Head straight to **Reports** and build your plan inline — everything's editable. No hand-holding required."
+- **Short description (non-recommended):** "Jump right into the data. Everything's editable inline."
 
 ## Acceptance Criteria
 
