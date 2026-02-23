@@ -1,6 +1,6 @@
 # Overview
 
-This project is a full-stack JavaScript application designed to provide comprehensive financial planning and analysis tools for franchisors and franchisees. It offers structured forms for data input ("My Plan") and interactive financial statements with inline editing capabilities ("Reports"). Key capabilities include 60-month financial projections (P&L, cash flow, balance sheet, ROI), scenario modeling, and business plan generation. The platform aims to streamline financial oversight and strategic planning within franchise networks.
+This project is a full-stack JavaScript application providing comprehensive financial planning and analysis tools for franchisors and franchisees. It features structured data input ("My Plan") and interactive financial statements ("Reports") with inline editing. The platform generates 60-month financial projections (P&L, cash flow, balance sheet, ROI), enables scenario modeling, and facilitates business plan generation. Its primary purpose is to streamline financial oversight and strategic planning within franchise networks.
 
 # User Preferences
 
@@ -9,100 +9,33 @@ When the user triggers an agent or workflow, the AI MUST load the referenced fil
 # System Architecture
 
 ## UI/UX Decisions
-- **Navigation:** A two-door sidebar model ("My Plan" and "Reports").
-- **Two-Surface Design Principle (Epic 7):** Forms (My Plan) = onboarding wizard for less experienced personas. Reports = power editing surface where all financial assumptions are editable inline. Expert users skip Forms entirely and build their plan directly in Reports. Forms does NOT replicate Reports' granular per-year or per-month editing.
-- **Per-Year & Per-Month Independence:** All financial assumptions support per-year independence (5 values). Qualifying fields (revenue, COGS%, labor%, marketing%) additionally support per-month independence (60 values) for seasonality modeling. Drill-down UI (annual → quarterly → monthly) provides progressive disclosure.
-- **AI Planning Assistant:** A slide-in panel within "My Plan," not a separate workspace mode.
-- **Color Scheme:** "Gurple" (#A9A2AA) for advisory panels; red reserved for errors.
-- **White-labeling:** Branded shell with Katalyst identity, overriding `--primary`, `--primary-foreground`, and `--ring` CSS variables. `--katalyst-brand` for specific Katalyst elements.
+- **Navigation:** A two-door sidebar model for "My Plan" and "Reports."
+- **Two-Surface Design Principle:** "My Plan" functions as an onboarding wizard for structured data entry, while "Reports" serves as a power editing surface for inline financial assumption adjustments.
+- **Per-Year & Per-Month Independence:** Financial assumptions support per-year independence (5 values), with qualifying fields also supporting per-month independence (60 values) for seasonality modeling.
+- **AI Planning Assistant:** Integrated as a slide-in panel within "My Plan."
+- **Color Scheme:** "Gurple" (#A9A2AA) for advisory elements; red for errors. White-labeling via CSS variable overrides.
 
 ## Technical Implementations & System Design
-- **Authentication:** Supports Google OAuth for Katalyst administrators and invitation-based password authentication for franchisees/franchisors.
-- **Backend Stack:** React (frontend), Express (backend), PostgreSQL (database). Server routes are modularized in `server/routes/`.
-- **Database Schema:** Includes `brands`, `users`, `invitations`, `brand_account_managers`, and `plans` tables. `plans` stores `financialInputs`, `projections`, and `startupCosts` as JSONB.
-- **Session Management:** PostgreSQL-backed sessions with a 24-hour expiry using `connect-pg-simple`.
-- **Role-Based Access Control (RBAC):** Middleware functions like `requireAuth()`, `requireRole()`, `scopeToUser()`, and `projectForRole()` enforce access control.
-- **Onboarding:** A guided flow introduces users to "My Plan" (structured forms) and "Reports" (interactive financial statements).
-- **BMad File Structure:** Organized with `_bmad/` for the toolkit, `_bmad-output/` for generated artifacts, `_config/` for manifests, and `_memory/` for agent memory.
-- **Financial Engine:** A pure TypeScript engine (`shared/financial-engine.ts`) generates 60-month projections from `FinancialInputs`, covering P&L, cash flow, balance sheet, and ROI. All currency is in cents, calculations are pre-tax, with simple monthly growth. Extended to include Balance Sheet and Cash Flow disaggregation, Valuation, ROIC Extended, P&L Analysis, and audit checks.
-- **Financial Statements View:** A workspace toggle (Dashboard/Statements) in the planning header switches to a 7-tab financial statements container (`client/src/components/planning/financial-statements.tsx`). Features progressive disclosure (annual→quarterly→monthly) and data-driven table definitions.
-- **Impact Strip & Document Preview:** `ImpactStrip` (`client/src/components/planning/impact-strip.tsx`) is a sticky bottom bar in Forms view, showing context-sensitive metrics, delta indicators, and guardian dots. `DocumentPreviewModal` (`client/src/components/planning/document-preview-modal.tsx`) displays a styled HTML business plan preview with a cover page, financial summaries, and DRAFT watermark if completeness is under 90%.
-- **FinancialValue Component:** `client/src/components/shared/financial-value.tsx` provides shared formatting for all financial displays, handling various types (currency, percentages, ratios), accounting-style parentheses for negatives, and destructive color for negative values.
+- **Authentication:** Google OAuth for administrators and invitation-based password authentication for franchisees/franchisors.
+- **Backend Stack:** React (frontend), Express (backend), PostgreSQL (database).
+- **Database Schema:** Key tables include `brands`, `users`, `invitations`, `brand_account_managers`, and `plans`. `plans` stores `financialInputs`, `projections`, and `startupCosts` as JSONB.
+- **Session Management:** PostgreSQL-backed sessions with a 24-hour expiry.
+- **Role-Based Access Control (RBAC):** Middleware functions enforce access control based on user roles and data ownership.
+- **Onboarding:** A guided flow introduces users to "My Plan" and "Reports."
+- **BMad File Structure:** Standardized organization for toolkit (`_bmad/`), generated artifacts (`_bmad-output/`), manifests (`_config/`), and agent memory (`_memory/`).
+- **Financial Engine:** A pure TypeScript engine generates 60-month financial projections (P&L, cash flow, balance sheet, ROI) from `FinancialInputs`, handling all currency in cents and pre-tax calculations.
+- **Financial Statements View:** A 7-tab container within the planning header offering progressive disclosure (annual → quarterly → monthly).
+- **Impact Strip & Document Preview:** An `ImpactStrip` displays context-sensitive metrics, and a `DocumentPreviewModal` generates a styled HTML business plan preview.
+- **FinancialValue Component:** Provides shared formatting for all financial displays, including currency, percentages, ratios, and negative value representation.
 - **Invitation Management:** UI and API for creating, monitoring, and copying invitation links.
-- **Login/Logout:** Supports Google OAuth, email/password, and robust session management, including a "Dev Login (Admin)" bypass for development.
+- **Plan Management:** Full CRUD operations (create, rename, clone, delete) for financial plans with last-plan protection.
+- **Scenario Management:** Users can create, save, load, update, and delete named scenarios (max 10 per plan) for "What If" analysis. Scenarios are stored in the `plans` table's `whatIfScenarios` JSONB column.
+- **Data Sharing Controls:** Franchisees can grant/revoke consent for franchisors to view financial plan details, with an append-only audit trail. This controls data visibility in the Franchisor Pipeline Dashboard.
+- **Franchisor Pipeline Dashboard:** Provides franchisor admins with an overview of all franchisees in their brand, including pipeline stage, consent-based financial summaries, and detection of stalled plans.
+- **Planning Assistant Interface:** A split-screen interface integrating a conversation panel with a live dashboard, featuring a simulated AI for populating financial inputs.
 
 # External Dependencies
 
 - **Database:** PostgreSQL
-- **Authentication:** Google OAuth (via `passport-google-oauth20`), `bcrypt`, `connect-pg-simple`
+- **Authentication:** Google OAuth (`passport-google-oauth20`), `bcrypt`, `connect-pg-simple`
 - **Frameworks/Libraries:** React, Express, Passport.js
-
-# Recent Changes
-
-## Plan Confirmation Model & Franchisee Plan Settings (Feb 2026)
-- **Field Confirmation (Feature A):** Added `confirmed: boolean` to `FinancialFieldValue` interface (required in TS, optional with `default(false)` in Zod for backward compat). Plan completeness now tracks confirmed fields, not edited fields. Progress bar labels show "fields confirmed."
-- **Three-State Lock Icon (Forms View):** Outline lock = unconfirmed brand default, pulsing amber lock = edited but unconfirmed (nudge state), filled green lock+check = confirmed. Click to confirm. `confirmFieldValue()` helper in `use-field-editing.ts`.
-- **Batch Confirm (Reports View):** "Confirm All" button per section in financial statements header shows unconfirmed count. Confirms all fields in the active section.
-- **Reset Clears Confirmation:** `resetFieldToDefault()` sets `confirmed: false`. Editing after confirming keeps confirmed true (AC-E1, AC-E2).
-- **DRAFT Watermark:** Document preview shows DRAFT watermark when confirmed completeness < 90%.
-- **Plan Status Settings (Feature B):** New DB columns `targetOpenDate` (date), `locationAddress` (text), `financingStatus` (text) on plans table. Migration script converts deprecated `targetOpenQuarter` to `targetOpenDate`. `PlanStatusSettings` component with pipeline stage selector, target open date, location address, financing status dropdown. Integrated into Settings view.
-- **Pipeline Projection Updated:** `projectPlanForFranchisor()` includes new fields for franchisor pipeline view.
-- **Key Files:** `shared/financial-engine.ts` (FinancialFieldValue), `client/src/lib/plan-completeness.ts`, `client/src/hooks/use-field-editing.ts`, `client/src/components/planning/plan-status-settings.tsx`, `server/migrations/migrate-target-open-date.ts`
-
-## Story 9.2: Split-Screen Planning Assistant Interface (Feb 2026)
-- **Planning Assistant Panel:** Split-screen layout (ResizablePanelGroup 50/50) replaces My Plan content when open. Conversation panel left, live dashboard right. Opened via FAB button or sidebar HELP item.
-- **Simulation Service:** Client-side `planning-assistant-simulation.ts` provides 5 conversation topics (location/rent, revenue, staffing, marketing, summary) with keyword matching, typing delays, and character-by-character streaming — no LLM backend required.
-- **Value Extraction:** Simulated AI populates financial inputs via standard `queueSave()` pipeline with `source: 'ai_populated'`. Dashboard updates in real-time.
-- **Mobile/Responsive:** Tabbed interface (Chat/Dashboard tabs) at <1024px breakpoint with accent dot indicator when dashboard has new data.
-- **State Management:** `PlanningAssistantContext` manages open/close state. `useConversation` hook manages messages, streaming, and extraction. Conversation persists in memory across open/close within session.
-- **New Files:** `client/src/lib/planning-assistant-simulation.ts`, `client/src/contexts/PlanningAssistantContext.tsx`, `client/src/hooks/use-conversation.ts`, `client/src/components/shared/error-boundary.tsx`, `client/src/components/planning/conversation-panel.tsx`, `client/src/components/planning/live-dashboard-panel.tsx`, `client/src/components/planning/planning-assistant-panel.tsx`, `client/src/components/planning/planning-assistant-fab.tsx`
-- **Modified:** `client/src/pages/planning-workspace.tsx` (FAB + panel integration), `client/src/components/app-sidebar.tsx` (HELP section item)
-
-## Story 11.2: Franchisor Pipeline Dashboard (Feb 2026)
-- **Pipeline Dashboard:** Franchisor admins can view all franchisees in their brand with pipeline visibility at `/pipeline`. Sidebar nav item "Pipeline" visible to franchisor role only.
-- **Summary Bar:** Counts per pipeline stage (Planning, Site Evaluation, Financing, Construction, Open) plus Stalled count (30+ days since last activity).
-- **Consent-Based Projection:** Financial summary (projected annual revenue, startup investment, break-even month, 5Y ROI) only shown for franchisees who have granted data sharing consent. Others show "No consent" indicator.
-- **Stalled Detection:** Franchisees with no activity in 30+ days flagged with warning icon and red highlight.
-- **Acknowledgment Tracking:** When `franchisorAcknowledgmentEnabled` is true for a brand, franchisor can acknowledge/unacknowledge plans. Acknowledgment resets when plan is updated after acknowledgment.
-- **Responsive Layout:** Desktop table (lg+) and mobile card layout (below lg). Summary cards grid adapts to viewport.
-- **Sorting & Filtering:** Sort by name, stage, last activity. Filter by stage or stalled status.
-- **New DB Table:** `plan_acknowledgments` (planId, franchisorUserId, acknowledgedAt, planUpdatedAtSnapshot).
-- **New Files:** `server/routes/pipeline.ts`, `client/src/pages/pipeline.tsx`.
-- **Modified:** `shared/schema.ts`, `server/storage.ts`, `server/routes.ts`, `client/src/App.tsx`, `client/src/components/app-sidebar.tsx`.
-
-## Story 11.1: Franchisee Data Sharing Controls (Feb 2026)
-- **Consent Management:** Franchisees can grant/revoke consent for franchisors to view financial plan details via Settings → Data Sharing in the plan workspace.
-- **Append-Only Audit Trail:** `data_sharing_consents` table (INSERT-only) tracks all grant/revoke actions with timestamps.
-- **Response Projection:** `projectPlanForFranchisor()` helper in `server/routes/plans.ts` strips `financialInputs`, `startupCosts`, `whatIfScenarios` from API responses when consent is not granted. Pipeline fields (name, pipelineStage, targetMarket, targetOpenQuarter) always visible.
-- **API Endpoints:** `GET/POST /api/plans/:planId/consent`, `/consent/grant`, `/consent/revoke` in `server/routes/consent.ts`.
-- **UI Component:** `client/src/components/planning/data-sharing-settings.tsx` with AlertDialog confirmations, status badge, and toast notifications.
-- **RBAC Enforcement:** Only franchisee plan owners can grant/revoke. Franchisors get 403. Katalyst admins see all data regardless.
-
-## Story 10.3: Scenario Persistence & Comparison (Feb 2026)
-- **Scenario CRUD:** Franchisees can save slider configurations as named scenarios (max 10 per plan), load them, update/rename, and delete via `whatIfScenarios` JSONB column on `plans` table.
-- **API Endpoints:** `POST/PUT/DELETE /api/plans/:planId/scenarios` with Zod validation (unique names, max 10, non-zero sliders).
-- **Comparison Overlay:** Third dotted gold line on all 6 sensitivity charts when comparing a saved scenario against current slider config. Uses `computeComparisonOutput()` from `sensitivity-engine.ts`.
-- **UI Components:** Save/Load dropdown, scenario count badge (N/10), unsaved changes indicator, comparison banner with dismiss. All in `what-if-playground.tsx`.
-- **Sandbox Invariant:** Scenario operations only touch `whatIfScenarios` JSONB — never modify `financialInputs`.
-
-## SCP-2026-02-22: Post-Epic-7 Course Correction & Stabilization (APPROVED)
-- **Epic 7 complete** (6/6 stories done). Per-year independence delivered.
-- **Epic 7H created** (5 stories) — stabilization mini-epic is NEXT before any feature work:
-  - 7H.1: Planning Document Realignment (PRD FR98, Architecture per-month status, Epics desc fixes, UX Spec 5 issues)
-  - 7H.2: Per-Month Independence (7.1b.1 — 60-element arrays, engine types, Reports UI for monthly editing)
-  - 7H.3: Brand CRUD Completion (delete + edit metadata)
-  - 7H.4: INPUT_FIELD_MAP Mechanical Validation (build-time format mismatch detection)
-  - 7H.5: E2E Testing Standards (franchisee auth, no demo mode, cleanup)
-- **Epic sequencing reset by PO:** 7H → 10 → 8 → 11 → ST → 6 → 9 (PDF and AI last)
-- **Process rules activated:** mandatory adversarial code review, change proposals for design pivots, story complexity threshold, completion report accuracy
-- See: `_bmad-output/planning-artifacts/sprint-change-proposal-2026-02-22.md`
-
-## Story 7.2: Plan CRUD & Navigation (Feb 2026)
-- **Plan Lifecycle Management:** Full CRUD operations for financial plans — create, rename (inline & context menu), clone (deep copy), and delete (type-to-confirm) with last-plan protection.
-- **New Backend Endpoints:** `POST /api/plans/:planId/clone` (deep copies financialInputs/startupCosts), `DELETE /api/plans/:planId` (with last-plan protection via `getPlanCountByUser()`).
-- **Enhanced Plan Creation:** `POST /api/plans` now seeds brand default financial parameters and startup cost templates via `buildPlanFinancialInputs()` and `buildPlanStartupCosts()` from `@shared/plan-initialization`.
-- **Sidebar MY PLANS Section:** Lists all plans with navigation, active plan highlighting, status indicators, and hover-triggered context menus (Rename, Clone, Delete).
-- **Dashboard Context Menus:** Kebab menus on plan cards with Rename, Clone, Delete actions.
-- **Inline Plan Rename:** PlanningHeader shows pencil icon on hover; click to edit with Enter/Escape keyboard shortcuts. Only visible after quick start is completed.
-- **New Components:** `CreatePlanDialog`, `DeletePlanDialog` (type-to-confirm), `PlanContextMenu` in `client/src/components/plan/`.
-- **Storage Layer:** Added `clonePlan()` and `getPlanCountByUser()` to `IStorage` interface and `DatabaseStorage`.
