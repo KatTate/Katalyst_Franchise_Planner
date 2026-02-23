@@ -39,6 +39,13 @@ When the user triggers an agent or workflow, the AI MUST load the referenced fil
 
 # Recent Changes
 
+## Story 10.3: Scenario Persistence & Comparison (Feb 2026)
+- **Scenario CRUD:** Franchisees can save slider configurations as named scenarios (max 10 per plan), load them, update/rename, and delete via `whatIfScenarios` JSONB column on `plans` table.
+- **API Endpoints:** `POST/PUT/DELETE /api/plans/:planId/scenarios` with Zod validation (unique names, max 10, non-zero sliders).
+- **Comparison Overlay:** Third dotted gold line on all 6 sensitivity charts when comparing a saved scenario against current slider config. Uses `computeComparisonOutput()` from `sensitivity-engine.ts`.
+- **UI Components:** Save/Load dropdown, scenario count badge (N/10), unsaved changes indicator, comparison banner with dismiss. All in `what-if-playground.tsx`.
+- **Sandbox Invariant:** Scenario operations only touch `whatIfScenarios` JSONB — never modify `financialInputs`.
+
 ## SCP-2026-02-22: Post-Epic-7 Course Correction & Stabilization (APPROVED)
 - **Epic 7 complete** (6/6 stories done). Per-year independence delivered.
 - **Epic 7H created** (5 stories) — stabilization mini-epic is NEXT before any feature work:

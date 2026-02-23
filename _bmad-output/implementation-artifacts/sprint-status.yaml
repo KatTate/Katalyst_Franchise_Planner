@@ -40,6 +40,7 @@
 # - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
 
 generated: 2026-02-09
+updated: 2026-02-23  # Story 10.3 implementation complete → done. All 10 ACs satisfied, 7 files modified (schema, routes, engine, playground UI, 6 charts). Sandbox invariant preserved.
 updated: 2026-02-23  # Story 10.3 context document created (Create Story workflow). 10 ACs, 6 files in change summary. JSONB column storage decision documented.
 updated: 2026-02-23  # Story 10.2b adversarial code review completed → done. 3M/1L found, all fixed. AC3 positioning (M1), useMemo effectiveness (M2), evidence table (M3), redundant check (L1). All 5 ACs satisfied.
 updated: 2026-02-22  # Story 10.1 adversarial code review completed → done. 2H fixed (COGS unit "pp", input clamping), 2M/2L documented. All 5 ACs satisfied.
@@ -802,7 +803,7 @@ development_status:
   10-1-sensitivity-controls-sandbox-engine: done  # Adversarial code review completed — 2H fixed (COGS unit display, dead conditional), 2M/2L documented. All 5 ACs satisfied.
   10-2a-sensitivity-chart-dashboard: done  # Adversarial code review completed — 3H/2M/3L found, all HIGH+MEDIUM fixed. Grid breakpoint (H1), custom tooltip (H2), data validation (H3), Cell component (M2). All 17 ACs satisfied.
   10-2b-metric-delta-cards: done  # Adversarial code review completed — 3M/1L found, all fixed. AC3 positioning, useMemo effectiveness, evidence table, redundant check. All 5 ACs satisfied.
-  10-3-scenario-persistence-comparison: in-progress  # Promoted from optional to essential per SCP-2026-02-21 CP-5
+  10-3-scenario-persistence-comparison: done  # Implementation complete — all 10 ACs satisfied. Schema JSONB column, API CRUD endpoints, scenario management UI, comparison overlay on 6 charts, sandbox invariant preserved.
   epic-10-retrospective: optional
 
   # Epic ST: Admin Support Tools — Impersonation & Demo Modes
