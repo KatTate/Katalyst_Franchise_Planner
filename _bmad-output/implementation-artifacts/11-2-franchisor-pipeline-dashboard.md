@@ -14,7 +14,7 @@ So that I have pipeline visibility into development activity (FR45, FR48).
 
 2. **Given** the pipeline dashboard is loading **When** the API request is in-flight **Then** I see a skeleton loading state (not a blank page) — and once data arrives the franchisee list renders with no layout shift.
 
-3. **Given** my brand has franchisees at various pipeline stages **When** I view the dashboard **Then** I see a summary section at the top showing counts per pipeline stage (e.g., "12 Planning, 4 Site Evaluation, 3 Financing, 1 Construction, 2 Open") — with counts that match the franchisee list below.
+3. **Given** my brand has franchisees at various pipeline stages **When** I view the dashboard **Then** I see a summary section at the top showing counts per pipeline stage (e.g., "12 Planning, 4 Site Evaluation, 3 Financing, 1 Construction, 2 Open") PLUS a "Stalled" count showing franchisees with no activity in 30+ days — with all counts matching the franchisee list below.
 
 4. **Given** a franchisee has NOT opted in to data sharing **When** I view that franchisee's row in the pipeline dashboard **Then** I see pipeline-only data (display name, pipeline stage, target market, target open quarter, plan status, last activity date) — and NO financial details are visible (no revenue projections, startup costs, ROI, or financial documents).
 
@@ -24,7 +24,7 @@ So that I have pipeline visibility into development activity (FR45, FR48).
 
 7. **Given** I am logged in as a franchisor admin for Brand A **When** I view the pipeline dashboard **Then** I see ONLY Brand A's franchisees — franchisees from other brands are never included in the API response or rendered on screen (NFR10 data isolation).
 
-8. **Given** my brand has `franchisorAcknowledgmentEnabled` set to `true` **When** I view a franchisee's plan in the pipeline dashboard **Then** I see an "Acknowledge" button that allows me to record an acknowledgment/review signal for that franchisee's plan (FR48) — and if acknowledgment is disabled for the brand, the button does not appear.
+8. **Given** my brand has `franchisorAcknowledgmentEnabled` set to `true` **When** I click "Acknowledge" on a franchisee's plan in the pipeline dashboard **Then** the row updates to show an "Acknowledged" state with a timestamp (e.g., "Reviewed Feb 23") — and on subsequent visits the acknowledged state persists. **Given** the franchisee updates their plan after acknowledgment **Then** the acknowledged state resets (row returns to unacknowledged) so I know the plan has changed since my last review. If acknowledgment is disabled for the brand, the button does not appear. _(Note: This is franchisor-side tracking only. Franchisee-visible acknowledgment notifications are a Phase 2 consideration.)_
 
 9. **Given** I am logged in as a Katalyst admin (not a franchisor) **When** I navigate to `/pipeline` **Then** I am either redirected to the admin dashboard (this page is franchisor-only; the Katalyst cross-brand dashboard is Story 11.3) OR I see a message indicating this page is for franchisor admins.
 
@@ -33,6 +33,10 @@ So that I have pipeline visibility into development activity (FR45, FR48).
 11. **Given** I am on the pipeline dashboard **When** the dashboard has loaded **Then** I see a "Last updated" timestamp and a manual refresh button — clicking refresh re-fetches pipeline data without a full page reload.
 
 12. **Given** the pipeline dashboard is rendered **When** I view the page on a viewport below 768px **Then** the layout adapts responsively — the summary counts stack vertically and the franchisee list uses a card layout instead of a table.
+
+13. **Given** a franchisee has had no plan activity in 30 or more days **When** I view the pipeline dashboard **Then** that franchisee's row is visually flagged as "stalled" (e.g., a warning icon or amber highlight distinct from normal rows) — so I can immediately identify franchisees who may need outreach without scanning timestamps manually.
+
+14. **Given** the pipeline dashboard is loaded with multiple franchisees **When** I click a column header (pipeline stage, last activity date, or target open quarter) **Then** the list sorts by that column (toggling ascending/descending on repeated clicks) — enabling me to quickly find stalled franchisees, upcoming openings, or franchisees at a specific stage.
 
 ## Dev Notes
 
@@ -74,14 +78,17 @@ So that I have pipeline visibility into development activity (FR45, FR48).
 
 Per UX Journey 7 (Linda, VP of Development at PostNet), the dashboard should show:
 
-1. **Pipeline Summary Bar** — A horizontal bar or card row at the top showing counts per pipeline stage:
-   - Planning | Site Evaluation | Financing | Construction | Open
+1. **Pipeline Summary Bar** — A horizontal bar or card row at the top showing:
+   - Counts per pipeline stage: Planning | Site Evaluation | Financing | Construction | Open
+   - A "Stalled" count (franchisees with no activity in 30+ days) — styled distinctly (amber/warning) to draw attention
    - Each with a count badge. Clicking a stage could filter the list (optional enhancement).
 
-2. **Franchisee List/Table** — The main content area showing one row per franchisee with:
-   - **Always visible (pipeline fields)**: Franchisee display name, pipeline stage (as a colored badge), target market, target open quarter, plan status (draft/in_progress/completed), last activity date (derived from `plan.updatedAt`)
-   - **Visible only with opt-in**: A visual indicator (icon/badge) that financials are shared. Expandable row or click-through showing: projected annual revenue, total startup investment, break-even month, ROI percentage
-   - **Conditional**: Acknowledge/review button (only if `brand.franchisorAcknowledgmentEnabled === true`)
+2. **Franchisee List/Table** — Sortable columns. One row per franchisee with:
+   - **Always visible (pipeline fields)**: Franchisee display name, pipeline stage (as a colored badge), target market, target open quarter, plan status (draft/in_progress/completed), last activity date
+   - **Stalled indicator**: Rows for franchisees with 30+ days inactivity show a visual warning (amber badge, warning icon, or row highlight) distinct from normal rows
+   - **Visible only with opt-in**: A subtle secondary indicator (small unlock/shield icon — should NOT compete visually with the pipeline stage badge, which is the primary dimension) showing financials are shared. Expandable row or click-through showing: projected annual revenue, total startup investment, break-even month, ROI percentage
+   - **Conditional**: Acknowledge/review button (only if `brand.franchisorAcknowledgmentEnabled === true`). Shows "Acknowledged [date]" state after click. Resets when franchisee updates their plan.
+   - **Sortable columns**: Pipeline stage, last activity date, target open quarter (click header to toggle ascending/descending)
 
 3. **Empty state** — If the brand has no franchisees yet: "No franchisees have started planning yet. Invite franchisees to begin."
 
@@ -109,7 +116,9 @@ Per UX Journey 7 (Linda, VP of Development at PostNet), the dashboard should sho
 
 - **DO NOT use `req.user` directly** — Always use `getEffectiveUser(req)` which handles impersonation and demo mode sessions correctly.
 
-- **DO NOT store acknowledgment state on the plans table** — Acknowledgments should have their own lightweight tracking (e.g., a `plan_acknowledgments` table or a JSONB field) to support audit trail. Do not overload the plans table with franchisor-specific columns.
+- **DO NOT store acknowledgment state on the plans table** — Acknowledgments have their own `plan_acknowledgments` table to support audit trail and reset detection. Do not overload the plans table with franchisor-specific columns.
+
+- **DO NOT build franchisee-visible acknowledgment notifications** — Acknowledgment is franchisor-side tracking only in this story. Franchisee-facing notifications ("Your franchisor reviewed your plan") are a Phase 2 consideration that would require cross-role data flow, notification UI on the franchisee dashboard, and UX decisions about placement and prominence. Do not scope-creep into this.
 
 ### Gotchas & Integration Warnings
 
@@ -127,6 +136,10 @@ Per UX Journey 7 (Linda, VP of Development at PostNet), the dashboard should sho
 
 - **Pipeline stage values**: The `pipelineStage` column defaults to `"planning"` for all new plans. Many plans may not have `targetMarket` or `targetOpenQuarter` set — handle null/empty values gracefully in the UI (show "—" or "Not set").
 
+- **Last activity date accuracy (Party Mode finding F4)**: The `plan.updatedAt` field fires on every auto-save, including when a franchisee merely opens their plan without making meaningful changes. For stalled detection (AC-13) and the "last activity" display, prefer tracking when `financial_inputs` actually change rather than raw `updatedAt`. Options: (a) compare `financial_inputs` hashes on save to detect real changes, (b) use a separate `lastMeaningfulActivity` timestamp updated only when input values change, or (c) use `updatedAt` as-is for MVP with a dev note to refine later. The dev agent should choose the simplest approach that makes stalled detection reliable — option (c) is acceptable for MVP if the 30-day window is generous enough to absorb false positives from casual opens.
+
+- **Acknowledgment reset logic**: The `plan_acknowledgments` table should track `acknowledged_at` and `plan_updated_at_snapshot` (the plan's `updatedAt` at time of acknowledgment). When rendering the pipeline row, compare `plan.updatedAt > acknowledgment.plan_updated_at_snapshot` — if true, the plan has changed since acknowledgment and the acknowledged state should not display. This avoids needing a trigger or event system to "reset" acknowledgments.
+
 - **Financial summary extraction**: The `financial_outputs` JSONB on the plans table contains cached engine results. Key fields for the pipeline summary: `annualSummary[0].totalRevenue` (Year 1 revenue), startup costs total from `plan_startup_costs`, `breakEvenMonth`, `roicPct` from the engine output. The dev agent should examine `EngineOutput` in `shared/financial-engine.ts` for the exact field paths.
 
 - **Demo franchisees**: Brands may have demo franchisee accounts (`users.isDemo = true`). These should be **excluded** from the pipeline dashboard — real franchisors should never see system-managed demo accounts in their pipeline.
@@ -137,9 +150,9 @@ Per UX Journey 7 (Linda, VP of Development at PostNet), the dashboard should sho
 
 | File | Action | Notes |
 |------|--------|-------|
-| `shared/schema.ts` | MODIFY | Add `data_sharing_consents` table + Drizzle insert schema + types. Add `plan_acknowledgments` table if acknowledgment feature is scoped in. *Skip if Story 11.1 has already created the consent table.* |
+| `shared/schema.ts` | MODIFY | Add `data_sharing_consents` table + Drizzle insert schema + types (*skip if Story 11.1 has already created this*). Add `plan_acknowledgments` table with columns: `id`, `plan_id` (FK), `franchisor_user_id` (FK), `acknowledged_at` (timestamp), `plan_updated_at_snapshot` (timestamp for reset detection). |
 | `server/storage.ts` | MODIFY | Add IStorage methods: `getConsentStatus(planId)`, `grantConsent(planId, userId)`, `revokeConsent(planId, userId)`, `getPipelineData(brandId)` (joins plans + users + consent). *Skip consent methods if Story 11.1 has already created them.* |
-| `server/routes/pipeline.ts` | CREATE | New Express Router with `GET /` endpoint (returns pipeline data scoped to franchisor's brand). Apply `requireAuth`, `requireRole("franchisor")`. Join plans + users + consent status. Project response based on consent. |
+| `server/routes/pipeline.ts` | CREATE | New Express Router with: `GET /` (pipeline data scoped to brand, joins plans + users + consent + acknowledgment status, includes stalled flag for 30+ day inactivity), `POST /:planId/acknowledge` (create acknowledgment record with plan_updated_at_snapshot), `DELETE /:planId/acknowledge` (optional — remove acknowledgment). Apply `requireAuth`, `requireRole("franchisor")`. |
 | `server/routes.ts` | MODIFY | Import and register `pipelineRouter` with `app.use("/api/pipeline", pipelineRouter)`. |
 | `client/src/pages/pipeline.tsx` | CREATE | Pipeline dashboard page. Summary bar + franchisee list/table + loading/empty states + refresh button. Responsive layout. |
 | `client/src/components/pipeline/pipeline-summary.tsx` | CREATE | Summary bar component showing counts per pipeline stage. |
@@ -156,10 +169,12 @@ Per UX Journey 7 (Linda, VP of Development at PostNet), the dashboard should sho
   - Demo franchisees (`isDemo = true`) are excluded
   - Non-franchisor roles are rejected (401/403)
   - Empty brand (no franchisees) returns empty array, not error
+  - Stalled flag: franchisees with `updatedAt` older than 30 days are flagged as stalled in API response
+  - Acknowledgment: POST creates record, GET returns acknowledged state, state resets when plan `updatedAt` exceeds `plan_updated_at_snapshot`
 
 - **Test framework**: The project uses Vitest for unit/server tests. Playwright for E2E. `data-testid` attributes are mandatory for all interactive and display elements.
 
-- **Critical ACs for automated coverage**: AC-4 (no financial data without opt-in), AC-7 (data isolation), AC-9 (Katalyst admin redirect/block).
+- **Critical ACs for automated coverage**: AC-4 (no financial data without opt-in), AC-7 (data isolation), AC-9 (Katalyst admin redirect/block), AC-13 (stalled detection).
 
 ### Dependencies & Environment Variables
 

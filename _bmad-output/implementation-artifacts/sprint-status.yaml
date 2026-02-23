@@ -1,5 +1,5 @@
 # generated: 2026-02-09
-# updated: 2026-02-23 (Story 11.2 context document created — Franchisor Pipeline Dashboard)
+# updated: 2026-02-23 (Story 11.2 Party Mode review completed — 8 findings, 5 applied)
 # updated: 2026-02-23 (Story 9.2 context document created — Split-Screen Planning Assistant Interface)
 # updated: 2026-02-23 (Epic 10 retrospective completed — full 15-step BMAD workflow executed)
 # updated: 2026-02-22 (Sprint Planning regenerated — full inventory verification)
@@ -43,6 +43,7 @@
 # - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
 
 generated: 2026-02-09
+updated: 2026-02-23  # Story 11.2 Party Mode review completed. 14 ACs (was 12). 8 findings (2H/3M/3L): stalled detection added (F1-H), JTBD alignment (F6-H), summary counts updated (F2-M), sorting added (F3-M), acknowledgment expanded to Version A with reset logic (F7-M), activity tracking guidance (F4-L), opt-in indicator direction (F5-L), lender packages deferred (F8-L). Franchisee-visible acknowledgment deferred to Phase 2.
 updated: 2026-02-23  # Story 11.2 context document created (Create Story workflow). 12 ACs, 10 files in change summary. Franchisor pipeline dashboard with summary bar, consent-based projection, acknowledgment feature, responsive layout. Story 11.1 dependency documented.
 updated: 2026-02-23  # Story 9.2 Party Mode review completed + PO reframing applied. 12 ACs (was 10), 12 files (was 10). Demo-first: simulation service replaces LLM dependency. Self-contained — no 9.1 prerequisite. 12 findings resolved (3H/4M/5L).
 updated: 2026-02-23  # Story 9.2 context document created (Create Story workflow). 10 ACs, 10 files in change summary. Split-screen layout with resizable panels, SSE streaming, responsive stacked tabs. Epic 9 → in-progress.
@@ -74,6 +75,22 @@ story_location: _bmad-output/implementation-artifacts
 
 # CHANGE LOG:
 # ===========
+# 2026-02-23: Story 11.2 Party Mode review completed (Sally + John + Bob)
+#   - 8 findings total (2H/3M/3L), all HIGH+MEDIUM resolved:
+#     F1 (H): Added AC-13 — stalled franchisee detection (30+ days no activity, visual flag)
+#     F2 (M): Updated AC-3 — summary counts now include "Stalled" count alongside stage counts
+#     F3 (M): Added AC-14 — column sorting (stage, last activity, target open quarter)
+#     F4 (L): Dev notes updated — last activity date accuracy guidance (updatedAt vs meaningful change)
+#     F5 (L): UI deliverables updated — opt-in indicator as subtle secondary icon, not competing badge
+#     F6 (H): JTBD alignment — addressed by F1+F3 (dashboard as attention-routing tool, not just a list)
+#     F7 (M): AC-8 expanded — Version A acknowledgment (franchisor-only tracking, shows "Reviewed [date]",
+#             resets when franchisee updates plan, plan_updated_at_snapshot comparison pattern)
+#     F8 (L): Completed lender packages in summary — deferred as stretch goal
+#   - PO decision: Franchisee-visible acknowledgment notifications deferred to Phase 2
+#   - AC count: 14 (was 12). New: AC-13 (stalled detection), AC-14 (column sorting)
+#   - Anti-patterns: Added "DO NOT build franchisee-visible acknowledgment notifications"
+#   - Story 11.2 status: ready-for-dev (unchanged)
+#
 # 2026-02-23: Story 11.2 context document created (Create Story workflow)
 #   - Full story file: 11-2-franchisor-pipeline-dashboard.md (ready-for-dev)
 #   - 12 acceptance criteria covering: sidebar pipeline nav + dashboard page (AC-1),
