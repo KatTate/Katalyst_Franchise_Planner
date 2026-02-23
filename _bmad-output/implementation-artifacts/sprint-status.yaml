@@ -815,7 +815,7 @@ development_status:
   # PO SEQUENCING (SCP-2026-02-22): LAST — intelligence layer, wait for core to stabilize
   epic-9: in-progress
   9-1-llm-integration-conversation-api: backlog
-  9-2-split-screen-planning-assistant-interface: ready-for-dev
+  9-2-split-screen-planning-assistant-interface: in-progress
   9-3-ai-value-extraction-field-population: backlog
   9-4-graceful-degradation-mode-continuity: backlog
   epic-9-retrospective: optional

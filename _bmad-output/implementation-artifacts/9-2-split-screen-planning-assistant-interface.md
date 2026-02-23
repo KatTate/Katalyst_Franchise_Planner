@@ -1,6 +1,6 @@
 # Story 9.2: Split-Screen Planning Assistant Interface
 
-Status: ready-for-dev
+Status: in-progress
 
 ## Story
 
