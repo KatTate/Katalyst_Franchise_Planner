@@ -116,6 +116,17 @@ export function PlanningAssistantPanel({
     setSidebarOpen(sidebarStateBeforeOpen.current);
   }, [closePlanningAssistant, setSidebarOpen, sidebarStateBeforeOpen]);
 
+  useEffect(() => {
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        e.preventDefault();
+        handleClose();
+      }
+    };
+    document.addEventListener("keydown", handleEscape);
+    return () => document.removeEventListener("keydown", handleEscape);
+  }, [handleClose]);
+
   if (isMobile || isCompact) {
     return (
       <div className="flex flex-col h-full" data-testid="planning-assistant-panel">
