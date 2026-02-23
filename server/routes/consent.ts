@@ -1,5 +1,5 @@
 import { Router, type Request, type Response } from "express";
-import { requireAuth, getEffectiveUser } from "../middleware/auth";
+import { requireAuth, requireRole, getEffectiveUser } from "../middleware/auth";
 import { storage } from "../storage";
 
 const router = Router();
@@ -32,6 +32,7 @@ router.get(
 router.post(
   "/:planId/consent/grant",
   requireAuth,
+  requireRole("franchisee"),
   async (req: Request<{ planId: string }>, res: Response) => {
     const effectiveUser = await getEffectiveUser(req);
     const plan = await storage.getPlan(req.params.planId);
@@ -53,6 +54,7 @@ router.post(
 router.post(
   "/:planId/consent/revoke",
   requireAuth,
+  requireRole("franchisee"),
   async (req: Request<{ planId: string }>, res: Response) => {
     const effectiveUser = await getEffectiveUser(req);
     const plan = await storage.getPlan(req.params.planId);

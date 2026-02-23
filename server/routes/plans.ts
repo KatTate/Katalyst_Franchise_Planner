@@ -264,6 +264,14 @@ router.get(
     const plan = await requirePlanAccess(req, res);
     if (plan === null) return;
 
+    const effectiveUser = await getEffectiveUser(req);
+    if (effectiveUser.role === "franchisor") {
+      const consent = await storage.getConsentStatus(plan.id, plan.userId);
+      if (!consent.hasConsent) {
+        return res.status(403).json({ error: { message: "Financial details require data sharing consent", code: "CONSENT_REQUIRED" } });
+      }
+    }
+
     const costs = await storage.getStartupCosts(req.params.planId);
     return res.json(costs);
   }
@@ -329,6 +337,14 @@ router.get(
   async (req: Request<{ planId: string }>, res: Response) => {
     const plan = await requirePlanAccess(req, res);
     if (plan === null) return;
+
+    const effectiveUser = await getEffectiveUser(req);
+    if (effectiveUser.role === "franchisor") {
+      const consent = await storage.getConsentStatus(plan.id, plan.userId);
+      if (!consent.hasConsent) {
+        return res.status(403).json({ error: { message: "Financial details require data sharing consent", code: "CONSENT_REQUIRED" } });
+      }
+    }
 
     if (!plan.financialInputs) {
       return res.status(400).json({
