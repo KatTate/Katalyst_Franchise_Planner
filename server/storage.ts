@@ -394,6 +394,9 @@ export class DatabaseStorage implements IStorage {
         quickStartCompleted: false,
         targetMarket: source.targetMarket,
         targetOpenQuarter: source.targetOpenQuarter,
+        targetOpenDate: source.targetOpenDate,
+        locationAddress: source.locationAddress,
+        financingStatus: source.financingStatus,
       } as any)
       .returning();
     return created;

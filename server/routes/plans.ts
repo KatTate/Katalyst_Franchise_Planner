@@ -61,7 +61,7 @@ async function requirePlanAccess(req: Request, res: Response): Promise<Plan | nu
   return plan;
 }
 
-type PipelinePlan = Pick<Plan, "id" | "userId" | "brandId" | "name" | "status" | "pipelineStage" | "targetMarket" | "targetOpenQuarter" | "quickStartCompleted" | "createdAt" | "updatedAt" | "lastAutoSave">;
+type PipelinePlan = Pick<Plan, "id" | "userId" | "brandId" | "name" | "status" | "pipelineStage" | "targetMarket" | "targetOpenQuarter" | "targetOpenDate" | "locationAddress" | "financingStatus" | "quickStartCompleted" | "createdAt" | "updatedAt" | "lastAutoSave">;
 
 /** Pipeline-only projection: strips financial details for non-opted-in franchisor access */
 function projectPlanForFranchisor(plan: Plan): PipelinePlan {
@@ -74,6 +74,9 @@ function projectPlanForFranchisor(plan: Plan): PipelinePlan {
     pipelineStage: plan.pipelineStage,
     targetMarket: plan.targetMarket,
     targetOpenQuarter: plan.targetOpenQuarter,
+    targetOpenDate: plan.targetOpenDate,
+    locationAddress: plan.locationAddress,
+    financingStatus: plan.financingStatus,
     quickStartCompleted: plan.quickStartCompleted,
     createdAt: plan.createdAt,
     updatedAt: plan.updatedAt,

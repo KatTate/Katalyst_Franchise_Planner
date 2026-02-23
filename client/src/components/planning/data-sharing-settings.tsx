@@ -80,8 +80,7 @@ export function DataSharingSettings({ planId }: DataSharingSettingsProps) {
 
   if (isLoading) {
     return (
-      <div className="flex-1 p-8 max-w-2xl mx-auto w-full" data-testid="settings-loading">
-        <Skeleton className="h-8 w-48 mb-6" />
+      <div data-testid="settings-loading">
         <Card>
           <CardContent className="p-6 space-y-4">
             <Skeleton className="h-6 w-64" />
@@ -99,9 +98,7 @@ export function DataSharingSettings({ planId }: DataSharingSettingsProps) {
   const isMutating = grantMutation.isPending || revokeMutation.isPending;
 
   return (
-    <div className="flex-1 p-8 max-w-2xl mx-auto w-full" data-testid="data-sharing-settings">
-      <h2 className="text-2xl font-semibold mb-6">Settings</h2>
-
+    <div data-testid="data-sharing-settings">
       <Card>
         <CardHeader>
           <div className="flex items-center gap-3">

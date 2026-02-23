@@ -16,6 +16,7 @@ import { DocumentPreviewModal } from "@/components/planning/document-preview-mod
 import { PlanCompletenessBar } from "@/components/planning/plan-completeness-bar";
 import { WhatIfPlayground } from "@/components/planning/what-if-playground";
 import { DataSharingSettings } from "@/components/planning/data-sharing-settings";
+import { PlanStatusSettings } from "@/components/planning/plan-status-settings";
 import { PlanningAssistantPanel } from "@/components/planning/planning-assistant-panel";
 import { PlanningAssistantFAB } from "@/components/planning/planning-assistant-fab";
 import { PlanningAssistantProvider, usePlanningAssistant } from "@/contexts/PlanningAssistantContext";
@@ -156,7 +157,13 @@ function PlanningWorkspaceInner() {
       case "scenarios":
         return <WhatIfPlayground planId={planId} />;
       case "settings":
-        return <DataSharingSettings planId={planId} />;
+        return (
+          <div className="flex-1 p-8 max-w-2xl mx-auto w-full space-y-6">
+            <h2 className="text-2xl font-semibold">Settings</h2>
+            <PlanStatusSettings planId={planId} />
+            <DataSharingSettings planId={planId} />
+          </div>
+        );
       case "my-plan":
       default:
         if (isPlanningAssistantOpen) {
