@@ -3,7 +3,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
-import { RefreshCw, FileText, CheckCircle2 } from "lucide-react";
+import { RefreshCw, FileText, CheckCircle2, Lock } from "lucide-react";
 import { usePlanOutputs } from "@/hooks/use-plan-outputs";
 import { CalloutBar } from "./statements/callout-bar";
 import { GuardianBar } from "./statements/guardian-bar";
@@ -21,7 +21,7 @@ import { parseFieldInput } from "@/lib/field-metadata";
 import { INPUT_FIELD_MAP, getMonthRangeForColKey } from "./statements/input-field-map";
 import { updateFieldValue, confirmFieldValue } from "@shared/plan-initialization";
 import { computeSectionProgress } from "@/lib/plan-completeness";
-import { FIELD_METADATA, CATEGORY_ORDER } from "@/lib/field-metadata";
+import { FIELD_METADATA, CATEGORY_ORDER, CATEGORY_LABELS } from "@/lib/field-metadata";
 import { computeScenarioOutputs, type ScenarioOutputs } from "@/lib/scenario-engine";
 import { useToast } from "@/hooks/use-toast";
 import type { EngineOutput, PlanFinancialInputs, FinancialFieldValue } from "@shared/financial-engine";
@@ -195,40 +195,54 @@ export function FinancialStatements({ planId, defaultTab = "summary", plan, queu
     [financialInputs, queueSave]
   );
 
-  const unconfirmedCount = useMemo(() => {
-    if (!financialInputs) return 0;
-    const sections = computeSectionProgress(financialInputs as PlanFinancialInputs);
-    return sections.reduce((sum, s) => sum + (s.total - s.confirmed), 0);
+  const sectionProgress = useMemo(() => {
+    if (!financialInputs) return [];
+    return computeSectionProgress(financialInputs as PlanFinancialInputs);
   }, [financialInputs]);
+
+  const unconfirmedCount = useMemo(() => {
+    return sectionProgress.reduce((sum, s) => sum + (s.total - s.confirmed), 0);
+  }, [sectionProgress]);
+
+  const confirmCategoryFields = useCallback((updated: any, category: string) => {
+    const fields = FIELD_METADATA[category];
+    if (!fields) return updated;
+    const isDecomp = category === "facilitiesDecomposition";
+    const catObj = isDecomp
+      ? { ...(updated.operatingCosts?.facilitiesDecomposition ?? {}) }
+      : { ...(updated[category] ?? {}) };
+    for (const fieldName of Object.keys(fields)) {
+      const raw = catObj[fieldName];
+      if (!raw) continue;
+      if (Array.isArray(raw)) {
+        catObj[fieldName] = raw.map((item: FinancialFieldValue) => confirmFieldValue(item));
+      } else {
+        catObj[fieldName] = confirmFieldValue(raw as FinancialFieldValue);
+      }
+    }
+    if (isDecomp) {
+      return { ...updated, operatingCosts: { ...updated.operatingCosts, facilitiesDecomposition: catObj } };
+    }
+    return { ...updated, [category]: catObj };
+  }, []);
+
+  const handleBatchConfirmSection = useCallback((category: string) => {
+    if (!financialInputs || !queueSave) return;
+    const updated = confirmCategoryFields({ ...financialInputs }, category);
+    queueSave({ financialInputs: updated as PlanFinancialInputs });
+    const label = CATEGORY_LABELS[category] || category;
+    toast({ description: `${label} fields confirmed`, duration: 2000 });
+  }, [financialInputs, queueSave, confirmCategoryFields, toast]);
 
   const handleBatchConfirmAll = useCallback(() => {
     if (!financialInputs || !queueSave || unconfirmedCount === 0) return;
     let updated = { ...financialInputs } as any;
     for (const category of CATEGORY_ORDER) {
-      const fields = FIELD_METADATA[category];
-      if (!fields) continue;
-      const isDecomp = category === "facilitiesDecomposition";
-      const catObj = isDecomp
-        ? { ...(updated.operatingCosts?.facilitiesDecomposition ?? {}) }
-        : { ...(updated[category] ?? {}) };
-      for (const fieldName of Object.keys(fields)) {
-        const raw = catObj[fieldName];
-        if (!raw) continue;
-        if (Array.isArray(raw)) {
-          catObj[fieldName] = raw.map((item: FinancialFieldValue) => confirmFieldValue(item));
-        } else {
-          catObj[fieldName] = confirmFieldValue(raw as FinancialFieldValue);
-        }
-      }
-      if (isDecomp) {
-        updated = { ...updated, operatingCosts: { ...updated.operatingCosts, facilitiesDecomposition: catObj } };
-      } else {
-        updated = { ...updated, [category]: catObj };
-      }
+      updated = confirmCategoryFields(updated, category);
     }
     queueSave({ financialInputs: updated as PlanFinancialInputs });
     toast({ description: "All fields confirmed", duration: 2000 });
-  }, [financialInputs, queueSave, unconfirmedCount, toast]);
+  }, [financialInputs, queueSave, unconfirmedCount, confirmCategoryFields, toast]);
 
   const handleCopyYear1ToAll = useCallback(
     (rowKey: string) => {
@@ -432,6 +446,40 @@ export function FinancialStatements({ planId, defaultTab = "summary", plan, queu
             {pdfButtonLabel}
           </Button>
         </div>
+
+        {queueSave && sectionProgress.length > 0 && (
+          <div className="border-b px-4 py-2 flex flex-wrap gap-2" data-testid="section-confirm-strip">
+            {sectionProgress.map((section) => {
+              const remaining = section.total - section.confirmed;
+              const isFullyConfirmed = remaining === 0 && section.total > 0;
+              return (
+                <div key={section.category} className="flex items-center gap-1">
+                  {isFullyConfirmed ? (
+                    <div
+                      className="flex items-center gap-1 text-xs text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-950/30 rounded-full px-2.5 py-1"
+                      data-testid={`section-confirmed-${section.category}`}
+                    >
+                      <CheckCircle2 className="h-3 w-3" />
+                      <span>{section.label}</span>
+                    </div>
+                  ) : (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="h-7 text-xs rounded-full px-2.5"
+                      onClick={() => handleBatchConfirmSection(section.category)}
+                      disabled={isSaving}
+                      data-testid={`button-confirm-section-${section.category}`}
+                    >
+                      <Lock className="h-3 w-3 mr-1" />
+                      {section.label} ({remaining})
+                    </Button>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        )}
 
         <CalloutBar
           annualSummaries={output.annualSummaries}
