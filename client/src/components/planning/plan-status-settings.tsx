@@ -32,16 +32,18 @@ export function PlanStatusSettings({ planId }: PlanStatusSettingsProps) {
   const { plan, isLoading, updatePlan, isSaving } = usePlan(planId);
 
   const [targetOpenDate, setTargetOpenDate] = useState("");
+  const [targetMarket, setTargetMarket] = useState("");
   const [locationAddress, setLocationAddress] = useState("");
   const [pipelineStage, setPipelineStage] = useState("planning");
   const [financingStatus, setFinancingStatus] = useState("");
 
   useEffect(() => {
     if (plan) {
-      setTargetOpenDate((plan as any).targetOpenDate || "");
-      setLocationAddress((plan as any).locationAddress || "");
+      setTargetOpenDate(plan.targetOpenDate || "");
+      setTargetMarket(plan.targetMarket || "");
+      setLocationAddress(plan.locationAddress || "");
       setPipelineStage(plan.pipelineStage || "planning");
-      setFinancingStatus((plan as any).financingStatus || "");
+      setFinancingStatus(plan.financingStatus || "");
     }
   }, [plan]);
 
@@ -60,7 +62,7 @@ export function PlanStatusSettings({ planId }: PlanStatusSettingsProps) {
       if (!plan || isSaving) return;
       if (field === "pipelineStage") setPipelineStage(value);
       if (field === "financingStatus") setFinancingStatus(value);
-      updatePlan({ [field]: value || null }).catch(() => {});
+      updatePlan({ [field]: value || null } as any).catch(() => {});
     },
     [plan, isSaving, updatePlan]
   );
@@ -131,6 +133,23 @@ export function PlanStatusSettings({ planId }: PlanStatusSettingsProps) {
             data-testid="input-target-open-date"
           />
           <p className="text-xs text-muted-foreground">When you expect to open for business</p>
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="target-market" className="flex items-center gap-2 text-sm font-medium">
+            <MapPin className="h-4 w-4 text-muted-foreground" />
+            Market Area
+          </Label>
+          <Input
+            id="target-market"
+            value={targetMarket}
+            onChange={(e) => setTargetMarket(e.target.value)}
+            onBlur={() => handleFieldBlur("targetMarket", targetMarket)}
+            disabled={isSaving}
+            placeholder="e.g., Downtown Seattle, WA"
+            data-testid="input-target-market"
+          />
+          <p className="text-xs text-muted-foreground">The market area you're targeting</p>
         </div>
 
         <div className="space-y-2">
