@@ -14,7 +14,12 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
-import { ChevronDown, RotateCcw, AlertCircle, Sparkles, Info } from "lucide-react";
+import { ChevronDown, RotateCcw, AlertCircle, Sparkles, Info, Lock, LockOpen, CheckCircle2 } from "lucide-react";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { FieldHelpIcon } from "@/components/shared/field-help-icon";
 import {
   FIELD_METADATA,
@@ -45,6 +50,18 @@ function countEditedFields(
     if (!f) return false;
     if (Array.isArray(f)) return f[0]?.source !== "brand_default";
     return (f as FinancialFieldValue)?.source !== "brand_default";
+  }).length;
+}
+
+function countConfirmedFields(
+  fields: Record<string, FieldMeta>,
+  categoryData: Record<string, FinancialFieldValue | FinancialFieldValue[]>,
+): number {
+  return Object.keys(fields).filter((k) => {
+    const f = categoryData?.[k];
+    if (!f) return false;
+    if (Array.isArray(f)) return f[0]?.confirmed === true;
+    return (f as FinancialFieldValue)?.confirmed === true;
   }).length;
 }
 
@@ -107,6 +124,7 @@ export function FormsMode({ planId, planName, brandName, queueSave, onSectionCha
     handleEditCommit,
     handleEditCancel,
     handleReset,
+    handleConfirmField,
   } = useFieldEditing({ financialInputs, isSaving: queueSave ? false : isSaving, onSave: saveInputs });
 
   const [startupCostCount, setStartupCostCount] = useState(0);
@@ -172,6 +190,7 @@ export function FormsMode({ planId, planName, brandName, queueSave, onSectionCha
                 onReset={handleReset}
                 onFocusChange={setFocusedField}
                 onSectionInteract={handleSectionInteract}
+                onConfirm={handleConfirmField}
                 defaultOpen={true}
               />
             );
@@ -193,6 +212,7 @@ export function FormsMode({ planId, planName, brandName, queueSave, onSectionCha
               onReset={handleReset}
               onFocusChange={setFocusedField}
               onSectionInteract={handleSectionInteract}
+              onConfirm={handleConfirmField}
               showStartHere={showStartHere && index === 0}
               defaultOpen={showStartHere ? index === 0 : true}
             />
@@ -232,6 +252,7 @@ interface FormSectionProps {
   onReset: (category: string, fieldName: string) => void;
   onFocusChange: (key: string | null) => void;
   onSectionInteract: (category: string) => void;
+  onConfirm: (category: string, fieldName: string) => void;
   showStartHere: boolean;
   defaultOpen: boolean;
 }
@@ -251,6 +272,7 @@ function FormSection({
   onReset,
   onFocusChange,
   onSectionInteract,
+  onConfirm,
   showStartHere,
   defaultOpen,
 }: FormSectionProps) {
@@ -280,8 +302,8 @@ function FormSection({
             )}
           </div>
           <div className="flex items-center gap-2 shrink-0">
-            <span className="text-xs text-muted-foreground tabular-nums">
-              {countEditedFields(fields, categoryData)}/{Object.keys(fields).length} edited
+            <span className="text-xs text-muted-foreground tabular-nums" data-testid={`section-progress-${category}`}>
+              {countConfirmedFields(fields, categoryData)}/{Object.keys(fields).length} confirmed
             </span>
             <ChevronDown
               className={`h-4 w-4 text-muted-foreground transition-transform duration-200 ${
@@ -324,6 +346,7 @@ function FormSection({
                   onEditCancel={onEditCancel}
                   onReset={onReset}
                   onFocusChange={onFocusChange}
+                  onConfirm={onConfirm}
                 />
               );
             })}
@@ -351,6 +374,7 @@ interface FormFieldProps {
   onEditCancel: () => void;
   onReset: (category: string, fieldName: string) => void;
   onFocusChange: (key: string | null) => void;
+  onConfirm: (category: string, fieldName: string) => void;
 }
 
 function FormField({
@@ -370,14 +394,23 @@ function FormField({
   onEditCancel,
   onReset,
   onFocusChange,
+  onConfirm,
 }: FormFieldProps) {
   const [applyToAllYears, setApplyToAllYears] = useState(!hasCustomPerYearValues);
   useEffect(() => {
     setApplyToAllYears(!hasCustomPerYearValues);
   }, [fieldKey, hasCustomPerYearValues]);
   const isUserEntry = field.source === "user_entry";
+  const isConfirmed = field.confirmed === true;
+  const isEditedButUnconfirmed = field.source !== "brand_default" && !isConfirmed;
   const defaultDisplay =
     field.brandDefault !== null ? formatFieldValue(field.brandDefault, meta.format) : null;
+
+  const confirmTooltip = isConfirmed
+    ? "Confirmed"
+    : isEditedButUnconfirmed
+    ? "Click to confirm this value"
+    : "Click to confirm the brand default";
 
   const commitWithAllYears = useCallback(() => {
     onEditCommit(isPerYear && applyToAllYears ? true : undefined);
@@ -436,19 +469,51 @@ function FormField({
           <SourceBadge source={field.source as "brand_default" | "user_entry" | "ai_populated"} />
         </div>
 
-        <div className="w-8 shrink-0 flex justify-center">
-          {isUserEntry ? (
-            <Button
-              size="icon"
-              variant="ghost"
-              onClick={() => onReset(category, fieldName)}
-              aria-label="Reset to brand default"
-              data-testid={`button-reset-${fieldName}`}
-            >
-              <RotateCcw className="h-3.5 w-3.5" />
-            </Button>
-          ) : (
-            <span className="invisible h-9 w-9" />
+        <div className="shrink-0 flex items-center gap-0.5">
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                size="icon"
+                variant="ghost"
+                className={`h-8 w-8 ${
+                  isConfirmed
+                    ? "text-green-600 dark:text-green-400"
+                    : isEditedButUnconfirmed
+                    ? "text-amber-500 animate-pulse"
+                    : "text-muted-foreground"
+                }`}
+                onClick={() => onConfirm(category, fieldName)}
+                disabled={isConfirmed}
+                aria-label={confirmTooltip}
+                data-testid={`button-confirm-${fieldName}`}
+              >
+                {isConfirmed ? (
+                  <CheckCircle2 className="h-4 w-4" />
+                ) : isEditedButUnconfirmed ? (
+                  <Lock className="h-4 w-4" />
+                ) : (
+                  <LockOpen className="h-4 w-4" />
+                )}
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>{confirmTooltip}</TooltipContent>
+          </Tooltip>
+          {isUserEntry && (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  size="icon"
+                  variant="ghost"
+                  className="h-8 w-8"
+                  onClick={() => onReset(category, fieldName)}
+                  aria-label="Reset to brand default"
+                  data-testid={`button-reset-${fieldName}`}
+                >
+                  <RotateCcw className="h-3.5 w-3.5" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>Reset to brand default</TooltipContent>
+            </Tooltip>
           )}
         </div>
       </div>
@@ -520,6 +585,7 @@ interface FacilitiesDecompositionSectionProps {
   onReset: (category: string, fieldName: string) => void;
   onFocusChange: (key: string | null) => void;
   onSectionInteract: (category: string) => void;
+  onConfirm: (category: string, fieldName: string) => void;
   defaultOpen: boolean;
 }
 
@@ -535,6 +601,7 @@ function FacilitiesDecompositionSection({
   onReset,
   onFocusChange,
   onSectionInteract,
+  onConfirm,
   defaultOpen,
 }: FacilitiesDecompositionSectionProps) {
   const [isOpen, setIsOpen] = useState(defaultOpen);
@@ -561,8 +628,8 @@ function FacilitiesDecompositionSection({
             <span className="text-sm font-semibold truncate">{CATEGORY_LABELS[category]}</span>
           </div>
           <div className="flex items-center gap-2 shrink-0">
-            <span className="text-xs text-muted-foreground tabular-nums">
-              {countEditedFields(fields, categoryData)}/{Object.keys(fields).length} edited
+            <span className="text-xs text-muted-foreground tabular-nums" data-testid={`section-progress-${category}`}>
+              {countConfirmedFields(fields, categoryData)}/{Object.keys(fields).length} confirmed
             </span>
             <ChevronDown
               className={`h-4 w-4 text-muted-foreground transition-transform duration-200 ${isOpen ? "" : "-rotate-90"}`}
@@ -613,6 +680,7 @@ function FacilitiesDecompositionSection({
                   onEditCancel={onEditCancel}
                   onReset={onReset}
                   onFocusChange={onFocusChange}
+                  onConfirm={onConfirm}
                 />
               );
             })}
