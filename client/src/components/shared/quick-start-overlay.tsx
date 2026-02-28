@@ -118,7 +118,9 @@ export function QuickStartOverlay({ planId, brand, onComplete }: QuickStartOverl
       costs = [createDefaultStartupCostItem(defaultInvestment)];
     }
 
-    const monthlyAuvCents = fi.revenue.monthlyAuv.currentValue;
+    const monthlyAuvCents = Array.isArray(fi.revenue.monthlyAuv)
+      ? fi.revenue.monthlyAuv[0].currentValue
+      : fi.revenue.monthlyAuv.currentValue;
     const rentAnnualCents = fi.operatingCosts.facilitiesDecomposition.rent[0].currentValue;
     const rentCents = Math.round(rentAnnualCents / 12);
     const investmentCents = startupCostTotal(costs);
@@ -196,7 +198,11 @@ export function QuickStartOverlay({ planId, brand, onComplete }: QuickStartOverl
         case "revenueDollars": {
           const cents = parseDollarsToCents(rawValue);
           if (isNaN(cents)) return;
-          fi.revenue.monthlyAuv = updateFieldValue(fi.revenue.monthlyAuv, cents, now);
+          if (Array.isArray(fi.revenue.monthlyAuv)) {
+            fi.revenue.monthlyAuv = fi.revenue.monthlyAuv.map((f) => updateFieldValue(f, cents, now));
+          } else {
+            fi.revenue.monthlyAuv = updateFieldValue(fi.revenue.monthlyAuv, cents, now) as any;
+          }
           // Recompute labor pct with new revenue
           const newLaborPct = staffCountToLaborPct(staff, cents);
           fi.operatingCosts.laborPct = fi.operatingCosts.laborPct.map((f) => updateFieldValue(f, newLaborPct, now));
@@ -231,7 +237,9 @@ export function QuickStartOverlay({ planId, brand, onComplete }: QuickStartOverl
           if (isNaN(count) || count < 0) return;
           staff = count;
           setStaffNum(count);
-          const monthlyAuv = fi.revenue.monthlyAuv.currentValue;
+          const monthlyAuv = Array.isArray(fi.revenue.monthlyAuv)
+            ? fi.revenue.monthlyAuv[0].currentValue
+            : fi.revenue.monthlyAuv.currentValue;
           const newLaborPct = staffCountToLaborPct(count, monthlyAuv);
           fi.operatingCosts.laborPct = fi.operatingCosts.laborPct.map((f) => updateFieldValue(f, newLaborPct, now));
           break;
@@ -362,7 +370,11 @@ export function QuickStartOverlay({ planId, brand, onComplete }: QuickStartOverl
             </div>
             {workingInputs && (
               <p className="text-xs text-muted-foreground mt-1">
-                Brand average: {formatCents(workingInputs.revenue.monthlyAuv.brandDefault ?? 0)}
+                Brand average: {formatCents(
+                  (Array.isArray(workingInputs.revenue.monthlyAuv)
+                    ? workingInputs.revenue.monthlyAuv[0].brandDefault
+                    : workingInputs.revenue.monthlyAuv.brandDefault) ?? 0
+                )}
               </p>
             )}
           </div>

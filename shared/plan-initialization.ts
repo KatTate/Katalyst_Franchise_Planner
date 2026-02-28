@@ -501,8 +501,9 @@ export function unwrapForEngine(
   const va60 = (arr: FinancialFieldValue[]): number[] =>
     arr.map((f) => f.currentValue);
 
-  const monthlyAuvArr = pi.revenue.monthlyAuv;
-  const monthlyAuvByMonth = va60(monthlyAuvArr);
+  const monthlyAuvByMonth = Array.isArray(pi.revenue.monthlyAuv)
+    ? va60(pi.revenue.monthlyAuv)
+    : Array(60).fill(v(pi.revenue.monthlyAuv as FinancialFieldValue));
 
   const totalInvestment = startupCosts.reduce((sum, c) => sum + c.amount, 0);
   const loanAmount = v(pi.financing.loanAmount);

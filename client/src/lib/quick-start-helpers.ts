@@ -172,12 +172,21 @@ export function findHighestImpactInput(
   // 1. Revenue +10% (also recalculate labor pct to match UI behavior —
   //    staff count stays fixed so labor % decreases with higher revenue)
   const revenueInputs = structuredClone(financialInputs);
-  const newRevenue = Math.round(revenueInputs.revenue.monthlyAuv.currentValue * 1.1);
-  revenueInputs.revenue.monthlyAuv = updateFieldValue(
-    revenueInputs.revenue.monthlyAuv,
-    newRevenue,
-    now
-  );
+  const baseAuv = Array.isArray(revenueInputs.revenue.monthlyAuv)
+    ? revenueInputs.revenue.monthlyAuv[0].currentValue
+    : revenueInputs.revenue.monthlyAuv.currentValue;
+  const newRevenue = Math.round(baseAuv * 1.1);
+  if (Array.isArray(revenueInputs.revenue.monthlyAuv)) {
+    revenueInputs.revenue.monthlyAuv = revenueInputs.revenue.monthlyAuv.map((f) =>
+      updateFieldValue(f, newRevenue, now)
+    );
+  } else {
+    revenueInputs.revenue.monthlyAuv = updateFieldValue(
+      revenueInputs.revenue.monthlyAuv,
+      newRevenue,
+      now
+    ) as any;
+  }
   const revenueAdjustedLaborPct = staffCountToLaborPct(currentStaffCount, newRevenue);
   revenueInputs.operatingCosts.laborPct = revenueInputs.operatingCosts.laborPct.map((f) =>
     updateFieldValue(f, revenueAdjustedLaborPct, now)
@@ -210,7 +219,10 @@ export function findHighestImpactInput(
   // 4. Staff -10% (fewer staff = lower labor cost)
   const staffInputs = structuredClone(financialInputs);
   const reducedStaff = Math.max(1, Math.round(currentStaffCount * 0.9));
-  const newLaborPct = staffCountToLaborPct(reducedStaff, staffInputs.revenue.monthlyAuv.currentValue);
+  const staffAuv = Array.isArray(staffInputs.revenue.monthlyAuv)
+    ? staffInputs.revenue.monthlyAuv[0].currentValue
+    : staffInputs.revenue.monthlyAuv.currentValue;
+  const newLaborPct = staffCountToLaborPct(reducedStaff, staffAuv);
   staffInputs.operatingCosts.laborPct = staffInputs.operatingCosts.laborPct.map((f) =>
     updateFieldValue(f, newLaborPct, now)
   );

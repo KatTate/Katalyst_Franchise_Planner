@@ -245,7 +245,7 @@ const financialFieldValueArraySchema = z.array(financialFieldValueSchema);
 
 export const planFinancialInputsSchema = z.object({
   revenue: z.object({
-    monthlyAuv: financialFieldValueSchema,
+    monthlyAuv: z.union([financialFieldValueSchema, financialFieldValueArraySchema]),
     growthRates: financialFieldValueArraySchema,
     startingMonthAuvPct: financialFieldValueSchema,
   }),
